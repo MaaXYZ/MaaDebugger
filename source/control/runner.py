@@ -2,6 +2,16 @@ from pathlib import Path
 import asyncio
 import sys
 
+latest_install_dir = None
+latest_adb_path = None
+latest_adb_address = None
+# reload resource every time
+# latest_resource_dir = None
+
+resource = None
+controller = None
+instance = None
+
 
 async def run_task(
     install_dir: Path, adb_path: Path, adb_address: str, resource_dir: Path, task: str
@@ -20,29 +30,46 @@ async def run_task(
     from maa.instance import Instance
     from maa.toolkit import Toolkit
 
-    version = Library.open(install_dir / "bin")
-    if not version:
-        return "Failed to open MaaFramework"
+    global latest_install_dir, latest_adb_path, latest_adb_address
 
-    print(f"MaaFw Version: {version}")
+    if latest_install_dir != install_dir:
+        version = Library.open(install_dir / "bin")
+        if not version:
+            return "Failed to open MaaFramework"
+        print(f"MaaFw Version: {version}")
+
+    latest_install_dir = install_dir
 
     Toolkit.init_config()
 
-    controller = AdbController(adb_path, adb_address)
-    connected = await controller.connect()
-    if not connected:
-        return "Failed to connect to ADB"
+    global resource, controller, instance
+
+    if latest_adb_path != adb_path or latest_adb_address != adb_address:
+        controller = AdbController(adb_path, adb_address)
+        connected = await controller.connect()
+        if not connected:
+            return "Failed to connect to ADB"
+
+    latest_adb_path = adb_path
+    latest_adb_address = adb_address
 
     resource = Resource()
     loaded = await resource.load(resource_dir)
     if not loaded:
         return "Failed to load resource"
 
-    maa_inst = Instance()
-    maa_inst.bind(resource, controller)
-    inited = maa_inst.inited
+    if not instance:
+        instance = Instance()
+
+    instance.bind(resource, controller)
+    inited = instance.inited
     if not inited:
         return "Failed to init MaaFramework instance"
 
-    ret = await maa_inst.run_task(task, {})
+    ret = await instance.run_task(task, {})
     return f"Task returned: {ret}"
+
+
+async def stop_task():
+    if instance:
+        await instance.stop()
