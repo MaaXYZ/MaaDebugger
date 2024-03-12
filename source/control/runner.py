@@ -1,12 +1,20 @@
 from pathlib import Path
-import asyncio
 import sys
+
+specified_binding_dir = None
+specified_bin_dir = None
+
+if len(sys.argv) > 2:
+    specified_binding_dir = Path(sys.argv[1])
+    specified_bin_dir = Path(sys.argv[2])
+    print(
+        f"specified binding_dir: {specified_binding_dir}, bin_dir: {specified_bin_dir}"
+    )
 
 latest_install_dir = None
 latest_adb_path = None
 latest_adb_address = None
-# reload resource every time
-# latest_resource_dir = None
+latest_resource_dir = None
 
 resource = None
 controller = None
@@ -16,7 +24,11 @@ instance = None
 async def run_task(
     install_dir: Path, adb_path: Path, adb_address: str, resource_dir: Path, task: str
 ):
-    binding_dir = install_dir / "binding" / "Python"
+    binding_dir = (
+        specified_binding_dir
+        and specified_binding_dir
+        or (install_dir / "binding" / "Python")
+    )
     if not binding_dir.exists():
         return "Binding directory does not exist"
 
@@ -33,7 +45,8 @@ async def run_task(
     global latest_install_dir, latest_adb_path, latest_adb_address
 
     if latest_install_dir != install_dir:
-        version = Library.open(install_dir / "bin")
+        bin_dir = specified_bin_dir and specified_bin_dir or (install_dir / "bin")
+        version = Library.open(bin_dir)
         if not version:
             return "Failed to open MaaFramework"
         print(f"MaaFw Version: {version}")
@@ -53,8 +66,11 @@ async def run_task(
     latest_adb_path = adb_path
     latest_adb_address = adb_address
 
-    resource = Resource()
-    loaded = await resource.load(resource_dir)
+    if not resource:
+        resource = Resource()
+
+    # reload every time
+    loaded = resource.clear() and await resource.load(resource_dir)
     if not loaded:
         return "Failed to load resource"
 

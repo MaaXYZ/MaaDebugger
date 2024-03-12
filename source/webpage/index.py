@@ -5,7 +5,7 @@ from source.control.runner import run_task, stop_task
 
 
 @ui.page("/")
-def index():
+async def index():
     maafw_install_dir_input = (
         ui.input(
             "MaaFramework Release Directory",
@@ -41,8 +41,7 @@ def index():
         )
 
         run_button = ui.button("Run", on_click=on_run_button_click)
-        # stop 有 bug，回头修修
-        # stop_button = ui.button("Stop", on_click=on_stop_button_click)
+        stop_button = ui.button("Stop", on_click=on_stop_button_click)
 
 
 async def on_run_button_click():
