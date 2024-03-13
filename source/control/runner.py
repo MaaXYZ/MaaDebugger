@@ -53,7 +53,7 @@ async def run_task(
 
     latest_install_dir = install_dir
 
-    Toolkit.init_option("~/.maafw")
+    Toolkit.init_option("./")
 
     global resource, controller, instance
 
