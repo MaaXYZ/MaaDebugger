@@ -2,3 +2,4 @@ numpy
 Pillow
 
 nicegui
+asyncer

@@ -1,66 +1,209 @@
 from nicegui import app, ui
 from pathlib import Path
 
-from source.control.runner import run_task, stop_task
+from source.control.runner import *
 
 
 @ui.page("/")
 async def index():
-    maafw_install_dir_input = (
+    with ui.row():
+        await import_maa_control()
+    with ui.row():
+        await connect_adb_control()
+    with ui.row():
+        await load_resource_control()
+    with ui.row():
+        await run_task_control()
+
+
+class ControlStatus:
+    def __init__(self):
+        self.label = ui.label()
+        self.pending()
+
+    def pending(self):
+        self.label.text = "🟡"
+
+    def success(self):
+        self.label.text = "✅"
+
+    def failure(self):
+        self.label.text = "❌"
+
+    def running(self):
+        self.label.text = "⏳"
+
+
+async def import_maa_control():
+    status = ControlStatus()
+
+    pybinding_input = (
         ui.input(
-            "MaaFramework Release Directory",
-            placeholder="eg: C:/Downloads/MAA-win-x86_64",
+            "MaaFramework Python Binding Directory",
+            placeholder="eg: C:/Downloads/MAA-win-x86_64/binding/Python",
+            on_change=lambda: status.pending(),
         )
         .props("size=60")
-        .bind_value(app.storage.general, "maafw_install_dir")
+        .bind_value(app.storage.general, "maa_pybinding")
+    )
+    bin_input = (
+        ui.input(
+            "MaaFramework Binary Directory",
+            placeholder="eg: C:/Downloads/MAA-win-x86_64/bin",
+            on_change=lambda: status.pending(),
+        )
+        .props("size=60")
+        .bind_value(app.storage.general, "maa_bin")
     )
 
+    import_button = ui.button("Import", on_click=lambda: on_click_import())
+
+    async def on_click_import():
+        status.running()
+
+        if not pybinding_input.value or not bin_input.value:
+            status.failure()
+            return
+
+        imported = await import_maa(Path(pybinding_input.value), Path(bin_input.value))
+        if not imported:
+            status.failure()
+
+        status.success()
+
+        pybinding_input.disable()
+        bin_input.disable()
+        import_button.disable()
+
+
+async def connect_adb_control():
+    status = ControlStatus()
+
     adb_path_input = (
-        ui.input("ADB Path", placeholder="eg: C:/adb.exe")
+        ui.input(
+            "ADB Path",
+            placeholder="eg: C:/adb.exe",
+            on_change=lambda: status.pending(),
+        )
         .props("size=60")
         .bind_value(app.storage.general, "adb_path")
     )
-
     adb_address_input = (
-        ui.input("ADB Address", placeholder="eg: 127.0.0.1:5555")
-        .props("size=60")
+        ui.input(
+            "ADB Address",
+            placeholder="eg: 127.0.0.1:5555",
+            on_change=lambda: status.pending(),
+        )
+        .props("size=30")
         .bind_value(app.storage.general, "adb_address")
     )
+    ui.button(
+        "Connect",
+        on_click=lambda: on_click_connect(),
+    )
+    ui.button(
+        "Detect",
+        on_click=lambda: on_click_detect(),
+    )
+    devices_select = ui.select({}, on_change=lambda e: on_change_devices_select(e))
 
-    resource_dir_input = (
-        ui.input("Resource Directory", placeholder="eg: C:/M9A/assets/resource")
+    async def on_click_connect():
+        status.running()
+
+        if not adb_path_input.value or not adb_address_input.value:
+            status.failure()
+            return
+
+        connected = await connect_adb(
+            Path(adb_path_input.value), adb_address_input.value
+        )
+        if not connected:
+            status.failure()
+
+        status.success()
+
+    async def on_click_detect():
+        devices = await detect_adb()
+        options = {}
+        for d in devices:
+            v = (d.adb_path, d.address)
+            l = d.name + " " + d.address
+            options[v] = l
+
+        devices_select.options = options
+        devices_select.update()
+        if options:
+            devices_select.value = next(iter(options))
+
+    def on_change_devices_select(e):
+        adb_path_input.value = str(e.value[0])
+        adb_address_input.value = e.value[1]
+
+
+async def load_resource_control():
+    status = ControlStatus()
+
+    dir_input = (
+        ui.input(
+            "Resource Directory",
+            placeholder="eg: C:/M9A/assets/resource/base",
+            on_change=lambda: status.pending(),
+        )
         .props("size=60")
         .bind_value(app.storage.general, "resource_dir")
     )
 
-    with ui.row():
-        task_input = (
-            ui.input("Task", placeholder="Enter the task")
-            .props("size=30")
-            .bind_value(app.storage.general, "task")
+    ui.button(
+        "Load",
+        on_click=lambda: on_click_load(),
+    )
+
+    async def on_click_load():
+        status.running()
+
+        if not dir_input.value:
+            status.failure()
+            return
+
+        loaded = await load_resource(Path(dir_input.value))
+        if not loaded:
+            status.failure()
+
+        status.success()
+
+
+async def run_task_control():
+    status = ControlStatus()
+
+    entry_input = (
+        ui.input(
+            "Task Entry",
+            placeholder="eg: StartUp",
+            on_change=lambda: status.pending(),
         )
-
-        run_button = ui.button("Run", on_click=on_run_button_click)
-        stop_button = ui.button("Stop", on_click=on_stop_button_click)
-
-
-async def on_run_button_click():
-    maafw_install_dir = Path(app.storage.general.get("maafw_install_dir"))
-    adb_path = Path(app.storage.general.get("adb_path"))
-    adb_address = app.storage.general.get("adb_address")
-    resource_dir = Path(app.storage.general.get("resource_dir"))
-    task = app.storage.general.get("task")
-
-    print(
-        f"on_run_button_click: maafw_install_dir: {maafw_install_dir}, adb_path: {adb_path}, adb_address: {adb_address}, resource_dir: {resource_dir}, task: {task}"
+        .props("size=30")
+        .bind_value(app.storage.general, "task_entry")
     )
 
-    message = await run_task(
-        maafw_install_dir, adb_path, adb_address, resource_dir, task
-    )
-    ui.notify(message)
+    ui.button("Start", on_click=lambda: on_click_start())
+    ui.button("Stop", on_click=lambda: on_click_stop())
 
+    async def on_click_start():
+        status.running()
 
-async def on_stop_button_click():
-    await stop_task()
-    ui.notify("Task stopped")
+        if not entry_input.value:
+            status.failure()
+            return
+
+        run = await run_task(entry_input.value)
+        if not run:
+            status.failure()
+
+        status.success()
+
+    async def on_click_stop():
+        stopped = await stop_task()
+        if not stopped:
+            status.failure()
+
+        status.pending()
