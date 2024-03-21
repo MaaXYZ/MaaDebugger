@@ -16,7 +16,7 @@ async def index():
         await run_task_control()
 
 
-class ControlStatus:
+class StatusIndicator:
     def __init__(self):
         self.label = ui.label()
         self.pending()
@@ -35,7 +35,7 @@ class ControlStatus:
 
 
 async def import_maa_control():
-    status = ControlStatus()
+    status = StatusIndicator()
 
     pybinding_input = (
         ui.input(
@@ -77,7 +77,7 @@ async def import_maa_control():
 
 
 async def connect_adb_control():
-    status = ControlStatus()
+    status = StatusIndicator()
 
     adb_path_input = (
         ui.input(
@@ -141,7 +141,7 @@ async def connect_adb_control():
 
 
 async def load_resource_control():
-    status = ControlStatus()
+    status = StatusIndicator()
 
     dir_input = (
         ui.input(
@@ -173,7 +173,7 @@ async def load_resource_control():
 
 
 async def run_task_control():
-    status = ControlStatus()
+    status = StatusIndicator()
 
     entry_input = (
         ui.input(
