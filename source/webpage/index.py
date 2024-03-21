@@ -6,32 +6,47 @@ from source.control.runner import *
 
 @ui.page("/")
 async def index():
-    with ui.row():
+    ui.dark_mode()  # auto dark mode
+
+    with ui.row().style("align-items: center;"):
         await import_maa_control()
-    with ui.row():
+
+    ui.separator()
+
+    with ui.row().style("align-items: center;"):
         await connect_adb_control()
-    with ui.row():
+    with ui.row().style("align-items: center;"):
         await load_resource_control()
-    with ui.row():
+    with ui.row().style("align-items: center;"):
         await run_task_control()
+
+    ui.separator()
 
 
 class StatusIndicator:
     def __init__(self):
-        self.label = ui.label()
         self.pending()
+        ui.label().bind_text(self, "text")
 
     def pending(self):
-        self.label.text = "🟡"
+        self.text = "🟡"
+        return self
 
     def success(self):
-        self.label.text = "✅"
+        self.text = "✅"
+        return self
 
     def failure(self):
-        self.label.text = "❌"
+        self.text = "❌"
+        return self
 
     def running(self):
-        self.label.text = "⏳"
+        self.text = "👀"
+        return self
+
+    def hide(self):
+        self.text = "  "
+        return self
 
 
 async def import_maa_control():
@@ -106,6 +121,7 @@ async def connect_adb_control():
         on_click=lambda: on_click_detect(),
     )
     devices_select = ui.select({}, on_change=lambda e: on_change_devices_select(e))
+    detect_status = StatusIndicator().hide()
 
     async def on_click_connect():
         status.running()
@@ -123,6 +139,8 @@ async def connect_adb_control():
         status.success()
 
     async def on_click_detect():
+        detect_status.running()
+
         devices = await detect_adb()
         options = {}
         for d in devices:
@@ -134,6 +152,8 @@ async def connect_adb_control():
         devices_select.update()
         if options:
             devices_select.value = next(iter(options))
+
+        detect_status.hide()
 
     def on_change_devices_select(e):
         adb_path_input.value = str(e.value[0])
