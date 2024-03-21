@@ -83,6 +83,7 @@ async def import_maa_control():
         imported = await import_maa(Path(pybinding_input.value), Path(bin_input.value))
         if not imported:
             status.failure()
+            return
 
         status.success()
 
@@ -135,6 +136,7 @@ async def connect_adb_control():
         )
         if not connected:
             status.failure()
+            return
 
         status.success()
 
@@ -188,6 +190,7 @@ async def load_resource_control():
         loaded = await load_resource(Path(dir_input.value))
         if not loaded:
             status.failure()
+            return
 
         status.success()
 
@@ -218,6 +221,7 @@ async def run_task_control():
         run = await run_task(entry_input.value)
         if not run:
             status.failure()
+            return
 
         status.success()
 
@@ -225,5 +229,6 @@ async def run_task_control():
         stopped = await stop_task()
         if not stopped:
             status.failure()
+            return
 
         status.pending()

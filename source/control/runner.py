@@ -52,7 +52,7 @@ async def connect_adb(path: Path, address: str) -> bool:
     controller = AdbController(path, address)
     connected = await controller.connect()
     if not connected:
-        print("Failed to connect {path} {address}")
+        print(f"Failed to connect {path} {address}")
         return False
 
     return True
