@@ -19,6 +19,7 @@ async def import_maa(binding_dir: Path, bin_dir: Path) -> bool:
 
     try:
         from maa.library import Library
+        from maa.toolkit import Toolkit
     except ModuleNotFoundError as err:
         print(err)
         return False
@@ -29,6 +30,8 @@ async def import_maa(binding_dir: Path, bin_dir: Path) -> bool:
         return False
 
     print(f"Import MAA successfully, version: {version}")
+
+    Toolkit.init_option("./")
 
     return True
 
@@ -92,3 +95,4 @@ async def stop_task():
         return
 
     await instance.stop()
+
