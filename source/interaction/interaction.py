@@ -1,7 +1,8 @@
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from asyncer import asyncify
 import sys
+from PIL import Image
 
 
 async def import_maa(binding_dir: Path, bin_dir: Path) -> bool:
@@ -96,3 +97,24 @@ async def stop_task():
 
     await instance.stop()
 
+
+async def screencap() -> Optional[Image]:
+    global controller
+    if not controller:
+        return None
+
+    im = await controller.screencap()
+    if im is None:
+        return None
+
+    pil = Image.fromarray(im)
+    b, g, r = pil.split()
+    return Image.merge("RGB", (r, g, b))
+
+
+async def click(x, y) -> None:
+    global controller
+    if not controller:
+        return None
+
+    await controller.click(x, y)

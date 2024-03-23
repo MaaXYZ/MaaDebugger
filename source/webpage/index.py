@@ -1,25 +1,33 @@
-from nicegui import app, ui
+from nicegui import app, ui, binding
 from pathlib import Path
 
-from source.control.runner import *
+from source.interaction.interaction import *
 from .components.status_indicator import Status, StatusIndicator
+from .components.screenshotter import Screenshotter
 
+
+binding.MAX_PROPAGATION_TIME = 1
+ui.dark_mode()  # auto dark mode
 
 @ui.page("/")
 async def index():
-    ui.dark_mode()  # auto dark mode
 
     with ui.row().style("align-items: center;"):
         await import_maa_control()
 
     ui.separator()
 
-    with ui.row().style("align-items: center;"):
-        await connect_adb_control()
-    with ui.row().style("align-items: center;"):
-        await load_resource_control()
-    with ui.row().style("align-items: center;"):
-        await run_task_control()
+    with ui.row():
+        with ui.column():
+            with ui.row().style("align-items: center;"):
+                await connect_adb_control()
+            with ui.row().style("align-items: center;"):
+                await load_resource_control()
+            with ui.row().style("align-items: center;"):
+                await run_task_control()
+
+        with ui.column():
+            await screenshot_control()
 
     ui.separator()
 
@@ -30,6 +38,9 @@ class GlobalStatus:
     adb_detecting: Status = Status.PENDING  # not required
     res_loading: Status = Status.PENDING
     task_running: Status = Status.PENDING
+
+
+screenshotter = Screenshotter()
 
 
 async def import_maa_control():
@@ -119,11 +130,18 @@ async def connect_adb_control():
         GlobalStatus, "maa_importing", backward=lambda s: s == Status.SUCCESS
     )
 
-    devices_select = ui.select(
-        {}, on_change=lambda e: on_change_devices_select(e)
-    ).bind_enabled_from(
-        GlobalStatus, "maa_importing", backward=lambda s: s == Status.SUCCESS
+    devices_select = (
+        ui.select({}, on_change=lambda e: on_change_devices_select(e))
+        .bind_enabled_from(
+            GlobalStatus, "maa_importing", backward=lambda s: s == Status.SUCCESS
+        )
+        .bind_visibility_from(
+            GlobalStatus,
+            "adb_detecting",
+            backward=lambda s: s == Status.SUCCESS,
+        )
     )
+
     StatusIndicator(GlobalStatus, "adb_detecting").label().bind_visibility_from(
         GlobalStatus,
         "adb_detecting",
@@ -145,6 +163,9 @@ async def connect_adb_control():
             return
 
         GlobalStatus.adb_connecting = Status.SUCCESS
+        GlobalStatus.adb_detecting = Status.PENDING
+
+        screenshotter.start()
 
     async def on_click_detect():
         GlobalStatus.adb_detecting = Status.RUNNING
@@ -167,6 +188,22 @@ async def connect_adb_control():
     def on_change_devices_select(e):
         adb_path_input.value = str(e.value[0])
         adb_address_input.value = e.value[1]
+
+
+async def screenshot_control():
+    with ui.card().tight():
+        ui.interactive_image(
+            cross="green",
+            on_mouse=lambda e: on_click_image(int(e.image_x), int(e.image_y)),
+        ).bind_source_from(screenshotter, "source").style(
+            "height: 200px; align-items: center;"
+        ).bind_visibility_from(
+            GlobalStatus, "adb_connecting", backward=lambda s: s == Status.SUCCESS
+        )
+
+    async def on_click_image(x, y):
+        print(f"on_click_image: {x}, {y}")
+        await click(x, y)
 
 
 async def load_resource_control():
@@ -229,6 +266,8 @@ async def run_task_control():
     )
 
     async def on_click_start():
+        screenshotter.stop()
+
         GlobalStatus.task_running = Status.RUNNING
 
         if not entry_input.value:
@@ -249,3 +288,4 @@ async def run_task_control():
             return
 
         GlobalStatus.task_running = Status.PENDING
+        screenshotter.start()
