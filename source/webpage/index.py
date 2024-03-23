@@ -1,13 +1,15 @@
 from nicegui import app, ui, binding
 from pathlib import Path
 
-from source.interaction.interaction import *
+import source.interaction.maafw as maafw
+
 from .components.status_indicator import Status, StatusIndicator
 from .components.screenshotter import Screenshotter
 
 
 binding.MAX_PROPAGATION_TIME = 1
 ui.dark_mode()  # auto dark mode
+
 
 @ui.page("/")
 async def index():
@@ -83,7 +85,7 @@ async def import_maa_control():
             GlobalStatus.maa_importing = Status.FAILURE
             return
 
-        imported = await import_maa(Path(pybinding_input.value), Path(bin_input.value))
+        imported = await maafw.import_maa(Path(pybinding_input.value), Path(bin_input.value))
         if not imported:
             GlobalStatus.maa_importing = Status.FAILURE
             return
@@ -155,7 +157,7 @@ async def connect_adb_control():
             GlobalStatus.adb_connecting = Status.FAILURE
             return
 
-        connected = await connect_adb(
+        connected = await maafw.connect_adb(
             Path(adb_path_input.value), adb_address_input.value
         )
         if not connected:
@@ -170,7 +172,7 @@ async def connect_adb_control():
     async def on_click_detect():
         GlobalStatus.adb_detecting = Status.RUNNING
 
-        devices = await detect_adb()
+        devices = await maafw.detect_adb()
         options = {}
         for d in devices:
             v = (d.adb_path, d.address)
@@ -203,7 +205,7 @@ async def screenshot_control():
 
     async def on_click_image(x, y):
         print(f"on_click_image: {x}, {y}")
-        await click(x, y)
+        await maafw.click(x, y)
 
 
 async def load_resource_control():
@@ -235,7 +237,7 @@ async def load_resource_control():
             GlobalStatus.res_loading = Status.FAILURE
             return
 
-        loaded = await load_resource(Path(dir_input.value))
+        loaded = await maafw.load_resource(Path(dir_input.value))
         if not loaded:
             GlobalStatus.res_loading = Status.FAILURE
             return
@@ -274,7 +276,7 @@ async def run_task_control():
             GlobalStatus.task_running = Status.FAILURE
             return
 
-        run = await run_task(entry_input.value)
+        run = await maafw.run_task(entry_input.value)
         if not run:
             GlobalStatus.task_running = Status.FAILURE
             return
@@ -282,7 +284,7 @@ async def run_task_control():
         GlobalStatus.task_running = Status.SUCCESS
 
     async def on_click_stop():
-        stopped = await stop_task()
+        stopped = await maafw.stop_task()
         if not stopped:
             GlobalStatus.task_running = Status.FAILURE
             return

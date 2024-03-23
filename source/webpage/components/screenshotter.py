@@ -2,7 +2,7 @@ from nicegui import ui
 import asyncio
 import threading
 
-from source.interaction.interaction import screencap
+import source.interaction.maafw as maafw
 
 
 class Screenshotter(threading.Thread):
@@ -14,11 +14,10 @@ class Screenshotter(threading.Thread):
     def __del__(self):
         self.active = False
         self.source = None
-        super().__del__()
 
     def run(self):
         while self.active:
-            im = asyncio.run(screencap())
+            im = asyncio.run(maafw.screencap())
             if not im:
                 continue
 
