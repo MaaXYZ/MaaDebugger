@@ -21,6 +21,7 @@ class Screenshotter(threading.Thread):
                 continue
 
             self.source = im
+            asyncio.sleep(0)
 
     def start(self):
         self.active = True

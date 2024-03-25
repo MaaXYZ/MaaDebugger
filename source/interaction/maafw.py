@@ -33,6 +33,7 @@ async def import_maa(binding_dir: Path, bin_dir: Path) -> bool:
     print(f"Import MAA successfully, version: {version}")
 
     Toolkit.init_option("./")
+    Library.set_debug_message(True)
 
     return True
 
