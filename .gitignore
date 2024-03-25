@@ -161,3 +161,7 @@ cython_debug/
 
 # nicegui
 .nicegui/
+
+# maafw
+config
+debug

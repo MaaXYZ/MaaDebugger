@@ -1,4 +1,7 @@
+### from MaaFw
 numpy
 Pillow
 
+### from MaaDebugger
 nicegui
+asyncer
