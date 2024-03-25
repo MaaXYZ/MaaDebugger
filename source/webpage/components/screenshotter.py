@@ -1,4 +1,3 @@
-from nicegui import ui
 import asyncio
 import threading
 

@@ -85,7 +85,9 @@ async def import_maa_control():
             GlobalStatus.maa_importing = Status.FAILURE
             return
 
-        imported = await maafw.import_maa(Path(pybinding_input.value), Path(bin_input.value))
+        imported = await maafw.import_maa(
+            Path(pybinding_input.value), Path(bin_input.value)
+        )
         if not imported:
             GlobalStatus.maa_importing = Status.FAILURE
             return
@@ -198,7 +200,7 @@ async def screenshot_control():
             cross="green",
             on_mouse=lambda e: on_click_image(int(e.image_x), int(e.image_y)),
         ).bind_source_from(screenshotter, "source").style(
-            "height: 200px; align-items: center;"
+            "height: 200px;"
         ).bind_visibility_from(
             GlobalStatus, "adb_connecting", backward=lambda s: s == Status.SUCCESS
         )

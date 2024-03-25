@@ -1,9 +1,9 @@
 from pathlib import Path
 from typing import List, Optional
 from asyncer import asyncify
-import sys
 from PIL import Image
 
+import sys
 
 async def import_maa(binding_dir: Path, bin_dir: Path) -> bool:
     if not binding_dir.exists():
