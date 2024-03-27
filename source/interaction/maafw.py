@@ -119,11 +119,7 @@ async def screencap(capture: bool = True) -> Optional[Image.Image]:
     if not controller:
         return None
 
-    if capture:
-        if not await controller.post_screencap().wait():
-            return None
-
-    im = controller.get_image()
+    im = await controller.screencap(capture)
     if im is None:
         return None
 
