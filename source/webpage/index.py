@@ -185,6 +185,7 @@ async def connect_adb_control():
         devices_select.update()
         if not options:
             GlobalStatus.adb_detecting = Status.FAILURE
+            return
 
         devices_select.value = next(iter(options))
         GlobalStatus.adb_detecting = Status.SUCCESS

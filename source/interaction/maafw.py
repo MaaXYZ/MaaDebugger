@@ -99,7 +99,7 @@ async def stop_task():
     await instance.stop()
 
 
-async def screencap() -> Optional[Image]:
+async def screencap() -> Optional[Image.Image]:
     global controller
     if not controller:
         return None
