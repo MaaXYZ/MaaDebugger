@@ -33,7 +33,9 @@ async def index():
     ui.separator()
 
     pipeline_control()
-
+    
+    # for debug
+    append_list_to_reco("AAA", ["BBB", "CCC"])
 
 class GlobalStatus:
     maa_importing: Status = Status.PENDING
@@ -306,11 +308,14 @@ def pipeline_control():
 def append_list_to_reco(latest_hit, list_to_reco):
     with pipeline_row:
         with ui.list().props("bordered separator"):
-            ui.item_label(latest_hit)
+            ui.item_label(latest_hit).props('header').classes('text-bold')
+            ui.separator()
 
             for i in list_to_reco:
                 with ui.item():
-                    ui.item_label(i)
+                    with ui.item_section():
+                        ui.item_label(i)
 
 
 maafw.ui_callback = append_list_to_reco
+
