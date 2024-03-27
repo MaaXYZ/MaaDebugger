@@ -5,18 +5,18 @@ from PIL import Image
 
 import sys
 
-async def import_maa(binding_dir: Path, bin_dir: Path) -> bool:
-    if not binding_dir.exists():
-        print("Binding directory does not exist")
+async def import_maa(pybinding_dir: Path, bin_dir: Path) -> bool:
+    if not pybinding_dir.exists():
+        print("Python binding dir does not exist")
         return False
 
     if not bin_dir.exists():
         print("Bin dir does not exist")
         return False
 
-    binding_dir = str(binding_dir)
-    if binding_dir not in sys.path:
-        sys.path.insert(0, binding_dir)
+    pybinding_dir = str(pybinding_dir)
+    if pybinding_dir not in sys.path:
+        sys.path.insert(0, pybinding_dir)
 
     try:
         from maa.library import Library

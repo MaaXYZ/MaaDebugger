@@ -3,8 +3,8 @@ from pathlib import Path
 
 import source.interaction.maafw as maafw
 
+from source.interaction.screenshotter import Screenshotter
 from .components.status_indicator import Status, StatusIndicator
-from .components.screenshotter import Screenshotter
 
 
 binding.MAX_PROPAGATION_TIME = 1

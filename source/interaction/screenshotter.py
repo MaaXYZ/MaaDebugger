@@ -1,7 +1,7 @@
 import asyncio
 import threading
 
-import source.interaction.maafw as maafw
+from .maafw import screencap
 
 
 class Screenshotter(threading.Thread):
@@ -16,7 +16,7 @@ class Screenshotter(threading.Thread):
 
     def run(self):
         while self.active:
-            im = asyncio.run(maafw.screencap())
+            im = asyncio.run(screencap())
             if not im:
                 continue
 
