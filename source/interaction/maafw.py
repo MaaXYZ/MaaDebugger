@@ -2,8 +2,11 @@ from pathlib import Path
 from typing import List, Optional
 from asyncer import asyncify
 from PIL import Image
-
 import sys
+import asyncio
+import threading
+import time
+
 
 async def import_maa(pybinding_dir: Path, bin_dir: Path) -> bool:
     if not pybinding_dir.exists():
@@ -74,13 +77,25 @@ async def load_resource(dir: Path) -> bool:
     return resource.clear() and await resource.load(dir)
 
 
+ui_callback = None
+
+
+def inst_callback(msg: str, detail: dict, arg):
+    match msg:
+        case "Task.Debug.ListToRecognize":
+            print(f"Task.Debug.ListToRecognize: {detail}")
+            screenshotter.refresh(False)
+            if ui_callback:
+                ui_callback(detail["latest_hit"], detail["list"])
+
+
 async def run_task(entry: str, param: dict = {}) -> bool:
     global controller, resource, instance
 
     from maa.instance import Instance
 
     if not instance:
-        instance = Instance()
+        instance = Instance(callback=inst_callback)
 
     instance.bind(resource, controller)
     if not instance.inited:
@@ -99,18 +114,55 @@ async def stop_task():
     await instance.stop()
 
 
-async def screencap() -> Optional[Image.Image]:
+async def screencap(capture: bool = True) -> Optional[Image.Image]:
     global controller
     if not controller:
         return None
 
-    im = await controller.screencap()
+    if capture:
+        if not await controller.post_screencap().wait():
+            return None
+
+    im = controller.get_image()
     if im is None:
         return None
 
     pil = Image.fromarray(im)
     b, g, r = pil.split()
     return Image.merge("RGB", (r, g, b))
+
+
+class Screenshotter(threading.Thread):
+    def __init__(self):
+        super().__init__()
+        self.source = None
+        self.active = False
+
+    def __del__(self):
+        self.active = False
+        self.source = None
+
+    def run(self):
+        while self.active:
+            self.refresh()
+            time.sleep(0)
+
+    def refresh(self, capture: bool = True):
+        im = asyncio.run(screencap(capture))
+        if not im:
+            return
+
+        self.source = im
+
+    def start(self):
+        self.active = True
+        super().start()
+
+    def stop(self):
+        self.active = False
+
+
+screenshotter = Screenshotter()
 
 
 async def click(x, y) -> None:
