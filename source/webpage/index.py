@@ -34,8 +34,8 @@ async def index():
 
     pipeline_control()
     
-    # for debug
-    append_list_to_reco("AAA", ["BBB", "CCC"])
+    ## for debug
+    # append_list_to_reco("AAA", ["BBB", "CCC"])
 
 class GlobalStatus:
     maa_importing: Status = Status.PENDING
