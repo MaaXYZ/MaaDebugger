@@ -4,7 +4,6 @@ from pathlib import Path
 import source.interaction.maafw as maafw
 
 from .components.status_indicator import Status, StatusIndicator
-from .components.screenshotter import Screenshotter
 
 
 binding.MAX_PROPAGATION_TIME = 1
@@ -33,6 +32,10 @@ async def index():
 
     ui.separator()
 
+    pipeline_control()
+    
+    ## for debug
+    # append_list_to_reco("AAA", ["BBB", "CCC"])
 
 class GlobalStatus:
     maa_importing: Status = Status.PENDING
@@ -40,9 +43,6 @@ class GlobalStatus:
     adb_detecting: Status = Status.PENDING  # not required
     res_loading: Status = Status.PENDING
     task_running: Status = Status.PENDING
-
-
-screenshotter = Screenshotter()
 
 
 async def import_maa_control():
@@ -169,7 +169,7 @@ async def connect_adb_control():
         GlobalStatus.adb_connecting = Status.SUCCESS
         GlobalStatus.adb_detecting = Status.PENDING
 
-        screenshotter.start()
+        maafw.screenshotter.start()
 
     async def on_click_detect():
         GlobalStatus.adb_detecting = Status.RUNNING
@@ -185,6 +185,7 @@ async def connect_adb_control():
         devices_select.update()
         if not options:
             GlobalStatus.adb_detecting = Status.FAILURE
+            return
 
         devices_select.value = next(iter(options))
         GlobalStatus.adb_detecting = Status.SUCCESS
@@ -199,7 +200,7 @@ async def screenshot_control():
         ui.interactive_image(
             cross="green",
             on_mouse=lambda e: on_click_image(int(e.image_x), int(e.image_y)),
-        ).bind_source_from(screenshotter, "source").style(
+        ).bind_source_from(maafw.screenshotter, "source").style(
             "height: 200px;"
         ).bind_visibility_from(
             GlobalStatus, "adb_connecting", backward=lambda s: s == Status.SUCCESS
@@ -270,7 +271,7 @@ async def run_task_control():
     )
 
     async def on_click_start():
-        screenshotter.stop()
+        maafw.screenshotter.stop()
 
         GlobalStatus.task_running = Status.RUNNING
 
@@ -292,4 +293,29 @@ async def run_task_control():
             return
 
         GlobalStatus.task_running = Status.PENDING
-        screenshotter.start()
+        maafw.screenshotter.start()
+
+
+pipeline_row = None
+
+
+def pipeline_control():
+    global pipeline_row
+
+    pipeline_row = ui.row()
+
+
+def append_list_to_reco(latest_hit, list_to_reco):
+    with pipeline_row:
+        with ui.list().props("bordered separator"):
+            ui.item_label(latest_hit).props('header').classes('text-bold')
+            ui.separator()
+
+            for i in list_to_reco:
+                with ui.item():
+                    with ui.item_section():
+                        ui.item_label(i)
+
+
+maafw.ui_callback = append_list_to_reco
+
