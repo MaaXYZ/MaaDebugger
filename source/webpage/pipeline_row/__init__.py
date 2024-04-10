@@ -31,5 +31,5 @@ class PipelineRow:
     def on_click(self, data):
         print(f"Clicked on {data}")
 
-    def on_recognition_result(self, result):
-        pass
+    def on_recognition_result(self, reco_detail: "RecognitionDetail"):
+        print(f"Recognition result: {reco_detail.detail}")

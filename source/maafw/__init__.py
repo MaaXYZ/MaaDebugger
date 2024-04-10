@@ -131,8 +131,12 @@ class MaaFW:
 
             case "Task.Debug.RecognitionResult":
                 print(f"Task.Debug.RecognitionResult: {detail}")
-                if self.on_recognition_result:
-                    self.on_recognition_result(detail)
+                reco_detail = self.instance.query_recognition_detail(
+                    detail["recognition"]["id"]
+                )
+
+                if self.on_recognition_result and reco_detail:
+                    self.on_recognition_result(reco_detail)
 
 
 class Screenshotter(threading.Thread):
