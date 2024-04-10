@@ -1,10 +1,12 @@
 from nicegui import app, ui, binding
 from pathlib import Path
 
-import source.interaction.maafw as maafw
+from source.interaction.maafw import MaaFW
 
 from .components.status_indicator import Status, StatusIndicator
 
+
+maafw = MaaFW()
 
 binding.MAX_PROPAGATION_TIME = 1
 ui.dark_mode()  # auto dark mode
@@ -33,9 +35,10 @@ async def index():
     ui.separator()
 
     pipeline_control()
-    
+
     ## for debug
     # append_list_to_reco("AAA", ["BBB", "CCC"])
+
 
 class GlobalStatus:
     maa_importing: Status = Status.PENDING
@@ -305,17 +308,16 @@ def pipeline_control():
     pipeline_row = ui.row()
 
 
-def append_list_to_reco(latest_hit, list_to_reco):
-    with pipeline_row:
-        with ui.list().props("bordered separator"):
-            ui.item_label(latest_hit).props('header').classes('text-bold')
-            ui.separator()
+# def append_list_to_reco(latest_hit, list_to_reco):
+#     with pipeline_row:
+#         with ui.list().props("bordered separator"):
+#             ui.item_label(latest_hit).props('header').classes('text-bold')
+#             ui.separator()
 
-            for i in list_to_reco:
-                with ui.item():
-                    with ui.item_section():
-                        ui.item_label(i)
+#             for i in list_to_reco:
+#                 with ui.item():
+#                     with ui.item_section():
+#                         ui.item_label(i)
 
 
-maafw.ui_callback = append_list_to_reco
-
+# maafw.ui_callback = append_list_to_reco

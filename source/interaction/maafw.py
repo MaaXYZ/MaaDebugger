@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Callable
 from asyncer import asyncify
 from PIL import Image
 import sys
@@ -8,131 +8,134 @@ import threading
 import time
 
 
-async def import_maa(pybinding_dir: Path, bin_dir: Path) -> bool:
-    if not pybinding_dir.exists():
-        print("Python binding dir does not exist")
-        return False
+class MaaFW:
 
-    if not bin_dir.exists():
-        print("Bin dir does not exist")
-        return False
+    def __init__(
+        self,
+        on_list_to_recognize: Callable = None,
+        on_recognition_result: Callable = None,
+    ):
+        self.resource = None
+        self.controller = None
+        self.instance = None
 
-    pybinding_dir = str(pybinding_dir)
-    if pybinding_dir not in sys.path:
-        sys.path.insert(0, pybinding_dir)
+        self.screenshotter = Screenshotter(self.screencap)
 
-    try:
-        from maa.library import Library
+        self.on_list_to_recognize = on_list_to_recognize
+        self.on_recognition_result = on_recognition_result
+
+    @staticmethod
+    async def import_maa(pybinding_dir: Path, bin_dir: Path) -> bool:
+        if not pybinding_dir.exists():
+            print("Python binding dir does not exist")
+            return False
+
+        if not bin_dir.exists():
+            print("Bin dir does not exist")
+            return False
+
+        pybinding_dir = str(pybinding_dir)
+        if pybinding_dir not in sys.path:
+            sys.path.insert(0, pybinding_dir)
+
+        try:
+            from maa.library import Library
+            from maa.toolkit import Toolkit
+            from maa.instance import Instance
+        except ModuleNotFoundError as err:
+            print(err)
+            return False
+
+        version = await asyncify(Library.open)(bin_dir)
+        if not version:
+            print("Failed to open MaaFramework")
+            return False
+
+        print(f"Import MAA successfully, version: {version}")
+
+        Toolkit.init_option("./")
+        Instance.set_debug_message(True)
+
+        return True
+
+    @staticmethod
+    async def detect_adb() -> List["AdbDevice"]:
         from maa.toolkit import Toolkit
-    except ModuleNotFoundError as err:
-        print(err)
-        return False
 
-    version = await asyncify(Library.open)(bin_dir)
-    if not version:
-        print("Failed to open MaaFramework")
-        return False
+        return await Toolkit.adb_devices()
 
-    print(f"Import MAA successfully, version: {version}")
+    async def connect_adb(self, path: Path, address: str) -> bool:
+        from maa.controller import AdbController
 
-    Toolkit.init_option("./")
-    Library.set_debug_message(True)
+        self.controller = AdbController(path, address)
+        connected = await self.controller.connect()
+        if not connected:
+            print(f"Failed to connect {path} {address}")
+            return False
 
-    return True
+        return True
 
+    async def load_resource(self, dir: Path) -> bool:
+        from maa.resource import Resource
 
-async def detect_adb() -> List["AdbDevice"]:
-    from maa.toolkit import Toolkit
+        if not self.resource:
+            self.resource = Resource()
 
-    return await Toolkit.adb_devices()
+        return self.resource.clear() and await self.resource.load(dir)
 
+    async def run_task(self, entry: str, param: dict = {}) -> bool:
 
-resource = None
-controller = None
-instance = None
+        from maa.instance import Instance
 
+        if not self.instance:
+            self.instance = Instance(callback=self._inst_callback)
 
-async def connect_adb(path: Path, address: str) -> bool:
-    global controller
+        self.instance.bind(self.resource, self.controller)
+        if not self.instance.inited:
+            print("Failed to init MaaFramework instance")
+            return False
 
-    from maa.controller import AdbController
+        return await self.instance.run_task(entry, param)
 
-    controller = AdbController(path, address)
-    connected = await controller.connect()
-    if not connected:
-        print(f"Failed to connect {path} {address}")
-        return False
+    async def stop_task(self):
+        if not self.instance:
+            return
 
-    return True
+        await self.instance.stop()
 
+    async def screencap(self, capture: bool = True) -> Optional[Image.Image]:
+        if not self.controller:
+            return None
 
-async def load_resource(dir: Path) -> bool:
-    global resource
+        im = await self.controller.screencap(capture)
+        if im is None:
+            return None
 
-    from maa.resource import Resource
+        pil = Image.fromarray(im)
+        b, g, r = pil.split()
+        return Image.merge("RGB", (r, g, b))
 
-    if not resource:
-        resource = Resource()
+    async def click(self, x, y) -> None:
+        if not self.controller:
+            return None
 
-    return resource.clear() and await resource.load(dir)
+        await self.controller.click(x, y)
 
-
-ui_callback = None
-
-
-def inst_callback(msg: str, detail: dict, arg):
-    match msg:
-        case "Task.Debug.ListToRecognize":
-            print(f"Task.Debug.ListToRecognize: {detail}")
-            screenshotter.refresh(False)
-            if ui_callback:
-                ui_callback(detail["latest_hit"], detail["list"])
-
-
-async def run_task(entry: str, param: dict = {}) -> bool:
-    global controller, resource, instance
-
-    from maa.instance import Instance
-
-    if not instance:
-        instance = Instance(callback=inst_callback)
-
-    instance.bind(resource, controller)
-    if not instance.inited:
-        print("Failed to init MaaFramework instance")
-        return False
-
-    return await instance.run_task(entry, param)
-
-
-async def stop_task():
-    global instance
-
-    if not instance:
-        return
-
-    await instance.stop()
-
-
-async def screencap(capture: bool = True) -> Optional[Image.Image]:
-    global controller
-    if not controller:
-        return None
-
-    im = await controller.screencap(capture)
-    if im is None:
-        return None
-
-    pil = Image.fromarray(im)
-    b, g, r = pil.split()
-    return Image.merge("RGB", (r, g, b))
+    def _inst_callback(self, msg: str, detail: dict, arg):
+        match msg:
+            case "Task.Debug.ListToRecognize":
+                print(f"Task.Debug.ListToRecognize: {detail}")
+                self.screenshotter.refresh(False)
+                if self.on_list_to_recognize:
+                    self.on_list_to_recognize(detail["pre_hit_task"], detail["list"])
 
 
 class Screenshotter(threading.Thread):
-    def __init__(self):
+    def __init__(self, screencap_func : Callable):
         super().__init__()
         self.source = None
         self.active = False
+        self.screencap_func = screencap_func
 
     def __del__(self):
         self.active = False
@@ -144,7 +147,7 @@ class Screenshotter(threading.Thread):
             time.sleep(0)
 
     def refresh(self, capture: bool = True):
-        im = asyncio.run(screencap(capture))
+        im = asyncio.run(self.screencap_func(capture))
         if not im:
             return
 
@@ -156,14 +159,3 @@ class Screenshotter(threading.Thread):
 
     def stop(self):
         self.active = False
-
-
-screenshotter = Screenshotter()
-
-
-async def click(x, y) -> None:
-    global controller
-    if not controller:
-        return None
-
-    await controller.click(x, y)
