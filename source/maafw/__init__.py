@@ -129,9 +129,14 @@ class MaaFW:
                 if self.on_list_to_recognize:
                     self.on_list_to_recognize(detail["pre_hit_task"], detail["list"])
 
+            case "Task.Debug.RecognitionResult":
+                print(f"Task.Debug.RecognitionResult: {detail}")
+                if self.on_recognition_result:
+                    self.on_recognition_result(detail)
+
 
 class Screenshotter(threading.Thread):
-    def __init__(self, screencap_func : Callable):
+    def __init__(self, screencap_func: Callable):
         super().__init__()
         self.source = None
         self.active = False

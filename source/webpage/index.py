@@ -1,9 +1,10 @@
 from nicegui import app, ui, binding
 from pathlib import Path
 
-from source.interaction.maafw import MaaFW
+from source.maafw import MaaFW
 
 from .components.status_indicator import Status, StatusIndicator
+from .pipeline_row import PipelineRow
 
 
 maafw = MaaFW()
@@ -305,19 +306,10 @@ pipeline_row = None
 def pipeline_control():
     global pipeline_row
 
-    pipeline_row = ui.row()
+    pipeline_row = PipelineRow()
+    maafw.on_list_to_recognize = pipeline_row.on_list_to_recognize
+    maafw.on_recognition_result = pipeline_row.on_recognition_result
 
-
-# def append_list_to_reco(latest_hit, list_to_reco):
-#     with pipeline_row:
-#         with ui.list().props("bordered separator"):
-#             ui.item_label(latest_hit).props('header').classes('text-bold')
-#             ui.separator()
-
-#             for i in list_to_reco:
-#                 with ui.item():
-#                     with ui.item_section():
-#                         ui.item_label(i)
-
-
-# maafw.ui_callback = append_list_to_reco
+    # for debug
+    pipeline_row.on_list_to_recognize("AAA", ["BBB", "CCC"])
+    pipeline_row.on_list_to_recognize("BBB", ["DDD", "EEE"])
