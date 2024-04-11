@@ -1,10 +1,21 @@
 from nicegui import ui
 
+from source.maafw import maafw
 
-class PipelineRow:
+
+async def main():
+    Controls.recognition_row.register()
+
+    maafw.on_list_to_recognize = Controls.recognition_row.on_list_to_recognize
+    maafw.on_recognition_result = Controls.recognition_row.on_recognition_result
+
+
+class RecognitionRow:
     def __init__(self) -> None:
-        self.row = ui.row()
         self.row_len = 0
+
+    def register(self):
+        self.row = ui.row()
 
     def on_list_to_recognize(self, pre_hit, list_to_reco):
         self.row_len = self.row_len + 1
@@ -39,3 +50,7 @@ class PipelineRow:
 
     def on_recognition_result(self, reco_detail: "RecognitionDetail"):
         print(f"Recognition result: {reco_detail.detail}")
+
+
+class Controls:
+    recognition_row = RecognitionRow()

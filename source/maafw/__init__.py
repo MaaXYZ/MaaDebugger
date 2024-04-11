@@ -168,3 +168,6 @@ class Screenshotter(threading.Thread):
 
     def stop(self):
         self.active = False
+
+
+maafw = MaaFW()
