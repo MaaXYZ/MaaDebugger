@@ -2,6 +2,9 @@ from pathlib import Path
 from typing import List, Optional, Callable
 from asyncer import asyncify
 from PIL import Image
+
+from source.utils import cvmat_to_image
+
 import sys
 import asyncio
 import threading
@@ -9,10 +12,10 @@ import time
 
 
 class MaaFW:
-
     def __init__(
         self,
         on_list_to_recognize: Callable = None,
+        on_miss_all: Callable = None,
         on_recognition_result: Callable = None,
     ):
         self.resource = None
@@ -22,6 +25,7 @@ class MaaFW:
         self.screenshotter = Screenshotter(self.screencap)
 
         self.on_list_to_recognize = on_list_to_recognize
+        self.on_miss_all = on_miss_all
         self.on_recognition_result = on_recognition_result
 
     @staticmethod
@@ -111,9 +115,7 @@ class MaaFW:
         if im is None:
             return None
 
-        pil = Image.fromarray(im)
-        b, g, r = pil.split()
-        return Image.merge("RGB", (r, g, b))
+        return cvmat_to_image(im)
 
     async def click(self, x, y) -> None:
         if not self.controller:
@@ -129,14 +131,20 @@ class MaaFW:
                 if self.on_list_to_recognize:
                     self.on_list_to_recognize(detail["pre_hit_task"], detail["list"])
 
+            case "Task.Debug.MissAll":
+                print(f"Task.Debug.MissAll: {detail}")
+                if self.on_miss_all:
+                    self.on_miss_all(detail["pre_hit_task"], detail["list"])
+
             case "Task.Debug.RecognitionResult":
                 print(f"Task.Debug.RecognitionResult: {detail}")
-                reco_detail = self.instance.query_recognition_detail(
-                    detail["recognition"]["id"]
-                )
+                reco_id = detail["recognition"]["id"]
+                name = detail["name"]
+                hit = detail["recognition"]["hit"]
+                reco_detail = self.instance.query_recognition_detail(reco_id)
 
                 if self.on_recognition_result and reco_detail:
-                    self.on_recognition_result(reco_detail)
+                    self.on_recognition_result(reco_id, name, hit, reco_detail)
 
 
 class Screenshotter(threading.Thread):

@@ -1,21 +1,30 @@
 from nicegui import ui
+from dataclasses import dataclass
+from collections import defaultdict
+from PIL import Image
 
 from source.maafw import maafw
+from source.webpage.components.status_indicator import Status, StatusIndicator
+from source.utils import cvmat_to_image
 
 
 async def main():
     Controls.recognition_row.register()
-
-    maafw.on_list_to_recognize = Controls.recognition_row.on_list_to_recognize
-    maafw.on_recognition_result = Controls.recognition_row.on_recognition_result
+    Controls.recognition_dialog.register()
 
 
 class RecognitionRow:
+
     def __init__(self) -> None:
         self.row_len = 0
+        self.data = defaultdict(dict)
 
     def register(self):
         self.row = ui.row()
+
+        maafw.on_list_to_recognize = self.on_list_to_recognize
+        maafw.on_miss_all = self.on_miss_all
+        maafw.on_recognition_result = self.on_recognition_result
 
     def on_list_to_recognize(self, pre_hit, list_to_reco):
         self.row_len = self.row_len + 1
@@ -35,22 +44,75 @@ class RecognitionRow:
                 name = list_to_reco[index]
                 self._add_item(index, name)
 
-    def _add_item(self, index, name):
+    @dataclass
+    class ItemData:
+        col: int
+        row: int
+        name: str
+        reco_id: int = 0
+        status: Status = Status.PENDING
+        hit_box: tuple[int, int, int, int] | None = None
+        detail: dict | None = None
+        draws: list[Image.Image] | None = None
 
-        with ui.item(
-            on_click=lambda col=self.row_len, row=index, name=name: self.on_click_item(
-                col, row, name
-            )
-        ):
+    def _add_item(self, index, name):
+        data = RecognitionRow.ItemData(self.row_len, index, name)
+        self.data[self.row_len][index] = data
+
+        with ui.item(on_click=lambda data=data: self.on_click_item(data)):
+            with ui.item_section().props("side"):
+                StatusIndicator(data, "status")
+
             with ui.item_section():
                 ui.item_label(name)
 
-    def on_click_item(self, col: int, row: int, name: str):
-        print(f"Clicked on ({col}, {row}): {name}")
+    def on_click_item(self, data: ItemData):
+        print(f"Clicked on ({data.col}, {data.row}): {data.name}, {data.draws}")
+        if data.draws:
+            Controls.recognition_dialog.image_source = data.draws[0]
 
-    def on_recognition_result(self, reco_detail: "RecognitionDetail"):
+        Controls.recognition_dialog.text = str(data.detail)
+        Controls.recognition_dialog.open()
+
+    def on_recognition_result(
+        self, reco_id: int, name: str, hit: bool, reco_detail: "RecognitionDetail"
+    ):
         print(f"Recognition result: {reco_detail.detail}")
+
+        target = None
+        for item in self.data[self.row_len].values():
+            if item.status == Status.PENDING and item.name == name:
+                target = item
+                break
+
+        if not target:
+            return
+
+        target.reco_id = reco_id
+        target.status = hit and Status.SUCCESS or Status.FAILURE
+        target.hit_box = reco_detail.hit_box
+        target.detail = reco_detail.detail
+        target.draws = [cvmat_to_image(d) for d in reco_detail.draws]
+
+    def on_miss_all(self, pre_hit, list_to_reco):
+        pass
+
+
+class RecognitionDialog:
+
+    def __init__(self) -> None:
+        self.image_source = None
+        self.text = None
+
+    def register(self):
+        with ui.dialog() as self.dialog, ui.card():
+            ui.image().bind_source_from(self, "image_source")
+            ui.label().bind_text_from(self, "text")
+
+    def open(self):
+        self.dialog.open()
 
 
 class Controls:
     recognition_row = RecognitionRow()
+    recognition_dialog = RecognitionDialog()
