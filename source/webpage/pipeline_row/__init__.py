@@ -13,23 +13,29 @@ class PipelineRow:
         self.next_reco_index = 0
 
         with self.row:
-            with ui.list().props("bordered separator"):
-                ui.item_label(pre_hit).props("header").classes("text-bold")
-                ui.separator()
+            self._add_list(pre_hit, list_to_reco)
 
-                for index in range(len(list_to_reco)):
-                    name = list_to_reco[index]
-                    self._add_item(index, name)
+    def _add_list(self, pre_hit, list_to_reco):
+        with ui.list().props("bordered separator"):
+            ui.item_label(pre_hit).props("header").classes("text-bold")
+            ui.separator()
+
+            for index in range(len(list_to_reco)):
+                name = list_to_reco[index]
+                self._add_item(index, name)
 
     def _add_item(self, index, name):
-        data = (self.row_len, index, name)
 
-        with ui.item(on_click=lambda data=data: self.on_click(data)):
+        with ui.item(
+            on_click=lambda col=self.row_len, row=index, name=name: self.on_click_item(
+                col, row, name
+            )
+        ):
             with ui.item_section():
                 ui.item_label(name)
 
-    def on_click(self, data):
-        print(f"Clicked on {data}")
+    def on_click_item(self, col: int, row: int, name: str):
+        print(f"Clicked on ({col}, {row}): {name}")
 
     def on_recognition_result(self, reco_detail: "RecognitionDetail"):
         print(f"Recognition result: {reco_detail.detail}")
