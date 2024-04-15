@@ -126,18 +126,15 @@ class MaaFW:
     def _inst_callback(self, msg: str, detail: dict, arg):
         match msg:
             case "Task.Debug.ListToRecognize":
-                print(f"Task.Debug.ListToRecognize: {detail}")
                 self.screenshotter.refresh(False)
                 if self.on_list_to_recognize:
                     self.on_list_to_recognize(detail["pre_hit_task"], detail["list"])
 
             case "Task.Debug.MissAll":
-                print(f"Task.Debug.MissAll: {detail}")
                 if self.on_miss_all:
                     self.on_miss_all(detail["pre_hit_task"], detail["list"])
 
             case "Task.Debug.RecognitionResult":
-                print(f"Task.Debug.RecognitionResult: {detail}")
                 reco_id = detail["recognition"]["id"]
                 name = detail["name"]
                 hit = detail["recognition"]["hit"]

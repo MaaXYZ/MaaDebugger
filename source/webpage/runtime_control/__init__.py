@@ -67,8 +67,10 @@ class RecognitionRow:
                 ui.item_label(name)
 
     def on_click_item(self, data: ItemData):
-        print(f"Clicked on ({data.col}, {data.row}): {data.name}, {data.draws}")
+        print(f"on_click_item ({data.col}, {data.row}): {data.reco_id}, {data.name}")
+
         if data.draws:
+            # TODO: show all draws
             Controls.recognition_dialog.image_source = data.draws[0]
 
         Controls.recognition_dialog.text = str(data.detail)
@@ -77,8 +79,6 @@ class RecognitionRow:
     def on_recognition_result(
         self, reco_id: int, name: str, hit: bool, reco_detail: "RecognitionDetail"
     ):
-        print(f"Recognition result: {reco_detail.detail}")
-
         target = None
         for item in self.data[self.row_len].values():
             if item.status == Status.PENDING and item.name == name:
