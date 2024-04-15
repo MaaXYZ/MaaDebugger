@@ -7,8 +7,6 @@ from source.utils import cvmat_to_image
 
 import sys
 import asyncio
-import threading
-import time
 
 
 class MaaFW:
@@ -138,10 +136,9 @@ class MaaFW:
                 reco_id = detail["recognition"]["id"]
                 name = detail["name"]
                 hit = detail["recognition"]["hit"]
-                reco_detail = self.instance.query_recognition_detail(reco_id)
 
-                if self.on_recognition_result and reco_detail:
-                    self.on_recognition_result(reco_id, name, hit, reco_detail)
+                if self.on_recognition_result:
+                    self.on_recognition_result(reco_id, name, hit)
 
 
 # class Screenshotter(threading.Thread):
