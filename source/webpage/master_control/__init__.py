@@ -1,5 +1,6 @@
 from nicegui import app, ui, binding
 from pathlib import Path
+import asyncio
 
 from source.maafw import maafw
 
@@ -118,7 +119,7 @@ async def connect_adb_control():
     )
 
     ui.button(
-        "Detect",
+        icon="wifi_find",
         on_click=lambda: on_click_detect(),
     ).bind_enabled_from(
         GlobalStatus, "maa_importing", backward=lambda s: s == Status.SUCCESS
@@ -159,7 +160,7 @@ async def connect_adb_control():
         GlobalStatus.adb_connecting = Status.SUCCESS
         GlobalStatus.adb_detecting = Status.PENDING
 
-        maafw.screenshotter.start()
+        await maafw.screenshotter.refresh(True)
 
     async def on_click_detect():
         GlobalStatus.adb_detecting = Status.RUNNING
@@ -186,19 +187,33 @@ async def connect_adb_control():
 
 
 async def screenshot_control():
-    with ui.card().tight():
-        ui.interactive_image(
-            cross="green",
-            on_mouse=lambda e: on_click_image(int(e.image_x), int(e.image_y)),
-        ).bind_source_from(maafw.screenshotter, "source").style(
-            "height: 200px;"
+    with ui.row().style("align-items: flex-end;"):
+        with ui.card().tight():
+            ui.interactive_image(
+                cross="green",
+                on_mouse=lambda e: on_click_image(int(e.image_x), int(e.image_y)),
+            ).bind_source_from(maafw.screenshotter, "source").style(
+                "height: 200px;"
+            ).bind_visibility_from(
+                GlobalStatus, "adb_connecting", backward=lambda s: s == Status.SUCCESS
+            )
+
+        ui.button(
+            icon="refresh", on_click=lambda: on_click_refresh()
         ).bind_visibility_from(
             GlobalStatus, "adb_connecting", backward=lambda s: s == Status.SUCCESS
+        ).bind_enabled_from(
+            GlobalStatus, "task_running", backward=lambda s: s != Status.RUNNING
         )
 
     async def on_click_image(x, y):
         print(f"on_click_image: {x}, {y}")
         await maafw.click(x, y)
+        await asyncio.sleep(0.2)
+        await on_click_refresh()
+
+    async def on_click_refresh():
+        await maafw.screenshotter.refresh(True)
 
 
 async def load_resource_control():
@@ -261,8 +276,6 @@ async def run_task_control():
     )
 
     async def on_click_start():
-        maafw.screenshotter.stop()
-
         GlobalStatus.task_running = Status.RUNNING
 
         if not entry_input.value:
@@ -283,4 +296,4 @@ async def run_task_control():
             return
 
         GlobalStatus.task_running = Status.PENDING
-        maafw.screenshotter.start()
+        await maafw.screenshotter.refresh(True)

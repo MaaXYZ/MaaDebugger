@@ -13,6 +13,18 @@ async def main():
     Controls.recognition_dialog.register()
 
 
+@dataclass
+class RecoItemData:
+    col: int
+    row: int
+    name: str
+    reco_id: int = 0
+    status: Status = Status.PENDING
+    hit_box: tuple[int, int, int, int] | None = None
+    detail: dict | None = None
+    draws: list[Image.Image] | None = None
+
+
 class RecognitionRow:
 
     def __init__(self) -> None:
@@ -44,19 +56,8 @@ class RecognitionRow:
                 name = list_to_reco[index]
                 self._add_item(index, name)
 
-    @dataclass
-    class ItemData:
-        col: int
-        row: int
-        name: str
-        reco_id: int = 0
-        status: Status = Status.PENDING
-        hit_box: tuple[int, int, int, int] | None = None
-        detail: dict | None = None
-        draws: list[Image.Image] | None = None
-
     def _add_item(self, index, name):
-        data = RecognitionRow.ItemData(self.row_len, index, name)
+        data = RecoItemData(self.row_len, index, name)
         self.data[self.row_len][index] = data
 
         with ui.item(on_click=lambda data=data: self.on_click_item(data)):
@@ -66,14 +67,10 @@ class RecognitionRow:
             with ui.item_section():
                 ui.item_label(name)
 
-    def on_click_item(self, data: ItemData):
-        print(f"on_click_item ({data.col}, {data.row}): {data.reco_id}, {data.name}")
+    def on_click_item(self, data: RecoItemData):
+        print(f"on_click_item ({data.col}, {data.row}): {data.name} ({data.reco_id})")
 
-        if data.draws:
-            # TODO: show all draws
-            Controls.recognition_dialog.image_source = data.draws[0]
-
-        Controls.recognition_dialog.text = str(data.detail)
+        Controls.recognition_dialog.set_data(data)
         Controls.recognition_dialog.open()
 
     def on_recognition_result(
@@ -106,8 +103,19 @@ class RecognitionDialog:
 
     def register(self):
         with ui.dialog() as self.dialog, ui.card():
-            ui.image().bind_source_from(self, "image_source")
+            ui.image().props('fit=scale-down').bind_source_from(self, "image_source")
             ui.label().bind_text_from(self, "text")
+
+    def set_data(self, data: RecoItemData):
+        self.data = data
+
+        self.title = f"{self.data.name} ({self.data.reco_id})"
+
+        if self.data.draws:
+            # TODO: show all draws
+            self.image_source = self.data.draws[0]
+
+        self.text = str(self.data.detail)
 
     def open(self):
         self.dialog.open()

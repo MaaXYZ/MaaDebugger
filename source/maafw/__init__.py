@@ -126,7 +126,7 @@ class MaaFW:
     def _inst_callback(self, msg: str, detail: dict, arg):
         match msg:
             case "Task.Debug.ListToRecognize":
-                self.screenshotter.refresh(False)
+                asyncio.run(self.screenshotter.refresh(False))
                 if self.on_list_to_recognize:
                     self.on_list_to_recognize(detail["pre_hit_task"], detail["list"])
 
@@ -144,35 +144,36 @@ class MaaFW:
                     self.on_recognition_result(reco_id, name, hit, reco_detail)
 
 
-class Screenshotter(threading.Thread):
+# class Screenshotter(threading.Thread):
+class Screenshotter:
     def __init__(self, screencap_func: Callable):
         super().__init__()
         self.source = None
-        self.active = False
         self.screencap_func = screencap_func
+        # self.active = False
 
     def __del__(self):
-        self.active = False
         self.source = None
+        # self.active = False
 
-    def run(self):
-        while self.active:
-            self.refresh()
-            time.sleep(0)
-
-    def refresh(self, capture: bool = True):
-        im = asyncio.run(self.screencap_func(capture))
+    async def refresh(self, capture: bool = True):
+        im = await self.screencap_func(capture)
         if not im:
             return
 
         self.source = im
 
-    def start(self):
-        self.active = True
-        super().start()
+    # def run(self):
+    #     while self.active:
+    #         self.refresh()
+    #         time.sleep(0)
 
-    def stop(self):
-        self.active = False
+    # def start(self):
+    #     self.active = True
+    #     super().start()
+
+    # def stop(self):
+    #     self.active = False
 
 
 maafw = MaaFW()
