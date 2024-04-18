@@ -1,7 +1,12 @@
 from pathlib import Path
 from typing import List, Optional, Callable
-from asyncer import asyncify
 from PIL import Image
+
+from maa.toolkit import Toolkit
+from maa.instance import Instance
+from maa.resource import Resource
+from maa.controller import AdbController
+
 
 from source.utils import cvmat_to_image
 
@@ -16,6 +21,9 @@ class MaaFW:
         on_miss_all: Callable = None,
         on_recognition_result: Callable = None,
     ):
+        Toolkit.init_option("./")
+        Instance.set_debug_message(True)
+
         self.resource = None
         self.controller = None
         self.instance = None
@@ -27,48 +35,10 @@ class MaaFW:
         self.on_recognition_result = on_recognition_result
 
     @staticmethod
-    async def import_maa(pybinding_dir: Path, bin_dir: Path) -> bool:
-        if not pybinding_dir.exists():
-            print("Python binding dir does not exist")
-            return False
-
-        if not bin_dir.exists():
-            print("Bin dir does not exist")
-            return False
-
-        pybinding_dir = str(pybinding_dir)
-        if pybinding_dir not in sys.path:
-            sys.path.insert(0, pybinding_dir)
-
-        try:
-            from maa.library import Library
-            from maa.toolkit import Toolkit
-            from maa.instance import Instance
-        except ModuleNotFoundError as err:
-            print(err)
-            return False
-
-        version = await asyncify(Library.open)(bin_dir)
-        if not version:
-            print("Failed to open MaaFramework")
-            return False
-
-        print(f"Import MAA successfully, version: {version}")
-
-        Toolkit.init_option("./")
-        Instance.set_debug_message(True)
-
-        return True
-
-    @staticmethod
     async def detect_adb() -> List["AdbDevice"]:
-        from maa.toolkit import Toolkit
-
         return await Toolkit.adb_devices()
 
     async def connect_adb(self, path: Path, address: str) -> bool:
-        from maa.controller import AdbController
-
         self.controller = AdbController(path, address)
         connected = await self.controller.connect()
         if not connected:
@@ -78,17 +48,12 @@ class MaaFW:
         return True
 
     async def load_resource(self, dir: Path) -> bool:
-        from maa.resource import Resource
-
         if not self.resource:
             self.resource = Resource()
 
         return self.resource.clear() and await self.resource.load(dir)
 
     async def run_task(self, entry: str, param: dict = {}) -> bool:
-
-        from maa.instance import Instance
-
         if not self.instance:
             self.instance = Instance(callback=self._inst_callback)
 

@@ -1,6 +1,8 @@
 from nicegui import ui
 from typing import Dict, Tuple
 
+from maa.instance import Instance
+
 from source.utils import cvmat_to_image
 
 
@@ -22,8 +24,6 @@ def reco_page(reco_id: int):
     ui.markdown(f"## {title}")
 
     ui.separator()
-
-    from maa.instance import Instance
 
     details = Instance.query_recognition_detail(reco_id)
     if not details:

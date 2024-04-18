@@ -1,7 +1,2 @@
-### from MaaFw
-numpy
-Pillow
-
-### from MaaDebugger
+maafw
 nicegui
-asyncer

@@ -10,7 +10,6 @@ binding.MAX_PROPAGATION_TIME = 1
 
 
 class GlobalStatus:
-    maa_importing: Status = Status.PENDING
     adb_connecting: Status = Status.PENDING
     adb_detecting: Status = Status.PENDING  # not required
     res_loading: Status = Status.PENDING
@@ -18,11 +17,6 @@ class GlobalStatus:
 
 
 async def main():
-    with ui.row().style("align-items: center;"):
-        await import_maa_control()
-
-    ui.separator()
-
     with ui.row():
         with ui.column():
             with ui.row().style("align-items: center;"):
@@ -36,56 +30,6 @@ async def main():
             await screenshot_control()
 
 
-async def import_maa_control():
-
-    StatusIndicator(GlobalStatus, "maa_importing")
-
-    pybinding_input = (
-        ui.input(
-            "MaaFramework Python Binding Directory",
-            placeholder="eg: C:/Downloads/MAA-win-x86_64/binding/Python",
-        )
-        .props("size=60")
-        .bind_value(app.storage.general, "maa_pybinding")
-        .bind_enabled_from(
-            GlobalStatus, "maa_importing", backward=lambda s: s != Status.SUCCESS
-        )
-    )
-    bin_input = (
-        ui.input(
-            "MaaFramework Binary Directory",
-            placeholder="eg: C:/Downloads/MAA-win-x86_64/bin",
-        )
-        .props("size=60")
-        .bind_value(app.storage.general, "maa_bin")
-        .bind_enabled_from(
-            GlobalStatus, "maa_importing", backward=lambda s: s != Status.SUCCESS
-        )
-    )
-
-    import_button = ui.button(
-        "Import", on_click=lambda: on_click_import()
-    ).bind_enabled_from(
-        GlobalStatus, "maa_importing", backward=lambda s: s != Status.SUCCESS
-    )
-
-    async def on_click_import():
-        GlobalStatus.maa_importing = Status.RUNNING
-
-        if not pybinding_input.value or not bin_input.value:
-            GlobalStatus.maa_importing = Status.FAILURE
-            return
-
-        imported = await maafw.import_maa(
-            Path(pybinding_input.value), Path(bin_input.value)
-        )
-        if not imported:
-            GlobalStatus.maa_importing = Status.FAILURE
-            return
-
-        GlobalStatus.maa_importing = Status.SUCCESS
-
-
 async def connect_adb_control():
     StatusIndicator(GlobalStatus, "adb_connecting")
 
@@ -96,9 +40,6 @@ async def connect_adb_control():
         )
         .props("size=60")
         .bind_value(app.storage.general, "adb_path")
-        .bind_enabled_from(
-            GlobalStatus, "maa_importing", backward=lambda s: s == Status.SUCCESS
-        )
     )
     adb_address_input = (
         ui.input(
@@ -107,34 +48,23 @@ async def connect_adb_control():
         )
         .props("size=30")
         .bind_value(app.storage.general, "adb_address")
-        .bind_enabled_from(
-            GlobalStatus, "maa_importing", backward=lambda s: s == Status.SUCCESS
-        )
     )
     ui.button(
         "Connect",
         on_click=lambda: on_click_connect(),
-    ).bind_enabled_from(
-        GlobalStatus, "maa_importing", backward=lambda s: s == Status.SUCCESS
     )
 
     ui.button(
         icon="wifi_find",
         on_click=lambda: on_click_detect(),
-    ).bind_enabled_from(
-        GlobalStatus, "maa_importing", backward=lambda s: s == Status.SUCCESS
     )
 
-    devices_select = (
-        ui.select({}, on_change=lambda e: on_change_devices_select(e))
-        .bind_enabled_from(
-            GlobalStatus, "maa_importing", backward=lambda s: s == Status.SUCCESS
-        )
-        .bind_visibility_from(
-            GlobalStatus,
-            "adb_detecting",
-            backward=lambda s: s == Status.SUCCESS,
-        )
+    devices_select = ui.select(
+        {}, on_change=lambda e: on_change_devices_select(e)
+    ).bind_visibility_from(
+        GlobalStatus,
+        "adb_detecting",
+        backward=lambda s: s == Status.SUCCESS,
     )
 
     StatusIndicator(GlobalStatus, "adb_detecting").label().bind_visibility_from(
@@ -226,16 +156,11 @@ async def load_resource_control():
         )
         .props("size=60")
         .bind_value(app.storage.general, "resource_dir")
-        .bind_enabled_from(
-            GlobalStatus, "maa_importing", backward=lambda s: s == Status.SUCCESS
-        )
     )
 
     ui.button(
         "Load",
         on_click=lambda: on_click_load(),
-    ).bind_enabled_from(
-        GlobalStatus, "maa_importing", backward=lambda s: s == Status.SUCCESS
     )
 
     async def on_click_load():
@@ -263,17 +188,10 @@ async def run_task_control():
         )
         .props("size=30")
         .bind_value(app.storage.general, "task_entry")
-        .bind_enabled_from(
-            GlobalStatus, "maa_importing", backward=lambda s: s == Status.SUCCESS
-        )
     )
 
-    ui.button("Start", on_click=lambda: on_click_start()).bind_enabled_from(
-        GlobalStatus, "maa_importing", backward=lambda s: s == Status.SUCCESS
-    )
-    ui.button("Stop", on_click=lambda: on_click_stop()).bind_enabled_from(
-        GlobalStatus, "maa_importing", backward=lambda s: s == Status.SUCCESS
-    )
+    ui.button("Start", on_click=lambda: on_click_start())
+    ui.button("Stop", on_click=lambda: on_click_stop())
 
     async def on_click_start():
         GlobalStatus.task_running = Status.RUNNING
