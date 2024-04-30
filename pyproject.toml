@@ -1,0 +1,17 @@
+[project]
+name = "MaaDebugger"
+version = "1.0.0"
+description = "MaaDebugger"
+authors = [{ name = "MaaXYZ" }]
+dependencies = ["MaaFw", "nicegui"]
+readme = "README.md"
+urls = { Homepage = "https://github.com/MaaXYZ/MaaDebugger" }
+requires-python = ">=3.9"
+scripts = { MaaDebugger = "MaaDebugger.main:main" }
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm.build]
+includes = ["src/MaaDebugger"]

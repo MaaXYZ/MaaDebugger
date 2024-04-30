@@ -1,9 +1,9 @@
-from nicegui import ui
 from typing import Dict, Tuple
 
 from maa.instance import Instance
+from nicegui import ui
 
-from source.utils import cvmat_to_image
+from ...utils import cvmat_to_image
 
 
 class RecoData:

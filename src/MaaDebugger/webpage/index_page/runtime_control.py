@@ -1,10 +1,11 @@
-from nicegui import ui
-from dataclasses import dataclass
 from collections import defaultdict
+from dataclasses import dataclass
 
-from source.maafw import maafw
-from source.webpage.components.status_indicator import Status, StatusIndicator
-from source.webpage.reco_page import RecoData
+from nicegui import ui
+
+from ...maafw import maafw
+from ...webpage.components.status_indicator import Status, StatusIndicator
+from ...webpage.reco_page import RecoData
 
 
 async def main():

@@ -1,10 +1,10 @@
-from nicegui import app, ui, binding
-from pathlib import Path
 import asyncio
+from pathlib import Path
 
-from source.maafw import maafw
+from nicegui import app, binding, ui
 
-from source.webpage.components.status_indicator import Status, StatusIndicator
+from ...maafw import maafw
+from ...webpage.components.status_indicator import Status, StatusIndicator
 
 binding.MAX_PROPAGATION_TIME = 1
 

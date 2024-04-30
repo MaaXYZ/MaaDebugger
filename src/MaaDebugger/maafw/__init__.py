@@ -1,17 +1,14 @@
+import asyncio
 from pathlib import Path
-from typing import List, Optional, Callable
-from PIL import Image
+from typing import Callable, List, Optional
 
-from maa.toolkit import Toolkit
+from maa.controller import AdbController
 from maa.instance import Instance
 from maa.resource import Resource
-from maa.controller import AdbController
+from maa.toolkit import Toolkit
+from PIL import Image
 
-
-from source.utils import cvmat_to_image
-
-import sys
-import asyncio
+from ..utils import cvmat_to_image
 
 
 class MaaFW:
