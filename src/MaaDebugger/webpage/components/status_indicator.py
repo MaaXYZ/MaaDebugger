@@ -1,5 +1,6 @@
-from nicegui import ui
 from enum import Enum, auto
+
+from nicegui import ui
 
 
 class Status(Enum):
