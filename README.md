@@ -1,5 +1,9 @@
 # MaaDebugger
 
+## Requirement
+
+Python 3.11 or above is required.
+
 ## Installation
 
 ```bash
