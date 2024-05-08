@@ -1,23 +1,31 @@
 name: pip publish
 
 on:
-  release:
-    types: [published]
-
-permissions:
-  contents: read
+  push:
+    tags:
+      - "v*"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.9'
-    - name: Install pdm and publish
-      run: |
-        python -m pip install --upgrade pip
-        pip install pdm
-        pdm publish --password ${{ secrets.PYPI_TOKEN }}
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.9"
+
+      - uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{  github.ref_name }}
+
+      - name: Update pyproject.toml version
+        run: |
+          python tools/pip_pack.py ${{  github.ref_name }}
+
+      - name: Install pdm and publish
+        run: |
+          python -m pip install --upgrade pip
+          pip install pdm
+          pdm publish --password ${{ secrets.PYPI_TOKEN }}
