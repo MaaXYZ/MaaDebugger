@@ -2,7 +2,7 @@
 
 ## Requirement
 
-Python 3.11 or above is required.
+Python >= 3.11
 
 ## Installation
 
