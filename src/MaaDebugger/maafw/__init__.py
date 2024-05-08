@@ -1,8 +1,9 @@
 import asyncio
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, List, Optional
 
-from maa.controller import AdbController
+from maa.controller import AdbController, Win32Controller
 from maa.instance import Instance
 from maa.resource import Resource
 from maa.toolkit import Toolkit
@@ -35,11 +36,40 @@ class MaaFW:
     async def detect_adb() -> List["AdbDevice"]:
         return await Toolkit.adb_devices()
 
+    @dataclass
+    class Window:
+        hwnd: int
+        class_name: str
+        window_name: str
+
+    @staticmethod
+    async def detect_win32hwnd(class_regex: str, window_regex: str) -> List[Window]:
+        hwnds = Toolkit.search_window(class_regex, window_regex)
+        windows = []
+        for hwnd in hwnds:
+            class_name = Toolkit.get_class_name(hwnd)
+            window_name = Toolkit.get_window_name(hwnd)
+            windows.append(MaaFW.Window(hwnd, class_name, window_name))
+
+        return windows
+
     async def connect_adb(self, path: Path, address: str) -> bool:
         self.controller = AdbController(path, address)
         connected = await self.controller.connect()
         if not connected:
             print(f"Failed to connect {path} {address}")
+            return False
+
+        return True
+
+    async def connect_win32hwnd(self, hwnd: int | str) -> bool:
+        if isinstance(hwnd, str):
+            hwnd = int(hwnd, 16)
+
+        self.controller = Win32Controller(hwnd)
+        connected = await self.controller.connect()
+        if not connected:
+            print(f"Failed to connect {hwnd}")
             return False
 
         return True

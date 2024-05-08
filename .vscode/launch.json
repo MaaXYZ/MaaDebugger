@@ -5,11 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Main File",
+            "name": "MaaDebugger 本地调试",
             "type": "debugpy",
             "request": "launch",
-            "program": "main.py",
-            "console": "integratedTerminal"
+            "module": "MaaDebugger",
+            "cwd": "${workspaceFolder}/src"
         }
     ]
 }
