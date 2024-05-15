@@ -1,2 +1,2 @@
-maafw
+maafw>=1.7.3
 nicegui
