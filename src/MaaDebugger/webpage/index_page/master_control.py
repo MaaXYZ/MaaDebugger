@@ -142,7 +142,7 @@ async def connect_win32_control():
         on_click=lambda: on_click_connect(),
     )
     window_name_input = (
-        ui.input("Window Regex")
+        ui.input("Search Window Name", placeholder="Supports regex, eg: File Explorer")
         .props("size=30")
         .bind_value(app.storage.general, "window_name")
     )
