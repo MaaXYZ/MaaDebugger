@@ -62,11 +62,15 @@ class MaaFW:
 
         return True
 
-    async def connect_win32hwnd(self, hwnd: int | str) -> bool:
+    async def connect_win32hwnd(
+        self, hwnd: int | str, screencap_type: int, input_type: int
+    ) -> bool:
         if isinstance(hwnd, str):
             hwnd = int(hwnd, 16)
 
-        self.controller = Win32Controller(hwnd)
+        self.controller = Win32Controller(
+            hwnd, screencap_type=screencap_type, touch_type=input_type, key_type=0
+        )
         connected = await self.controller.connect()
         if not connected:
             print(f"Failed to connect {hwnd}")

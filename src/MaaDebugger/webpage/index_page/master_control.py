@@ -1,6 +1,7 @@
 import asyncio
 from pathlib import Path
 
+from maa.define import MaaWin32ControllerTypeEnum
 from nicegui import app, binding, ui
 
 from ...maafw import maafw
@@ -137,6 +138,34 @@ async def connect_win32_control():
     hwnd_input = (
         ui.input("HWND").props("size=30").bind_value(app.storage.general, "hwnd")
     )
+
+    SCREENCAP_DICT = {
+        MaaWin32ControllerTypeEnum.Screencap_GDI: "Screencap_GDI",
+        MaaWin32ControllerTypeEnum.Screencap_DXGI_DesktopDup: "Screencap_DXGI_DesktopDup",
+        MaaWin32ControllerTypeEnum.Screencap_DXGI_FramePool: "Screencap_DXGI_FramePool",
+    }
+    screencap_select = ui.select(
+        SCREENCAP_DICT, value=MaaWin32ControllerTypeEnum.Screencap_DXGI_DesktopDup
+    ).bind_value(app.storage.general, "win32_screencap")
+
+    INPUT_DICT = {
+        (
+            MaaWin32ControllerTypeEnum.Touch_SendMessage
+            | MaaWin32ControllerTypeEnum.Key_SendMessage
+        ): "Input_SendMessage",
+        (
+            MaaWin32ControllerTypeEnum.Touch_Seize
+            | MaaWin32ControllerTypeEnum.Key_Seize
+        ): "Input_Seize",
+    }
+    input_select = ui.select(
+        INPUT_DICT,
+        value=(
+            MaaWin32ControllerTypeEnum.Touch_Seize
+            | MaaWin32ControllerTypeEnum.Key_Seize
+        ),
+    ).bind_value(app.storage.general, "win32_input")
+
     ui.button(
         "Connect",
         on_click=lambda: on_click_connect(),
@@ -172,7 +201,9 @@ async def connect_win32_control():
             GlobalStatus.ctrl_connecting = Status.FAILURE
             return
 
-        connected = await maafw.connect_win32hwnd(hwnd_input.value)
+        connected = await maafw.connect_win32hwnd(
+            hwnd_input.value, screencap_select.value, input_select.value
+        )
         if not connected:
             GlobalStatus.ctrl_connecting = Status.FAILURE
             return
