@@ -10,6 +10,12 @@ Python >= 3.11
 python -m pip install MaaDebugger
 ```
 
+## Update
+
+```bash
+python -m pip install MaaDebugger MaaFW --upgrade
+```
+
 ## Usage
 
 ```bash
