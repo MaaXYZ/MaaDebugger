@@ -1,4 +1,5 @@
 import asyncio
+import json
 from pathlib import Path
 
 from maa.define import MaaWin32ControllerTypeEnum
@@ -65,6 +66,14 @@ async def connect_adb_control():
         .props("size=30")
         .bind_value(app.storage.general, "adb_address")
     )
+    adb_config_input = (
+        ui.input(
+            "Extras",
+            placeholder="eg: {}",
+        )
+        .props("size=30")
+        .bind_value(app.storage.general, "adb_config")
+    )
     ui.button(
         "Connect",
         on_click=lambda: on_click_connect(),
@@ -96,8 +105,14 @@ async def connect_adb_control():
             GlobalStatus.ctrl_connecting = Status.FAILURE
             return
 
+        try:
+            config = json.loads(adb_config_input.value)
+        except json.JSONDecodeError as e:
+            print("Error parsing extras:", e)
+            config = {}
+
         connected = await maafw.connect_adb(
-            Path(adb_path_input.value), adb_address_input.value
+            Path(adb_path_input.value), adb_address_input.value, config
         )
         if not connected:
             GlobalStatus.ctrl_connecting = Status.FAILURE
@@ -114,7 +129,7 @@ async def connect_adb_control():
         devices = await maafw.detect_adb()
         options = {}
         for d in devices:
-            v = (d.adb_path, d.address)
+            v = (d.adb_path, d.address, d.config)
             l = d.name + " " + d.address
             options[v] = l
 
@@ -130,6 +145,7 @@ async def connect_adb_control():
     def on_change_devices_select(e):
         adb_path_input.value = str(e.value[0])
         adb_address_input.value = e.value[1]
+        adb_config_input.value = str(e.value[2])
 
 
 async def connect_win32_control():

@@ -53,8 +53,8 @@ class MaaFW:
 
         return windows
 
-    async def connect_adb(self, path: Path, address: str) -> bool:
-        self.controller = AdbController(path, address)
+    async def connect_adb(self, path: Path, address: str, config: dict) -> bool:
+        self.controller = AdbController(path, address, config=config)
         connected = await self.controller.connect()
         if not connected:
             print(f"Failed to connect {path} {address}")
