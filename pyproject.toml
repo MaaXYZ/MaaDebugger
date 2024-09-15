@@ -6,7 +6,7 @@ authors = [{ name = "MaaXYZ" }]
 dependencies = ["MaaFw>=2.0.0", "nicegui"]
 readme = "README.md"
 urls = { Homepage = "https://github.com/MaaXYZ/MaaDebugger" }
-requires-python = ">=9"
+requires-python = ">=3.9"
 scripts = { MaaDebugger = "MaaDebugger.main:main" }
 
 [build-system]
