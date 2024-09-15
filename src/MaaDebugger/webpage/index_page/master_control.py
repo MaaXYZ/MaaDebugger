@@ -265,7 +265,7 @@ async def screenshot_control():
         print(f"on_click_image: {x}, {y}")
         await maafw.click(x, y)
         time.sleep(0.2)
-        on_click_refresh()
+        await on_click_refresh()
 
     async def on_click_refresh():
         await maafw.screenshotter.refresh(True)
