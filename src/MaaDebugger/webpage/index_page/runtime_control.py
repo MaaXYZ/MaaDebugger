@@ -25,18 +25,18 @@ class RecognitionRow:
         maafw.on_miss_all = self.on_miss_all
         maafw.on_recognition_result = self.on_recognition_result
 
-    def on_list_to_recognize(self, pre_hit, list_to_reco):
+    def on_list_to_recognize(self, current, list_to_reco):
         self.row_len = self.row_len + 1
 
         self.cur_list = list_to_reco
         self.next_reco_index = 0
 
         with self.row:
-            self._add_list(pre_hit, list_to_reco)
+            self._add_list(current, list_to_reco)
 
-    def _add_list(self, pre_hit, list_to_reco):
+    def _add_list(self, current, list_to_reco):
         with ui.list().props("bordered separator"):
-            ui.item_label(pre_hit).props("header").classes("text-bold")
+            ui.item_label(current).props("header").classes("text-bold")
             ui.separator()
 
             for index in range(len(list_to_reco)):
@@ -87,7 +87,7 @@ class RecognitionRow:
 
         RecoData.data[reco_id] = name, hit
 
-    def on_miss_all(self, pre_hit, list_to_reco):
+    def on_miss_all(self, current, list_to_reco):
         pass
 
 

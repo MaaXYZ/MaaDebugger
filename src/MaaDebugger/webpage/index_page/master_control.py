@@ -1,8 +1,8 @@
-import asyncio
 import json
+import time
 from pathlib import Path
 
-from maa.define import MaaWin32ControllerTypeEnum
+from maa.define import MaaWin32ScreencapMethodEnum, MaaWin32InputMethodEnum
 from nicegui import app, binding, ui
 
 from ...maafw import maafw
@@ -129,7 +129,7 @@ async def connect_adb_control():
         devices = await maafw.detect_adb()
         options = {}
         for d in devices:
-            v = (d.adb_path, d.address, d.config)
+            v = (d.adb_path, d.address, str(d.config))
             l = d.name + " " + d.address
             options[v] = l
 
@@ -156,30 +156,21 @@ async def connect_win32_control():
     )
 
     SCREENCAP_DICT = {
-        MaaWin32ControllerTypeEnum.Screencap_GDI: "Screencap_GDI",
-        MaaWin32ControllerTypeEnum.Screencap_DXGI_DesktopDup: "Screencap_DXGI_DesktopDup",
-        MaaWin32ControllerTypeEnum.Screencap_DXGI_FramePool: "Screencap_DXGI_FramePool",
+        MaaWin32ScreencapMethodEnum.GDI: "Screencap_GDI",
+        MaaWin32ScreencapMethodEnum.DXGI_DesktopDup: "Screencap_DXGI_DesktopDup",
+        MaaWin32ScreencapMethodEnum.FramePool: "Screencap_DXGI_FramePool",
     }
     screencap_select = ui.select(
-        SCREENCAP_DICT, value=MaaWin32ControllerTypeEnum.Screencap_DXGI_DesktopDup
+        SCREENCAP_DICT, value=MaaWin32ScreencapMethodEnum.DXGI_DesktopDup
     ).bind_value(app.storage.general, "win32_screencap")
 
     INPUT_DICT = {
-        (
-            MaaWin32ControllerTypeEnum.Touch_SendMessage
-            | MaaWin32ControllerTypeEnum.Key_SendMessage
-        ): "Input_SendMessage",
-        (
-            MaaWin32ControllerTypeEnum.Touch_Seize
-            | MaaWin32ControllerTypeEnum.Key_Seize
-        ): "Input_Seize",
+        MaaWin32InputMethodEnum.SendMessage: "Input_SendMessage",
+        MaaWin32InputMethodEnum.Seize: "Input_Seize",
     }
     input_select = ui.select(
         INPUT_DICT,
-        value=(
-            MaaWin32ControllerTypeEnum.Touch_Seize
-            | MaaWin32ControllerTypeEnum.Key_Seize
-        ),
+        value=MaaWin32InputMethodEnum.Seize,
     ).bind_value(app.storage.general, "win32_input")
 
     ui.button(
@@ -273,8 +264,8 @@ async def screenshot_control():
     async def on_click_image(x, y):
         print(f"on_click_image: {x}, {y}")
         await maafw.click(x, y)
-        await asyncio.sleep(0.2)
-        await on_click_refresh()
+        time.sleep(0.2)
+        on_click_refresh()
 
     async def on_click_refresh():
         await maafw.screenshotter.refresh(True)

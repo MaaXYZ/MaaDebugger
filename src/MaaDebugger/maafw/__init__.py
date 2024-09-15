@@ -1,18 +1,21 @@
-import asyncio
-from dataclasses import dataclass
+import re
+from asyncify import asyncify
 from pathlib import Path
 from typing import Callable, List, Optional
 
 from maa.controller import AdbController, Win32Controller
-from maa.instance import Instance
+from maa.tasker import Tasker, RecognitionDetail
 from maa.resource import Resource
-from maa.toolkit import Toolkit
+from maa.toolkit import Toolkit, AdbDevice, DesktopWindow
 from PIL import Image
 
 from ..utils import cvmat_to_image
 
 
 class MaaFW:
+
+    tasker: Tasker
+
     def __init__(
         self,
         on_list_to_recognize: Callable = None,
@@ -20,11 +23,11 @@ class MaaFW:
         on_recognition_result: Callable = None,
     ):
         Toolkit.init_option("./")
-        Instance.set_debug_message(True)
+        Tasker.set_debug_message(True)
 
         self.resource = None
         self.controller = None
-        self.instance = None
+        self.tasker = None
 
         self.screenshotter = Screenshotter(self.screencap)
 
@@ -33,108 +36,121 @@ class MaaFW:
         self.on_recognition_result = on_recognition_result
 
     @staticmethod
-    async def detect_adb() -> List["AdbDevice"]:
-        return await Toolkit.adb_devices()
-
-    @dataclass
-    class Window:
-        hwnd: int
-        class_name: str
-        window_name: str
+    @asyncify
+    def detect_adb() -> List[AdbDevice]:
+        return Toolkit.find_adb_devices()
 
     @staticmethod
-    async def detect_win32hwnd(class_regex: str, window_regex: str) -> List[Window]:
-        hwnds = Toolkit.search_window(class_regex, window_regex)
-        windows = []
-        for hwnd in hwnds:
-            class_name = Toolkit.get_class_name(hwnd)
-            window_name = Toolkit.get_window_name(hwnd)
-            windows.append(MaaFW.Window(hwnd, class_name, window_name))
+    @asyncify
+    def detect_win32hwnd(window_regex: str) -> List[DesktopWindow]:
+        windows = Toolkit.find_desktop_windows()
+        result = []
+        for win in windows:
+            if not re.search(window_regex, win.window_name):
+                continue
 
-        return windows
+            result.append(win)
 
-    async def connect_adb(self, path: Path, address: str, config: dict) -> bool:
+        return result
+
+    @asyncify
+    def connect_adb(self, path: Path, address: str, config: dict) -> bool:
         self.controller = AdbController(path, address, config=config)
-        connected = await self.controller.connect()
+        connected = self.controller.post_connection().wait().success()
         if not connected:
             print(f"Failed to connect {path} {address}")
             return False
 
         return True
 
-    async def connect_win32hwnd(
-        self, hwnd: int | str, screencap_type: int, input_type: int
+    @asyncify
+    def connect_win32hwnd(
+        self, hwnd: int | str, screencap_method: int, input_method: int
     ) -> bool:
         if isinstance(hwnd, str):
             hwnd = int(hwnd, 16)
 
         self.controller = Win32Controller(
-            hwnd, screencap_type=screencap_type, touch_type=input_type, key_type=0
+            hwnd, screencap_method=screencap_method, input_method=input_method
         )
-        connected = await self.controller.connect()
+        connected = self.controller.post_connection().wait().success()
         if not connected:
             print(f"Failed to connect {hwnd}")
             return False
 
         return True
 
-    async def load_resource(self, dir: Path) -> bool:
+    @asyncify
+    def load_resource(self, dir: Path) -> bool:
         if not self.resource:
             self.resource = Resource()
 
-        return self.resource.clear() and await self.resource.load(dir)
+        return self.resource.clear() and self.resource.post_path(dir).wait().success()
 
-    async def run_task(self, entry: str, param: dict = {}) -> bool:
-        if not self.instance:
-            self.instance = Instance(callback=self._inst_callback)
+    @asyncify
+    def run_task(self, entry: str, pipeline_override: dict = {}) -> bool:
+        if not self.tasker:
+            self.tasker = Tasker(callback=self._tasker_callback)
 
-        self.instance.bind(self.resource, self.controller)
-        if not self.instance.inited:
+        self.tasker.bind(self.resource, self.controller)
+        if not self.tasker.inited:
             print("Failed to init MaaFramework instance")
             return False
 
-        return await self.instance.run_task(entry, param)
+        return self.tasker.post_pipeline(entry, pipeline_override).wait()
 
-    async def stop_task(self):
-        if not self.instance:
+    @asyncify
+    def stop_task(self):
+        if not self.tasker:
             return
 
-        await self.instance.stop()
+        self.tasker.post_stop().wait()
 
-    async def screencap(self, capture: bool = True) -> Optional[Image.Image]:
+    @asyncify
+    def screencap(self, capture: bool = True) -> Optional[Image.Image]:
         if not self.controller:
             return None
 
-        im = await self.controller.screencap(capture)
+        if capture:
+            self.controller.post_screencap().wait()
+        im = self.controller.cached_image
         if im is None:
             return None
 
         return cvmat_to_image(im)
 
-    async def click(self, x, y) -> None:
+    @asyncify
+    def click(self, x, y) -> None:
         if not self.controller:
             return None
 
-        await self.controller.click(x, y)
+        self.controller.post_click(x, y).wait()
 
-    def _inst_callback(self, msg: str, detail: dict, arg):
-        match msg:
-            case "Task.Debug.ListToRecognize":
-                asyncio.run(self.screenshotter.refresh(False))
-                if self.on_list_to_recognize:
-                    self.on_list_to_recognize(detail["pre_hit_task"], detail["list"])
+    @asyncify
+    def get_reco_detail(self, reco_id: int) -> Optional[RecognitionDetail]:
+        if not self.tasker:
+            return None
 
-            case "Task.Debug.MissAll":
-                if self.on_miss_all:
-                    self.on_miss_all(detail["pre_hit_task"], detail["list"])
+        return self.tasker._get_recognition_detail(reco_id)
 
-            case "Task.Debug.RecognitionResult":
-                reco_id = detail["recognition"]["id"]
-                name = detail["name"]
-                hit = detail["recognition"]["hit"]
+    def _tasker_callback(self, msg: str, detail: dict, arg):
+        if msg == "Task.Debug.ListToRecognize":
+            self.screenshotter.refresh(False)
+            if self.on_list_to_recognize:
+                self.on_list_to_recognize(detail["current"], detail["list"])
 
-                if self.on_recognition_result:
-                    self.on_recognition_result(reco_id, name, hit)
+        elif msg == "Task.Debug.MissAll":
+            if self.on_miss_all:
+                self.on_miss_all(detail["current"], detail["list"])
+
+        elif msg == "Task.Debug.RecognitionResult":
+            reco = detail["recognition"]
+            reco_id = reco["reco_id"]
+            name = reco["name"]
+            hit = reco["box"] is not None
+
+            if self.on_recognition_result:
+                self.on_recognition_result(reco_id, name, hit)
 
 
 # class Screenshotter(threading.Thread):

@@ -23,12 +23,11 @@ class StatusIndicator:
 
     @staticmethod
     def _text_backward(status: Status) -> str:
-        match status:
-            case Status.PENDING:
-                return "🟡"
-            case Status.RUNNING:
-                return "👀"
-            case Status.SUCCESS:
-                return "✅"
-            case Status.FAILURE:
-                return "❌"
+        if status == Status.PENDING:
+            return "🟡"
+        elif status == Status.RUNNING:
+            return "👀"
+        elif status == Status.SUCCESS:
+            return "✅"
+        elif status == Status.FAILURE:
+            return "❌"

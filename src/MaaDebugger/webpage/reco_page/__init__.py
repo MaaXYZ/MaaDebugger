@@ -1,17 +1,16 @@
 from typing import Dict, Tuple
 
-from maa.instance import Instance
 from nicegui import ui
 
 from ...utils import cvmat_to_image
-
+from ...maafw import maafw, RecognitionDetail
 
 class RecoData:
     data: Dict[int, Tuple[str, bool]] = {}
 
 
 @ui.page("/reco/{reco_id}")
-def reco_page(reco_id: int):
+async def reco_page(reco_id: int):
     if reco_id == 0 or not reco_id in RecoData.data:
         ui.markdown("## Not Found")
         return
@@ -25,12 +24,12 @@ def reco_page(reco_id: int):
 
     ui.separator()
 
-    details = Instance.query_recognition_detail(reco_id)
+    details: RecognitionDetail = await maafw.get_reco_detail(reco_id)
     if not details:
         ui.markdown("## Not Found")
         return
 
-    ui.markdown(f"#### Hit: {str(details.hit_box)}")
+    ui.markdown(f"#### Hit: {str(details.box)}")
 
     for draw in details.draws:
         ui.image(cvmat_to_image(draw)).props("fit=scale-down")

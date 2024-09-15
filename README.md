@@ -2,7 +2,7 @@
 
 ## Requirement
 
-Python >= 3.11
+Python >= 3.9
 
 ## Installation
 
