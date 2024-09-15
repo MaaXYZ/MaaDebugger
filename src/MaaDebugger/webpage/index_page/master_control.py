@@ -1,5 +1,5 @@
 import json
-import time
+import asyncio
 from pathlib import Path
 
 from maa.define import MaaWin32ScreencapMethodEnum, MaaWin32InputMethodEnum
@@ -264,7 +264,7 @@ async def screenshot_control():
     async def on_click_image(x, y):
         print(f"on_click_image: {x}, {y}")
         await maafw.click(x, y)
-        time.sleep(0.2)
+        await asyncio.sleep(1)
         await on_click_refresh()
 
     async def on_click_refresh():
