@@ -1,2 +1,3 @@
-maafw>=2.0.0
+maafw>=2.0.0a5
 nicegui
+asyncify
