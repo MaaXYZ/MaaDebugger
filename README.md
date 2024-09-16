@@ -22,6 +22,14 @@ python -m pip install MaaDebugger MaaFW --upgrade
 python -m MaaDebugger
 ```
 
+### Specifying a Port
+
+MaaDebugger uses port **8011** by default. You can specify a port to run MaaDebugger on by using the `--port [port]` option. For example, to run MaaDebugger on port **8080**:
+
+```bash
+python -m MaaDebugger --port 8080
+```
+
 ## Development of MaaDebugger itself
 
 ```bash
