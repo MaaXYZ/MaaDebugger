@@ -7,5 +7,5 @@ from .webpage import reco_page
 def main():
     ui.dark_mode()  # auto dark mode
     ui.run(
-        title="Maa Debugger", storage_secret="maadbg", reload=False
+        port=8011, title="Maa Debugger", storage_secret="maadbg", reload=False
     )  # , root_path="/proxy/8080")
