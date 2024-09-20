@@ -140,6 +140,7 @@ async def connect_adb_control():
             return
 
         devices_select.value = next(iter(options))
+        on_change_devices_select(devices_select.value)
         GlobalStatus.ctrl_detecting = Status.SUCCEEDED
 
     def on_change_devices_select(e):
@@ -223,7 +224,7 @@ async def connect_win32_control():
     async def on_click_detect():
         GlobalStatus.ctrl_detecting = Status.RUNNING
 
-        windows = await maafw.detect_win32hwnd("", window_name_input.value)
+        windows = await maafw.detect_win32hwnd(window_name_input.value)
         options = {}
         for w in windows:
             options[hex(w.hwnd)] = hex(w.hwnd) + " " + w.window_name

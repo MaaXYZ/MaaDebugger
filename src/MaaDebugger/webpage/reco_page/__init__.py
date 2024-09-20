@@ -24,14 +24,16 @@ async def reco_page(reco_id: int):
 
     ui.separator()
 
-    details: RecognitionDetail = await maafw.get_reco_detail(reco_id)
+    details: RecognitionDetail | None = await maafw.get_reco_detail(reco_id)
     if not details:
         ui.markdown("## Not Found")
         return
 
-    ui.markdown(f"#### Hit: {str(details.box)}")
+    ui.markdown(f"#### {details.algorithm}")
+    # ui.markdown(f"#### Box: {str(details.box)}")
+    ui.markdown(f"#### {details.best_result}")
 
-    for draw in details.draws:
+    for draw in details.draw_images:
         ui.image(cvmat_to_image(draw)).props("fit=scale-down")
 
-    ui.json_editor({"content": {"json": details.detail}, "readOnly": True})
+    ui.json_editor({"content": {"json": details.raw_detail}, "readOnly": True})

@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Callable, List, Optional
 
 from maa.controller import AdbController, Win32Controller
-from maa.tasker import Tasker, RecognitionDetail
+from maa.tasker import Tasker, RecognitionDetail, NotificationHandler
 from maa.resource import Resource
 from maa.toolkit import Toolkit, AdbDevice, DesktopWindow
 from PIL import Image
@@ -14,7 +14,10 @@ from ..utils import cvmat_to_image
 
 class MaaFW:
 
-    tasker: Tasker
+    resource: Resource | None
+    controller: AdbController | Win32Controller | None
+    tasker: Tasker | None
+    notification_handler: NotificationHandler | None
 
     def __init__(self):
         Toolkit.init_option("./")
@@ -84,12 +87,16 @@ class MaaFW:
         if not self.tasker:
             self.tasker = Tasker(notification_handler=self.notification_handler)
 
+        if not self.resource or not self.controller:
+            print("Resource or Controller not initialized")
+            return False
+
         self.tasker.bind(self.resource, self.controller)
         if not self.tasker.inited:
             print("Failed to init MaaFramework instance")
             return False
 
-        return self.tasker.post_pipeline(entry, pipeline_override).wait()
+        return self.tasker.post_pipeline(entry, pipeline_override).wait().succeeded()
 
     @asyncify
     def stop_task(self):
@@ -112,38 +119,18 @@ class MaaFW:
         return cvmat_to_image(im)
 
     @asyncify
-    def click(self, x, y) -> None:
+    def click(self, x, y) -> bool:
         if not self.controller:
-            return None
+            return False
 
-        self.controller.post_click(x, y).wait()
+        return self.controller.post_click(x, y).wait().succeeded()
 
     @asyncify
     def get_reco_detail(self, reco_id: int) -> Optional[RecognitionDetail]:
         if not self.tasker:
             return None
 
-        return self.tasker._get_recognition_detail(reco_id)
-
-    def _tasker_callback(self, msg: str, detail: dict, arg):
-        if msg == "Task.Debug.ListToRecognize":
-            self.screenshotter.refresh(False)
-            if self.on_next_list_starting:
-                self.on_next_list_starting(detail["current"], detail["list"])
-
-        elif msg == "Task.Debug.MissAll":
-            if self.on_miss_all:
-                self.on_miss_all(detail["current"], detail["list"])
-
-        elif msg == "Task.Debug.RecognitionResult":
-            reco = detail["recognition"]
-            reco_id = reco["reco_id"]
-            name = reco["name"]
-            hit = reco["box"] is not None
-
-            if self.on_recognition_succeeded:
-                self.on_recognition_succeeded(reco_id, name, hit)
-
+        return self.tasker.get_recognition_detail(reco_id)
 
 # class Screenshotter(threading.Thread):
 class Screenshotter:
