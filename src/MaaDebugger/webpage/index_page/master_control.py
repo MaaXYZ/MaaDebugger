@@ -89,20 +89,20 @@ async def connect_adb_control():
     ).bind_visibility_from(
         GlobalStatus,
         "ctrl_detecting",
-        backward=lambda s: s == Status.SUCCESS,
+        backward=lambda s: s == Status.SUCCEEDED,
     )
 
     StatusIndicator(GlobalStatus, "ctrl_detecting").label().bind_visibility_from(
         GlobalStatus,
         "ctrl_detecting",
-        backward=lambda s: s == Status.RUNNING or s == Status.FAILURE,
+        backward=lambda s: s == Status.RUNNING or s == Status.FAILED,
     )
 
     async def on_click_connect():
         GlobalStatus.ctrl_connecting = Status.RUNNING
 
         if not adb_path_input.value or not adb_address_input.value:
-            GlobalStatus.ctrl_connecting = Status.FAILURE
+            GlobalStatus.ctrl_connecting = Status.FAILED
             return
 
         try:
@@ -115,10 +115,10 @@ async def connect_adb_control():
             Path(adb_path_input.value), adb_address_input.value, config
         )
         if not connected:
-            GlobalStatus.ctrl_connecting = Status.FAILURE
+            GlobalStatus.ctrl_connecting = Status.FAILED
             return
 
-        GlobalStatus.ctrl_connecting = Status.SUCCESS
+        GlobalStatus.ctrl_connecting = Status.SUCCEEDED
         GlobalStatus.ctrl_detecting = Status.PENDING
 
         await maafw.screenshotter.refresh(True)
@@ -136,11 +136,11 @@ async def connect_adb_control():
         devices_select.options = options
         devices_select.update()
         if not options:
-            GlobalStatus.ctrl_detecting = Status.FAILURE
+            GlobalStatus.ctrl_detecting = Status.FAILED
             return
 
         devices_select.value = next(iter(options))
-        GlobalStatus.ctrl_detecting = Status.SUCCESS
+        GlobalStatus.ctrl_detecting = Status.SUCCEEDED
 
     def on_change_devices_select(e):
         adb_path_input.value = str(e.value[0])
@@ -192,30 +192,30 @@ async def connect_win32_control():
     ).bind_visibility_from(
         GlobalStatus,
         "ctrl_detecting",
-        backward=lambda s: s == Status.SUCCESS,
+        backward=lambda s: s == Status.SUCCEEDED,
     )
 
     StatusIndicator(GlobalStatus, "ctrl_detecting").label().bind_visibility_from(
         GlobalStatus,
         "ctrl_detecting",
-        backward=lambda s: s == Status.RUNNING or s == Status.FAILURE,
+        backward=lambda s: s == Status.RUNNING or s == Status.FAILED,
     )
 
     async def on_click_connect():
         GlobalStatus.ctrl_connecting = Status.RUNNING
 
         if not hwnd_input.value:
-            GlobalStatus.ctrl_connecting = Status.FAILURE
+            GlobalStatus.ctrl_connecting = Status.FAILED
             return
 
         connected = await maafw.connect_win32hwnd(
             hwnd_input.value, screencap_select.value, input_select.value
         )
         if not connected:
-            GlobalStatus.ctrl_connecting = Status.FAILURE
+            GlobalStatus.ctrl_connecting = Status.FAILED
             return
 
-        GlobalStatus.ctrl_connecting = Status.SUCCESS
+        GlobalStatus.ctrl_connecting = Status.SUCCEEDED
         GlobalStatus.ctrl_detecting = Status.PENDING
 
         await maafw.screenshotter.refresh(True)
@@ -231,11 +231,11 @@ async def connect_win32_control():
         devices_select.options = options
         devices_select.update()
         if not options:
-            GlobalStatus.ctrl_detecting = Status.FAILURE
+            GlobalStatus.ctrl_detecting = Status.FAILED
             return
 
         devices_select.value = next(iter(options))
-        GlobalStatus.ctrl_detecting = Status.SUCCESS
+        GlobalStatus.ctrl_detecting = Status.SUCCEEDED
 
     def on_change_devices_select(e):
         hwnd_input.value = e.value
@@ -250,13 +250,15 @@ async def screenshot_control():
             ).bind_source_from(maafw.screenshotter, "source").style(
                 "height: 200px;"
             ).bind_visibility_from(
-                GlobalStatus, "ctrl_connecting", backward=lambda s: s == Status.SUCCESS
+                GlobalStatus,
+                "ctrl_connecting",
+                backward=lambda s: s == Status.SUCCEEDED,
             )
 
         ui.button(
             icon="refresh", on_click=lambda: on_click_refresh()
         ).bind_visibility_from(
-            GlobalStatus, "ctrl_connecting", backward=lambda s: s == Status.SUCCESS
+            GlobalStatus, "ctrl_connecting", backward=lambda s: s == Status.SUCCEEDED
         ).bind_enabled_from(
             GlobalStatus, "task_running", backward=lambda s: s != Status.RUNNING
         )
@@ -292,15 +294,15 @@ async def load_resource_control():
         GlobalStatus.res_loading = Status.RUNNING
 
         if not dir_input.value:
-            GlobalStatus.res_loading = Status.FAILURE
+            GlobalStatus.res_loading = Status.FAILED
             return
 
         loaded = await maafw.load_resource(Path(dir_input.value))
         if not loaded:
-            GlobalStatus.res_loading = Status.FAILURE
+            GlobalStatus.res_loading = Status.FAILED
             return
 
-        GlobalStatus.res_loading = Status.SUCCESS
+        GlobalStatus.res_loading = Status.SUCCEEDED
 
 
 async def run_task_control():
@@ -322,20 +324,20 @@ async def run_task_control():
         GlobalStatus.task_running = Status.RUNNING
 
         if not entry_input.value:
-            GlobalStatus.task_running = Status.FAILURE
+            GlobalStatus.task_running = Status.FAILED
             return
 
         run = await maafw.run_task(entry_input.value)
         if not run:
-            GlobalStatus.task_running = Status.FAILURE
+            GlobalStatus.task_running = Status.FAILED
             return
 
-        GlobalStatus.task_running = Status.SUCCESS
+        GlobalStatus.task_running = Status.SUCCEEDED
 
     async def on_click_stop():
         stopped = await maafw.stop_task()
         if not stopped:
-            GlobalStatus.task_running = Status.FAILURE
+            GlobalStatus.task_running = Status.FAILED
             return
 
         GlobalStatus.task_running = Status.PENDING

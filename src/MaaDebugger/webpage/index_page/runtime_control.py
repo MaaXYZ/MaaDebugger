@@ -1,7 +1,9 @@
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Callable
 
 from nicegui import ui
+from maa.notification_handler import NotificationHandler, NotificationType
 
 from ...maafw import maafw
 from ...webpage.components.status_indicator import Status, StatusIndicator
@@ -14,6 +16,34 @@ async def main():
 
 class RecognitionRow:
 
+    class MyNotificationHandler(NotificationHandler):
+
+        def __init__(self) -> None:
+            super().__init__()
+
+            self.on_next_list_starting: Callable = None
+            self.on_recognized: Callable = None
+
+        def on_task_next_list(
+            self, type: NotificationType, detail: NotificationHandler.TaskNextListDetail
+        ):
+            if type != NotificationType.Starting:
+                return
+
+            self.on_next_list_starting(detail.name, detail.next_list)
+
+        def on_task_recognition(
+            self,
+            type: NotificationType,
+            detail: NotificationHandler.TaskRecognitionDetail,
+        ):
+            if type != NotificationType.Succeeded and type != NotificationType.Failed:
+                return
+
+            self.on_recognized(
+                detail.reco_id, detail.name, type == NotificationType.Succeeded
+            )
+
     def __init__(self) -> None:
         self.row_len = 0
         self.data = defaultdict(dict)
@@ -21,11 +51,13 @@ class RecognitionRow:
     def register(self):
         self.row = ui.row()
 
-        maafw.on_list_to_recognize = self.on_list_to_recognize
-        maafw.on_miss_all = self.on_miss_all
-        maafw.on_recognition_result = self.on_recognition_result
+        self.notification_handler = self.MyNotificationHandler()
+        self.notification_handler.on_next_list_starting = self.on_next_list_starting
+        self.notification_handler.on_recognized = self.on_recognized
 
-    def on_list_to_recognize(self, current, list_to_reco):
+        maafw.notification_handler = self.notification_handler
+
+    def on_next_list_starting(self, current: str, list_to_reco: list[str]):
         self.row_len = self.row_len + 1
 
         self.cur_list = list_to_reco
@@ -34,7 +66,7 @@ class RecognitionRow:
         with self.row:
             self._add_list(current, list_to_reco)
 
-    def _add_list(self, current, list_to_reco):
+    def _add_list(self, current: str, list_to_reco: list[str]):
         with ui.list().props("bordered separator"):
             ui.item_label(current).props("header").classes("text-bold")
             ui.separator()
@@ -72,7 +104,7 @@ class RecognitionRow:
 
         ui.navigate.to(f"reco/{data.reco_id}", new_tab=True)
 
-    def on_recognition_result(self, reco_id: int, name: str, hit: bool):
+    def on_recognized(self, reco_id: int, name: str, hit: bool):
         target = None
         for item in self.data[self.row_len].values():
             if item.status == Status.PENDING and item.name == name:
@@ -83,12 +115,9 @@ class RecognitionRow:
             return
 
         target.reco_id = reco_id
-        target.status = hit and Status.SUCCESS or Status.FAILURE
+        target.status = hit and Status.SUCCEEDED or Status.FAILED
 
         RecoData.data[reco_id] = name, hit
-
-    def on_miss_all(self, current, list_to_reco):
-        pass
 
 
 class Controls:

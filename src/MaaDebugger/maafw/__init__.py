@@ -16,24 +16,16 @@ class MaaFW:
 
     tasker: Tasker
 
-    def __init__(
-        self,
-        on_list_to_recognize: Callable = None,
-        on_miss_all: Callable = None,
-        on_recognition_result: Callable = None,
-    ):
+    def __init__(self):
         Toolkit.init_option("./")
-        Tasker.set_debug_message(True)
+        Tasker.set_debug_mode(True)
 
         self.resource = None
         self.controller = None
         self.tasker = None
 
         self.screenshotter = Screenshotter(self.screencap)
-
-        self.on_list_to_recognize = on_list_to_recognize
-        self.on_miss_all = on_miss_all
-        self.on_recognition_result = on_recognition_result
+        self.notification_handler = None
 
     @staticmethod
     @asyncify
@@ -56,7 +48,7 @@ class MaaFW:
     @asyncify
     def connect_adb(self, path: Path, address: str, config: dict) -> bool:
         self.controller = AdbController(path, address, config=config)
-        connected = self.controller.post_connection().wait().success()
+        connected = self.controller.post_connection().wait().succeeded()
         if not connected:
             print(f"Failed to connect {path} {address}")
             return False
@@ -73,7 +65,7 @@ class MaaFW:
         self.controller = Win32Controller(
             hwnd, screencap_method=screencap_method, input_method=input_method
         )
-        connected = self.controller.post_connection().wait().success()
+        connected = self.controller.post_connection().wait().succeeded()
         if not connected:
             print(f"Failed to connect {hwnd}")
             return False
@@ -85,12 +77,12 @@ class MaaFW:
         if not self.resource:
             self.resource = Resource()
 
-        return self.resource.clear() and self.resource.post_path(dir).wait().success()
+        return self.resource.clear() and self.resource.post_path(dir).wait().succeeded()
 
     @asyncify
     def run_task(self, entry: str, pipeline_override: dict = {}) -> bool:
         if not self.tasker:
-            self.tasker = Tasker(callback=self._tasker_callback)
+            self.tasker = Tasker(notification_handler=self.notification_handler)
 
         self.tasker.bind(self.resource, self.controller)
         if not self.tasker.inited:
@@ -136,8 +128,8 @@ class MaaFW:
     def _tasker_callback(self, msg: str, detail: dict, arg):
         if msg == "Task.Debug.ListToRecognize":
             self.screenshotter.refresh(False)
-            if self.on_list_to_recognize:
-                self.on_list_to_recognize(detail["current"], detail["list"])
+            if self.on_next_list_starting:
+                self.on_next_list_starting(detail["current"], detail["list"])
 
         elif msg == "Task.Debug.MissAll":
             if self.on_miss_all:
@@ -149,8 +141,8 @@ class MaaFW:
             name = reco["name"]
             hit = reco["box"] is not None
 
-            if self.on_recognition_result:
-                self.on_recognition_result(reco_id, name, hit)
+            if self.on_recognition_succeeded:
+                self.on_recognition_succeeded(reco_id, name, hit)
 
 
 # class Screenshotter(threading.Thread):

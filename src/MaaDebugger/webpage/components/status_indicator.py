@@ -6,8 +6,8 @@ from nicegui import ui
 class Status(Enum):
     PENDING = auto()
     RUNNING = auto()
-    SUCCESS = auto()
-    FAILURE = auto()
+    SUCCEEDED = auto()
+    FAILED = auto()
 
 
 class StatusIndicator:
@@ -27,7 +27,7 @@ class StatusIndicator:
             return "🟡"
         elif status == Status.RUNNING:
             return "👀"
-        elif status == Status.SUCCESS:
+        elif status == Status.SUCCEEDED:
             return "✅"
-        elif status == Status.FAILURE:
+        elif status == Status.FAILED:
             return "❌"
