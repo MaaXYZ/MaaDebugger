@@ -84,8 +84,8 @@ async def connect_adb_control():
         on_click=lambda: on_click_detect(),
     )
 
-    devices_select = ui.select(
-        {}, on_change=lambda e: on_change_devices_select(e)
+    device_select = ui.select(
+        {}, on_change=lambda e: on_change_device_select(e)
     ).bind_visibility_from(
         GlobalStatus,
         "ctrl_detecting",
@@ -133,17 +133,18 @@ async def connect_adb_control():
             l = d.name + " " + d.address
             options[v] = l
 
-        devices_select.options = options
-        devices_select.update()
+        device_select.set_options(options)
+        device_select.update()
+
         if not options:
             GlobalStatus.ctrl_detecting = Status.FAILED
             return
 
-        devices_select.value = next(iter(options))
-        on_change_devices_select(devices_select.value)
+        device_select.set_value(next(iter(options)))
+        on_change_device_select(device_select)
         GlobalStatus.ctrl_detecting = Status.SUCCEEDED
 
-    def on_change_devices_select(e):
+    def on_change_device_select(e):
         adb_path_input.value = str(e.value[0])
         adb_address_input.value = e.value[1]
         adb_config_input.value = str(e.value[2])
@@ -188,8 +189,8 @@ async def connect_win32_control():
         on_click=lambda: on_click_detect(),
     )
 
-    devices_select = ui.select(
-        {}, on_change=lambda e: on_change_devices_select(e)
+    hwnd_select = ui.select(
+        {}, on_change=lambda e: on_change_hwnd_select(e)
     ).bind_visibility_from(
         GlobalStatus,
         "ctrl_detecting",
@@ -229,16 +230,17 @@ async def connect_win32_control():
         for w in windows:
             options[hex(w.hwnd)] = hex(w.hwnd) + " " + w.window_name
 
-        devices_select.options = options
-        devices_select.update()
+        hwnd_select.set_options(options)
+        hwnd_select.update()
         if not options:
             GlobalStatus.ctrl_detecting = Status.FAILED
             return
 
-        devices_select.value = next(iter(options))
+        hwnd_select.set_value(next(iter(options)))
+        on_change_hwnd_select(hwnd_select)
         GlobalStatus.ctrl_detecting = Status.SUCCEEDED
 
-    def on_change_devices_select(e):
+    def on_change_hwnd_select(e):
         hwnd_input.value = e.value
 
 
