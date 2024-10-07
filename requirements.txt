@@ -1,4 +1,4 @@
 maafw>=2.0.0b4
-nicegui
+nicegui>=2.2.0
 asyncify
 pillow
