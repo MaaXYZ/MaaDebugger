@@ -1,4 +1,5 @@
 import argparse
+from typing import Optional
 
 from ..port_checker import PortChecker
 
@@ -20,7 +21,7 @@ class ArgParser:
         """
         Determine the port to use based on the provided arguments.
         """
-        specified_port: int | None = self.args.port
+        specified_port: Optional[int] = self.args.port
 
         if specified_port is not None:
             if PortChecker.is_port_in_use(specified_port):

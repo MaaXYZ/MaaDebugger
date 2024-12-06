@@ -1,4 +1,4 @@
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 
 from nicegui import ui
 
@@ -24,7 +24,7 @@ async def reco_page(reco_id: int):
 
     ui.separator()
 
-    details: RecognitionDetail | None = await maafw.get_reco_detail(reco_id)
+    details: Optional[RecognitionDetail] = await maafw.get_reco_detail(reco_id)
     if not details:
         ui.markdown("## Not Found")
         return

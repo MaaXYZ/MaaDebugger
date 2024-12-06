@@ -1,7 +1,7 @@
 import re
 from asyncify import asyncify
 from pathlib import Path
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Union
 
 from maa.controller import AdbController, Win32Controller
 from maa.tasker import Tasker, RecognitionDetail, NotificationHandler
@@ -14,10 +14,10 @@ from ..utils import cvmat_to_image
 
 class MaaFW:
 
-    resource: Resource | None
-    controller: AdbController | Win32Controller | None
-    tasker: Tasker | None
-    notification_handler: NotificationHandler | None
+    resource: Optional[Resource]
+    controller: Union[AdbController, Win32Controller, None]
+    tasker: Optional[Tasker]
+    notification_handler: Optional[NotificationHandler]
 
     def __init__(self):
         Toolkit.init_option("./")
