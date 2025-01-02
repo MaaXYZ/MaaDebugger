@@ -293,6 +293,13 @@ async def load_resource_control():
         on_click=lambda: on_click_load(),
     )
 
+    loaded_directories_textarea = ui.textarea().props("size=60").props("readonly=True")
+
+    ui.button(
+        "Clear",
+        on_click=lambda: clear_textarea(),
+    )
+
     async def on_click_load():
         GlobalStatus.res_loading = Status.RUNNING
 
@@ -306,6 +313,15 @@ async def load_resource_control():
             return
 
         GlobalStatus.res_loading = Status.SUCCEEDED
+
+        if loaded_directories_textarea.value != dir_input.value:
+            if loaded_directories_textarea.value:
+                loaded_directories_textarea.value += "\n"
+            loaded_directories_textarea.value += dir_input.value
+
+    def clear_textarea():
+        maafw.load_resource(Path(dir_input.value), clear=True)
+        loaded_directories_textarea.value = ""
 
 
 async def run_task_control():
