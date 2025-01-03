@@ -76,18 +76,11 @@ class MaaFW:
         return True
 
     @asyncify
-    def load_resource(
-        self,
-        dir: Path,
-        clear: bool = False,
-    ) -> bool:
+    def load_resource(self, dir: Path) -> bool:
         if not self.resource:
             self.resource = Resource()
         if not dir.exists():
             return False
-        if clear:
-            self.resource.clear()
-            return True
 
         return self.resource.post_path(dir).wait().succeeded()
 

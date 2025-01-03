@@ -11,6 +11,10 @@ from ...webpage.components.status_indicator import Status, StatusIndicator
 binding.MAX_PROPAGATION_TIME = 1
 
 
+global resource_path_glb
+resource_path_glb = []
+
+
 class GlobalStatus:
     ctrl_connecting: Status = Status.PENDING
     ctrl_detecting: Status = Status.PENDING  # not required
@@ -293,7 +297,13 @@ async def load_resource_control():
         on_click=lambda: on_click_load(),
     )
 
-    loaded_directories_textarea = ui.textarea().props("size=160").props("readonly=True")
+    loaded_directories_textarea = (
+        ui.textarea(
+            "Loaded Directories",
+        )
+        .props("size=60")
+        .props("readonly")
+    )
 
     ui.button(
         "Clear",
@@ -314,14 +324,17 @@ async def load_resource_control():
 
         GlobalStatus.res_loading = Status.SUCCEEDED
 
-        if loaded_directories_textarea.value != dir_input.value:
+        if dir_input.value not in loaded_directories_textarea.value.split("\n"):
             if loaded_directories_textarea.value:
                 loaded_directories_textarea.value += "\n"
+
             loaded_directories_textarea.value += dir_input.value
+            resource_path_glb.append(dir_input.value)
 
     def clear_textarea():
-        maafw.load_resource(Path(dir_input.value), clear=True)
+        maafw.resource.clear()
         loaded_directories_textarea.value = ""
+        resource_path_glb = []
 
 
 async def run_task_control():
@@ -338,7 +351,10 @@ async def run_task_control():
 
     ui.button("Start", on_click=lambda: on_click_start())
     ui.button("Stop", on_click=lambda: on_click_stop())
-    pipeline_override_textarea = ui.textarea().props("size=160").props("readonly=False")
+    pipeline_override_input = ui.input(
+        "Pipeline Override",
+        placeholder="eg: {}",
+    ).props("size=60")
 
     async def on_click_start():
         GlobalStatus.task_running = Status.RUNNING
@@ -347,17 +363,21 @@ async def run_task_control():
             GlobalStatus.task_running = Status.FAILED
             return
         pipeline_override = {}
-        if (
-            pipeline_override_textarea.value != ""
-            and pipeline_override_textarea.value != None
-        ):
-
-            json_str = pipeline_override_textarea.value
+        if pipeline_override_input.value:
+            json_str = pipeline_override_input.value
             try:
                 pipeline_override = json.loads(json_str) if json_str else None
             except json.JSONDecodeError as e:
                 print("Error parsing pipeline_override:", e)
                 pipeline_override = {}
+        maafw.resource.clear()
+
+        for resource_path in resource_path_glb:
+            loaded = await maafw.load_resource(Path(resource_path))
+            if not loaded:
+                GlobalStatus.res_loading = Status.FAILED
+                return
+
         run = await maafw.run_task(entry_input.value, pipeline_override)
         if not run:
             GlobalStatus.task_running = Status.FAILED
