@@ -332,7 +332,8 @@ async def load_resource_control():
             resource_path_glb.append(dir_input.value)
 
     def clear_textarea():
-        maafw.resource.clear()
+        if maafw.resource != None:
+            maafw.resource.clear()
         loaded_directories_textarea.value = ""
         resource_path_glb = []
 
