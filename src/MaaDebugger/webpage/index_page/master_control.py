@@ -7,6 +7,8 @@ from nicegui import app, binding, ui
 
 from ...maafw import maafw
 from ...webpage.components.status_indicator import Status, StatusIndicator
+from ...webpage.reco_page import RecoData
+from .runtime_control import Controls
 
 binding.MAX_PROPAGATION_TIME = 1
 
@@ -29,7 +31,7 @@ async def main():
 
         with ui.column():
             await screenshot_control()
-
+           
 
 async def connect_control():
     with ui.tabs() as tabs:
@@ -292,7 +294,7 @@ async def load_resource_control():
         "Load",
         on_click=lambda: on_click_load(),
     )
-
+    
     async def on_click_load():
         GlobalStatus.res_loading = Status.RUNNING
 
@@ -322,6 +324,15 @@ async def run_task_control():
 
     ui.button("Start", on_click=lambda: on_click_start())
     ui.button("Stop", on_click=lambda: on_click_stop())
+
+    # 添加清空记录按钮
+    ui.button("Clear All Records", on_click=lambda: clear_all_records())
+
+    # 清空记录函数
+    async def clear_all_records():
+        RecoData.data.clear()
+        Controls.recognition_row.clear_items()  # 调用清除方法
+        print("All records have been cleared.")
 
     async def on_click_start():
         GlobalStatus.task_running = Status.RUNNING

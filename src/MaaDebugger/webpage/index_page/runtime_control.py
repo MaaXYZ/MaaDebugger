@@ -118,6 +118,13 @@ class RecognitionRow:
         target.status = hit and Status.SUCCEEDED or Status.FAILED
 
         RecoData.data[reco_id] = name, hit
+    
+    def clear_items(self):
+        self.row.clear()  # 清除网页中的所有项目
+        self.data.clear()  # 清除数据
+        self.row_len = 0  # 重置行长度
+        self.cur_list = []  # 清除当前列表
+        self.next_reco_index = 0  # 重置下一个识别索引
 
 
 class Controls:
