@@ -11,10 +11,6 @@ from ...webpage.components.status_indicator import Status, StatusIndicator
 binding.MAX_PROPAGATION_TIME = 1
 
 
-global resource_path_glb
-resource_path_glb = []
-
-
 class GlobalStatus:
     ctrl_connecting: Status = Status.PENDING
     ctrl_detecting: Status = Status.PENDING  # not required
@@ -330,13 +326,11 @@ async def load_resource_control():
                 loaded_directories_textarea.value += "\n"
 
             loaded_directories_textarea.value += dir_input.value
-            resource_path_glb.append(dir_input.value)
 
     def clear_textarea():
         if maafw.resource != None:
             maafw.resource.clear()
         loaded_directories_textarea.value = ""
-        resource_path_glb = []
 
 
 async def run_task_control():
@@ -376,9 +370,10 @@ async def run_task_control():
             except json.JSONDecodeError as e:
                 print("Error parsing pipeline_override:", e)
                 pipeline_override = {}
-        maafw.resource.clear()
+        if maafw.resource:
+            maafw.resource.clear()
 
-        for resource_path in resource_path_glb:
+        for resource_path in app.storage.general.get("loaded_directories").split("\n"):
             loaded = await maafw.load_resource(Path(resource_path))
             if not loaded:
                 GlobalStatus.res_loading = Status.FAILED
