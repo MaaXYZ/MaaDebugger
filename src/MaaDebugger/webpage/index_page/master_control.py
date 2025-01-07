@@ -303,6 +303,7 @@ async def load_resource_control():
         )
         .props("size=60")
         .props("readonly")
+        .bind_value(app.storage.general, "loaded_directories")
     )
 
     ui.button(
@@ -352,10 +353,14 @@ async def run_task_control():
 
     ui.button("Start", on_click=lambda: on_click_start())
     ui.button("Stop", on_click=lambda: on_click_stop())
-    pipeline_override_input = ui.input(
-        "Pipeline Override",
-        placeholder="eg: {}",
-    ).props("size=60")
+    pipeline_override_input = (
+        ui.input(
+            "Pipeline Override",
+            placeholder="eg: {}",
+        )
+        .props("size=60")
+        .bind_value(app.storage.general, "Pipeline_Override")
+    )
 
     async def on_click_start():
         GlobalStatus.task_running = Status.RUNNING
