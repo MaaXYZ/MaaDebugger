@@ -79,8 +79,10 @@ class MaaFW:
     def load_resource(self, dir: Path) -> bool:
         if not self.resource:
             self.resource = Resource()
+        if not dir.exists():
+            return False
 
-        return self.resource.clear() and self.resource.post_path(dir).wait().succeeded()
+        return self.resource.post_path(dir).wait().succeeded()
 
     @asyncify
     def run_task(self, entry: str, pipeline_override: dict = {}) -> bool:
@@ -131,6 +133,7 @@ class MaaFW:
             return None
 
         return self.tasker.get_recognition_detail(reco_id)
+
 
 # class Screenshotter(threading.Thread):
 class Screenshotter:
