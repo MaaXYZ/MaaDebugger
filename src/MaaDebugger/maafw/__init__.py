@@ -60,7 +60,7 @@ class MaaFW:
 
     @asyncify
     def connect_win32hwnd(
-        self, hwnd: int | str, screencap_method: int, input_method: int
+        self, hwnd: Union[int, str], screencap_method: int, input_method: int
     ) -> bool:
         if isinstance(hwnd, str):
             hwnd = int(hwnd, 16)
