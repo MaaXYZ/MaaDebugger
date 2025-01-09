@@ -24,18 +24,18 @@ class RecognitionRow:
             self.on_next_list_starting: Callable = None
             self.on_recognized: Callable = None
 
-        def on_task_next_list(
-            self, type: NotificationType, detail: NotificationHandler.TaskNextListDetail
+        def on_node_next_list(
+            self, type: NotificationType, detail: NotificationHandler.NodeNextListDetail
         ):
             if type != NotificationType.Starting:
                 return
 
             self.on_next_list_starting(detail.name, detail.next_list)
 
-        def on_task_recognition(
+        def on_node_recognition(
             self,
             type: NotificationType,
-            detail: NotificationHandler.TaskRecognitionDetail,
+            detail: NotificationHandler.NodeRecognitionDetail,
         ):
             if type != NotificationType.Succeeded and type != NotificationType.Failed:
                 return
