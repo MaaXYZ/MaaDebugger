@@ -37,11 +37,11 @@ class RecognitionRow:
             noti_type: NotificationType,
             detail: NotificationHandler.NodeRecognitionDetail,
         ):
-            if noti_type != NotificationType.Succeeded and type != NotificationType.Failed:
+            if noti_type != NotificationType.Succeeded and noti_type != NotificationType.Failed:
                 return
 
             self.on_recognized(
-                detail.reco_id, detail.name, type == NotificationType.Succeeded
+                detail.reco_id, detail.name, noti_type == NotificationType.Succeeded
             )
 
     def __init__(self) -> None:
@@ -105,6 +105,8 @@ class RecognitionRow:
         ui.navigate.to(f"reco/{data.reco_id}", new_tab=True)
 
     def on_recognized(self, reco_id: int, name: str, hit: bool):
+        print(f"on_recognized: {reco_id}, {name}, {hit}")
+
         target = None
         for item in self.data[self.row_len].values():
             if item.status == Status.PENDING and item.name == name:
