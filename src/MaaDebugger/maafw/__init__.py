@@ -51,7 +51,7 @@ class MaaFW:
     @asyncify
     def connect_adb(self, path: Path, address: str, config: dict) -> bool:
         self.controller = AdbController(path, address, config=config)
-        connected = self.controller.post_connection().wait().succeeded()
+        connected = self.controller.post_connection().wait().succeeded
         if not connected:
             print(f"Failed to connect {path} {address}")
             return False
@@ -68,7 +68,7 @@ class MaaFW:
         self.controller = Win32Controller(
             hwnd, screencap_method=screencap_method, input_method=input_method
         )
-        connected = self.controller.post_connection().wait().succeeded()
+        connected = self.controller.post_connection().wait().succeeded
         if not connected:
             print(f"Failed to connect {hwnd}")
             return False
@@ -82,7 +82,7 @@ class MaaFW:
         if not dir.exists():
             return False
 
-        return self.resource.post_path(dir).wait().succeeded()
+        return self.resource.post_bundle(dir).wait().succeeded
 
     @asyncify
     def run_task(self, entry: str, pipeline_override: dict = {}) -> bool:
@@ -98,7 +98,7 @@ class MaaFW:
             print("Failed to init MaaFramework instance")
             return False
 
-        return self.tasker.post_pipeline(entry, pipeline_override).wait().succeeded()
+        return self.tasker.post_task(entry, pipeline_override).wait().succeeded
 
     @asyncify
     def stop_task(self):
@@ -125,7 +125,7 @@ class MaaFW:
         if not self.controller:
             return False
 
-        return self.controller.post_click(x, y).wait().succeeded()
+        return self.controller.post_click(x, y).wait().succeeded
 
     @asyncify
     def get_reco_detail(self, reco_id: int) -> Optional[RecognitionDetail]:
