@@ -66,6 +66,10 @@ async def connect_adb_control():
         .props("size=30")
         .bind_value(app.storage.general, "adb_address")
     )
+
+    if not app.storage.general["adb_config"]:
+        app.storage.general["adb_config"] = "{}"
+
     adb_config_input = (
         ui.input(
             "Extras",
@@ -109,7 +113,8 @@ async def connect_adb_control():
             config = json.loads(adb_config_input.value)
         except json.JSONDecodeError as e:
             print("Error parsing extras:", e)
-            config = {}
+            GlobalStatus.ctrl_connecting = Status.FAILED
+            return
 
         connected = await maafw.connect_adb(
             Path(adb_path_input.value), adb_address_input.value, config
@@ -323,8 +328,8 @@ async def run_task_control():
         .bind_value(app.storage.general, "task_entry")
     )
 
-    ui.button("Start", on_click=lambda: on_click_start())
-    ui.button("Stop", on_click=lambda: on_click_stop())
+    if not app.storage.general["task_pipeline_override"]:
+        app.storage.general["task_pipeline_override"] = "{}"
 
     pipeline_override_input = (
         ui.input(
@@ -335,6 +340,9 @@ async def run_task_control():
         .bind_value(app.storage.general, "task_pipeline_override")
     )
 
+    ui.button("Start", on_click=lambda: on_click_start())
+    ui.button("Stop", on_click=lambda: on_click_stop())
+
     async def on_click_start():
         GlobalStatus.task_running = Status.RUNNING
 
@@ -342,14 +350,12 @@ async def run_task_control():
             GlobalStatus.task_running = Status.FAILED
             return
 
-        pipeline_override = {}
-        if pipeline_override_input.value:
-            json_str = pipeline_override_input.value
-            try:
-                pipeline_override = json.loads(json_str) if json_str else None
-            except json.JSONDecodeError as e:
-                print("Error parsing pipeline_override:", e)
-                pipeline_override = {}
+        try:
+            pipeline_override = json.loads(pipeline_override_input.value)
+        except json.JSONDecodeError as e:
+            print("Error parsing pipeline_override:", e)
+            GlobalStatus.task_running = Status.FAILED
+            return
 
         await on_click_resource_load(app.storage.general["resource_dir"])
 
