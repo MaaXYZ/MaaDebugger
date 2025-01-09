@@ -25,19 +25,19 @@ class RecognitionRow:
             self.on_recognized: Callable = None
 
         def on_node_next_list(
-            self, type: NotificationType, detail: NotificationHandler.NodeNextListDetail
+            self, noti_type: NotificationType, detail: NotificationHandler.NodeNextListDetail
         ):
-            if type != NotificationType.Starting:
+            if noti_type != NotificationType.Starting:
                 return
 
             self.on_next_list_starting(detail.name, detail.next_list)
 
         def on_node_recognition(
             self,
-            type: NotificationType,
+            noti_type: NotificationType,
             detail: NotificationHandler.NodeRecognitionDetail,
         ):
-            if type != NotificationType.Succeeded and type != NotificationType.Failed:
+            if noti_type != NotificationType.Succeeded and type != NotificationType.Failed:
                 return
 
             self.on_recognized(

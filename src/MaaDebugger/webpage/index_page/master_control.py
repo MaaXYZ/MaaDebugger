@@ -22,9 +22,9 @@ async def main():
     with ui.row():
         with ui.column():
             await connect_control()
-            with ui.row().style("align-items: center;"):
+            with ui.row().classes("w-full"):
                 await load_resource_control()
-            with ui.row().style("align-items: center;"):
+            with ui.row().classes("w-full"):
                 await run_task_control()
 
         with ui.column():
@@ -40,10 +40,10 @@ async def connect_control():
         app.storage.general, "controller_type"
     ):
         with ui.tab_panel(adb):
-            with ui.row().style("align-items: center;"):
+            with ui.row().classes("w-full"):
                 await connect_adb_control()
         with ui.tab_panel(win32):
-            with ui.row().style("align-items: center;"):
+            with ui.row().classes("w-full"):
                 await connect_win32_control()
 
 
@@ -280,57 +280,35 @@ async def load_resource_control():
     StatusIndicator(GlobalStatus, "res_loading")
 
     dir_input = (
-        ui.input(
+        ui.textarea(
             "Resource Directory",
-            placeholder="eg: C:/M9A/assets/resource/base",
+            placeholder="Separate with newline, eg: C:/M9A/assets/resource/base",
         )
-        .props("size=60")
+        .classes('w-96')
         .bind_value(app.storage.general, "resource_dir")
     )
 
     ui.button(
         "Load",
-        on_click=lambda: on_click_load(),
+        on_click=lambda: on_click_resource_load(dir_input.value),
     )
 
-    loaded_directories_textarea = (
-        ui.textarea(
-            "Loaded Directories",
-        )
-        .props("size=60")
-        .props("readonly")
-        .bind_value(app.storage.general, "loaded_directories")
-    )
 
-    ui.button(
-        "Clear",
-        on_click=lambda: clear_textarea(),
-    )
+async def on_click_resource_load(values):
+    GlobalStatus.res_loading = Status.RUNNING
 
-    async def on_click_load():
-        GlobalStatus.res_loading = Status.RUNNING
+    if not values:
+        GlobalStatus.res_loading = Status.FAILED
+        return
 
-        if not dir_input.value:
-            GlobalStatus.res_loading = Status.FAILED
-            return
+    paths = [Path(p) for p in values.split("\n")]
+    print(paths)
+    loaded = await maafw.load_resource(paths)
+    if not loaded:
+        GlobalStatus.res_loading = Status.FAILED
+        return
 
-        loaded = await maafw.load_resource(Path(dir_input.value))
-        if not loaded:
-            GlobalStatus.res_loading = Status.FAILED
-            return
-
-        GlobalStatus.res_loading = Status.SUCCEEDED
-
-        if dir_input.value not in loaded_directories_textarea.value.split("\n"):
-            if loaded_directories_textarea.value:
-                loaded_directories_textarea.value += "\n"
-
-            loaded_directories_textarea.value += dir_input.value
-
-    def clear_textarea():
-        if maafw.resource != None:
-            maafw.resource.clear()
-        loaded_directories_textarea.value = ""
+    GlobalStatus.res_loading = Status.SUCCEEDED
 
 
 async def run_task_control():
@@ -347,13 +325,14 @@ async def run_task_control():
 
     ui.button("Start", on_click=lambda: on_click_start())
     ui.button("Stop", on_click=lambda: on_click_stop())
+
     pipeline_override_input = (
         ui.input(
             "Pipeline Override",
             placeholder="eg: {}",
         )
         .props("size=60")
-        .bind_value(app.storage.general, "Pipeline_Override")
+        .bind_value(app.storage.general, "task_pipeline_override")
     )
 
     async def on_click_start():
@@ -362,6 +341,7 @@ async def run_task_control():
         if not entry_input.value:
             GlobalStatus.task_running = Status.FAILED
             return
+
         pipeline_override = {}
         if pipeline_override_input.value:
             json_str = pipeline_override_input.value
@@ -370,14 +350,8 @@ async def run_task_control():
             except json.JSONDecodeError as e:
                 print("Error parsing pipeline_override:", e)
                 pipeline_override = {}
-        if maafw.resource:
-            maafw.resource.clear()
 
-        for resource_path in app.storage.general.get("loaded_directories").split("\n"):
-            loaded = await maafw.load_resource(Path(resource_path))
-            if not loaded:
-                GlobalStatus.res_loading = Status.FAILED
-                return
+        await on_click_resource_load(app.storage.general["resource_dir"])
 
         run = await maafw.run_task(entry_input.value, pipeline_override)
         if not run:

@@ -76,13 +76,20 @@ class MaaFW:
         return True
 
     @asyncify
-    def load_resource(self, dir: Path) -> bool:
+    def load_resource(self, dir: List[Path]) -> bool:
         if not self.resource:
             self.resource = Resource()
-        if not dir.exists():
-            return False
 
-        return self.resource.post_bundle(dir).wait().succeeded
+        self.resource.clear()
+        for d in dir:
+            if not d.exists():
+                return False
+
+            status = self.resource.post_bundle(d).wait().succeeded
+            if not status:
+                return False
+
+        return True
 
     @asyncify
     def run_task(self, entry: str, pipeline_override: dict = {}) -> bool:
@@ -95,7 +102,7 @@ class MaaFW:
 
         self.tasker.bind(self.resource, self.controller)
         if not self.tasker.inited:
-            print("Failed to init MaaFramework instance")
+            print("Failed to init MaaFramework tasker")
             return False
 
         return self.tasker.post_task(entry, pipeline_override).wait().succeeded
