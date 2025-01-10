@@ -67,7 +67,7 @@ async def connect_adb_control():
         .bind_value(app.storage.general, "adb_address")
     )
 
-    if not app.storage.general["adb_config"]:
+    if "adb_config" not in app.storage.general or not app.storage.general["adb_config"]:
         app.storage.general["adb_config"] = "{}"
 
     adb_config_input = (
@@ -289,7 +289,7 @@ async def load_resource_control():
             "Resource Directory",
             placeholder="Separate with newline, eg: C:/M9A/assets/resource/base",
         )
-        .classes('w-96')
+        .classes("w-96")
         .bind_value(app.storage.general, "resource_dir")
     )
 
@@ -328,7 +328,10 @@ async def run_task_control():
         .bind_value(app.storage.general, "task_entry")
     )
 
-    if not app.storage.general["task_pipeline_override"]:
+    if (
+        "task_pipeline_override" not in app.storage.general
+        or not app.storage.general["task_pipeline_override"]
+    ):
         app.storage.general["task_pipeline_override"] = "{}"
 
     pipeline_override_input = (
