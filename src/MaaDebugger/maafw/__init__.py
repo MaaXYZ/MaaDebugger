@@ -1,7 +1,7 @@
 import re
 from asyncify import asyncify
 from pathlib import Path
-from typing import Callable, List, Optional, Union, Dict
+from typing import Callable, List, Optional, Union
 
 from maa.controller import AdbController, Win32Controller
 from maa.tasker import Tasker, RecognitionDetail, NotificationHandler
@@ -10,8 +10,6 @@ from maa.toolkit import Toolkit, AdbDevice, DesktopWindow
 from PIL import Image
 
 from ..utils import cvmat_to_image
-
-import importlib.util
 
 
 class MaaFW:
@@ -31,8 +29,6 @@ class MaaFW:
 
         self.screenshotter = Screenshotter(self.screencap)
         self.notification_handler = None
-
-        self.custom_list: Dict[str, List] = None  # 自定义动作\识别器列表
 
     @staticmethod
     @asyncify
@@ -92,12 +88,10 @@ class MaaFW:
             status = self.resource.post_bundle(d).wait().succeeded
             if not status:
                 return False
-        self.resource_dir = dir
         return True
 
     @asyncify
     def run_task(self, entry: str, pipeline_override: dict = {}) -> bool:
-        self.custom_list = {"action": [], "recognition": []}
         if not self.tasker:
             self.tasker = Tasker(notification_handler=self.notification_handler)
 
@@ -106,65 +100,11 @@ class MaaFW:
             return False
 
         self.tasker.bind(self.resource, self.controller)
-
-        self.resource.clear_custom_recognition()
-        self.resource.clear_custom_action()
-        for d in self.resource_dir:
-            d = d / "custom"
-            if not d.exists():
-                continue
-
-            self.load_custom_objects(d)
-        print(self.custom_list)
         if not self.tasker.inited:
             print("Failed to init MaaFramework tasker")
             return False
 
         return self.tasker.post_task(entry, pipeline_override).wait().succeeded
-
-    def load_custom_objects(self, custom_dir):
-        custom_path = Path(custom_dir)
-        if not custom_path.exists():
-            return False
-
-        if not list(custom_path.iterdir()):
-            return False
-
-        errors = []
-        for module_type in ["action", "recognition"]:
-            module_type_path = custom_path / module_type
-            if not module_type_path.exists():
-                continue
-
-            for subdir in module_type_path.iterdir():
-                if subdir.is_dir():
-                    entry_file = subdir / "main.py"
-                    if not entry_file.exists():
-                        continue
-
-                    try:
-                        module_name = subdir.name
-                        if self._load_module(module_type, module_name, entry_file):
-                            self.custom_list[module_type].append(module_name)
-                        else:
-                            errors.append(
-                                f"Failed to load {module_name} {module_type}."
-                            )
-                    except Exception as e:
-                        errors.append(f"Error loading {module_name} {module_type}: {e}")
-
-        if errors:
-            print("\n".join(errors))
-            return False
-
-        return True
-
-    def _load_module(self, module_type, module_name, entry_file):
-        spec = importlib.util.spec_from_file_location(module_name, entry_file)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        register_func = getattr(self.resource, f"register_custom_{module_type}")
-        return register_func(f"{module_name}", getattr(module, module_name)())
 
     @asyncify
     def stop_task(self):
