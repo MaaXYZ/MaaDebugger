@@ -110,12 +110,6 @@ async def connect_adb_control():
             return
         if not adb_config_input.value:
             adb_config_input.value = "{}"
-        if "'" in adb_config_input.value:
-            adb_config_input.value = adb_config_input.value.replace("'", '"')
-        if "True" in adb_config_input.value:
-            adb_config_input.value = adb_config_input.value.replace("True", "true")
-        if "False" in adb_config_input.value:
-            adb_config_input.value = adb_config_input.value.replace("False", "false")
         try:
             config = json.loads(adb_config_input.value)
         except json.JSONDecodeError as e:
@@ -141,7 +135,7 @@ async def connect_adb_control():
         devices = await maafw.detect_adb()
         options = {}
         for d in devices:
-            v = (d.adb_path, d.address, str(d.config))
+            v = (d.adb_path, d.address, json.dumps(d.config))
             l = d.name + " " + d.address
             options[v] = l
 
@@ -159,7 +153,7 @@ async def connect_adb_control():
     def on_change_device_select(e: ui.select):
         adb_path_input.value = str(e.value[0])
         adb_address_input.value = e.value[1]
-        adb_config_input.value = str(e.value[2])
+        adb_config_input.value = e.value[2]
 
 
 async def connect_win32_control():
@@ -361,18 +355,6 @@ async def run_task_control():
             return
         if not pipeline_override_input.value:
             pipeline_override_input.value = "{}"
-        if "'" in pipeline_override_input.value:
-            pipeline_override_input.value = pipeline_override_input.value.replace(
-                "'", '"'
-            )
-        if "True" in pipeline_override_input.value:
-            pipeline_override_input.value = pipeline_override_input.value.replace(
-                "True", "true"
-            )
-        if "False" in pipeline_override_input.value:
-            pipeline_override_input.value = pipeline_override_input.value.replace(
-                "False", "false"
-            )
         try:
             pipeline_override = json.loads(pipeline_override_input.value)
         except json.JSONDecodeError as e:
