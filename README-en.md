@@ -1,5 +1,7 @@
 # MaaDebugger
 
+**[简体中文](./README.md) | [English](./README-en.md)**
+
 ## Requirement
 
 Python >= 3.9
