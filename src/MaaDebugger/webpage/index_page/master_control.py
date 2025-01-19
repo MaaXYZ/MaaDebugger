@@ -22,9 +22,9 @@ async def main():
     with ui.row():
         with ui.column():
             await connect_control()
-            with ui.row().classes("w-full"):
+            with ui.row(align_items="center").classes("w-full"):
                 await load_resource_control()
-            with ui.row().classes("w-full"):
+            with ui.row(align_items="center").classes("w-full"):
                 await run_task_control()
 
         with ui.column():
@@ -40,61 +40,61 @@ async def connect_control():
         app.storage.general, "controller_type"
     ):
         with ui.tab_panel(adb):
-            with ui.row().classes("w-full"):
+            with ui.row(align_items="center").classes("w-full"):
                 await connect_adb_control()
         with ui.tab_panel(win32):
-            with ui.row().classes("w-full"):
+            with ui.row(align_items="center").classes("w-full"):
                 await connect_win32_control()
 
 
 async def connect_adb_control():
     StatusIndicator(GlobalStatus, "ctrl_connecting")
+    with ui.row(align_items="center"):
+        adb_path_input = (
+            ui.input(
+                "ADB Path",
+                placeholder="eg: C:/adb.exe",
+            )
+            .props("size=60")
+            .bind_value(app.storage.general, "adb_path")
+        )
+        adb_address_input = (
+            ui.input(
+                "ADB Address",
+                placeholder="eg: 127.0.0.1:5555",
+            )
+            .props("size=30")
+            .bind_value(app.storage.general, "adb_address")
+        )
 
-    adb_path_input = (
-        ui.input(
-            "ADB Path",
-            placeholder="eg: C:/adb.exe",
+        adb_config_input = (
+            ui.input(
+                "Extras",
+                placeholder="eg: {}",
+            )
+            .props("size=30")
+            .bind_value(app.storage.general, "adb_config")
         )
-        .props("size=60")
-        .bind_value(app.storage.general, "adb_path")
-    )
-    adb_address_input = (
-        ui.input(
-            "ADB Address",
-            placeholder="eg: 127.0.0.1:5555",
+        ui.button(
+            "Connect",
+            on_click=lambda: on_click_connect(),
         )
-        .props("size=30")
-        .bind_value(app.storage.general, "adb_address")
-    )
+
+        ui.button(
+            icon="wifi_find",
+            on_click=lambda: on_click_detect(),
+        )
+
+        device_select = ui.select(
+            {}, on_change=lambda e: on_change_device_select(e)
+        ).bind_visibility_from(
+            GlobalStatus,
+            "ctrl_detecting",
+            backward=lambda s: s == Status.SUCCEEDED,
+        )
 
     if "adb_config" not in app.storage.general or not app.storage.general["adb_config"]:
         app.storage.general["adb_config"] = "{}"
-
-    adb_config_input = (
-        ui.input(
-            "Extras",
-            placeholder="eg: {}",
-        )
-        .props("size=30")
-        .bind_value(app.storage.general, "adb_config")
-    )
-    ui.button(
-        "Connect",
-        on_click=lambda: on_click_connect(),
-    )
-
-    ui.button(
-        icon="wifi_find",
-        on_click=lambda: on_click_detect(),
-    )
-
-    device_select = ui.select(
-        {}, on_change=lambda e: on_change_device_select(e)
-    ).bind_visibility_from(
-        GlobalStatus,
-        "ctrl_detecting",
-        backward=lambda s: s == Status.SUCCEEDED,
-    )
 
     StatusIndicator(GlobalStatus, "ctrl_detecting").label().bind_visibility_from(
         GlobalStatus,
@@ -159,49 +159,53 @@ async def connect_adb_control():
 async def connect_win32_control():
     StatusIndicator(GlobalStatus, "ctrl_connecting")
 
-    hwnd_input = (
-        ui.input("HWND").props("size=30").bind_value(app.storage.general, "hwnd")
-    )
-
     SCREENCAP_DICT = {
         MaaWin32ScreencapMethodEnum.GDI: "Screencap_GDI",
         MaaWin32ScreencapMethodEnum.DXGI_DesktopDup: "Screencap_DXGI_DesktopDup",
         MaaWin32ScreencapMethodEnum.FramePool: "Screencap_DXGI_FramePool",
     }
-    screencap_select = ui.select(
-        SCREENCAP_DICT, value=MaaWin32ScreencapMethodEnum.DXGI_DesktopDup
-    ).bind_value(app.storage.general, "win32_screencap")
 
     INPUT_DICT = {
         MaaWin32InputMethodEnum.SendMessage: "Input_SendMessage",
         MaaWin32InputMethodEnum.Seize: "Input_Seize",
     }
-    input_select = ui.select(
-        INPUT_DICT,
-        value=MaaWin32InputMethodEnum.Seize,
-    ).bind_value(app.storage.general, "win32_input")
 
-    ui.button(
-        "Connect",
-        on_click=lambda: on_click_connect(),
-    )
-    window_name_input = (
-        ui.input("Search Window Name", placeholder="Supports regex, eg: File Explorer")
-        .props("size=30")
-        .bind_value(app.storage.general, "window_name")
-    )
-    ui.button(
-        icon="wifi_find",
-        on_click=lambda: on_click_detect(),
-    )
+    with ui.row(align_items="center"):
+        hwnd_input = (
+            ui.input("HWND").props("size=30").bind_value(app.storage.general, "hwnd")
+        )
+        screencap_select = ui.select(
+            SCREENCAP_DICT, value=MaaWin32ScreencapMethodEnum.DXGI_DesktopDup
+        ).bind_value(app.storage.general, "win32_screencap")
 
-    hwnd_select = ui.select(
-        {}, on_change=lambda e: on_change_hwnd_select(e)
-    ).bind_visibility_from(
-        GlobalStatus,
-        "ctrl_detecting",
-        backward=lambda s: s == Status.SUCCEEDED,
-    )
+        input_select = ui.select(
+            INPUT_DICT,
+            value=MaaWin32InputMethodEnum.Seize,
+        ).bind_value(app.storage.general, "win32_input")
+
+        ui.button(
+            "Connect",
+            on_click=lambda: on_click_connect(),
+        )
+        window_name_input = (
+            ui.input(
+                "Search Window Name", placeholder="Supports regex, eg: File Explorer"
+            )
+            .props("size=30")
+            .bind_value(app.storage.general, "window_name")
+        )
+        ui.button(
+            icon="wifi_find",
+            on_click=lambda: on_click_detect(),
+        )
+
+        hwnd_select = ui.select(
+            {}, on_change=lambda e: on_change_hwnd_select(e)
+        ).bind_visibility_from(
+            GlobalStatus,
+            "ctrl_detecting",
+            backward=lambda s: s == Status.SUCCEEDED,
+        )
 
     StatusIndicator(GlobalStatus, "ctrl_detecting").label().bind_visibility_from(
         GlobalStatus,
@@ -290,7 +294,8 @@ async def load_resource_control():
             "Resource Directory",
             placeholder="Separate with newline, eg: C:/M9A/assets/resource/base",
         )
-        .classes("w-96")
+        .classes("w-1/2")
+        .props("input-class=h-7")
         .bind_value(app.storage.general, "resource_dir")
     )
 
