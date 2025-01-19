@@ -78,15 +78,9 @@ async def connect_adb_control():
         .props("size=30")
         .bind_value(app.storage.general, "adb_config")
     )
-    ui.button(
-        "Connect",
-        on_click=lambda: on_click_connect(),
-    )
+    ui.button("Connect", on_click=on_click_connect)
 
-    ui.button(
-        icon="wifi_find",
-        on_click=lambda: on_click_detect(),
-    )
+    ui.button(icon="wifi_find", on_click=on_click_detect)
 
     device_select = ui.select(
         {}, on_change=lambda e: on_change_device_select(e)
@@ -181,19 +175,13 @@ async def connect_win32_control():
         value=MaaWin32InputMethodEnum.Seize,
     ).bind_value(app.storage.general, "win32_input")
 
-    ui.button(
-        "Connect",
-        on_click=lambda: on_click_connect(),
-    )
+    ui.button("Connect", on_click=on_click_connect)
     window_name_input = (
         ui.input("Search Window Name", placeholder="Supports regex, eg: File Explorer")
         .props("size=30")
         .bind_value(app.storage.general, "window_name")
     )
-    ui.button(
-        icon="wifi_find",
-        on_click=lambda: on_click_detect(),
-    )
+    ui.button(icon="wifi_find", on_click=on_click_detect)
 
     hwnd_select = ui.select(
         {}, on_change=lambda e: on_change_hwnd_select(e)
@@ -264,9 +252,7 @@ async def screenshot_control():
                 backward=lambda s: s == Status.SUCCEEDED,
             )
 
-        ui.button(
-            icon="refresh", on_click=lambda: on_click_refresh()
-        ).bind_visibility_from(
+        ui.button(icon="refresh", on_click=on_click_refresh).bind_visibility_from(
             GlobalStatus, "ctrl_connecting", backward=lambda s: s == Status.SUCCEEDED
         ).bind_enabled_from(
             GlobalStatus, "task_running", backward=lambda s: s != Status.RUNNING
@@ -344,8 +330,8 @@ async def run_task_control():
         .bind_value(app.storage.general, "task_pipeline_override")
     )
 
-    ui.button("Start", on_click=lambda: on_click_start())
-    ui.button("Stop", on_click=lambda: on_click_stop())
+    ui.button("Start", on_click=on_click_start)
+    ui.button("Stop", on_click=on_click_stop)
 
     async def on_click_start():
         GlobalStatus.task_running = Status.RUNNING
