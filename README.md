@@ -25,7 +25,7 @@ python -m MaaDebugger
 ```
 ### 指定端口
 
-MaaDebugger 默认使用端口 ***8011***。你可以通过使用 --port [port] 选项来指定 MaaDebugger 运行的端口。例如，要在端口 ***8080*** 上运行 MaaDebugger
+MaaDebugger 默认使用端口 **8011**。你可以通过使用 --port [port] 选项来指定 MaaDebugger 运行的端口。例如，要在端口 **8080** 上运行 MaaDebugger
 
 ```bash
 python -m MaaDebugger --port 8080
@@ -71,7 +71,7 @@ resource
     }
 ```
 
-- main.py中要求对象名和文件夹相同,比如
+- `main.py`中要求对象名和文件夹相同,比如
 
 ```python
   class 识别器1(CustomRecognition):
