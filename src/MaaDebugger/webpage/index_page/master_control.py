@@ -154,7 +154,7 @@ async def connect_adb_control():
         on_change_device_select(device_select)
         GlobalStatus.ctrl_detecting = Status.SUCCEEDED
 
-    def on_change_device_select(e):
+    def on_change_device_select(e: ui.select):
         adb_path_input.value = str(e.value[0])
         adb_address_input.value = e.value[1]
         adb_config_input.value = str(e.value[2])
@@ -250,7 +250,7 @@ async def connect_win32_control():
         on_change_hwnd_select(hwnd_select)
         GlobalStatus.ctrl_detecting = Status.SUCCEEDED
 
-    def on_change_hwnd_select(e):
+    def on_change_hwnd_select(e: ui.select):
         hwnd_input.value = e.value
 
 
@@ -304,7 +304,7 @@ async def load_resource_control():
     )
 
 
-async def on_click_resource_load(values):
+async def on_click_resource_load(values: str):
     GlobalStatus.res_loading = Status.RUNNING
 
     if not values:
