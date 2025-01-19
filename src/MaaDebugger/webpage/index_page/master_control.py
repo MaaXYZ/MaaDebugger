@@ -114,6 +114,8 @@ async def connect_adb_control():
             adb_config_input.value = adb_config_input.value.replace("'", '"')
         if "True" in adb_config_input.value:
             adb_config_input.value = adb_config_input.value.replace("True", "true")
+        if "False" in adb_config_input.value:
+            adb_config_input.value = adb_config_input.value.replace("False", "false")
         try:
             config = json.loads(adb_config_input.value)
         except json.JSONDecodeError as e:
@@ -366,6 +368,10 @@ async def run_task_control():
         if "True" in pipeline_override_input.value:
             pipeline_override_input.value = pipeline_override_input.value.replace(
                 "True", "true"
+            )
+        if "False" in pipeline_override_input.value:
+            pipeline_override_input.value = pipeline_override_input.value.replace(
+                "False", "false"
             )
         try:
             pipeline_override = json.loads(pipeline_override_input.value)
