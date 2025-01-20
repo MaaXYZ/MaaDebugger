@@ -88,7 +88,6 @@ class MaaFW:
             status = self.resource.post_bundle(d).wait().succeeded
             if not status:
                 return False
-
         return True
 
     @asyncify

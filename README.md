@@ -1,42 +1,43 @@
 # MaaDebugger
 
-## Requirement
+**[简体中文](./README.md) | [English](./README-en.md)**
+
+## 需求版本
 
 Python >= 3.9
 
-## Installation
+## 安装
 
 ```bash
 python -m pip install MaaDebugger
 ```
 
-## Update
+## 更新
 
 ```bash
 python -m pip install MaaDebugger MaaFW --upgrade
 ```
 
-## Usage
+## 使用
 
 ```bash
 python -m MaaDebugger
 ```
+### 指定端口
 
-### Specifying a Port
-
-MaaDebugger uses port **8011** by default. You can specify a port to run MaaDebugger on by using the `--port [port]` option. For example, to run MaaDebugger on port **8080**:
+MaaDebugger 默认使用端口 **8011**。你可以通过使用 --port [port] 选项来指定 MaaDebugger 运行的端口。例如，要在端口 **8080** 上运行 MaaDebugger
 
 ```bash
 python -m MaaDebugger --port 8080
 ```
 
-## Development of MaaDebugger itself
+## 开发 MaaDebugger 
 
 ```bash
 cd src
 python -m MaaDebugger
 ```
 
-or
+或者
 
-Using VSCode, press F5 in the project directory.
+使用 VSCode，在项目目录中按下 F5
