@@ -39,6 +39,9 @@ class ArgParser:
         )
 
     def _add_dark_group(self):
+        """
+        Add command line arguments about dark_mode to the parser.
+        """
         group = self.parser.add_mutually_exclusive_group()
 
         group.add_argument(
