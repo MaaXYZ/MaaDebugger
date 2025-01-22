@@ -34,7 +34,6 @@ class ArgParser:
             help="Whether NOT automatically open the UI in a browser tab. (Default: False)",
             default=False,
         )
-
         self.parser.add_argument(
             "--dark",
             type=str,
@@ -73,6 +72,9 @@ class ArgParser:
         return host
 
     def get_hide(self) -> bool:
+        """
+        NOTICE: ui.run(show=not self.args.hide)
+        """
         hide = self.args.hide
 
         if hide in ["True", "true"]:
