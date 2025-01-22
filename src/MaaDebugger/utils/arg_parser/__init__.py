@@ -9,7 +9,10 @@ class ArgParser:
         self.parser = argparse.ArgumentParser(
             description="A debugger specifically for MaaFramework."
         )
+
         self._add_argument()
+        self._add_dark_group()
+
         self.args = self.parser.parse_args()
 
     def _add_argument(self):
@@ -30,14 +33,24 @@ class ArgParser:
         )
         self.parser.add_argument(
             "--hide",
-            type=str,
-            help="Whether NOT automatically open the UI in a browser tab. (Default: False)",
+            action="store_true",
+            help="DON'T automatically open the UI in a browser tab. (Default: False)",
             default=False,
         )
-        self.parser.add_argument(
+
+    def _add_dark_group(self):
+        group = self.parser.add_mutually_exclusive_group()
+
+        group.add_argument(
             "--dark",
-            type=str,
-            help="Whether enabel dark mode.None means auto. (Default: None)",
+            help="Enable dark mode. (Default: Auto)",
+            action="store_true",
+            default=None,
+        )
+        group.add_argument(
+            "--light",
+            help="Disable dark mode. (Default: Auto)",
+            action="store_true",
             default=None,
         )
 
@@ -73,21 +86,19 @@ class ArgParser:
 
     def get_hide(self) -> bool:
         """
-        NOTICE: ui.run(show=not self.args.hide)
+        NOTICE: ui.run(show = not self.args.hide)
         """
         hide = self.args.hide
 
-        if hide in ["True", "true"]:
-            return True
-        else:
-            return False
+        return not bool(hide)
 
     def get_dark(self) -> Optional[bool]:
         dark = self.args.dark
+        light = self.args.light
 
-        if dark in ["True", "true"]:
+        if dark:
             return True
-        elif dark in ["False", "false"]:
+        elif light:
             return False
         else:
             return None

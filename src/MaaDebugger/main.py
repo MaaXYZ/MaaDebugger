@@ -9,8 +9,9 @@ from .utils import args
 def main():
     host = args.get_host()
     port = args.get_port()
-    show = not args.get_hide()
+    show = args.get_hide()
     dark = args.get_dark()
+
     ui.run(
         title="Maa Debugger",
         storage_secret="maadbg",
