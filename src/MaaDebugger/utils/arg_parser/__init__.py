@@ -28,7 +28,7 @@ class ArgParser:
         self.parser.add_argument(
             "--host",
             type=str,
-            help="When the value is 'localhost', only the local machine can access it. If you want to change this,you can set value as '0.0.0.0'. (Default: localhost)",
+            help="When the value is 'localhost', only the local machine can access it. If you want to change this, you can set value as '0.0.0.0'. (Default: localhost)",
             default="localhost",
         )
         self.parser.add_argument(
