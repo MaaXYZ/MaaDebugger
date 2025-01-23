@@ -7,12 +7,18 @@ from .utils import args
 
 
 def main():
+    host = args.get_host()
     port = args.get_port()
+    show = args.get_hide()
+    dark = args.get_dark()
+
     ui.run(
-        port=port,
         title="Maa Debugger",
         storage_secret="maadbg",
         reload=False,
-        dark=None,
+        host=host,
+        port=port,
+        show=show,
+        dark=dark,
         # root_path="/proxy/8011",
     )
