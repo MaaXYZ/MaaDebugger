@@ -141,9 +141,9 @@ class MaaFW:
         return self.tasker.get_recognition_detail(reco_id)
 
     @asyncify
-    def clear_cache(self) -> Optional[bool]:
+    def clear_cache(self) -> bool:
         if not self.tasker:
-            return None
+            return False
 
         return self.tasker.clear_cache()
 

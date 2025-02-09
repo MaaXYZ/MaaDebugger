@@ -21,11 +21,8 @@ class GlobalStatus:
 async def main():
     cache_cleared = await maafw.clear_cache()
 
-    if cache_cleared is not None:
-        if cache_cleared:
-            ui.notify("Cache cleared.", position="bottom-right", type="info")
-        else:
-            ui.notify("Failed to clear Cache.", position="bottom-right", type="warning")
+    if cache_cleared:
+        ui.notify("Cache cleared", position="bottom-right", type="info")
 
     with ui.row():
         with ui.column():
