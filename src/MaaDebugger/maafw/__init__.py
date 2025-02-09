@@ -140,6 +140,13 @@ class MaaFW:
 
         return self.tasker.get_recognition_detail(reco_id)
 
+    @asyncify
+    def clear_cache(self) -> Optional[bool]:
+        if not self.tasker:
+            return None
+
+        return self.tasker.clear_cache()
+
 
 # class Screenshotter(threading.Thread):
 class Screenshotter:
