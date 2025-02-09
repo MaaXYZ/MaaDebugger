@@ -19,6 +19,11 @@ class GlobalStatus:
 
 
 async def main():
+    cache_cleared = await maafw.clear_cache()
+
+    if cache_cleared:
+        ui.notify("Cache cleared", position="bottom-right", type="info")
+
     with ui.row():
         with ui.column():
             await connect_control()
