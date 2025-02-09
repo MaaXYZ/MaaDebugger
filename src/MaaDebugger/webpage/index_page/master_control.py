@@ -6,9 +6,11 @@ from maa.define import MaaWin32ScreencapMethodEnum, MaaWin32InputMethodEnum
 from nicegui import app, binding, ui
 
 from ...maafw import maafw
+from ...utils import input_checker as ic
 from ...webpage.components.status_indicator import Status, StatusIndicator
 
 binding.MAX_PROPAGATION_TIME = 1
+STORAGE = app.storage.general
 
 
 class GlobalStatus:
@@ -41,9 +43,7 @@ async def connect_control():
         adb = ui.tab("Adb")
         win32 = ui.tab("Win32")
 
-    with ui.tab_panels(tabs, value="Adb").bind_value(
-        app.storage.general, "controller_type"
-    ):
+    with ui.tab_panels(tabs, value="Adb").bind_value(STORAGE, "controller_type"):
         with ui.tab_panel(adb):
             with ui.row(align_items="center").classes("w-full"):
                 await connect_adb_control()
@@ -53,53 +53,55 @@ async def connect_control():
 
 
 async def connect_adb_control():
-    StatusIndicator(GlobalStatus, "ctrl_connecting")
-    with ui.row(align_items="center"):
+    with ui.row(align_items="baseline"):
+        StatusIndicator(GlobalStatus, "ctrl_connecting")
         adb_path_input = (
             ui.input(
                 "ADB Path",
                 placeholder="eg: C:/adb.exe",
             )
             .props("size=60")
-            .bind_value(app.storage.general, "adb_path")
+            .bind_value(STORAGE, "adb_path")
         )
         adb_address_input = (
             ui.input(
                 "ADB Address",
                 placeholder="eg: 127.0.0.1:5555",
             )
-            .props("size=30")
-            .bind_value(app.storage.general, "adb_address")
+            .props("size=20")
+            .bind_value(STORAGE, "adb_address")
         )
 
         adb_config_input = (
             ui.input(
                 "Extras",
                 placeholder="eg: {}",
+                validation=lambda v: ic.json_style_str(v),
             )
-            .props("size=30")
-            .bind_value(app.storage.general, "adb_config")
+            .props("size=20")
+            .bind_value(STORAGE, "adb_config")
         )
         ui.button(
             "Connect",
             on_click=lambda: on_click_connect(),
         )
-
         ui.button(
-            icon="wifi_find",
+            "FIND",
             on_click=lambda: on_click_detect(),
         )
 
         device_select = ui.select(
-            {}, on_change=lambda e: on_change_device_select(e)
+            {},
+            label="Devices",
+            on_change=lambda e: on_change_device_select(e),
         ).bind_visibility_from(
             GlobalStatus,
             "ctrl_detecting",
             backward=lambda s: s == Status.SUCCEEDED,
         )
 
-    if "adb_config" not in app.storage.general or not app.storage.general["adb_config"]:
-        app.storage.general["adb_config"] = "{}"
+    if "adb_config" not in STORAGE or not STORAGE["adb_config"]:
+        STORAGE["adb_config"] = "{}"
 
     StatusIndicator(GlobalStatus, "ctrl_detecting").label().bind_visibility_from(
         GlobalStatus,
@@ -162,8 +164,6 @@ async def connect_adb_control():
 
 
 async def connect_win32_control():
-    StatusIndicator(GlobalStatus, "ctrl_connecting")
-
     SCREENCAP_DICT = {
         MaaWin32ScreencapMethodEnum.GDI: "Screencap_GDI",
         MaaWin32ScreencapMethodEnum.DXGI_DesktopDup: "Screencap_DXGI_DesktopDup",
@@ -176,17 +176,18 @@ async def connect_win32_control():
     }
 
     with ui.row(align_items="center"):
-        hwnd_input = (
-            ui.input("HWND").props("size=30").bind_value(app.storage.general, "hwnd")
-        )
+        StatusIndicator(GlobalStatus, "ctrl_connecting")
+        hwnd_input = ui.input("HWND").props("size=30").bind_value(STORAGE, "hwnd")
         screencap_select = ui.select(
-            SCREENCAP_DICT, value=MaaWin32ScreencapMethodEnum.DXGI_DesktopDup
-        ).bind_value(app.storage.general, "win32_screencap")
-
+            SCREENCAP_DICT,
+            label="Screencap Method",
+            value=MaaWin32ScreencapMethodEnum.DXGI_DesktopDup,
+        ).bind_value(STORAGE, "win32_screencap")
         input_select = ui.select(
             INPUT_DICT,
+            label="Input Method",
             value=MaaWin32InputMethodEnum.Seize,
-        ).bind_value(app.storage.general, "win32_input")
+        ).bind_value(STORAGE, "win32_input")
 
         ui.button(
             "Connect",
@@ -197,15 +198,15 @@ async def connect_win32_control():
                 "Search Window Name", placeholder="Supports regex, eg: File Explorer"
             )
             .props("size=30")
-            .bind_value(app.storage.general, "window_name")
+            .bind_value(STORAGE, "window_name")
         )
         ui.button(
-            icon="wifi_find",
+            "FIND",
             on_click=lambda: on_click_detect(),
         )
 
         hwnd_select = ui.select(
-            {}, on_change=lambda e: on_change_hwnd_select(e)
+            {}, label="Windows", on_change=lambda e: on_change_hwnd_select(e)
         ).bind_visibility_from(
             GlobalStatus,
             "ctrl_detecting",
@@ -294,20 +295,21 @@ async def screenshot_control():
 async def load_resource_control():
     StatusIndicator(GlobalStatus, "res_loading")
 
-    dir_input = (
-        ui.textarea(
-            "Resource Directory",
-            placeholder="Separate with newline, eg: C:/M9A/assets/resource/base",
+    with ui.row(align_items="baseline").classes("w-3/4"):
+        dir_input = (
+            ui.textarea(
+                "Resource Directory",
+                placeholder="Separate with newline, eg: C:/M9A/assets/resource/base",
+            )
+            .props("input-class=h-7")
+            .style("width: 500px;")
+            .bind_value(STORAGE, "resource_dir")
         )
-        .classes("w-1/2")
-        .props("input-class=h-7")
-        .bind_value(app.storage.general, "resource_dir")
-    )
 
-    ui.button(
-        "Load",
-        on_click=lambda: on_click_resource_load(dir_input.value),
-    )
+        ui.button(
+            "Load",
+            on_click=lambda: on_click_resource_load(dir_input.value),
+        )
 
 
 async def on_click_resource_load(values: str):
@@ -330,32 +332,34 @@ async def on_click_resource_load(values: str):
 async def run_task_control():
     StatusIndicator(GlobalStatus, "task_running")
 
-    entry_input = (
-        ui.input(
-            "Task Entry",
-            placeholder="eg: StartUp",
+    with ui.row(align_items="baseline"):
+        entry_input = (
+            ui.input(
+                "Task Entry",
+                placeholder="eg: StartUp",
+            )
+            .props("size=30")
+            .bind_value(STORAGE, "task_entry")
         )
-        .props("size=30")
-        .bind_value(app.storage.general, "task_entry")
-    )
 
-    if (
-        "task_pipeline_override" not in app.storage.general
-        or not app.storage.general["task_pipeline_override"]
-    ):
-        app.storage.general["task_pipeline_override"] = "{}"
+        if (
+            "task_pipeline_override" not in STORAGE
+            or not STORAGE["task_pipeline_override"]
+        ):
+            STORAGE["task_pipeline_override"] = "{}"
 
-    pipeline_override_input = (
-        ui.input(
-            "Pipeline Override",
-            placeholder="eg: {}",
+        pipeline_override_input = (
+            ui.input(
+                "Pipeline Override",
+                placeholder="eg: {}",
+                validation=lambda v: ic.json_style_str(v),
+            )
+            .props("size=60")
+            .bind_value(STORAGE, "task_pipeline_override")
         )
-        .props("size=60")
-        .bind_value(app.storage.general, "task_pipeline_override")
-    )
 
-    ui.button("Start", on_click=lambda: on_click_start())
-    ui.button("Stop", on_click=lambda: on_click_stop())
+        ui.button("Start", on_click=lambda: on_click_start())
+        ui.button("Stop", on_click=lambda: on_click_stop())
 
     async def on_click_start():
         GlobalStatus.task_running = Status.RUNNING
@@ -372,7 +376,7 @@ async def run_task_control():
             GlobalStatus.task_running = Status.FAILED
             return
 
-        await on_click_resource_load(app.storage.general["resource_dir"])
+        await on_click_resource_load(STORAGE["resource_dir"])
 
         run = await maafw.run_task(entry_input.value, pipeline_override)
         if not run:
