@@ -21,8 +21,8 @@ def json_style_str(data: str) -> Optional[str]:
         json.loads(data)
     except json.decoder.JSONDecodeError as e:
         return f"JSONDecodeError: {e}"
-    except:
-        return "Unknown error"
+    except Exception as e:
+        return str(e)
 
 
 def paths_exist(data: str) -> Optional[str]:
