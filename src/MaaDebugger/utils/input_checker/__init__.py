@@ -49,7 +49,7 @@ def paths_exist(data: str) -> Optional[str]:
             msg += f"Paths not exist: {not_exist_paths}"
 
     if not_pipe_paths:
-        msg += f"   Pipeline dir not in: {not_pipe_paths}"
+        msg += f" Pipeline dir not in: {not_pipe_paths}"
 
     if msg:
         return msg
