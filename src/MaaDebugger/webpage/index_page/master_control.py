@@ -76,7 +76,7 @@ async def connect_adb_control():
             ui.input(
                 "Extras",
                 placeholder="eg: {}",
-                validation=lambda v: ic.json_style_str(v),
+                validation=ic.json_style_str,
             )
             .props("size=20")
             .bind_value(STORAGE, "adb_config")
@@ -175,9 +175,14 @@ async def connect_win32_control():
         MaaWin32InputMethodEnum.Seize: "Input_Seize",
     }
 
-    with ui.row(align_items="center"):
+    with ui.row(align_items="baseline"):
         StatusIndicator(GlobalStatus, "ctrl_connecting")
-        hwnd_input = ui.input("HWND").props("size=30").bind_value(STORAGE, "hwnd")
+        hwnd_input = (
+            ui.input("HWND", placeholder="0x11451", validation=ic.hwnd)
+            .props("size=30")
+            .bind_value(STORAGE, "hwnd")
+            .on("keydown.enter", lambda: on_click_connect())
+        )
         screencap_select = ui.select(
             SCREENCAP_DICT,
             label="Screencap Method",
@@ -199,6 +204,7 @@ async def connect_win32_control():
             )
             .props("size=30")
             .bind_value(STORAGE, "window_name")
+            .on("keydown.enter", lambda: on_click_detect())
         )
         ui.button(
             "FIND",
@@ -300,10 +306,12 @@ async def load_resource_control():
             ui.textarea(
                 "Resource Directory",
                 placeholder="Separate with newline, eg: C:/M9A/assets/resource/base",
+                validation=ic.paths_exist,
             )
             .props("input-class=h-7")
             .style("width: 500px;")
             .bind_value(STORAGE, "resource_dir")
+            .tooltip("Directorise are separated by newline characters.")
         )
 
         ui.button(
@@ -319,7 +327,7 @@ async def on_click_resource_load(values: str):
         GlobalStatus.res_loading = Status.FAILED
         return
 
-    paths = [Path(p) for p in values.split("\n")]
+    paths = [Path(p) for p in values.split("\n") if p]
     print(paths)
     loaded = await maafw.load_resource(paths)
     if not loaded:
@@ -352,7 +360,7 @@ async def run_task_control():
             ui.input(
                 "Pipeline Override",
                 placeholder="eg: {}",
-                validation=lambda v: ic.json_style_str(v),
+                validation=ic.json_style_str,
             )
             .props("size=60")
             .bind_value(STORAGE, "task_pipeline_override")
