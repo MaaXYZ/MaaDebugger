@@ -4,11 +4,11 @@ from typing import Callable, List, Optional, Union
 
 from asyncify import asyncify
 from PIL import Image
-
 from maa.controller import AdbController, Win32Controller
 from maa.tasker import Tasker, RecognitionDetail, NotificationHandler
 from maa.resource import Resource
 from maa.toolkit import Toolkit, AdbDevice, DesktopWindow
+
 from ..utils import cvmat_to_image
 
 
