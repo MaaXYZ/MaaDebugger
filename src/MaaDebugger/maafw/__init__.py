@@ -15,7 +15,7 @@ from ..utils import cvmat_to_image
 class MaaFW:
 
     resource: Optional[Resource]
-    controller: Union[AdbController, Win32Controller]
+    controller: Union[AdbController, Win32Controller, None]
     tasker: Optional[Tasker]
     notification_handler: Optional[NotificationHandler]
 
