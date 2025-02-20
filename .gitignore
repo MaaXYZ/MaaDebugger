@@ -168,3 +168,6 @@ debug
 
 # pdm
 .pdm-python
+
+# vsc
+.vscode
