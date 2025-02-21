@@ -43,13 +43,16 @@ def paths_exist(data: str) -> Optional[str]:
             not_exist_paths.append(str(p))
 
     if not_exist_paths:
-        if len(not_pipe_paths) == 1:
-            msg += f"Path not exist: {not_exist_paths}"
+        if len(not_exist_paths) == 1:
+            msg += f"Path not exist: {not_exist_paths[0]}"
         else:
             msg += f"Paths not exist: {not_exist_paths}"
 
     if not_pipe_paths:
-        msg += f" Pipeline dir not in: {not_pipe_paths}"
+        if len(not_pipe_paths) == 1:
+            msg += f" Pipeline dir not in: {not_pipe_paths[0]}"
+        else:
+            msg += f" Pipeline dir not in: {not_pipe_paths}"
 
     if msg:
         return msg
