@@ -8,6 +8,7 @@ from nicegui import app, binding, ui
 from ...maafw import maafw
 from ...utils import input_checker as ic
 from ...webpage.components.status_indicator import Status, StatusIndicator
+from . import notify
 
 binding.MAX_PROPAGATION_TIME = 1
 STORAGE = app.storage.general
@@ -127,8 +128,9 @@ async def connect_adb_control():
         connected = await maafw.connect_adb(
             Path(adb_path_input.value), adb_address_input.value, config
         )
-        if not connected:
+        if not connected[0]:
             GlobalStatus.ctrl_connecting = Status.FAILED
+            notify.send(connected[1])
             return
 
         GlobalStatus.ctrl_connecting = Status.SUCCEEDED
@@ -235,8 +237,9 @@ async def connect_win32_control():
         connected = await maafw.connect_win32hwnd(
             hwnd_input.value, screencap_select.value, input_select.value
         )
-        if not connected:
+        if not connected[0]:
             GlobalStatus.ctrl_connecting = Status.FAILED
+            notify.send(connected[1])
             return
 
         GlobalStatus.ctrl_connecting = Status.SUCCEEDED
@@ -330,8 +333,9 @@ async def on_click_resource_load(values: str):
     paths = [Path(p) for p in values.split("\n") if p]
     print(paths)
     loaded = await maafw.load_resource(paths)
-    if not loaded:
+    if not loaded[0]:
         GlobalStatus.res_loading = Status.FAILED
+        notify.send(loaded[1])
         return
 
     GlobalStatus.res_loading = Status.SUCCEEDED
@@ -387,8 +391,9 @@ async def run_task_control():
         await on_click_resource_load(STORAGE["resource_dir"])
 
         run = await maafw.run_task(entry_input.value, pipeline_override)
-        if not run:
+        if not run[0]:
             GlobalStatus.task_running = Status.FAILED
+            notify.send(run[1])
             return
 
         GlobalStatus.task_running = Status.SUCCEEDED
