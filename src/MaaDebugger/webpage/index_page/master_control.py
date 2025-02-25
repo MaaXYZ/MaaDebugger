@@ -25,7 +25,7 @@ async def main():
     cache_cleared = await maafw.clear_cache()
 
     if cache_cleared:
-        ui.notify("Cache cleared", position="bottom-right", type="info")
+        notify.send("Cache cleared", with_print=False, type="info")
 
     with ui.row():
         with ui.column():
