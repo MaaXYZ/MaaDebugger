@@ -121,7 +121,7 @@ async def connect_adb_control():
         try:
             config = json.loads(adb_config_input.value)
         except json.JSONDecodeError as e:
-            print("Error parsing extras:", e)
+            notify.send(f"Error parsing extras: {e}")
             GlobalStatus.ctrl_connecting = Status.FAILED
             return
 
@@ -331,7 +331,7 @@ async def on_click_resource_load(values: str):
         return
 
     paths = [Path(p) for p in values.split("\n") if p]
-    print(paths)
+
     loaded = await maafw.load_resource(paths)
     if not loaded[0]:
         GlobalStatus.res_loading = Status.FAILED
@@ -384,7 +384,7 @@ async def run_task_control():
         try:
             pipeline_override = json.loads(pipeline_override_input.value)
         except json.JSONDecodeError as e:
-            print("Error parsing pipeline_override:", e)
+            notify.send(f"Error parsing pipeline_override: {e}")
             GlobalStatus.task_running = Status.FAILED
             return
 
