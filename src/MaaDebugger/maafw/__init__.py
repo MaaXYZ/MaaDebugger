@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Callable, List, Optional, Union
+from typing import Callable, List, Optional, Tuple, Union
 
 from asyncify import asyncify
 from PIL import Image
@@ -49,19 +49,20 @@ class MaaFW:
         return result
 
     @asyncify
-    def connect_adb(self, path: Path, address: str, config: dict) -> bool:
+    def connect_adb(
+        self, path: Path, address: str, config: dict
+    ) -> Tuple[bool, Optional[str]]:
         self.controller = AdbController(path, address, config=config)
         connected = self.controller.post_connection().wait().succeeded
         if not connected:
-            print(f"Failed to connect {path} {address}")
-            return False
+            return (False, f"Failed to connect {path} {address}")
 
-        return True
+        return (True, None)
 
     @asyncify
     def connect_win32hwnd(
         self, hwnd: Union[int, str], screencap_method: int, input_method: int
-    ) -> bool:
+    ) -> Tuple[bool, Optional[str]]:
         if isinstance(hwnd, str):
             hwnd = int(hwnd, 16)
 
@@ -70,41 +71,43 @@ class MaaFW:
         )
         connected = self.controller.post_connection().wait().succeeded
         if not connected:
-            print(f"Failed to connect {hwnd}")
-            return False
+            return (False, f"Failed to connect {hex(hwnd)}")
 
-        return True
+        return (True, None)
 
     @asyncify
-    def load_resource(self, dir: List[Path]) -> bool:
+    def load_resource(self, dir: List[Path]) -> Tuple[bool, Optional[str]]:
         if not self.resource:
             self.resource = Resource()
 
         self.resource.clear()
         for d in dir:
             if not d.exists():
-                return False
+                return (False, f"{d} does not exist.")
 
             status = self.resource.post_bundle(d).wait().succeeded
             if not status:
-                return False
-        return True
+                return (
+                    False,
+                    "Fail to load resource,please check the outputs of CLI.",
+                )
+        return (True, None)
 
     @asyncify
-    def run_task(self, entry: str, pipeline_override: dict = {}) -> bool:
+    def run_task(
+        self, entry: str, pipeline_override: dict = {}
+    ) -> Tuple[bool, Optional[str]]:
         if not self.tasker:
             self.tasker = Tasker(notification_handler=self.notification_handler)
 
         if not self.resource or not self.controller:
-            print("Resource or Controller not initialized")
-            return False
+            return (False, "Resource or Controller not initialized")
 
         self.tasker.bind(self.resource, self.controller)
         if not self.tasker.inited:
-            print("Failed to init MaaFramework tasker")
-            return False
+            return (False, "Failed to init MaaFramework tasker")
 
-        return self.tasker.post_task(entry, pipeline_override).wait().succeeded
+        return (self.tasker.post_task(entry, pipeline_override).wait().succeeded, None)
 
     @asyncify
     def stop_task(self):
