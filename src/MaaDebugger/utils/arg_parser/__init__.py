@@ -37,6 +37,12 @@ class ArgParser:
             help="DON'T automatically open the UI in a browser tab. (Default: False)",
             default=False,
         )
+        self.parser.add_argument(
+            "--CI",
+            action="store_true",
+            help="Only for CI test. (Default: False)",
+            default=False,
+        )
 
     def _add_dark_group(self):
         """
@@ -105,3 +111,6 @@ class ArgParser:
             return False
         else:
             return None
+
+    def get_CI(self) -> bool:
+        return self.args.CI
