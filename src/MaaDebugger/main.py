@@ -4,6 +4,7 @@ from .webpage import index_page
 from .webpage import reco_page
 
 from .utils import args
+from .utils import ci_test
 
 
 def main():
