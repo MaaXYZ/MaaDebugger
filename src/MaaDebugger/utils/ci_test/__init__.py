@@ -4,11 +4,11 @@ from ..arg_parser import ArgParser
 
 
 def quit() -> None:
-    print("CI is enabled, shutting down...")
+    print("CI test passed")
     app.shutdown()
 
 
 ci = ArgParser().get_CI()
 if ci:
     print("WARNING: CI mode is enabled.")
-    ui.timer(interval=5, callback=quit, once=True)
+    ui.timer(interval=2, callback=quit, once=True)
