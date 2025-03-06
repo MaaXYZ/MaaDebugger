@@ -1,0 +1,36 @@
+name: test
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - '**.py'
+      - '.github/workflows/test.yml'
+
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - '**.py'
+      - '.github/workflows/test.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.9"
+
+      - name: Install Deps
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run Test
+        timeout-minutes: 1
+        run: |
+          python test.py
