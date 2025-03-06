@@ -5,8 +5,6 @@ from .webpage import reco_page
 
 from .utils import args
 
-import tomllib
-
 
 def main():
     host = args.get_host()
