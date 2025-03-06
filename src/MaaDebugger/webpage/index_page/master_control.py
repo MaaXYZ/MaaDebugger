@@ -90,8 +90,8 @@ async def connect_adb_control():
             on_click=lambda: on_click_connect(),
         )
         ui.button(
-            "FIND",
-            on_click=lambda: on_click_detect(),
+            "Scan",
+            on_click=lambda: on_click_scan(),
         )
 
         device_select = ui.select(
@@ -141,7 +141,7 @@ async def connect_adb_control():
 
         await maafw.screenshotter.refresh(True)
 
-    async def on_click_detect():
+    async def on_click_scan():
         GlobalStatus.ctrl_detecting = Status.RUNNING
 
         devices = await maafw.detect_adb()
@@ -209,11 +209,11 @@ async def connect_win32_control():
             )
             .props("size=30")
             .bind_value(STORAGE, "window_name")
-            .on("keydown.enter", lambda: on_click_detect())
+            .on("keydown.enter", lambda: on_click_scan())
         )
         ui.button(
-            "FIND",
-            on_click=lambda: on_click_detect(),
+            "Scan",
+            on_click=lambda: on_click_scan(),
         )
 
         hwnd_select = ui.select(
@@ -250,7 +250,7 @@ async def connect_win32_control():
 
         await maafw.screenshotter.refresh(True)
 
-    async def on_click_detect():
+    async def on_click_scan():
         GlobalStatus.ctrl_detecting = Status.RUNNING
 
         windows = await maafw.detect_win32hwnd(window_name_input.value)
@@ -336,7 +336,7 @@ async def agent_control():
         .bind_value(STORAGE, "agent_identifier")
     )
     ui.button(
-        "Agent",
+        "Connect",
         on_click=lambda: on_click_agent(),
     )
 
