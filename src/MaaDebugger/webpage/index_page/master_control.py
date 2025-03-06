@@ -19,6 +19,7 @@ class GlobalStatus:
     ctrl_detecting: Status = Status.PENDING  # not required
     res_loading: Status = Status.PENDING
     task_running: Status = Status.PENDING
+    agent_connecting: Status = Status.PENDING
 
 
 async def main():
@@ -32,6 +33,8 @@ async def main():
             await connect_control()
             with ui.row(align_items="center").classes("w-full"):
                 await load_resource_control()
+            with ui.row(align_items="center").classes("w-full"):
+                await agent_control()
             with ui.row(align_items="center").classes("w-full"):
                 await run_task_control()
 
@@ -125,12 +128,12 @@ async def connect_adb_control():
             GlobalStatus.ctrl_connecting = Status.FAILED
             return
 
-        connected = await maafw.connect_adb(
+        connected, error = await maafw.connect_adb(
             Path(adb_path_input.value), adb_address_input.value, config
         )
-        if not connected[0]:
+        if not connected:
             GlobalStatus.ctrl_connecting = Status.FAILED
-            notify.send(connected[1])
+            notify.send(error)
             return
 
         GlobalStatus.ctrl_connecting = Status.SUCCEEDED
@@ -234,12 +237,12 @@ async def connect_win32_control():
             GlobalStatus.ctrl_connecting = Status.FAILED
             return
 
-        connected = await maafw.connect_win32hwnd(
+        connected, error = await maafw.connect_win32hwnd(
             hwnd_input.value, screencap_select.value, input_select.value
         )
-        if not connected[0]:
+        if not connected:
             GlobalStatus.ctrl_connecting = Status.FAILED
-            notify.send(connected[1])
+            notify.send(error)
             return
 
         GlobalStatus.ctrl_connecting = Status.SUCCEEDED
@@ -322,6 +325,35 @@ async def load_resource_control():
             on_click=lambda: on_click_resource_load(dir_input.value),
         )
 
+async def agent_control():
+    StatusIndicator(GlobalStatus, "agent_connecting")
+    
+    agent_identifier_input = (
+        ui.input(
+            "Agent Identifier",
+        )
+        .props("size=20")
+        .bind_value(STORAGE, "agent_identifier")
+    )
+    ui.button(
+        "Agent",
+        on_click=lambda: on_click_agent(),
+    )
+
+    async def on_click_agent():
+        GlobalStatus.agent_connecting = Status.RUNNING
+
+        identifier = await maafw.create_agent(agent_identifier_input.value)
+        agent_identifier_input.value = identifier
+        
+        connected, error = await maafw.connect_agent(agent_identifier_input.value)
+        if not connected:
+            GlobalStatus.agent_connecting = Status.FAILED
+            notify.send(error)
+            return
+
+        GlobalStatus.agent_connecting = Status.SUCCEEDED
+
 
 async def on_click_resource_load(values: str):
     GlobalStatus.res_loading = Status.RUNNING
@@ -332,10 +364,10 @@ async def on_click_resource_load(values: str):
 
     paths = [Path(p) for p in values.split("\n") if p]
 
-    loaded = await maafw.load_resource(paths)
-    if not loaded[0]:
+    loaded, error = await maafw.load_resource(paths)
+    if not loaded:
         GlobalStatus.res_loading = Status.FAILED
-        notify.send(loaded[1])
+        notify.send(error)
         return
 
     GlobalStatus.res_loading = Status.SUCCEEDED
@@ -390,10 +422,10 @@ async def run_task_control():
 
         await on_click_resource_load(STORAGE["resource_dir"])
 
-        run = await maafw.run_task(entry_input.value, pipeline_override)
-        if not run[0]:
+        run, error = await maafw.run_task(entry_input.value, pipeline_override)
+        if not run:
             GlobalStatus.task_running = Status.FAILED
-            notify.send(run[1])
+            notify.send(error)
             return
 
         GlobalStatus.task_running = Status.SUCCEEDED

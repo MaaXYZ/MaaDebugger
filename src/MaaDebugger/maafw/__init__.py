@@ -8,6 +8,7 @@ from maa.controller import AdbController, Win32Controller
 from maa.tasker import Tasker, RecognitionDetail, NotificationHandler
 from maa.resource import Resource
 from maa.toolkit import Toolkit, AdbDevice, DesktopWindow
+from maa.agent_client import AgentClient
 
 from ..utils import cvmat_to_image
 
@@ -17,6 +18,8 @@ class MaaFW:
     resource: Optional[Resource]
     controller: Union[AdbController, Win32Controller, None]
     tasker: Optional[Tasker]
+    agent: Optional[AgentClient]
+    agent_identifier: Optional[str]
     notification_handler: Optional[NotificationHandler]
 
     def __init__(self):
@@ -26,6 +29,8 @@ class MaaFW:
         self.resource = None
         self.controller = None
         self.tasker = None
+        self.agent = None
+        self.agent_identifier = None
 
         self.screenshotter = Screenshotter(self.screencap)
         self.notification_handler = None
@@ -91,6 +96,31 @@ class MaaFW:
                     False,
                     "Fail to load resource,please check the outputs of CLI.",
                 )
+        return (True, None)
+
+    @asyncify
+    def create_agent(self, identifier: str) -> str:
+        if not self.resource:
+            self.resource = Resource()
+
+        if not self.agent:
+            self.agent = AgentClient()
+            self.agent.bind(self.resource)
+
+        if not self.agent_identifier:
+            self.agent_identifier = self.agent.create_socket(identifier)
+            if not self.agent_identifier:
+                raise RuntimeError("Failed to create agent")
+
+        return self.agent_identifier
+
+    @asyncify
+    def connect_agent(self, identifier: str) -> Tuple[bool, Optional[str]]:
+
+        ret = self.agent.connect()
+        if not ret:
+            return (None, "Failed to connect agent")
+
         return (True, None)
 
     @asyncify
