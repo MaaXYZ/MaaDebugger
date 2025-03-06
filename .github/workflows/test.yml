@@ -32,6 +32,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Test
+        timeout-minutes: 1
         run: |
           cd src
           python -m MaaDebugger --CI
