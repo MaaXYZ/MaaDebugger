@@ -12,6 +12,8 @@ def main():
     show = args.get_hide()
     dark = args.get_dark()
 
+    index_page.index()
+
     ui.run(
         title="Maa Debugger",
         storage_secret="maadbg",

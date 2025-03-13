@@ -10,7 +10,7 @@ from ...webpage.components.status_indicator import Status, StatusIndicator
 from ...webpage.reco_page import RecoData
 
 
-async def main():
+def main():
     Controls.recognition_row.register()
 
 
@@ -100,7 +100,8 @@ class RecognitionRow:
                 ).props("caption")
 
     def on_click_item(self, data: ItemData):
-        print(f"on_click_item ({data.col}, {data.row}): {data.name} ({data.reco_id})")
+        print(
+            f"on_click_item ({data.col}, {data.row}): {data.name} ({data.reco_id})")
 
         ui.navigate.to(f"reco/{data.reco_id}", new_tab=True)
 
