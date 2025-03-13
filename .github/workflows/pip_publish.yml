@@ -30,3 +30,11 @@ jobs:
         run: |
           python tools/pip_pack.py ${{  github.ref_name }}
           pdm publish --password ${{ secrets.PYPI_TOKEN }}
+
+      - name: Commit Version
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml
+          git commit -m "chore: Update pyproject from ${{  github.ref_name }}"
+          git push origin HEAD:main
