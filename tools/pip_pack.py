@@ -1,6 +1,7 @@
 import sys
 
 import tomlkit
+from packaging.version import parse as parse_version
 
 
 def set_toml_ver():
@@ -22,12 +23,7 @@ def set_python_ver():
     VER_FILE = "src/MaaDebugger/__version__.py"
 
     tag_name: str = sys.argv[1]
-    ver = (
-        tag_name.lstrip("v")
-        .replace("-", "")
-        .replace("alpha.", "a")
-        .replace("beta.", "b")
-    )
+    ver = str(parse_version(tag_name))
 
     with open(VER_FILE, "w", encoding="utf-8") as f:
         f.write(f'version = "{ver}"\n')
