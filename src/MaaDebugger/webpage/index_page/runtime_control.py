@@ -25,7 +25,9 @@ class RecognitionRow:
             self.on_recognized: Callable = None
 
         def on_node_next_list(
-            self, noti_type: NotificationType, detail: NotificationHandler.NodeNextListDetail
+            self,
+            noti_type: NotificationType,
+            detail: NotificationHandler.NodeNextListDetail,
         ):
             if noti_type != NotificationType.Starting:
                 return
@@ -37,7 +39,10 @@ class RecognitionRow:
             noti_type: NotificationType,
             detail: NotificationHandler.NodeRecognitionDetail,
         ):
-            if noti_type != NotificationType.Succeeded and noti_type != NotificationType.Failed:
+            if (
+                noti_type != NotificationType.Succeeded
+                and noti_type != NotificationType.Failed
+            ):
                 return
 
             self.on_recognized(
@@ -100,8 +105,7 @@ class RecognitionRow:
                 ).props("caption")
 
     def on_click_item(self, data: ItemData):
-        print(
-            f"on_click_item ({data.col}, {data.row}): {data.name} ({data.reco_id})")
+        print(f"on_click_item ({data.col}, {data.row}): {data.name} ({data.reco_id})")
 
         ui.navigate.to(f"reco/{data.reco_id}", new_tab=True)
 
