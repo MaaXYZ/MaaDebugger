@@ -23,11 +23,6 @@ class GlobalStatus:
 
 
 def main():
-   # cache_cleared = await maafw.clear_cache()
-
-    # if cache_cleared:
-    # notify.send("Cache cleared", with_print=False, type="info")
-
     with ui.row():
         with ui.column():
             connect_control()
@@ -277,8 +272,7 @@ def screenshot_control():
         with ui.card().tight():
             ui.interactive_image(
                 cross="green",
-                on_mouse=lambda e: on_click_image(
-                    int(e.image_x), int(e.image_y)),
+                on_mouse=lambda e: on_click_image(int(e.image_x), int(e.image_y)),
             ).bind_source_from(maafw.screenshotter, "source").style(
                 "height: 200px;"
             ).bind_visibility_from(
@@ -408,6 +402,9 @@ def run_task_control():
         ui.button("Stop", on_click=lambda: on_click_stop())
 
     async def on_click_start():
+        if await maafw.clear_cache():
+            notify.send("Cache cleared", with_print=False, type="info")
+
         GlobalStatus.task_running = Status.RUNNING
 
         if not entry_input.value:

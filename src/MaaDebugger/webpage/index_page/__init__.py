@@ -10,5 +10,3 @@ def index():
     ui.separator()
 
     runtime_control()
-
-    ui.timer(5, lambda: ui.notify("test"), once=True)
