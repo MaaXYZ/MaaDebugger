@@ -3,13 +3,7 @@ name = "MaaDebugger"
 version = "v0.0.1"
 description = "MaaDebugger"
 authors = [{ name = "MaaXYZ" }]
-dependencies = [
-    "MaaFw>=4.0.0b2",
-    "nicegui>=2.2.0",
-    "asyncify",
-    "pillow",
-    "toml",
-]
+dependencies = ["MaaFw>=4.0.0b2", "nicegui>=2.2.0", "asyncify", "pillow"]
 readme = "README.md"
 urls = { Homepage = "https://github.com/MaaXYZ/MaaDebugger" }
 requires-python = ">=3.9"
