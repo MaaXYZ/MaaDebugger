@@ -402,8 +402,7 @@ def run_task_control():
         ui.button("Stop", on_click=lambda: on_click_stop())
 
     async def on_click_start():
-        if await maafw.clear_cache():
-            notify.send("Cache cleared", with_print=False, type="info")
+        maafw.clear_cache()
 
         GlobalStatus.task_running = Status.RUNNING
 
