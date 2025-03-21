@@ -37,7 +37,7 @@ async def get_pypi() -> Optional[str]:  # -> '1.8.0b1'
 
 
 def compare_tag_name(tag_name: str) -> bool:
-    if semver.compare(tag_name.lstrip("v"), __version__.tag_name.lstrip("v")) == 1:
+    if semver.compare(tag_name, __version__.tag_name.lstrip("v")) == 1:
         return True
     else:
         return False
@@ -69,8 +69,8 @@ async def check_update() -> Union[ChcekStatus, str, None]:  # PyPi -> Github -> 
             return None
 
     if github := await get_github():
-        if compare_tag_name(github):
-            return str(parse_version(github))
+        if compare_tag_name(github.lstrip("v")):
+            return str(parse_version(github.lstrip("v")))
         else:
             return None
 
