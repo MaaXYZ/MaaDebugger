@@ -22,27 +22,22 @@ class GlobalStatus:
     agent_connecting: Status = Status.PENDING
 
 
-async def main():
-    cache_cleared = await maafw.clear_cache()
-
-    if cache_cleared:
-        notify.send("Cache cleared", with_print=False, type="info")
-
+def main():
     with ui.row():
         with ui.column():
-            await connect_control()
+            connect_control()
             with ui.row(align_items="center").classes("w-full"):
-                await load_resource_control()
+                load_resource_control()
             with ui.row(align_items="center").classes("w-full"):
-                await agent_control()
+                agent_control()
             with ui.row(align_items="center").classes("w-full"):
-                await run_task_control()
+                run_task_control()
 
         with ui.column():
-            await screenshot_control()
+            screenshot_control()
 
 
-async def connect_control():
+def connect_control():
     with ui.tabs() as tabs:
         adb = ui.tab("Adb")
         win32 = ui.tab("Win32")
@@ -50,13 +45,13 @@ async def connect_control():
     with ui.tab_panels(tabs, value="Adb").bind_value(STORAGE, "controller_type"):
         with ui.tab_panel(adb):
             with ui.row(align_items="center").classes("w-full"):
-                await connect_adb_control()
+                connect_adb_control()
         with ui.tab_panel(win32):
             with ui.row(align_items="center").classes("w-full"):
-                await connect_win32_control()
+                connect_win32_control()
 
 
-async def connect_adb_control():
+def connect_adb_control():
     with ui.row(align_items="baseline"):
         StatusIndicator(GlobalStatus, "ctrl_connecting")
         adb_path_input = (
@@ -168,7 +163,7 @@ async def connect_adb_control():
         adb_config_input.value = e.value[2]
 
 
-async def connect_win32_control():
+def connect_win32_control():
     SCREENCAP_DICT = {
         MaaWin32ScreencapMethodEnum.GDI: "Screencap_GDI",
         MaaWin32ScreencapMethodEnum.DXGI_DesktopDup: "Screencap_DXGI_DesktopDup",
@@ -272,7 +267,7 @@ async def connect_win32_control():
         hwnd_input.value = e.value
 
 
-async def screenshot_control():
+def screenshot_control():
     with ui.row().style("align-items: flex-end;"):
         with ui.card().tight():
             ui.interactive_image(
@@ -304,7 +299,7 @@ async def screenshot_control():
         await maafw.screenshotter.refresh(True)
 
 
-async def load_resource_control():
+def load_resource_control():
     StatusIndicator(GlobalStatus, "res_loading")
 
     with ui.row(align_items="baseline").classes("w-3/4"):
@@ -325,9 +320,10 @@ async def load_resource_control():
             on_click=lambda: on_click_resource_load(dir_input.value),
         )
 
-async def agent_control():
+
+def agent_control():
     StatusIndicator(GlobalStatus, "agent_connecting")
-    
+
     agent_identifier_input = (
         ui.input(
             "Agent Identifier",
@@ -345,7 +341,7 @@ async def agent_control():
 
         identifier = await maafw.create_agent(agent_identifier_input.value)
         agent_identifier_input.value = identifier
-        
+
         connected, error = await maafw.connect_agent(agent_identifier_input.value)
         if not connected:
             GlobalStatus.agent_connecting = Status.FAILED
@@ -373,7 +369,7 @@ async def on_click_resource_load(values: str):
     GlobalStatus.res_loading = Status.SUCCEEDED
 
 
-async def run_task_control():
+def run_task_control():
     StatusIndicator(GlobalStatus, "task_running")
 
     with ui.row(align_items="baseline"):
@@ -406,6 +402,8 @@ async def run_task_control():
         ui.button("Stop", on_click=lambda: on_click_stop())
 
     async def on_click_start():
+        maafw.clear_cache()
+
         GlobalStatus.task_running = Status.RUNNING
 
         if not entry_input.value:

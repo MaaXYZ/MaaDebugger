@@ -10,7 +10,7 @@ from ...webpage.components.status_indicator import Status, StatusIndicator
 from ...webpage.reco_page import RecoData
 
 
-async def main():
+def main():
     Controls.recognition_row.register()
 
 
@@ -25,7 +25,9 @@ class RecognitionRow:
             self.on_recognized: Callable = None
 
         def on_node_next_list(
-            self, noti_type: NotificationType, detail: NotificationHandler.NodeNextListDetail
+            self,
+            noti_type: NotificationType,
+            detail: NotificationHandler.NodeNextListDetail,
         ):
             if noti_type != NotificationType.Starting:
                 return
@@ -37,7 +39,10 @@ class RecognitionRow:
             noti_type: NotificationType,
             detail: NotificationHandler.NodeRecognitionDetail,
         ):
-            if noti_type != NotificationType.Succeeded and noti_type != NotificationType.Failed:
+            if (
+                noti_type != NotificationType.Succeeded
+                and noti_type != NotificationType.Failed
+            ):
                 return
 
             self.on_recognized(
