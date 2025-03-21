@@ -18,7 +18,7 @@ class ChcekStatus(Enum):
 
 async def get_github() -> Optional[str]:  # -> 'v1.8.0-beta.1'
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(trust_env=False) as client:
             req = await client.get(GITHUB_API, timeout=5)
             if req.status_code == 200:
                 return req.json().get("tag_name")
@@ -28,7 +28,7 @@ async def get_github() -> Optional[str]:  # -> 'v1.8.0-beta.1'
 
 async def get_pypi() -> Optional[str]:  # -> '1.8.0b1'
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(trust_env=False) as client:
             req = await client.get(PYPI_API, timeout=5)
             if req.status_code == 200:
                 return req.json().get("info", {}).get("version")
@@ -37,7 +37,7 @@ async def get_pypi() -> Optional[str]:  # -> '1.8.0b1'
 
 
 def compare_tag_name(tag_name: str) -> bool:
-    if semver.compare(tag_name, __version__.tag_name) == 1:
+    if semver.compare(tag_name.lstrip("v"), __version__.tag_name.lstrip("v")) == 1:
         return True
     else:
         return False
