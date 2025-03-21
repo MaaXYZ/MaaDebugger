@@ -24,6 +24,8 @@ class GlobalStatus:
 
 
 def main():
+    app.on_startup(check_update)
+
     with ui.row():
         with ui.column():
             connect_control()
