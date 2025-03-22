@@ -1,5 +1,8 @@
-import json
 import asyncio
+import json
+import sys
+import traceback
+from datetime import datetime
 from pathlib import Path
 
 from maa.define import MaaWin32ScreencapMethodEnum, MaaWin32InputMethodEnum
@@ -8,6 +11,7 @@ from nicegui import app, binding, ui
 from ...maafw import maafw
 from ...utils import input_checker as ic
 from ...webpage.components.status_indicator import Status, StatusIndicator
+from .traceback_page import on_exception
 from . import notify
 
 binding.MAX_PROPAGATION_TIME = 1
@@ -23,6 +27,12 @@ class GlobalStatus:
 
 
 def main():
+    app.on_exception(on_exception)
+
+    with ui.row():  # Test Code
+        ui.button("Json Error", on_click=lambda: json.loads("{"))
+        ui.button("Path Error", on_click=lambda: Path(None))
+
     with ui.row():
         with ui.column():
             connect_control()
