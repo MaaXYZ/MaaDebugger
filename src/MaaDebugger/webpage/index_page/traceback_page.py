@@ -7,8 +7,8 @@ from nicegui import ui
 tb_number = 0
 
 
-def on_exception(e: Exception):
-    try:
+def on_exception(e: Exception):  # When an exception is raised, this function is called
+    try:  # Avoid recursion
         global tb_number
         log = ""
 
