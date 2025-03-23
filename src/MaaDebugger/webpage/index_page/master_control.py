@@ -1,8 +1,5 @@
 import asyncio
 import json
-import sys
-import traceback
-from datetime import datetime
 from pathlib import Path
 
 from maa.define import MaaWin32ScreencapMethodEnum, MaaWin32InputMethodEnum
