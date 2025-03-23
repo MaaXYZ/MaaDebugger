@@ -402,7 +402,7 @@ def run_task_control():
         ui.button("Stop", on_click=lambda: on_click_stop())
 
     async def on_click_start():
-        maafw.clear_cache()
+        await maafw.clear_cache()
 
         GlobalStatus.task_running = Status.RUNNING
 
