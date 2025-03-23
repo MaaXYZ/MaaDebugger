@@ -23,6 +23,7 @@ def create_traceback_page(tb_id: int):
     title = f"Traceback ({tb_id})"
     name, value, details, record_time = TracebackData.data[tb_id]
 
+    ui.page_title(title)
     ui.markdown(f"## {title}")
     ui.separator()
     ui.markdown(f"#### {name}\n\n##### {value}")
@@ -43,7 +44,7 @@ def on_exception(e: Exception):  # When an exception is raised, this function is
             details += t
 
         TracebackData.data[TracebackData.id] = (
-            e_type.__name__ if e_type else "Unknown",
+            e_type.__name__ if e_type else "UnknownError",
             e_value,
             details,
             record_time,
