@@ -26,10 +26,6 @@ class GlobalStatus:
 def main():
     app.on_exception(on_exception)
 
-    with ui.row():  # Test Code
-        ui.button("Json Error", on_click=lambda: json.loads("{"))
-        ui.button("Path Error", on_click=lambda: Path(None))
-
     with ui.row():
         with ui.column():
             connect_control()
