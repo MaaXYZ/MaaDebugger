@@ -75,7 +75,7 @@ def creata_traceback_all_page():
             ui.navigate.reload
         )
         ui.switch("Auto Update").bind_value(TracebackData, "auto_update").tooltip(
-            "When a new exception is recorded, update the page."
+            "When a new exception is recorded, should the page be automatically updated?"
         )
         ui.button("Clear Traceback Cache", on_click=clear_traceback_data).props(
             "no-caps"
