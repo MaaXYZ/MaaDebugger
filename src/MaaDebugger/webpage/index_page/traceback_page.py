@@ -61,16 +61,16 @@ def auto_update_page():
 
 @ui.page("/traceback/all")
 def creata_traceback_all_page():
-
     TracaBackElement(value=None).bind_value_from(TracebackData, "id").on_value_change(
         auto_update_page
     )
 
     ui.page_title("Tracebacks")
+    ui.markdown("## Tracebacks")
     with ui.row(align_items="center").classes("w-full"):
         ui.number("Maximum Results to Show", min=1).bind_value(
             TracebackData, "max_display"
-        )
+        ).on_value_change(ui.navigate.reload)
         ui.switch("Reverse").bind_value(TracebackData, "reverse").on_value_change(
             ui.navigate.reload
         )
@@ -83,7 +83,7 @@ def creata_traceback_all_page():
         ui.separator()
 
     if not TracebackData.data:
-        ui.markdown("## No Tracebacks")
+        ui.markdown("### No Tracebacks")
         return
 
     with ui.list().props("bordered separator").classes("w-full"):
@@ -92,9 +92,14 @@ def creata_traceback_all_page():
         ):
             name, value, _, record_time = TracebackData.data[key]
 
-            with ui.item(
-                on_click=lambda id=key: ui.navigate.to(f"/traceback/{id}", True)
-            ).classes("w-full"):
+            with (
+                ui.link(target=f"/traceback/{key}", new_tab=True)
+                .classes("!no-underline")  # Hide the underline
+                .classes(
+                    "dark: text-black"  # In light mode, set the font color to black (it is blue by default due to ui.link)
+                ),
+                ui.item().classes("w-full"),
+            ):
                 with ui.item_section().props("side"):
                     ui.item_label(str(key))
                 with ui.item_section():
