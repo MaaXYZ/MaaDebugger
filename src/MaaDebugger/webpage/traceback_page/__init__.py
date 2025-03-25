@@ -67,6 +67,7 @@ def creata_traceback_all_page():
 
     ui.page_title("Tracebacks")
     ui.markdown("## Tracebacks")
+
     with ui.row(align_items="center").classes("w-full"):
         ui.number("Maximum Results to Show", min=1).bind_value(
             TracebackData, "max_display"

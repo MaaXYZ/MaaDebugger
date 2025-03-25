@@ -11,6 +11,7 @@ from ...utils import update_checker
 from ...webpage.components.status_indicator import Status, StatusIndicator
 from ..traceback_page import on_exception
 from . import notify
+from .. import debug_page
 
 binding.MAX_PROPAGATION_TIME = 1
 STORAGE = app.storage.general
