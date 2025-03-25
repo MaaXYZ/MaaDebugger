@@ -7,6 +7,7 @@ from nicegui import app, binding, ui
 
 from ...maafw import maafw
 from ...utils import input_checker as ic
+from ...utils import update_checker
 from ...webpage.components.status_indicator import Status, StatusIndicator
 from .traceback_page import on_exception
 from . import notify
@@ -25,6 +26,7 @@ class GlobalStatus:
 
 def main():
     app.on_exception(on_exception)
+    app.on_startup(check_upd
 
     with ui.row():
         with ui.column():
@@ -405,7 +407,7 @@ def run_task_control():
         ui.button("Stop", on_click=lambda: on_click_stop())
 
     async def on_click_start():
-        maafw.clear_cache()
+        await maafw.clear_cache()
 
         GlobalStatus.task_running = Status.RUNNING
 
@@ -439,3 +441,28 @@ def run_task_control():
 
         GlobalStatus.task_running = Status.PENDING
         await maafw.screenshotter.refresh(True)
+
+
+async def check_update():
+    status = await update_checker.check_update()
+
+    if status == update_checker.ChcekStatus.SKIPPED or status is None:
+        return
+    elif status == update_checker.ChcekStatus.FAILED:
+        ui.notification(
+            "Failed to check for updates",
+            type="warning",
+            position="bottom-right",
+            close_button=True,
+            timeout=10,
+        )
+        print("Failed to check for updates")
+    elif status:
+        ui.notification(
+            f"New version available: {status}",
+            type="positive",
+            position="bottom-right",
+            close_button=True,
+            timeout=10,
+        )
+        print(f"New version available: {status}")
