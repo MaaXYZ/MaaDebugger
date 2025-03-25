@@ -26,7 +26,7 @@ class GlobalStatus:
 
 def main():
     app.on_exception(on_exception)
-    app.on_startup(check_upd
+    app.on_startup(check_update)
 
     with ui.row():
         with ui.column():
