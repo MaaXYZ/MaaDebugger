@@ -9,7 +9,7 @@ from ...maafw import maafw
 from ...utils import input_checker as ic
 from ...utils import update_checker
 from ...webpage.components.status_indicator import Status, StatusIndicator
-from .traceback_page import on_exception
+from ..traceback_page import on_exception
 from . import notify
 
 binding.MAX_PROPAGATION_TIME = 1
