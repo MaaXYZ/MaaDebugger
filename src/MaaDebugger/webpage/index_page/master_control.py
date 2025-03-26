@@ -10,7 +10,6 @@ from ...utils import input_checker as ic
 from ...utils import update_checker
 from ...webpage.components.status_indicator import Status, StatusIndicator
 from ..traceback_page import on_exception
-from . import notify
 
 binding.MAX_PROPAGATION_TIME = 1
 STORAGE = app.storage.general
@@ -124,7 +123,9 @@ def connect_adb_control():
         try:
             config = json.loads(adb_config_input.value)
         except json.JSONDecodeError as e:
-            notify.send(f"Error parsing extras: {e}")
+            ui.notify(
+                f"Error parsing extras: {e}", position="bottom-right", type="negative"
+            )
             GlobalStatus.ctrl_connecting = Status.FAILED
             return
 
@@ -133,7 +134,8 @@ def connect_adb_control():
         )
         if not connected:
             GlobalStatus.ctrl_connecting = Status.FAILED
-            notify.send(error)
+            ui.notify(error, position="bottom-right", type="negative")
+            print(error)
             return
 
         GlobalStatus.ctrl_connecting = Status.SUCCEEDED
@@ -350,7 +352,8 @@ def agent_control():
         connected, error = await maafw.connect_agent(agent_identifier_input.value)
         if not connected:
             GlobalStatus.agent_connecting = Status.FAILED
-            notify.send(error)
+            ui.notify(error, position="bottom-right", type="negative")
+            print(error)
             return
 
         GlobalStatus.agent_connecting = Status.SUCCEEDED
@@ -368,7 +371,8 @@ async def on_click_resource_load(values: str):
     loaded, error = await maafw.load_resource(paths)
     if not loaded:
         GlobalStatus.res_loading = Status.FAILED
-        notify.send(error)
+        ui.notify(error, position="bottom-right", type="negative")
+        print(error)
         return
 
     GlobalStatus.res_loading = Status.SUCCEEDED
@@ -419,7 +423,9 @@ def run_task_control():
         try:
             pipeline_override = json.loads(pipeline_override_input.value)
         except json.JSONDecodeError as e:
-            notify.send(f"Error parsing pipeline_override: {e}")
+            ui.notify(
+                f"Error parsing extras: {e}", position="bottom-right", type="negative"
+            )
             GlobalStatus.task_running = Status.FAILED
             return
 
@@ -428,7 +434,9 @@ def run_task_control():
         run, error = await maafw.run_task(entry_input.value, pipeline_override)
         if not run:
             GlobalStatus.task_running = Status.FAILED
-            notify.send(error)
+            print(error)
+            if error is not None:
+                ui.notify(error, position="bottom-right", type="negative")
             return
 
         GlobalStatus.task_running = Status.SUCCEEDED
