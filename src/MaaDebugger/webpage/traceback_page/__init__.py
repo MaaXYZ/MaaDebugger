@@ -35,13 +35,16 @@ class TracaBackElement(ValueElement):
 def clear_traceback_data():
     TracebackData.data = {}
     TracebackData.id = 0
-    ui.navigate.reload()
+    create_traceback_list.refresh()
+    ui.notify("Cleared.", position="bottom-right", type="info")
 
 
 def get_data(num: int) -> dict:
     """
     Get the specified amount of data.
     """
+    if num is None:
+        num = 0
 
     i, data = 0, {}
 
@@ -56,7 +59,32 @@ def get_data(num: int) -> dict:
 
 def auto_update_page():
     if TracebackData.auto_update:
-        ui.navigate.reload()
+        create_traceback_list.refresh()
+
+
+@ui.refreshable
+def create_traceback_list():
+    for key in sorted(
+        get_data(TracebackData.max_display), reverse=TracebackData.reverse
+    ):
+        name, value, _, record_time = TracebackData.data[key]
+
+        with (
+            ui.link(target=f"/traceback/{key}", new_tab=True)
+            .classes("!no-underline")  # Hide the underline
+            .classes(
+                "dark: text-black"  # In light mode, set the font color to black (it is blue by default due to ui.link)
+            ),
+            ui.item().classes("w-full"),
+        ):
+            with ui.item_section().props("side"):
+                ui.item_label(str(key))
+            with ui.item_section():
+                ui.item_label(record_time)
+            with ui.item_section():
+                ui.item_label(name)
+            with ui.item_section():
+                ui.item_label(value)
 
 
 @ui.page("/traceback/all")
@@ -68,11 +96,11 @@ def creata_traceback_all_page():
     ui.page_title("Tracebacks")
     ui.markdown("## Tracebacks")
     with ui.row(align_items="center").classes("w-full"):
-        ui.number("Maximum Results to Show", min=1).bind_value(
+        ui.number("Maximum Results to Show", min=1, precision=0).bind_value(
             TracebackData, "max_display"
-        ).on_value_change(ui.navigate.reload)
+        ).on_value_change(create_traceback_list.refresh)
         ui.switch("Reverse").bind_value(TracebackData, "reverse").on_value_change(
-            ui.navigate.reload
+            create_traceback_list.refresh
         )
         ui.switch("Auto Update").bind_value(TracebackData, "auto_update").tooltip(
             "When a new exception is recorded, should the page be automatically updated?"
@@ -87,27 +115,7 @@ def creata_traceback_all_page():
         return
 
     with ui.list().props("bordered separator").classes("w-full"):
-        for key in sorted(
-            get_data(TracebackData.max_display), reverse=TracebackData.reverse
-        ):
-            name, value, _, record_time = TracebackData.data[key]
-
-            with (
-                ui.link(target=f"/traceback/{key}", new_tab=True)
-                .classes("!no-underline")  # Hide the underline
-                .classes(
-                    "dark: text-black"  # In light mode, set the font color to black (it is blue by default due to ui.link)
-                ),
-                ui.item().classes("w-full"),
-            ):
-                with ui.item_section().props("side"):
-                    ui.item_label(str(key))
-                with ui.item_section():
-                    ui.item_label(record_time)
-                with ui.item_section():
-                    ui.item_label(name)
-                with ui.item_section():
-                    ui.item_label(value)
+        create_traceback_list()
 
 
 @ui.page("/traceback/{tb_id}")
