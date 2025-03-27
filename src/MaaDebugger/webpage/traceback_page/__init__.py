@@ -87,8 +87,8 @@ def create_traceback_list():
                 ui.item_label(value)
 
 
-@ui.page("/traceback/all")
-def creata_traceback_all_page():
+@ui.page("/traceback")
+def creata_all_traceback_page():
     TracaBackElement(value=None).bind_value_from(TracebackData, "id").on_value_change(
         auto_update_page
     )
@@ -122,7 +122,7 @@ def creata_traceback_all_page():
 def create_traceback_page(tb_id: int):
     if tb_id not in TracebackData.data:
         ui.markdown("## Not Found")
-        ui.link("Back to Tracebacks Page", "/traceback/all")
+        ui.link("Back to Tracebacks Page", "/traceback")
         return
 
     title = f"Traceback ({tb_id})"
@@ -137,7 +137,7 @@ def create_traceback_page(tb_id: int):
     ui.separator()
 
     ui.markdown(f"Recorded at: *{record_time}*")
-    ui.link("Back to Tracebacks Page", "/traceback/all")
+    ui.link("Back to Tracebacks Page", "/traceback")
 
 
 def on_exception(e: Exception):  # When an exception is raised, this function is called
