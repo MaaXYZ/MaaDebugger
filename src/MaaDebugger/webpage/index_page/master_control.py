@@ -424,7 +424,7 @@ def run_task_control():
             pipeline_override = json.loads(pipeline_override_input.value)
         except json.JSONDecodeError as e:
             ui.notify(
-                f"Error parsing extras: {e}", position="bottom-right", type="negative"
+                f"Error parsing pipeline override: {e}", position="bottom-right", type="negative"
             )
             GlobalStatus.task_running = Status.FAILED
             return
