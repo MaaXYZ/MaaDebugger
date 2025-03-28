@@ -15,7 +15,7 @@ class ArgParser:
         if self.ARGS_PATH.exists():
             with open(self.ARGS_PATH, "r") as f:
                 self.data: dict = json.load(f)
-                _data: dict = self.data.copy()  # A copy of data
+        _data: dict = self.data.copy()  # A copy of data
 
         self.parser = argparse.ArgumentParser(
             description="A debugger specifically for MaaFramework."
