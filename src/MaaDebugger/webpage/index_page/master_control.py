@@ -7,7 +7,7 @@ from nicegui import app, binding, ui
 
 from ...maafw import maafw
 from ...utils import input_checker as ic
-from ...utils import update_checker
+from ...utils import args, update_checker
 from ...webpage.components.status_indicator import Status, StatusIndicator
 from ..traceback_page import on_exception
 from . import notify
@@ -26,7 +26,9 @@ class GlobalStatus:
 
 def main():
     app.on_exception(on_exception)
-    app.on_startup(check_update)
+
+    if args.check_update:
+        app.on_startup(check_update)
 
     with ui.row():
         with ui.column():

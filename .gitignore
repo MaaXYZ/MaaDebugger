@@ -171,3 +171,5 @@ debug
 
 # vsc
 .vscode
+
+src/MaaDebugger/args.json
