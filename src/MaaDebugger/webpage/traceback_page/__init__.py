@@ -16,11 +16,11 @@ class TracebackData:
     # data
     data: dict[int, tuple[str, str, str, str]] = {}
     id: int = -1
-    max_display: int = 100
 
     # display
+    max_display: int = 100
     reverse: bool = True
-    auto_update: bool = False
+    auto_update: bool = True
 
 
 class TracaBackElement(ValueElement):
@@ -57,40 +57,45 @@ def get_data(num: int) -> dict:
     return data
 
 
-def auto_update_page():
+def auto_update_list():
     if TracebackData.auto_update:
         create_traceback_list.refresh()
 
 
 @ui.refreshable
 def create_traceback_list():
-    for key in sorted(
-        get_data(TracebackData.max_display), reverse=TracebackData.reverse
-    ):
-        name, value, _, record_time = TracebackData.data[key]
+    if not TracebackData.data:
+        ui.markdown("### No Tracebacks")
+        return
 
-        with (
-            ui.link(target=f"/traceback/{key}", new_tab=True)
-            .classes("!no-underline")  # Hide the underline
-            .classes(
-                "dark: text-black"  # In light mode, set the font color to black (it is blue by default due to ui.link)
-            ),
-            ui.item().classes("w-full"),
+    with ui.list().props("bordered separator").classes("w-full"):
+        for key in sorted(
+            get_data(TracebackData.max_display), reverse=TracebackData.reverse
         ):
-            with ui.item_section().props("side"):
-                ui.item_label(str(key))
-            with ui.item_section():
-                ui.item_label(record_time)
-            with ui.item_section():
-                ui.item_label(name)
-            with ui.item_section():
-                ui.item_label(value)
+            name, value, _, record_time = TracebackData.data[key]
+
+            with (
+                ui.link(target=f"/traceback/{key}", new_tab=True)
+                .classes("!no-underline")  # Hide the underline
+                .classes(
+                    "dark: text-black"  # In light mode, set the font color to black (it is blue by default due to ui.link)
+                ),
+                ui.item().classes("w-full"),
+            ):
+                with ui.item_section().props("side"):
+                    ui.item_label(str(key))
+                with ui.item_section():
+                    ui.item_label(record_time)
+                with ui.item_section():
+                    ui.item_label(name)
+                with ui.item_section():
+                    ui.item_label(value)
 
 
 @ui.page("/traceback")
 def creata_all_traceback_page():
     TracaBackElement(value=None).bind_value_from(TracebackData, "id").on_value_change(
-        auto_update_page
+        auto_update_list
     )
 
     ui.page_title("Tracebacks")
@@ -104,18 +109,12 @@ def creata_all_traceback_page():
             create_traceback_list.refresh
         )
         ui.switch("Auto Update").bind_value(TracebackData, "auto_update").tooltip(
-            "When a new exception is recorded, should the page be automatically updated?"
+            "When a new exception is recorded, should the list be automatically updated"
         )
         ui.button("Clear Traceback Cache", on_click=clear_traceback_data).props(
             "no-caps"
         )
         ui.separator()
-
-    if not TracebackData.data:
-        ui.markdown("### No Tracebacks")
-        return
-
-    with ui.list().props("bordered separator").classes("w-full"):
         create_traceback_list()
 
 
