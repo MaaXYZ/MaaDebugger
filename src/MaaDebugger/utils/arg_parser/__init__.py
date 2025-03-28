@@ -15,7 +15,9 @@ class ArgParser:
         if self.ARGS_PATH.exists():
             with open(self.ARGS_PATH, "r") as f:
                 self.data: dict = json.load(f)
-        _data: dict = self.data.copy()  # A copy of data
+                _copy_data = self.data.copy()  # A copy of data
+        else:
+            self.data, _copy_data = {}, {}
 
         self.parser = argparse.ArgumentParser(
             description="A debugger specifically for MaaFramework."
@@ -28,10 +30,10 @@ class ArgParser:
         self.args = self.parser.parse_args()
 
         # The args to be stored should be used through variables rather than functions.
-        self.check_update: bool = self.store_check_update()
+        self.check_update: bool = self._store_check_update()
 
         # If data has changes, write it to the args.json
-        if self.data != _data:
+        if self.data != _copy_data:
             with open(self.ARGS_PATH, "w") as f:
                 json.dump(self.data, f, indent=4)
 
@@ -145,7 +147,7 @@ class ArgParser:
         else:
             return None
 
-    def store_check_update(self) -> bool:
+    def _store_check_update(self) -> bool:
         if self.args.enable_update:
             self.data["update"] = True
             return True
