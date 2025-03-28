@@ -9,6 +9,10 @@ from ...maafw import maafw
 from ...utils.infos import Infos
 
 
+class DebugData:
+    auto_clear_maafw_cache: bool = True
+
+
 def export_maafw_log():
     log_path = Path.cwd() / "debug/maa.log"
     if not log_path.exists():
@@ -130,6 +134,9 @@ def create_debug_page():
         with ui.row():
             ui.button("Export Log", on_click=export_maafw_log).props("no-caps")
             ui.button("Clear Cache", on_click=clear_maafw_cache).props("no-caps")
+            ui.switch("Auto Clear Cache").bind_value(
+                DebugData, "auto_clear_maafw_cache"
+            )
 
     with ui.card().classes("w-full"):
         ui.markdown("#### Feature Test")

@@ -11,7 +11,7 @@ from ...utils import update_checker
 from ...webpage.components.status_indicator import Status, StatusIndicator
 from ..traceback_page import on_exception
 from . import notify
-from .. import debug_page
+from ..debug_page import DebugData
 
 binding.MAX_PROPAGATION_TIME = 1
 STORAGE = app.storage.general
@@ -408,7 +408,8 @@ def run_task_control():
         ui.button("Stop", on_click=lambda: on_click_stop())
 
     async def on_click_start():
-        await maafw.clear_cache()
+        if DebugData.auto_clear_maafw_cache:
+            await maafw.clear_cache()
 
         GlobalStatus.task_running = Status.RUNNING
 
