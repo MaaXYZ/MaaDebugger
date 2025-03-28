@@ -22,6 +22,12 @@ class TracebackData:
     reverse: bool = True
     auto_update: bool = True
 
+    @classmethod
+    def reset(cls):
+        """Reset the data and id."""
+        cls.data = {}
+        cls.id = -1
+
 
 class TracaBackElement(ValueElement):
     """
@@ -33,8 +39,7 @@ class TracaBackElement(ValueElement):
 
 
 def clear_traceback_data():
-    TracebackData.data = {}
-    TracebackData.id = 0
+    TracebackData.reset()
     create_traceback_list.refresh()
     ui.notify("Cleared.", position="bottom-right", type="info")
 
