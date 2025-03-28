@@ -4,6 +4,7 @@ from typing import Callable, List, Optional, Tuple, Union
 
 from asyncify import asyncify
 from PIL import Image
+from maa.library import Library
 from maa.controller import AdbController, Win32Controller
 from maa.tasker import Tasker, RecognitionDetail, NotificationHandler
 from maa.resource import Resource
@@ -34,6 +35,10 @@ class MaaFW:
 
         self.screenshotter = Screenshotter(self.screencap)
         self.notification_handler = None
+
+    @property
+    def version(self) -> str:
+        return Library.version()
 
     @staticmethod
     @asyncify
