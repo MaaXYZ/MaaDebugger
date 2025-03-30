@@ -98,6 +98,14 @@ class ArgParser:
             default=None,
         )
 
+    def _store_check_update(self) -> bool:
+        if self.args.enable_update:
+            self.data["update"] = True
+        elif self.args.disable_update:
+            self.data["update"] = False
+
+        return self.data.get("update", True)
+
     def get_port(self) -> int:
         """
         Determine the port to use based on the provided arguments.
@@ -146,15 +154,3 @@ class ArgParser:
             return False
         else:
             return None
-
-    def _store_check_update(self) -> bool:
-        if self.args.enable_update:
-            self.data["update"] = True
-            return True
-
-        elif self.args.disable_update:
-            self.data["update"] = False
-            return False
-
-        else:
-            return self.data.get("update", True)
