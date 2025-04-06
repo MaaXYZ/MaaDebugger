@@ -11,7 +11,7 @@ GITHUB_API = "https://api.github.com/repos/MaaXYZ/MaaDebugger/releases/latest"
 PYPI_API = "https://pypi.org/pypi/MaaDebugger/json"
 
 
-class ChcekStatus(Enum):
+class CheckStatus(Enum):
     FAILED = auto()
     SKIPPED = auto()
 
@@ -53,14 +53,14 @@ def compare_version(version: str) -> bool:
         return False
 
 
-async def check_update() -> Union[ChcekStatus, str, None]:  # PyPi -> Github -> FAILED
+async def check_update() -> Union[CheckStatus, str, None]:  # PyPi -> Github -> FAILED
     """
     If updatable, return a version str (like 1.8.0b1); else return None\n
     If checking was skipped, return 'SKIPPED'\n
     If checking is failed, return 'FAILED'
     """
     if __version__.version == "DEBUG" or __version__.tag_name == "DEBUG":
-        return ChcekStatus.SKIPPED
+        return CheckStatus.SKIPPED
 
     if pypi := await get_pypi():
         if compare_version(pypi):
@@ -74,4 +74,4 @@ async def check_update() -> Union[ChcekStatus, str, None]:  # PyPi -> Github -> 
         else:
             return None
 
-    return ChcekStatus.FAILED
+    return CheckStatus.FAILED

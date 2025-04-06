@@ -446,9 +446,9 @@ def run_task_control():
 async def check_update():
     status = await update_checker.check_update()
 
-    if status == update_checker.ChcekStatus.SKIPPED or status is None:
+    if status == update_checker.CheckStatus.SKIPPED or status is None:
         return
-    elif status == update_checker.ChcekStatus.FAILED:
+    elif status == update_checker.CheckStatus.FAILED:
         ui.notification(
             "Failed to check for updates",
             type="warning",

@@ -15,7 +15,7 @@ class TracebackData:
 
     # data
     data: dict[int, tuple[str, str, str, str]] = {}
-    id: int = -1
+    id: int = 0
 
     # display
     max_display: int = 100
@@ -25,11 +25,11 @@ class TracebackData:
     @classmethod
     def reset(cls):
         """Reset the data and id."""
-        cls.data = {}
-        cls.id = -1
+        cls.data.clear()
+        cls.id = 0
 
 
-class TracaBackElement(ValueElement):
+class TraceBackElement(ValueElement):
     """
     This class is used to `bind_value_from` `TracebackData`.\n
     When the value of `TracebackData` changes, do something.
@@ -98,8 +98,8 @@ def create_traceback_list():
 
 
 @ui.page("/traceback")
-def creata_all_traceback_page():
-    TracaBackElement(value=None).bind_value_from(TracebackData, "id").on_value_change(
+def create_all_traceback_page():
+    TraceBackElement(value=None).bind_value_from(TracebackData, "id").on_value_change(
         auto_update_list
     )
 
@@ -147,8 +147,6 @@ def create_traceback_page(tb_id: int):
 
 def on_exception(e: Exception):  # When an exception is raised, this function is called
     try:  # Avoid recursion
-        TracebackData.id += 1
-
         details = ""
 
         page_path = f"/traceback/{TracebackData.id}"
@@ -186,4 +184,4 @@ def on_exception(e: Exception):  # When an exception is raised, this function is
         )
 
     finally:
-        pass
+        TracebackData.id += 1
