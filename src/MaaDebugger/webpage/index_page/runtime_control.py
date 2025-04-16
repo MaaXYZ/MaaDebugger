@@ -1,6 +1,7 @@
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Callable
+import asyncio
 
 from nicegui import ui
 from maa.notification_handler import NotificationHandler, NotificationType
@@ -71,6 +72,8 @@ class RecognitionRow:
         with self.row:
             self._add_list(current, list_to_reco)
 
+        asyncio.run(maafw.screenshotter.refresh(False))
+
     def _add_list(self, current: str, list_to_reco: list[str]):
         with ui.list().props("bordered separator"):
             ui.item_label(current).props("header").classes("text-bold")
@@ -125,6 +128,7 @@ class RecognitionRow:
         target.status = hit and Status.SUCCEEDED or Status.FAILED
 
         RecoData.data[reco_id] = name, hit
+        asyncio.run(maafw.screenshotter.refresh(False))
 
 
 class Controls:
