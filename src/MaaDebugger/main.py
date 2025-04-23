@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from nicegui import ui
 
 from .webpage import index_page
@@ -22,5 +24,6 @@ def main():
         port=port,
         show=show,
         dark=dark,
+        favicon=Path(__file__).parent / "maa.ico",
         # root_path="/proxy/8011",
     )
