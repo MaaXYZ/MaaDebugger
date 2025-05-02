@@ -55,13 +55,21 @@ class RecognitionRow:
         self.data = defaultdict(dict)
 
     def register(self):
-        self.row = ui.row()
+        with ui.row():
+            ui.button(icon="delete_forever").on_click(self.clear)
+
+        self.row = ui.row(align_items="start")
 
         self.notification_handler = self.MyNotificationHandler()
         self.notification_handler.on_next_list_starting = self.on_next_list_starting
         self.notification_handler.on_recognized = self.on_recognized
 
         maafw.notification_handler = self.notification_handler
+
+    async def clear(self):
+        await maafw.clear_cache()
+        self.row.clear()
+        self.row_len = 0
 
     def on_next_list_starting(self, current: str, list_to_reco: list[str]):
         self.row_len = self.row_len + 1
@@ -75,13 +83,15 @@ class RecognitionRow:
         asyncio.run(maafw.screenshotter.refresh(False))
 
     def _add_list(self, current: str, list_to_reco: list[str]):
-        with ui.list().props("bordered separator"):
+        with ui.list().props("bordered separator") as ls:
             ui.item_label(current).props("header").classes("text-bold")
             ui.separator()
 
             for index in range(len(list_to_reco)):
                 name = list_to_reco[index]
                 self._add_item(index, name)
+
+        ls.move(self.row, 0)
 
     @dataclass
     class ItemData:
