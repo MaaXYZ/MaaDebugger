@@ -55,8 +55,7 @@ class RecognitionRow:
         self.data = defaultdict(dict)
 
     def register(self):
-        with ui.row():
-            ui.button(icon="delete_forever").on_click(self.clear)
+        ui.button(icon="delete_forever").on_click(self.clear)
 
         self.row = ui.row(align_items="start")
 
@@ -91,7 +90,7 @@ class RecognitionRow:
                 name = list_to_reco[index]
                 self._add_item(index, name)
 
-        ls.move(self.row, 0)
+        ls.move(self.row, 0)  # the key of reverse
 
     @dataclass
     class ItemData:
