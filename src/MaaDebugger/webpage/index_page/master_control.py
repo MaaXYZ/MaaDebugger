@@ -4,6 +4,7 @@ from pathlib import Path
 
 from maa.define import MaaWin32ScreencapMethodEnum, MaaWin32InputMethodEnum
 from nicegui import app, binding, ui
+from nicegui.elements.mixins.value_element import ValueElement
 
 from ...maafw import maafw
 from ...utils import input_checker as ic
@@ -21,6 +22,9 @@ class GlobalStatus:
     res_loading: Status = Status.PENDING
     task_running: Status = Status.PENDING
     agent_connecting: Status = Status.PENDING
+
+
+NodeList = ValueElement(value=[])
 
 
 def main():
@@ -244,7 +248,7 @@ def connect_win32_control():
         )
         if not connected:
             GlobalStatus.ctrl_connecting = Status.FAILED
-            notify.send(error)
+            ui.notify(error, position="bottom-right", type="negative")
             return
 
         GlobalStatus.ctrl_connecting = Status.SUCCEEDED
@@ -349,7 +353,7 @@ def agent_control():
         identifier = await maafw.create_agent(agent_identifier_input.value)
         agent_identifier_input.value = identifier
 
-        connected, error = await maafw.connect_agent(agent_identifier_input.value)
+        connected, error = await maafw.connect_agent()
         if not connected:
             GlobalStatus.agent_connecting = Status.FAILED
             ui.notify(error, position="bottom-right", type="negative")
@@ -370,22 +374,26 @@ async def on_click_resource_load(values: str):
 
     loaded, error = await maafw.load_resource(paths)
     if not loaded:
+        NodeList.value = []
         GlobalStatus.res_loading = Status.FAILED
         ui.notify(error, position="bottom-right", type="negative")
         print(error)
         return
-
-    GlobalStatus.res_loading = Status.SUCCEEDED
+    else:
+        GlobalStatus.res_loading = Status.SUCCEEDED
+        node_list = sorted(await maafw.get_node_list())
+        NodeList.value = node_list
 
 
 def run_task_control():
     StatusIndicator(GlobalStatus, "task_running")
 
     with ui.row(align_items="baseline"):
-        entry_input = (
-            ui.input(
-                "Task Entry",
-                placeholder="eg: StartUp",
+        entry_select = (
+            ui.select(
+                [],
+                label="Task Entry",
+                with_input=True,
             )
             .props("size=30")
             .bind_value(STORAGE, "task_entry")
@@ -410,12 +418,17 @@ def run_task_control():
         ui.button("Start", on_click=lambda: on_click_start())
         ui.button("Stop", on_click=lambda: on_click_stop())
 
+        NodeList.on_value_change(lambda: entry_select.set_options(NodeList.value))
+        NodeList.on_value_change(
+            lambda: entry_select.set_value(NodeList.value[0] if NodeList.value else "")
+        )
+
     async def on_click_start():
         await maafw.clear_cache()
 
         GlobalStatus.task_running = Status.RUNNING
 
-        if not entry_input.value:
+        if not entry_select.value:
             GlobalStatus.task_running = Status.FAILED
             return
         if not pipeline_override_input.value:
@@ -424,14 +437,16 @@ def run_task_control():
             pipeline_override = json.loads(pipeline_override_input.value)
         except json.JSONDecodeError as e:
             ui.notify(
-                f"Error parsing pipeline override: {e}", position="bottom-right", type="negative"
+                f"Error parsing pipeline override: {e}",
+                position="bottom-right",
+                type="negative",
             )
             GlobalStatus.task_running = Status.FAILED
             return
 
         await on_click_resource_load(STORAGE["resource_dir"])
 
-        run, error = await maafw.run_task(entry_input.value, pipeline_override)
+        run, error = await maafw.run_task(entry_select.value, pipeline_override)
         if not run:
             GlobalStatus.task_running = Status.FAILED
             print(error)
