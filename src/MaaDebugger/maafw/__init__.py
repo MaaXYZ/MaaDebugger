@@ -9,6 +9,8 @@ from maa.tasker import Tasker, RecognitionDetail, NotificationHandler
 from maa.resource import Resource
 from maa.toolkit import Toolkit, AdbDevice, DesktopWindow
 from maa.agent_client import AgentClient
+from maa.custom_action import CustomAction
+from maa.custom_recognition import CustomRecognition
 
 from ..utils import cvmat_to_image
 
@@ -21,6 +23,9 @@ class MaaFW:
     agent: Optional[AgentClient]
     agent_identifier: Optional[str]
     notification_handler: Optional[NotificationHandler]
+
+    custom_actions: dict[str, CustomAction] = {}
+    custom_recognitions: dict[str, CustomRecognition] = {}
 
     def __init__(self):
         Toolkit.init_option("./")
@@ -96,6 +101,9 @@ class MaaFW:
                     False,
                     "Fail to load resource,please check the outputs of CLI.",
                 )
+        self.__register_custom_action()
+        self.__register_custom_recognition()
+
         return (True, None)
 
     @asyncify
@@ -179,6 +187,26 @@ class MaaFW:
             return False
 
         return self.tasker.clear_cache()
+
+    def register_custom_action(self, name: str, action: CustomAction):
+        self.custom_actions[name] = action
+
+    def register_custom_recognition(self, name: str, recognition: CustomRecognition):
+        self.custom_recognitions[name] = recognition
+
+    def __register_custom_action(self):
+        if not self.custom_actions or not self.resource:
+            return
+        else:
+            for name, act in self.custom_actions.items():
+                self.resource.register_custom_action(name, act)
+
+    def __register_custom_recognition(self):
+        if not self.custom_recognitions or not self.resource:
+            return
+        else:
+            for name, rec in self.custom_recognitions.items():
+                self.resource.register_custom_recognition(name, rec)
 
 
 # class Screenshotter(threading.Thread):

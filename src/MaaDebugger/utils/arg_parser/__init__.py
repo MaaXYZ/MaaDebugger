@@ -1,8 +1,6 @@
 import argparse
 from typing import Optional
 
-from ..port_checker import PortChecker
-
 
 class ArgParser:
     def __init__(self) -> None:
@@ -57,20 +55,13 @@ class ArgParser:
             default=None,
         )
 
-    def get_port(self) -> int:
+    def get_port(self) -> Optional[int]:
         """
         Determine the port to use based on the provided arguments.
         """
-        specified_port: Optional[int] = self.args.port
 
-        if specified_port is not None:
-            if PortChecker.is_port_in_use(specified_port):
-                print(f"Specified port {specified_port} is in use.")
-                return -1
-            else:
-                port = specified_port
-        else:
-            port = PortChecker.find_available_port(8011)
+        port: Optional[int] = self.args.port
+
         return port
 
     def get_host(self) -> str:
@@ -87,7 +78,7 @@ class ArgParser:
             print("WARNING: All devices in the LAN can access MaaDebugger.")
         return host
 
-    def get_hide(self) -> bool:
+    def get_show(self) -> bool:
         """
         NOTICE: ui.run(show = not self.args.hide)
         """
