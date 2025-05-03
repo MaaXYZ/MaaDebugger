@@ -115,8 +115,9 @@ class MaaFW:
         return self.agent_identifier
 
     @asyncify
-    def connect_agent(self, identifier: str) -> Tuple[bool, Optional[str]]:
     def connect_agent(self) -> Tuple[bool, Optional[str]]:
+        if self.agent and self.agent.connect():
+            return False, "Failed to connect agent"
         else:
             return True, None
 
