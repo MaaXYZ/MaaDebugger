@@ -23,9 +23,13 @@ class GlobalStatus:
     agent_connecting: Status = Status.PENDING
 
 
+def add_check_update_timer():
+    ui.timer(5, check_update)
+
+
 def main():
     app.on_exception(on_exception)
-    app.on_startup(check_update)
+    app.on_startup(add_check_update_timer)
 
     with ui.row():
         with ui.column():
@@ -424,7 +428,9 @@ def run_task_control():
             pipeline_override = json.loads(pipeline_override_input.value)
         except json.JSONDecodeError as e:
             ui.notify(
-                f"Error parsing pipeline override: {e}", position="bottom-right", type="negative"
+                f"Error parsing pipeline override: {e}",
+                position="bottom-right",
+                type="negative",
             )
             GlobalStatus.task_running = Status.FAILED
             return
