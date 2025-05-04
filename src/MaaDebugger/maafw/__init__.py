@@ -60,9 +60,9 @@ class MaaFW:
         self.controller = AdbController(path, address, config=config)
         connected = self.controller.post_connection().wait().succeeded
         if not connected:
-            return (False, f"Failed to connect {path} {address}")
+            return False, f"Failed to connect {path} {address}"
 
-        return (True, None)
+        return True, None
 
     @asyncify
     def connect_win32hwnd(
@@ -88,7 +88,7 @@ class MaaFW:
         self.resource.clear()
         for d in dir:
             if not d.exists():
-                return (False, f"{d} does not exist.")
+                return False, f"{d} does not exist."
 
             status = self.resource.post_bundle(d).wait().succeeded
             if not status:
@@ -115,13 +115,11 @@ class MaaFW:
         return self.agent_identifier
 
     @asyncify
-    def connect_agent(self, identifier: str) -> Tuple[bool, Optional[str]]:
-
-        ret = self.agent.connect()
-        if not ret:
-            return (None, "Failed to connect agent")
-
-        return (True, None)
+    def connect_agent(self) -> Tuple[bool, Optional[str]]:
+        if self.agent and self.agent.connect():
+            return True, None
+        else:
+            return False, "Failed to connect agent"
 
     @asyncify
     def run_task(
@@ -131,11 +129,11 @@ class MaaFW:
             self.tasker = Tasker(notification_handler=self.notification_handler)
 
         if not self.resource or not self.controller:
-            return (False, "Resource or Controller not initialized")
+            return False, "Resource or Controller not initialized"
 
         self.tasker.bind(self.resource, self.controller)
         if not self.tasker.inited:
-            return (False, "Failed to init MaaFramework tasker")
+            return False, "Failed to init MaaFramework tasker"
 
         return (self.tasker.post_task(entry, pipeline_override).wait().succeeded, None)
 
