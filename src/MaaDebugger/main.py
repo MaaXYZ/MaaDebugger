@@ -14,6 +14,7 @@ def main():
     port = args.get_port() or 8011
     show = args.get_hide()
     dark = args.get_dark()
+    lang = args.get_language()
 
     index_page.index()
 
@@ -26,5 +27,6 @@ def main():
         show=show,
         dark=dark,
         favicon=Path(__file__).parent / "maa.ico",
+        language=lang,  # type:ignore
         # root_path="/proxy/8011",
     )
