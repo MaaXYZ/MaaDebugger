@@ -1,6 +1,7 @@
 import asyncio
 import json
 from pathlib import Path
+from typing import Optional
 
 from maa.define import MaaWin32ScreencapMethodEnum, MaaWin32InputMethodEnum
 from nicegui import app, binding, ui
@@ -223,7 +224,7 @@ def connect_win32_control():
         )
 
         hwnd_select = ui.select(
-            {}, label="Windows", on_change=lambda e: on_change_hwnd_select(e)
+            {}, label="Windows", on_change=lambda e: on_change_hwnd_select(e.value)
         ).bind_visibility_from(
             GlobalStatus,
             "ctrl_detecting",
@@ -274,8 +275,8 @@ def connect_win32_control():
         on_change_hwnd_select(hwnd_select)
         GlobalStatus.ctrl_detecting = Status.SUCCEEDED
 
-    def on_change_hwnd_select(e: ui.select):
-        hwnd_input.value = e.value
+    def on_change_hwnd_select(value):
+        hwnd_input.value = value
 
 
 def screenshot_control():
@@ -363,7 +364,7 @@ def agent_control():
         GlobalStatus.agent_connecting = Status.SUCCEEDED
 
 
-async def on_click_resource_load(values: str):
+async def on_click_resource_load(values: Optional[str]):
     GlobalStatus.res_loading = Status.RUNNING
 
     if not values:
@@ -418,9 +419,10 @@ def run_task_control():
         ui.button("Start", on_click=lambda: on_click_start())
         ui.button("Stop", on_click=lambda: on_click_stop())
 
-        NodeList.on_value_change(lambda: entry_select.set_options(NodeList.value))
         NodeList.on_value_change(
-            lambda: entry_select.set_value(NodeList.value[0] if NodeList.value else "")
+            lambda: entry_select.set_options(
+                NodeList.value, value=NodeList.value[0] if NodeList.value else None
+            )
         )
 
     async def on_click_start():
@@ -444,7 +446,7 @@ def run_task_control():
             GlobalStatus.task_running = Status.FAILED
             return
 
-        await on_click_resource_load(STORAGE["resource_dir"])
+        await on_click_resource_load(STORAGE.get("resource_dir"))
 
         run, error = await maafw.run_task(entry_select.value, pipeline_override)
         if not run:
