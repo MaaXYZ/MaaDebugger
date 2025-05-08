@@ -1,6 +1,7 @@
 import asyncio
 import json
 from pathlib import Path
+from typing import Optional, List
 
 from maa.define import MaaWin32ScreencapMethodEnum, MaaWin32InputMethodEnum
 from nicegui import app, binding, ui
@@ -97,7 +98,7 @@ def connect_adb_control():
         device_select = ui.select(
             {},
             label="Devices",
-            on_change=lambda e: on_change_device_select(e),  # type:ignore
+            on_change=lambda e: on_change_device_select(e.value),
         ).bind_visibility_from(
             GlobalStatus,
             "ctrl_detecting",
@@ -159,13 +160,16 @@ def connect_adb_control():
             return
 
         device_select.set_value(next(iter(options)))
-        on_change_device_select(device_select)
+        on_change_device_select(device_select.value)
         GlobalStatus.ctrl_detecting = Status.SUCCEEDED
 
-    def on_change_device_select(e: ui.select):
-        adb_path_input.value = str(e.value[0])  # type:ignore
-        adb_address_input.value = e.value[1]  # type:ignore
-        adb_config_input.value = e.value[2]  # type:ignore
+    def on_change_device_select(value: Optional[List[str]]):
+        if not value:
+            return
+
+        adb_path_input.value = str(value[0])
+        adb_address_input.value = value[1]
+        adb_config_input.value = value[2]
 
 
 def connect_win32_control():
@@ -219,7 +223,7 @@ def connect_win32_control():
         hwnd_select = ui.select(
             {},
             label="Windows",
-            on_change=lambda e: on_change_hwnd_select(e),  # type:ignore
+            on_change=lambda e: on_change_hwnd_select(e.value),
         ).bind_visibility_from(
             GlobalStatus,
             "ctrl_detecting",
@@ -267,11 +271,14 @@ def connect_win32_control():
             return
 
         hwnd_select.set_value(next(iter(options)))
-        on_change_hwnd_select(hwnd_select)
+        on_change_hwnd_select(hwnd_select.value)
         GlobalStatus.ctrl_detecting = Status.SUCCEEDED
 
-    def on_change_hwnd_select(e: ui.select):
-        hwnd_input.value = e.value
+    def on_change_hwnd_select(value: Optional[str]):
+        if not value:
+            return
+
+        hwnd_input.value = value
 
 
 def screenshot_control():
