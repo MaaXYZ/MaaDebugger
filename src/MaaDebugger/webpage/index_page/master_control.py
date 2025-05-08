@@ -1,6 +1,7 @@
 import asyncio
 import json
 from pathlib import Path
+from typing import Optional, List
 
 from maa.define import MaaWin32ScreencapMethodEnum, MaaWin32InputMethodEnum
 from nicegui import app, binding, ui
@@ -78,6 +79,7 @@ def connect_adb_control():
         adb_config_input = (
             ui.input(
                 "Extras",
+                value="{}",
                 placeholder="eg: {}",
                 validation=ic.json_style_str,
             )
@@ -96,15 +98,12 @@ def connect_adb_control():
         device_select = ui.select(
             {},
             label="Devices",
-            on_change=lambda e: on_change_device_select(e),
+            on_change=lambda e: on_change_device_select(e.value),
         ).bind_visibility_from(
             GlobalStatus,
             "ctrl_detecting",
             backward=lambda s: s == Status.SUCCEEDED,
         )
-
-    if "adb_config" not in STORAGE or not STORAGE["adb_config"]:
-        STORAGE["adb_config"] = "{}"
 
     StatusIndicator(GlobalStatus, "ctrl_detecting").label().bind_visibility_from(
         GlobalStatus,
@@ -161,13 +160,16 @@ def connect_adb_control():
             return
 
         device_select.set_value(next(iter(options)))
-        on_change_device_select(device_select)
+        on_change_device_select(device_select.value)
         GlobalStatus.ctrl_detecting = Status.SUCCEEDED
 
-    def on_change_device_select(e: ui.select):
-        adb_path_input.value = str(e.value[0])
-        adb_address_input.value = e.value[1]
-        adb_config_input.value = e.value[2]
+    def on_change_device_select(value: Optional[List[str]]):
+        if not value:
+            return
+
+        adb_path_input.value = str(value[0])
+        adb_address_input.value = value[1]
+        adb_config_input.value = value[2]
 
 
 def connect_win32_control():
@@ -219,7 +221,9 @@ def connect_win32_control():
         )
 
         hwnd_select = ui.select(
-            {}, label="Windows", on_change=lambda e: on_change_hwnd_select(e)
+            {},
+            label="Windows",
+            on_change=lambda e: on_change_hwnd_select(e.value),
         ).bind_visibility_from(
             GlobalStatus,
             "ctrl_detecting",
@@ -240,11 +244,11 @@ def connect_win32_control():
             return
 
         connected, error = await maafw.connect_win32hwnd(
-            hwnd_input.value, screencap_select.value, input_select.value
+            hwnd_input.value, screencap_select.value, input_select.value  # type:ignore
         )
         if not connected:
             GlobalStatus.ctrl_connecting = Status.FAILED
-            notify.send(error)
+            ui.notify(error, position="bottom-right", type="negative")
             return
 
         GlobalStatus.ctrl_connecting = Status.SUCCEEDED
@@ -267,11 +271,14 @@ def connect_win32_control():
             return
 
         hwnd_select.set_value(next(iter(options)))
-        on_change_hwnd_select(hwnd_select)
+        on_change_hwnd_select(hwnd_select.value)
         GlobalStatus.ctrl_detecting = Status.SUCCEEDED
 
-    def on_change_hwnd_select(e: ui.select):
-        hwnd_input.value = e.value
+    def on_change_hwnd_select(value: Optional[str]):
+        if not value:
+            return
+
+        hwnd_input.value = value
 
 
 def screenshot_control():
@@ -349,7 +356,7 @@ def agent_control():
         identifier = await maafw.create_agent(agent_identifier_input.value)
         agent_identifier_input.value = identifier
 
-        connected, error = await maafw.connect_agent(agent_identifier_input.value)
+        connected, error = await maafw.connect_agent()
         if not connected:
             GlobalStatus.agent_connecting = Status.FAILED
             ui.notify(error, position="bottom-right", type="negative")
@@ -391,15 +398,10 @@ def run_task_control():
             .bind_value(STORAGE, "task_entry")
         )
 
-        if (
-            "task_pipeline_override" not in STORAGE
-            or not STORAGE["task_pipeline_override"]
-        ):
-            STORAGE["task_pipeline_override"] = "{}"
-
         pipeline_override_input = (
             ui.input(
                 "Pipeline Override",
+                value="{}",
                 placeholder="eg: {}",
                 validation=ic.json_style_str,
             )
@@ -424,12 +426,14 @@ def run_task_control():
             pipeline_override = json.loads(pipeline_override_input.value)
         except json.JSONDecodeError as e:
             ui.notify(
-                f"Error parsing pipeline override: {e}", position="bottom-right", type="negative"
+                f"Error parsing pipeline override: {e}",
+                position="bottom-right",
+                type="negative",
             )
             GlobalStatus.task_running = Status.FAILED
             return
 
-        await on_click_resource_load(STORAGE["resource_dir"])
+        await on_click_resource_load(STORAGE.get("resource_dir"))  # type:ignore
 
         run, error = await maafw.run_task(entry_input.value, pipeline_override)
         if not run:
