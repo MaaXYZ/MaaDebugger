@@ -19,7 +19,6 @@ class MaaFW:
     controller: Union[AdbController, Win32Controller, None]
     tasker: Optional[Tasker]
     agent: Optional[AgentClient]
-    agent_identifier: Optional[str]
     notification_handler: Optional[NotificationHandler]
 
     def __init__(self):
@@ -30,7 +29,6 @@ class MaaFW:
         self.controller = None
         self.tasker = None
         self.agent = None
-        self.agent_identifier = None
 
         self.screenshotter = Screenshotter(self.screencap)
         self.notification_handler = None
@@ -103,16 +101,11 @@ class MaaFW:
         if not self.resource:
             self.resource = Resource()
 
-        if not self.agent:
-            self.agent = AgentClient()
+        if not self.agent or self.agent.identifier != identifier:
+            self.agent = AgentClient(identifier)
             self.agent.bind(self.resource)
 
-        if not self.agent_identifier:
-            self.agent_identifier = self.agent.create_socket(identifier)
-            if not self.agent_identifier:
-                raise RuntimeError("Failed to create agent")
-
-        return self.agent_identifier
+        return self.agent.identifier
 
     @asyncify
     def connect_agent(self, identifier: str) -> Tuple[bool, Optional[str]]:
