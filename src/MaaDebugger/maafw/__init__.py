@@ -108,13 +108,11 @@ class MaaFW:
         return self.agent.identifier
 
     @asyncify
-    def connect_agent(self, identifier: str) -> Tuple[bool, Optional[str]]:
-
-        ret = self.agent.connect()
-        if not ret:
-            return (None, "Failed to connect agent")
-
-        return (True, None)
+    def connect_agent(self) -> Tuple[bool, Optional[str]]:
+        if self.agent and self.agent.connect():
+            return False, "Failed to connect agent"
+        else:
+            return True, None
 
     @asyncify
     def run_task(
@@ -124,13 +122,13 @@ class MaaFW:
             self.tasker = Tasker(notification_handler=self.notification_handler)
 
         if not self.resource or not self.controller:
-            return (False, "Resource or Controller not initialized")
+            return False, "Resource or Controller not initialized"
 
         self.tasker.bind(self.resource, self.controller)
         if not self.tasker.inited:
-            return (False, "Failed to init MaaFramework tasker")
+            return False, "Failed to init MaaFramework tasker"
 
-        return (self.tasker.post_task(entry, pipeline_override).wait().succeeded, None)
+        return self.tasker.post_task(entry, pipeline_override).wait().succeeded, None
 
     @asyncify
     def stop_task(self):
@@ -172,6 +170,13 @@ class MaaFW:
             return False
 
         return self.tasker.clear_cache()
+
+    @asyncify
+    def get_node_list(self) -> list[str]:
+        if self.resource:
+            return self.resource.node_list
+        else:
+            return []
 
 
 # class Screenshotter(threading.Thread):
