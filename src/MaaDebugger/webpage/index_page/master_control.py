@@ -26,7 +26,6 @@ class GlobalStatus:
 def main():
     app.on_exception(on_exception)
     # app.on_startup(check_update)
-    # Waiting for testing further.
 
     with ui.row():
         with ui.column():
