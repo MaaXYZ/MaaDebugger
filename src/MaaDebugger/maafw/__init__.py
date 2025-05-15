@@ -19,7 +19,6 @@ class MaaFW:
     controller: Union[AdbController, Win32Controller, None]
     tasker: Optional[Tasker]
     agent: Optional[AgentClient]
-    agent_identifier: Optional[str]
     notification_handler: Optional[NotificationHandler]
 
     def __init__(self):
@@ -30,7 +29,6 @@ class MaaFW:
         self.controller = None
         self.tasker = None
         self.agent = None
-        self.agent_identifier = None
 
         self.screenshotter = Screenshotter(self.screencap)
         self.notification_handler = None
@@ -103,16 +101,11 @@ class MaaFW:
         if not self.resource:
             self.resource = Resource()
 
-        if not self.agent:
-            self.agent = AgentClient()
+        if not self.agent or self.agent.identifier != identifier:
+            self.agent = AgentClient(identifier)
             self.agent.bind(self.resource)
 
-        if not self.agent_identifier:
-            self.agent_identifier = self.agent.create_socket(identifier)
-            if not self.agent_identifier:
-                raise RuntimeError("Failed to create agent")
-
-        return self.agent_identifier
+        return self.agent.identifier
 
     @asyncify
     def connect_agent(self) -> Tuple[bool, Optional[str]]:
@@ -135,7 +128,7 @@ class MaaFW:
         if not self.tasker.inited:
             return False, "Failed to init MaaFramework tasker"
 
-        return (self.tasker.post_task(entry, pipeline_override).wait().succeeded, None)
+        return self.tasker.post_task(entry, pipeline_override).wait().succeeded, None
 
     @asyncify
     def stop_task(self):
@@ -177,6 +170,13 @@ class MaaFW:
             return False
 
         return self.tasker.clear_cache()
+
+    @asyncify
+    def get_node_list(self) -> list[str]:
+        if self.resource:
+            return self.resource.node_list
+        else:
+            return []
 
 
 # class Screenshotter(threading.Thread):
