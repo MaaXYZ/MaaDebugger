@@ -58,9 +58,9 @@ class MaaFW:
         self.controller = AdbController(path, address, config=config)
         connected = self.controller.post_connection().wait().succeeded
         if not connected:
-            return (False, f"Failed to connect {path} {address}")
+            return False, f"Failed to connect {path} {address}"
 
-        return (True, None)
+        return True, None
 
     @asyncify
     def connect_win32hwnd(
@@ -86,7 +86,7 @@ class MaaFW:
         self.resource.clear()
         for d in dir:
             if not d.exists():
-                return (False, f"{d} does not exist.")
+                return False, f"{d} does not exist."
 
             status = self.resource.post_bundle(d).wait().succeeded
             if not status:
@@ -110,9 +110,9 @@ class MaaFW:
     @asyncify
     def connect_agent(self) -> Tuple[bool, Optional[str]]:
         if self.agent and self.agent.connect():
-            return False, "Failed to connect agent"
-        else:
             return True, None
+        else:
+            return False, "Failed to connect agent"
 
     @asyncify
     def run_task(
