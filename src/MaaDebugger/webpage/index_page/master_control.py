@@ -426,8 +426,6 @@ def run_task_control():
         )
 
     async def on_click_start():
-        await maafw.clear_cache()
-
         GlobalStatus.task_running = Status.RUNNING
 
         if not entry_select.value:
