@@ -109,10 +109,14 @@ class MaaFW:
 
     @asyncify
     def connect_agent(self) -> Tuple[bool, Optional[str]]:
-        if self.agent and self.agent.connect():
+        if not self.agent:
+            return False, "Agent is not initialized."
+
+        self.agent.disconnect()
+        if self.agent.connect():
             return True, None
         else:
-            return False, "Failed to connect agent"
+            return False, "Agent failed to connect."
 
     @asyncify
     def run_task(
