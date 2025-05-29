@@ -101,9 +101,8 @@ class MaaFW:
         if not self.resource:
             self.resource = Resource()
 
-        if not self.agent or self.agent.identifier != identifier:
-            self.agent = AgentClient(identifier)
-            self.agent.bind(self.resource)
+        self.agent = AgentClient(identifier)
+        self.agent.bind(self.resource)
 
         return self.agent.identifier
 
@@ -112,7 +111,6 @@ class MaaFW:
         if not self.agent:
             return False, "Agent is not initialized."
 
-        self.agent.disconnect()
         if self.agent.connect():
             return True, None
         else:
