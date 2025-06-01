@@ -5,7 +5,7 @@ description = "MaaDebugger"
 authors = [{ name = "MaaXYZ" }]
 dependencies = [
     "MaaFw>=4.2.1",
-    "nicegui>=2.2.0",
+    "nicegui>=2.12.0",
     "asyncify",
     "pillow",
     "packaging",
