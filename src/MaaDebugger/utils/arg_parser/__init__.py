@@ -1,4 +1,5 @@
 import argparse
+import locale
 from typing import Optional
 
 
@@ -34,6 +35,12 @@ class ArgParser:
             action="store_true",
             help="DON'T automatically open the UI in a browser tab. (Default: False)",
             default=False,
+        )
+        self.parser.add_argument(
+            "--language",
+            "--lang",
+            help="The language for Quasar elements (default: {System} or 'en-US')",
+            default=None,
         )
 
     def _add_dark_group(self):
@@ -95,3 +102,16 @@ class ArgParser:
             return False
         else:
             return None
+
+    def get_language(self) -> str:
+        args_lang: Optional[str] = self.args.language
+        if args_lang:
+            args_lang = args_lang.replace("_", "-")
+
+        system_lang, _ = locale.getlocale()
+        if system_lang:
+            system_lang = system_lang.replace("_", "-")
+        else:
+            system_lang = None
+
+        return args_lang or system_lang or "en-US"
