@@ -55,8 +55,10 @@ class RecognitionRow:
         self.data = defaultdict(dict)
 
     def register(self):
-        ui.button(icon="delete_forever").on_click(self.clear)
-
+        with ui.row():
+            ui.button("Clear Items", icon="remove").props("no-caps").on_click(self.clear_items)
+            ui.button(icon="delete_forever").on_click(self.clear)
+            
         self.row = ui.row(align_items="start")
 
         self.notification_handler = self.MyNotificationHandler()
@@ -67,6 +69,9 @@ class RecognitionRow:
 
     async def clear(self):
         await maafw.clear_cache()
+        self.clear_items()
+
+    def clear_items(self):
         self.row.clear()
         self.row_len = 0
 
