@@ -56,9 +56,9 @@ class RecognitionRow:
 
     def register(self):
         with ui.row():
+            ui.button("Clear Items", icon="remove").props("no-caps").on_click(self.clear_items)
             ui.button(icon="delete_forever").on_click(self.clear)
-            ui.button("Just Clear Items").on_click(self.clear_items)
-
+            
         self.row = ui.row(align_items="start")
 
         self.notification_handler = self.MyNotificationHandler()
