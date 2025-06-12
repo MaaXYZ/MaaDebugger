@@ -409,10 +409,12 @@ def run_task_control():
 
         task_entry = STORAGE.get("task_entry", None)
 
+        NodeList.on_value_change(lambda: entry_select.set_options(NodeList.value))
         NodeList.on_value_change(
-            lambda: entry_select.set_options(
-                NodeList.value,
-                value=task_entry or NodeList.value[0] if NodeList.value else None,
+            lambda: entry_select.set_value(
+                check_entry_node(task_entry, NodeList.value) or NodeList.value[0]
+                if NodeList.value
+                else None
             )
         )
 
@@ -480,3 +482,13 @@ async def check_update():
             timeout=10,
         )
         print(f"New version available: {status}")
+
+
+def check_entry_node(entry: Optional[str], node_list: List[str]) -> Optional[str]:
+    """
+    Check if the entry node is in the node list.
+    """
+    if not entry or not node_list or entry not in node_list:
+        return None
+    else:
+        return entry
