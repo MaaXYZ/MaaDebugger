@@ -5,7 +5,7 @@ from nicegui.native.native_mode import find_open_port
 
 from .webpage import index_page
 from .webpage import reco_page
-from .utils import args
+from .utils import args, update_checker
 from .webpage.traceback_page import on_exception
 
 
@@ -18,6 +18,7 @@ def main():
     index_page.index()
 
     app.on_exception(on_exception)
+    ui.timer(3, update_checker.check_update, once=True)
 
     ui.run(
         title="Maa Debugger",
