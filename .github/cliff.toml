@@ -53,7 +53,8 @@ body = """
 """
 
 # 尾部
-footer = """"""
+footer = """
+**Full Changelog**: https://github.com/owner/repo/compare/{{tag_name_prev}}...{{tag_name}}"""
 
 [git]
 # 过滤提交
@@ -62,9 +63,9 @@ filter_unconventional = false # 不过滤非约定式提交
 commit_parsers = [
     { message = "^feat", group = "<!-- 0 -->Feature" },
     { message = "^fix", group = "<!-- 1 -->Fix" },
-    { message = "^docs", group = "<!-- 4 -->Docs" },
-    { message = "^perf", group = "<!-- 3 -->Performance" },
     { message = "^refactor", group = "<!-- 2 -->Refactor" },
+    { message = "^perf", group = "<!-- 3 -->Performance" },
+    { message = "^docs", group = "<!-- 4 -->Docs" },
     { message = "^style", group = "<!-- 5 -->Style" },
 ]
 
