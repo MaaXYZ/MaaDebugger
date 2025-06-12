@@ -459,31 +459,6 @@ def run_task_control():
         await maafw.screenshotter.refresh(True)
 
 
-async def check_update():
-    status = await update_checker.check_update()
-
-    if status == update_checker.CheckStatus.SKIPPED or status is None:
-        return
-    elif status == update_checker.CheckStatus.FAILED:
-        ui.notification(
-            "Failed to check for updates",
-            type="warning",
-            position="bottom-right",
-            close_button=True,
-            timeout=10,
-        )
-        print("Failed to check for updates")
-    elif status:
-        ui.notification(
-            f"New version available: {status}",
-            type="positive",
-            position="bottom-right",
-            close_button=True,
-            timeout=10,
-        )
-        print(f"New version available: {status}")
-
-
 def check_entry_node(entry: Optional[str], node_list: List[str]) -> Optional[str]:
     """
     Check if the entry node is in the node list.

@@ -21,7 +21,7 @@ async def main():
             timeout=None,
             close_button=True,
         )
-    else:
+    elif isinstance(result, str):
         ui.notification(
             f"New version {result} is available!",
             type="positive",

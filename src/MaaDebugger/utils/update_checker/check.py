@@ -45,9 +45,9 @@ async def check_update() -> Union[CheckStatus, str, None]:
     If checking was skipped, return 'SKIPPED'\n
     If checking is failed, return 'FAILED'
     """
-    if "PASS" in [__version__.tag_name, __version__.version]:
+    if "PASS" in (__version__.tag_name, __version__.version):
         return CheckStatus.SKIPPED
-    elif "FAILED" in [__version__.tag_name, __version__.version]:
+    elif "FAILED" in (__version__.tag_name, __version__.version):
         return CheckStatus.FAILED
 
     else:
@@ -66,4 +66,4 @@ async def check_update() -> Union[CheckStatus, str, None]:
             if ver and type(ver) == str:
                 if compare_version(ver):
                     return ver
-        return CheckStatus.FAILED
+        return None
