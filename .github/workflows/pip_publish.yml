@@ -64,6 +64,13 @@ jobs:
         with:
           config: .github/cliff.toml
           args: -vv --latest --strip header
+        env:
+          OUTPUT: "git-cliff/CHANGELOG.md"
+
+      - uses: softprops/action-gh-release@v2.3.2
+        with:
+          body_path: "git-cliff/CHANGELOG.md"
+          prerelease: ${{ steps.set_tag.outputs.is_pre_release == 'true' }}
 
       - name: Set up Python
         uses: actions/setup-python@v3
@@ -88,7 +95,3 @@ jobs:
           git commit -m "chore: Release ${{ github.ref_name }}"
           git push origin HEAD:main
 
-      - uses: softprops/action-gh-release@v2.3.2
-        with:
-          body_path: "git-cliff/CHANGELOG.md"
-          prerelease: ${{ steps.set_tag.outputs.is_pre_release == 'true' }}
