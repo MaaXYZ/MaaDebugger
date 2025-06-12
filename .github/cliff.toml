@@ -54,7 +54,9 @@ body = """
 
 # 尾部
 footer = """
-**Full Changelog**: https://github.com/owner/repo/compare/{{tag_name_prev}}...{{tag_name}}"""
+
+**Full Changelog**: https://github.com/MaaXYZ/MaaDebugger/compare/{{tag_name_prev}}...{{tag_name}}
+"""
 
 [git]
 # 过滤提交
