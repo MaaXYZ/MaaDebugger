@@ -75,6 +75,9 @@ ignore_tags = "rc"
 # 排序规则
 sort_commits = "oldest"
 
+# 过滤提交
+filter_commits = ["^chore: Release .*$"] # ^chore: Release .*$ | gha bot 发版提交
+
 # 启用GitHub集成
 [git.github]
 commits = true
