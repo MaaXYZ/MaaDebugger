@@ -11,17 +11,10 @@ from ...maafw import maafw
 from ...utils import input_checker as ic
 from ...utils import update_checker
 from ...webpage.components.status_indicator import Status, StatusIndicator
+from .global_status import GlobalStatus
 
 binding.MAX_PROPAGATION_TIME = 1
 STORAGE = app.storage.general
-
-
-class GlobalStatus:
-    ctrl_connecting: Status = Status.PENDING
-    ctrl_detecting: Status = Status.PENDING  # not required
-    res_loading: Status = Status.PENDING
-    task_running: Status = Status.PENDING
-    agent_connecting: Status = Status.PENDING
 
 
 NodeList = ValueElement(value=[])

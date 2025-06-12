@@ -1,6 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Optional
 import asyncio
 
 from nicegui import ui
@@ -9,6 +9,7 @@ from maa.notification_handler import NotificationHandler, NotificationType
 from ...maafw import maafw
 from ...webpage.components.status_indicator import Status, StatusIndicator
 from ...webpage.reco_page import RecoData
+from .global_status import GlobalStatus
 
 
 def main():
@@ -22,8 +23,8 @@ class RecognitionRow:
         def __init__(self) -> None:
             super().__init__()
 
-            self.on_next_list_starting: Callable = None
-            self.on_recognized: Callable = None
+            self.on_next_list_starting: Optional[Callable] = None
+            self.on_recognized: Optional[Callable] = None
 
         def on_node_next_list(
             self,
@@ -33,7 +34,8 @@ class RecognitionRow:
             if noti_type != NotificationType.Starting:
                 return
 
-            self.on_next_list_starting(detail.name, detail.next_list)
+            if self.on_next_list_starting is not None:
+                self.on_next_list_starting(detail.name, detail.next_list)
 
         def on_node_recognition(
             self,
@@ -46,9 +48,10 @@ class RecognitionRow:
             ):
                 return
 
-            self.on_recognized(
-                detail.reco_id, detail.name, noti_type == NotificationType.Succeeded
-            )
+            if self.on_recognized is not None:
+                self.on_recognized(
+                    detail.reco_id, detail.name, noti_type == NotificationType.Succeeded
+                )
 
     def __init__(self) -> None:
         self.row_len = 0
@@ -56,9 +59,17 @@ class RecognitionRow:
 
     def register(self):
         with ui.row():
-            ui.button("Clear Items", icon="remove").props("no-caps").on_click(self.clear_items)
-            ui.button(icon="delete_forever").on_click(self.clear)
-            
+            ui.button("Clear Items", icon="remove", on_click=self.clear_items).props(
+                "no-caps"
+            )
+            ui.button(
+                "Clear Items and Cache", icon="delete_forever", on_click=self.clear
+            ).props("no-caps").bind_enabled_from(
+                GlobalStatus,
+                "task_running",
+                lambda x: x == Status.FAILED or x == Status.SUCCEEDED,
+            )
+
         self.row = ui.row(align_items="start")
 
         self.notification_handler = self.MyNotificationHandler()
