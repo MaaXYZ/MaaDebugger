@@ -9,7 +9,6 @@ dependencies = [
     "asyncify",
     "pillow",
     "packaging",
-    "semver",
 ]
 readme = "README.md"
 urls = { Homepage = "https://github.com/MaaXYZ/MaaDebugger" }
