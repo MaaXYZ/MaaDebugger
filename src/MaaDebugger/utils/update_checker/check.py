@@ -56,11 +56,14 @@ async def check_update() -> Union[CheckStatus, str, None]:
 
         vers = await asyncio.gather(pypi, tsinghua_pypi, return_exceptions=True)
 
+        if all(ver is None for ver in vers):
+            return CheckStatus.FAILED
+
         if "DEBUG" in [__version__.tag_name, __version__.version]:
             for ver in vers:
                 if ver and type(ver) == str:
                     return ver
-            return CheckStatus.FAILED
+            return None
 
         for ver in vers:
             if ver and type(ver) == str:
