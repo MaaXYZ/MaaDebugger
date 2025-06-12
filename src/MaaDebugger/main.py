@@ -25,7 +25,7 @@ def main():
         storage_secret="maadbg",
         reload=False,
         host=host,
-        port=find_open_port(port),
+        port=find_open_port(port, end_port=port + 100),
         show=show,
         dark=dark,
         favicon=Path(__file__).parent / "maa.ico",
