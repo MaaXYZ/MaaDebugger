@@ -414,9 +414,12 @@ def run_task_control():
         ui.button("Start", on_click=lambda: on_click_start())
         ui.button("Stop", on_click=lambda: on_click_stop())
 
+        task_entry = STORAGE.get("task_entry", None)
+
         NodeList.on_value_change(
             lambda: entry_select.set_options(
-                NodeList.value, value=NodeList.value[0] if NodeList.value else None
+                NodeList.value,
+                value=task_entry or NodeList.value[0] if NodeList.value else None,
             )
         )
 
