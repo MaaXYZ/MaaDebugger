@@ -27,7 +27,7 @@ def set_python_ver():
 
     with open(VER_FILE, "w", encoding="utf-8") as f:
         f.write(
-            f'# If you wish to disable checking for updates on startup, you can change any of the following values to "DEBUG"\n# For example, version = "DEBUG"\n\n'
+            f'# If you wish to disable checking for updates on startup, you can change any of the following values to "PASS"\n# For example, version = "PASS"\n\n'
         )
         f.write(f'version = "{ver}"\n')
         f.write(f'tag_name = "{tag_name}"\n')

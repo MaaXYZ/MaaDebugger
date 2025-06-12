@@ -18,7 +18,7 @@ def main():
     index_page.index()
 
     app.on_exception(on_exception)
-    ui.timer(3, update_checker.check_update, once=True)
+    ui.timer(0.5, update_checker.main, once=True)
 
     ui.run(
         title="Maa Debugger",
