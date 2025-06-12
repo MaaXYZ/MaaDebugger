@@ -11,7 +11,6 @@ from ...maafw import maafw
 from ...utils import input_checker as ic
 from ...utils import update_checker
 from ...webpage.components.status_indicator import Status, StatusIndicator
-from ..traceback_page import on_exception
 
 binding.MAX_PROPAGATION_TIME = 1
 STORAGE = app.storage.general
@@ -29,10 +28,6 @@ NodeList = ValueElement(value=[])
 
 
 def main():
-    app.on_exception(on_exception)
-    # app.on_startup(check_update)
-    # Waiting for fix. https://github.com/MaaXYZ/MaaDebugger/pull/80
-
     with ui.row():
         with ui.column():
             connect_control()
