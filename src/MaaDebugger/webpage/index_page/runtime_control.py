@@ -12,7 +12,7 @@ from ...webpage.components.status_indicator import Status, StatusIndicator
 from ...webpage.reco_page import RecoData
 from .global_status import GlobalStatus
 
-PER_PAGE_ITEMs_NUM = 200
+PER_PAGE_ITEMs_NUM: Optional[int] = 200
 
 
 @bindable_dataclass
@@ -124,6 +124,9 @@ class RecognitionRow:
             lambda x: x == Status.FAILED or x == Status.SUCCEEDED,
         )
 
+        if PER_PAGE_ITEMs_NUM is None:
+            self.pagination.set_visibility(False)
+
     async def clear(self):
         await maafw.clear_cache()
         self.clear_items()
@@ -140,6 +143,9 @@ class RecognitionRow:
         self.pagination.set_value(1)
 
     def on_page_change(self, page: int):
+        if PER_PAGE_ITEMs_NUM is None:
+            return
+
         self.other_page_row.clear()
 
         if page == 1:
@@ -184,7 +190,10 @@ class RecognitionRow:
 
         # ui
         # 299/300 -> page:1 | 300/300 -> page:2
-        if self.row_len / PER_PAGE_ITEMs_NUM >= self.pagination.max:
+        if (
+            PER_PAGE_ITEMs_NUM is not None
+            and self.row_len / PER_PAGE_ITEMs_NUM >= self.pagination.max
+        ):
             self.pagination.max += 1
             self.homepage_row.clear()
 
