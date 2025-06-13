@@ -100,16 +100,14 @@ class RecognitionRow:
             ui.button(
                 "Clear Items and Cache", icon="delete_forever", on_click=self.clear
             ).props("no-caps").bind_enabled_from(
-                GlobalStatus,
-                "task_running",
-                lambda x: x == Status.FAILED or x == Status.SUCCEEDED,
+                GlobalStatus, "task_running", lambda x: x != Status.RUNNING
             )
-            ui.switch("Reverse").bind_value(
+            ui.switch("Reverse", on_change=self.clear).bind_value(
                 self.ItemPageData, "reverse"
             ).bind_enabled_from(
-                GlobalStatus,
-                "task_running",
-                lambda x: x == Status.FAILED or x == Status.SUCCEEDED,
+                GlobalStatus, "task_running", lambda x: x != Status.RUNNING
+            ).tooltip(
+                "Change this switch will clear all items and cache."
             )
 
         self.pagination = ui.pagination(1, 1)
