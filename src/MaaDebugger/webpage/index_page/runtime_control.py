@@ -121,7 +121,7 @@ class RecognitionRow:
         data = RecognitionRow.ItemData(self.row_len, index, name)
         self.data[self.row_len][index] = data
 
-        with ui.item(on_click=lambda data=data: self.on_click_item(data)):
+        with ui.item(on_click=lambda data=data: self.on_click_item(data)):  # type: ignore
             with ui.item_section().props("side"):
                 StatusIndicator(data, "status")
 
