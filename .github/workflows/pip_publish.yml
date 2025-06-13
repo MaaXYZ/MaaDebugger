@@ -60,16 +60,16 @@ jobs:
             build_config=$build_config" | tee -a "$GITHUB_OUTPUT"
 
       - name: Generate a changelog
-        uses: orhun/git-cliff-action@v4
+        id: changelog
+        uses: orhun/git-cliff-action@v4.4.2
         with:
           config: .github/cliff.toml
           args: -vv --latest --strip header
-        env:
-          OUTPUT: "git-cliff/CHANGELOG.md"
 
-      - uses: softprops/action-gh-release@v2.3.2
+      - name: Create Release
+        uses: softprops/action-gh-release@v2.2.2
         with:
-          body_path: "git-cliff/CHANGELOG.md"
+          body_path: ${{ steps.changelog.outputs.content }}
           prerelease: ${{ steps.set_tag.outputs.is_pre_release == 'true' }}
 
       - name: Set up Python
