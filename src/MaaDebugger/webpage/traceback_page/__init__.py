@@ -1,12 +1,15 @@
 import sys
 import traceback
 from datetime import datetime
+from dataclasses import field
 
 from nicegui import ui
+from nicegui.binding import bindable_dataclass
 from nicegui.elements.mixins.value_element import ValueElement
 
 
-class TracebackData:
+@bindable_dataclass
+class _TracebackData:
     """
     This class is used to store the tracebacks data.
 
@@ -14,7 +17,7 @@ class TracebackData:
     """
 
     # data
-    data: dict[int, tuple[str, str, str, str]] = {}
+    data: dict[int, tuple[str, str, str, str]] = field(default_factory=dict)
     id: int = 0
 
     # display
@@ -29,7 +32,10 @@ class TracebackData:
         cls.id = 0
 
 
-class TraceBackElement(ValueElement):
+TracebackData = _TracebackData()
+
+
+class TracebackElement(ValueElement):
     """
     This class is used to `bind_value_from` `TracebackData`.\n
     When the value of `TracebackData` changes, do something.
@@ -99,7 +105,7 @@ def create_traceback_list():
 
 @ui.page("/traceback")
 def create_all_traceback_page():
-    TraceBackElement(value=None).bind_value_from(TracebackData, "id").on_value_change(
+    TracebackElement(value=None).bind_value_from(TracebackData, "id").on_value_change(
         auto_update_list
     )
 

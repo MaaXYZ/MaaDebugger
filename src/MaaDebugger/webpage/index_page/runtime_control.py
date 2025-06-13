@@ -1,9 +1,9 @@
 from collections import defaultdict
-from dataclasses import dataclass
 from typing import Callable, Optional
 import asyncio
 
 from nicegui import ui
+from nicegui.binding import bindable_dataclass
 from maa.notification_handler import NotificationHandler, NotificationType
 
 from ...maafw import maafw
@@ -108,7 +108,7 @@ class RecognitionRow:
 
         ls.move(self.row, 0)  # the key of reverse
 
-    @dataclass
+    @bindable_dataclass
     class ItemData:
         col: int
         row: int
@@ -120,7 +120,7 @@ class RecognitionRow:
         data = RecognitionRow.ItemData(self.row_len, index, name)
         self.data[self.row_len][index] = data
 
-        with ui.item(on_click=lambda data=data: self.on_click_item(data)):
+        with ui.item(on_click=lambda data=data: self.on_click_item(data)):  # type: ignore
             with ui.item_section().props("side"):
                 StatusIndicator(data, "status")
 
