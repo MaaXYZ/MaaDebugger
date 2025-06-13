@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from typing import Callable, Optional
 import asyncio
 
-from nicegui import ui
+from nicegui import app, ui
 from nicegui.binding import bindable_dataclass
 from maa.notification_handler import NotificationHandler, NotificationType
 
@@ -12,6 +12,7 @@ from ...webpage.components.status_indicator import Status, StatusIndicator
 from ...webpage.reco_page import RecoData
 from .global_status import GlobalStatus
 
+STORAGE = app.storage.general
 PER_PAGE_ITEMs_NUM: Optional[int] = 200
 
 
@@ -22,11 +23,6 @@ class ItemData:
     name: str
     reco_id: int = 0
     status: Status = Status.PENDING
-
-
-@bindable_dataclass
-class ItemPageData:
-    reverse: bool = True
 
 
 @dataclass
@@ -80,7 +76,6 @@ class RecognitionRow:
     def __init__(self) -> None:
         self.row_len = 0
         self.data = defaultdict(dict)
-        self.ItemPageData = ItemPageData()
         self.lsdata_dict: dict[int, ListData] = {}
 
         self.register_notification_handler()
@@ -102,12 +97,16 @@ class RecognitionRow:
             ).props("no-caps").bind_enabled_from(
                 GlobalStatus, "task_running", lambda x: x != Status.RUNNING
             )
-            ui.switch("Reverse", on_change=self.clear).bind_value(
-                self.ItemPageData, "reverse"
-            ).bind_enabled_from(
-                GlobalStatus, "task_running", lambda x: x != Status.RUNNING
-            ).tooltip(
-                "Change this switch will clear all items and cache."
+            self.reverse_switch = (
+                ui.switch(
+                    "Reverse",
+                    value=STORAGE.get("items-reverse", True),
+                    on_change=lambda x: self.on_reverse_switch_change(x.value),
+                )
+                .tooltip("Change this switch will clear all items and cache.")
+                .bind_enabled_from(
+                    GlobalStatus, "task_running", lambda x: x != Status.RUNNING
+                )
             )
 
         self.pagination = ui.pagination(1, 1)
@@ -126,6 +125,10 @@ class RecognitionRow:
 
         if PER_PAGE_ITEMs_NUM is None:
             self.pagination.set_visibility(False)
+
+    async def on_reverse_switch_change(self, value: bool):
+        await self.clear()
+        STORAGE["items-reverse"] = value
 
     async def clear(self):
         await maafw.clear_cache()
@@ -211,6 +214,8 @@ class RecognitionRow:
         self.data[row_len][index] = data
 
     def create_list(self, row: ui.row, data: ListData):
+        reverse: bool = self.reverse_switch.value
+
         with row:
             with ui.list().props("bordered separator") as ls:
                 ui.item_label(data.current).props("header").classes("text-bold")
@@ -220,9 +225,9 @@ class RecognitionRow:
                     name = data.list_to_reco[index]
                     self.create_item(index, name, data.row_len)
 
-                if row == self.homepage_row and self.ItemPageData.reverse:
+                if row == self.homepage_row and reverse:
                     ls.move(row, 0)
-                elif row == self.other_page_row and not self.ItemPageData.reverse:
+                elif row == self.other_page_row and not reverse:
                     ls.move(row, 0)
 
     def create_item(self, index: int, name: str, row_len: int):
