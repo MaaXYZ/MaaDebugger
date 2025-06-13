@@ -21,7 +21,7 @@ async def get_from_pypi(url: str) -> Optional[str]:  # -> '1.8.0b1'
         async with httpx.AsyncClient(trust_env=False) as client:
             req = await client.get(url, timeout=5)
             if req.status_code == 200:
-                return req.json().get("info", {}).get("version")
+                return req.json().get("info", {}).get("version", None)
     except Exception as e:
         print(f"WARNING: Failed to GET PyPi API", e)
 
