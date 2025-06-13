@@ -4,6 +4,7 @@ from typing import Callable, Optional
 import asyncio
 
 from nicegui import ui
+from nicegui.binding import bindable_dataclass
 from maa.notification_handler import NotificationHandler, NotificationType
 
 from ...maafw import maafw
@@ -108,7 +109,7 @@ class RecognitionRow:
 
         ls.move(self.row, 0)  # the key of reverse
 
-    @dataclass
+    @bindable_dataclass
     class ItemData:
         col: int
         row: int
