@@ -69,7 +69,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2.2.2
         with:
-          body_path: ${{ steps.changelog.outputs.content }}
+          body: ${{ steps.changelog.outputs.content }}
           prerelease: ${{ steps.set_tag.outputs.is_pre_release == 'true' }}
 
       - name: Set up Python
