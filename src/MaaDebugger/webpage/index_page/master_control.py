@@ -17,7 +17,7 @@ binding.MAX_PROPAGATION_TIME = 1
 STORAGE = app.storage.general
 
 
-NodeList = ValueElement(value=[])
+NodeListElement = ValueElement(value=[])
 
 
 def main():
@@ -368,7 +368,7 @@ async def on_click_resource_load(values: Optional[str]):
 
     loaded, error = await maafw.load_resource(paths)
     if not loaded:
-        NodeList.value = []
+        NodeListElement.value = []
         GlobalStatus.res_loading = Status.FAILED
         ui.notify(error, position="bottom-right", type="negative")
         print(error)
@@ -376,7 +376,7 @@ async def on_click_resource_load(values: Optional[str]):
     else:
         GlobalStatus.res_loading = Status.SUCCEEDED
         node_list = sorted(await maafw.get_node_list())
-        NodeList.value = node_list
+        NodeListElement.value = node_list
 
 
 def run_task_control():
@@ -409,11 +409,14 @@ def run_task_control():
 
         task_entry = STORAGE.get("task_entry", None)
 
-        NodeList.on_value_change(lambda: entry_select.set_options(NodeList.value))
-        NodeList.on_value_change(
+        NodeListElement.on_value_change(
+            lambda: entry_select.set_options(NodeListElement.value)
+        )
+        NodeListElement.on_value_change(
             lambda: entry_select.set_value(
-                check_entry_node(task_entry, NodeList.value) or NodeList.value[0]
-                if NodeList.value
+                check_entry_node(task_entry, NodeListElement.value)
+                or NodeListElement.value[0]
+                if NodeListElement.value
                 else None
             )
         )
