@@ -13,7 +13,9 @@ from ...webpage.reco_page import RecoData
 from .global_status import GlobalStatus
 
 STORAGE = app.storage.general
-PER_PAGE_ITEMs_NUM: Optional[int] = 200
+PER_PAGE_ITEM_NUM: Optional[int] = 200  # 在正式版中，此值将默认为 None，表示不进行分页
+ITEM_LIMIT_WARNING: int = 500  # 在不启用分页的情况下，如果 item 数等于此值，将显示警告
+PAGE_HELP_URL = "https:www.github.com"
 
 
 @bindable_dataclass
@@ -81,6 +83,7 @@ class RecognitionRow:
         self.register_notification_handler()
 
     def register_notification_handler(self):
+        """Register the custom notification handler to maafw."""
         self.notification_handler = MyNotificationHandler()
         self.notification_handler.on_next_list_starting = self.on_next_list_starting
         self.notification_handler.on_recognized = self.on_recognized
@@ -88,6 +91,7 @@ class RecognitionRow:
         maafw.notification_handler = self.notification_handler
 
     def init_elements(self):
+        """Initialize the UI elements."""
         with ui.row():
             ui.button("Clear Items", icon="remove", on_click=self.clear_items).props(
                 "no-caps"
@@ -123,7 +127,7 @@ class RecognitionRow:
             lambda x: x == Status.FAILED or x == Status.SUCCEEDED,
         )
 
-        if PER_PAGE_ITEMs_NUM is None:
+        if PER_PAGE_ITEM_NUM is None:
             self.pagination.set_visibility(False)
 
     async def on_reverse_switch_change(self, value: bool):
@@ -146,7 +150,7 @@ class RecognitionRow:
         self.pagination.set_value(1)
 
     def on_page_change(self, page: int):
-        if PER_PAGE_ITEMs_NUM is None:
+        if PER_PAGE_ITEM_NUM is None:
             return
 
         self.other_page_row.clear()
@@ -163,8 +167,8 @@ class RecognitionRow:
             row_len_list = range(self.row_len, 0, -1)
             # 计算当前页的起止索引，确保不会越界
             total_items = len(row_len_list)
-            start_index = max((page - 1) * PER_PAGE_ITEMs_NUM, 0)
-            end_index = min(start_index + PER_PAGE_ITEMs_NUM, total_items)
+            start_index = max((page - 1) * PER_PAGE_ITEM_NUM, 0)
+            end_index = min(start_index + PER_PAGE_ITEM_NUM, total_items)
             # 切片获取当前页要显示的 row_len
             for row_len in row_len_list[start_index:end_index]:
                 self.create_list(self.other_page_row, self.lsdata_dict[row_len])
@@ -191,16 +195,18 @@ class RecognitionRow:
         list_data = ListData(self.row_len, current, list_to_reco)
         self.add_list_data(list_data)
 
-        # ui
         # 299/300 -> page:1 | 300/300 -> page:2
         if (
-            PER_PAGE_ITEMs_NUM is not None
-            and self.row_len / PER_PAGE_ITEMs_NUM >= self.pagination.max
+            PER_PAGE_ITEM_NUM is not None
+            and self.row_len / PER_PAGE_ITEM_NUM >= self.pagination.max
         ):
             self.pagination.max += 1
             self.homepage_row.clear()
+        elif PER_PAGE_ITEM_NUM is None and self.row_len == ITEM_LIMIT_WARNING:
+            self.create_limit_notification()
 
         self.create_list(self.homepage_row, list_data)
+
         asyncio.run(maafw.screenshotter.refresh(False))
 
     def add_list_data(self, data: ListData):
@@ -218,6 +224,15 @@ class RecognitionRow:
 
         with row:
             with ui.list().props("bordered separator") as ls:
+                ls.set_visibility(False)
+
+                # reverse
+                if row == self.homepage_row and reverse:
+                    ls.move(row, 0)
+                elif row == self.other_page_row and not reverse:
+                    # 生成其他页面的 item 时， reverse 逻辑将反转
+                    ls.move(row, 0)
+
                 ui.item_label(data.current).props("header").classes("text-bold")
                 ui.separator()
 
@@ -225,10 +240,7 @@ class RecognitionRow:
                     name = data.list_to_reco[index]
                     self.create_item(index, name, data.row_len)
 
-                if row == self.homepage_row and reverse:
-                    ls.move(row, 0)
-                elif row == self.other_page_row and not reverse:
-                    ls.move(row, 0)
+                ls.set_visibility(True)
 
     def create_item(self, index: int, name: str, row_len: int):
         data: ItemData = self.data[row_len][index]
@@ -245,7 +257,32 @@ class RecognitionRow:
                     data, "reco_id", backward=lambda i: i != 0
                 ).props("caption")
 
-    def on_click_item(self, data: ItemData):
-        print(f"on_click_item ({data.col}, {data.row}): {data.name} ({data.reco_id})")
+    def create_limit_notification(self):
+        with self.homepage_row:
+            ui.notification(
+                f"The number of item has reached {ITEM_LIMIT_WARNING}, please see the help page for more information.",
+                position="bottom-right",
+                type="warning",
+                timeout=None,
+                close_button=True,
+                actions=[
+                    {
+                        "label": "GO",
+                        "color": "white",
+                        ":handler": f"() => emitEvent('item-limit-warning/go-clicked')",
+                    }
+                ],
+            )
+            ui.on(
+                "item-limit-warning/go-clicked",
+                lambda: ui.navigate.to(target=PAGE_HELP_URL, new_tab=True),
+            )
 
-        ui.navigate.to(f"reco/{data.reco_id}", new_tab=True)
+    def on_click_item(self, data: ItemData):
+        if data.reco_id == 0:
+            return
+        else:
+            print(
+                f"on_click_item ({data.col}, {data.row}): {data.name} ({data.reco_id})"
+            )
+            ui.navigate.to(f"reco/{data.reco_id}", new_tab=True)
