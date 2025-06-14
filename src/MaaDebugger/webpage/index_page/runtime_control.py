@@ -15,7 +15,7 @@ from .global_status import GlobalStatus
 STORAGE = app.storage.general
 PER_PAGE_ITEM_NUM: Optional[int] = 200  # 在正式版中，此值将默认为 None，表示不进行分页
 ITEM_LIMIT_WARNING: int = 500  # 在不启用分页的情况下，如果 item 数等于此值，将显示警告
-PAGE_HELP_URL = "https:www.github.com"
+PAGE_HELP_URL = "https://www.github.com"
 
 
 @bindable_dataclass
@@ -78,7 +78,7 @@ class RecognitionRow:
     def __init__(self) -> None:
         self.row_len = 0
         self.data = defaultdict(dict)
-        self.lsdata_dict: dict[int, ListData] = {}
+        self.list_data_map: dict[int, ListData] = {}
 
         self.register_notification_handler()
 
@@ -142,7 +142,7 @@ class RecognitionRow:
     def clear_items(self):
         self.row_len = 0
         self.data.clear()
-        self.lsdata_dict.clear()
+        self.list_data_map.clear()
 
         self.homepage_row.clear()
         self.other_page_row.clear()
@@ -171,7 +171,7 @@ class RecognitionRow:
             end_index = min(start_index + PER_PAGE_ITEM_NUM, total_items)
             # 切片获取当前页要显示的 row_len
             for row_len in row_len_list[start_index:end_index]:
-                self.create_list(self.other_page_row, self.lsdata_dict[row_len])
+                self.create_list(self.other_page_row, self.list_data_map[row_len])
 
     def on_recognized(self, reco_id: int, name: str, hit: bool):
         target_item = None
@@ -210,7 +210,7 @@ class RecognitionRow:
         asyncio.run(maafw.screenshotter.refresh(False))
 
     def add_list_data(self, data: ListData):
-        self.lsdata_dict[data.row_len] = data
+        self.list_data_map[data.row_len] = data
         for index in range(len(data.list_to_reco)):
             name = data.list_to_reco[index]
             self.add_item_data(index, name, data.row_len)
@@ -260,7 +260,7 @@ class RecognitionRow:
     def create_limit_notification(self):
         with self.homepage_row:
             ui.notification(
-                f"The number of item has reached {ITEM_LIMIT_WARNING}, please see the help page for more information.",
+                f"The number of items has reached {ITEM_LIMIT_WARNING}, please see the help page for more information.",
                 position="bottom-right",
                 type="warning",
                 timeout=None,
