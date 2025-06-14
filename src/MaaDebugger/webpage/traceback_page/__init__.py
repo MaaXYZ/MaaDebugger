@@ -2,7 +2,6 @@ import sys
 import traceback
 from dataclasses import field
 from datetime import datetime
-from dataclasses import field
 
 from nicegui import ui
 from nicegui.binding import bindable_dataclass
