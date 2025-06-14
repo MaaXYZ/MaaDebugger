@@ -13,8 +13,8 @@ from ...webpage.reco_page import RecoData
 from .global_status import GlobalStatus
 
 STORAGE = app.storage.general
-PER_PAGE_ITEM_NUM: Optional[int] = 200  # 在正式版中，此值将默认为 None，表示不进行分页
-ITEM_LIMIT_WARNING: int = 500  # 在不启用分页的情况下，如果 item 数等于此值，将显示警告
+PER_PAGE_ITEM_NUM: Optional[int] = None  # 在正式版中，此值将默认为 None，表示不进行分页
+ITEM_LIMIT_WARNING: int = 10  # 在不启用分页的情况下，如果 item 数等于此值，将显示警告
 PAGE_HELP_URL = "https://www.github.com"
 
 
@@ -238,11 +238,11 @@ class RecognitionRow:
 
                 for index in range(len(data.list_to_reco)):
                     name = data.list_to_reco[index]
-                    self.create_item(index, name, data.row_len)
+                    self.create_items(index, name, data.row_len)
 
                 ls.set_visibility(True)
 
-    def create_item(self, index: int, name: str, row_len: int):
+    def create_items(self, index: int, name: str, row_len: int):
         data: ItemData = self.data[row_len][index]
 
         with ui.item(on_click=lambda data=data: self.on_click_item(data)):  # type: ignore
