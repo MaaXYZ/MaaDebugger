@@ -149,7 +149,7 @@ class RecognitionRow:
         self.pagination.max = 1
         self.pagination.set_value(1)
 
-    def on_page_change(self, page: int):
+    async def on_page_change(self, page: int):
         if PER_PAGE_ITEM_NUM is None:
             return
 
@@ -171,7 +171,7 @@ class RecognitionRow:
             end_index = min(start_index + PER_PAGE_ITEM_NUM, total_items)
             # 切片获取当前页要显示的 row_len
             for row_len in row_len_list[start_index:end_index]:
-                self.create_list(self.other_page_row, self.list_data_map[row_len])
+                await self.create_list(self.other_page_row, self.list_data_map[row_len])
 
     def on_recognized(self, reco_id: int, name: str, hit: bool):
         target_item = None
@@ -205,7 +205,7 @@ class RecognitionRow:
         elif PER_PAGE_ITEM_NUM is None and self.row_len == ITEM_LIMIT_WARNING:
             self.create_limit_notification()
 
-        self.create_list(self.homepage_row, list_data)
+        asyncio.run(self.create_list(self.homepage_row, list_data))
 
         asyncio.run(maafw.screenshotter.refresh(False))
 
@@ -219,7 +219,7 @@ class RecognitionRow:
         data = ItemData(row_len, index, name)
         self.data[row_len][index] = data
 
-    def create_list(self, row: ui.row, data: ListData):
+    async def create_list(self, row: ui.row, data: ListData):
         reverse: bool = self.reverse_switch.value
 
         with row:
