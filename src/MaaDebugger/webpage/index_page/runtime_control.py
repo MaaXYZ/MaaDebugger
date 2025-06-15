@@ -13,9 +13,7 @@ from ...webpage.reco_page import RecoData
 from .global_status import GlobalStatus
 
 STORAGE = app.storage.general
-PER_PAGE_ITEM_NUM: Optional[int] = None  # 在正式版中，此值将默认为 None，表示不进行分页
-ITEM_LIMIT_WARNING: int = 10  # 在不启用分页的情况下，如果 item 数等于此值，将显示警告
-PAGE_HELP_URL = "https://www.github.com"
+PER_PAGE_ITEM_NUM: Optional[int] = 150  # 将值设为 None 以禁用分页功能
 
 
 @bindable_dataclass
@@ -202,8 +200,6 @@ class RecognitionRow:
         ):
             self.pagination.max += 1
             self.homepage_row.clear()
-        elif PER_PAGE_ITEM_NUM is None and self.row_len == ITEM_LIMIT_WARNING:
-            self.create_limit_notification()
 
         asyncio.run(self.create_list(self.homepage_row, list_data))
 
@@ -256,27 +252,6 @@ class RecognitionRow:
                 ui.item_label().bind_text_from(data, "reco_id").bind_visibility_from(
                     data, "reco_id", backward=lambda i: i != 0
                 ).props("caption")
-
-    def create_limit_notification(self):
-        with self.homepage_row:
-            ui.notification(
-                f"The number of items has reached {ITEM_LIMIT_WARNING}, please see the help page for more information.",
-                position="bottom-right",
-                type="warning",
-                timeout=None,
-                close_button=True,
-                actions=[
-                    {
-                        "label": "GO",
-                        "color": "white",
-                        ":handler": f"() => emitEvent('item-limit-warning/go-clicked')",
-                    }
-                ],
-            )
-            ui.on(
-                "item-limit-warning/go-clicked",
-                lambda: ui.navigate.to(target=PAGE_HELP_URL, new_tab=True),
-            )
 
     def on_click_item(self, data: ItemData):
         if data.reco_id == 0:
