@@ -13,6 +13,7 @@ from ...webpage.reco_page import RecoData
 from .global_status import GlobalStatus
 
 STORAGE = app.storage.general
+
 PER_PAGE_ITEM_NUM: Optional[int] = 150  # 将值设为 None 以禁用分页功能
 
 
@@ -105,7 +106,7 @@ class RecognitionRow:
                     value=STORAGE.get("items-reverse", True),
                     on_change=lambda x: self.on_reverse_switch_change(x.value),
                 )
-                .tooltip("Change this switch will clear all items and cache.")
+                .tooltip("Switch this will clear all items and cache.")
                 .bind_enabled_from(
                     GlobalStatus, "task_running", lambda x: x != Status.RUNNING
                 )
