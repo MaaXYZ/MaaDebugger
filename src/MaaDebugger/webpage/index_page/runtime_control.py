@@ -221,7 +221,7 @@ class RecognitionRow:
 
         with row:
             with ui.list().props("bordered separator") as ls:
-                ls.set_visibility(False)
+                ls.set_visibility(False) # list 将在完全加载后可见
 
                 # reverse
                 if row == self.homepage_row and reverse:
