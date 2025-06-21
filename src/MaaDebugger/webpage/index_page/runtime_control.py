@@ -12,12 +12,14 @@ from ...webpage.components.status_indicator import Status, StatusIndicator
 from ...webpage.reco_page import RecoData
 from .global_status import GlobalStatus
 
+PAGINATION_DOCS_URL = "https://github.com"  # wait for complete
+
 STORAGE = app.storage.general
 
 # Set None to disable pagination or warning
 PER_PAGE_ITEM_NUM: Optional[int] = None
+# When the pagination is disabled and the item number reaches this value, a warning will be displayed.
 ITEM_NUMBER_WARING: Optional[int] = 400
-PAGINATION_DOCS_URL = "https://github.com"  # wait for complete
 
 
 @bindable_dataclass
