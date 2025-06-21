@@ -14,7 +14,10 @@ from .global_status import GlobalStatus
 
 STORAGE = app.storage.general
 
-PER_PAGE_ITEM_NUM: Optional[int] = 150  # 将值设为 None 以禁用分页功能
+# Set None to disable pagination or warning
+PER_PAGE_ITEM_NUM: Optional[int] = None
+ITEM_NUMBER_WARING: Optional[int] = 400
+PAGINATION_DOCS_URL = "https://github.com"  # wait for complete
 
 
 @bindable_dataclass
@@ -148,7 +151,7 @@ class RecognitionRow:
         self.pagination.max = 1
         self.pagination.set_value(1)
 
-    async def on_page_change(self, page: int):
+    def on_page_change(self, page: int):
         if PER_PAGE_ITEM_NUM is None:
             return
 
@@ -160,18 +163,19 @@ class RecognitionRow:
         else:
             self.homepage_row.set_visibility(False)
             self.other_page_row.set_visibility(True)
-            self.other_page_row.clear()
 
-            # 计算所有 row_len 的倒序列表
+            # Get all row_len in reverse order
             row_len_list = range(self.row_len, 0, -1)
-            # 计算当前页的起止索引，确保不会越界
             total_items = len(row_len_list)
             start_index = max((page - 1) * PER_PAGE_ITEM_NUM, 0)
             end_index = min(start_index + PER_PAGE_ITEM_NUM, total_items)
-            # 切片获取当前页要显示的 row_len
-            for row_len in row_len_list[start_index:end_index]:
-                await self.create_list(self.other_page_row, self.list_data_map[row_len])
 
+            # Get the row_len for the current page
+            # NOTE: This row_len_list is reversed
+            for row_len in row_len_list[start_index:end_index]:
+                self.create_list(self.other_page_row, self.list_data_map[row_len])
+
+    # maafw
     def on_recognized(self, reco_id: int, name: str, hit: bool):
         target_item = None
         for item in self.data[self.row_len].values():
@@ -188,6 +192,7 @@ class RecognitionRow:
         RecoData.data[reco_id] = name, hit
         asyncio.run(maafw.screenshotter.refresh(False))
 
+    # maafw
     def on_next_list_starting(self, current: str, list_to_reco: list[str]):
         self.row_len += 1
 
@@ -202,7 +207,36 @@ class RecognitionRow:
             self.pagination.max += 1
             self.homepage_row.clear()
 
-        asyncio.run(self.create_list(self.homepage_row, list_data))
+        # Display warning when pagination is disabled
+        # In the future, we can consider to enable pagination by default
+        if PER_PAGE_ITEM_NUM is None and ITEM_NUMBER_WARING is not None:
+            if self.row_len == ITEM_NUMBER_WARING:
+                with self.homepage_row:
+                    ui.html(
+                        "<style>.multi-line-notification { white-space: pre-line; }</style>"
+                    )  # allow use \n in notification text
+                    ui.notification(
+                        f"Item number is reaching the {ITEM_NUMBER_WARING}! Please consider to enable pagination.\nFor more information, please see {PAGINATION_DOCS_URL}",
+                        position="bottom-right",
+                        type="warning",
+                        timeout=None,
+                        close_button=True,
+                        multi_line=True,
+                        classes="multi-line-notification",
+                        actions=[
+                            {
+                                "label": "VIEW",
+                                "color": "white",
+                                ":handler": f"() => emitEvent('pagination-docs-clicked')",
+                            }
+                        ],
+                    )
+                    ui.on(
+                        "pagination-docs-clicked",
+                        lambda: ui.navigate.to(PAGINATION_DOCS_URL, new_tab=True),
+                    )
+
+        self.create_list(self.homepage_row, list_data)
 
         asyncio.run(maafw.screenshotter.refresh(False))
 
@@ -216,18 +250,19 @@ class RecognitionRow:
         data = ItemData(row_len, index, name)
         self.data[row_len][index] = data
 
-    async def create_list(self, row: ui.row, data: ListData):
+    def create_list(self, row: ui.row, data: ListData):
         reverse: bool = self.reverse_switch.value
 
         with row:
             with ui.list().props("bordered separator") as ls:
-                ls.set_visibility(False) # list 将在完全加载后可见
+                ls.set_visibility(False)  # The list will be hidden until prepared
 
                 # reverse
                 if row == self.homepage_row and reverse:
                     ls.move(row, 0)
                 elif row == self.other_page_row and not reverse:
-                    # 生成其他页面的 item 时， reverse 逻辑将反转
+                    # As
+                    # When in other page, we need to reverse the reverse logic
                     ls.move(row, 0)
 
                 ui.item_label(data.current).props("header").classes("text-bold")
