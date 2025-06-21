@@ -15,51 +15,51 @@ jobs:
 
       - id: set_tag
         run: |
-            is_release=${{ startsWith(github.ref, 'refs/tags/v') }}
-            is_pre_release=${{ contains(github.ref, '-alpha.') || contains(github.ref, '-beta.') || contains(github.ref, '-rc.') }}
-            commit_hash=$(git rev-parse --short HEAD)
+          is_release=${{ startsWith(github.ref, 'refs/tags/v') }}
+          is_pre_release=${{ contains(github.ref, '-alpha.') || contains(github.ref, '-beta.') || contains(github.ref, '-rc.') }}
+          commit_hash=$(git rev-parse --short HEAD)
 
-            if $is_release; then
-              tag=${{ github.ref_name }}
-            else
-              tag=$(git describe --tags --match "v*" --exclude "*-post*" --long || true)
-            fi
+          if $is_release; then
+            tag=${{ github.ref_name }}
+          else
+            tag=$(git describe --tags --match "v*" --exclude "*-post*" --long || true)
+          fi
+          if [[ $tag != v* ]]; then
+            if $is_release; then echo "::error::Failed to get tag on releasing" && exit 1; fi
+            ver_core=$(curl -sX GET "https://api.github.com/repos/MaaXYZ/MaaFramework/releases/latest" --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' | awk '/tag_name/{print $4}' FS='["]' || true)
+            tag=$(date "+$ver_core-1%m%d-${commit_hash}")
             if [[ $tag != v* ]]; then
-              if $is_release; then echo "::error::Failed to get tag on releasing" && exit 1; fi
-              ver_core=$(curl -sX GET "https://api.github.com/repos/MaaXYZ/MaaFramework/releases/latest" --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' | awk '/tag_name/{print $4}' FS='["]' || true)
-              tag=$(date "+$ver_core-1%m%d-${commit_hash}")
-              if [[ $tag != v* ]]; then
-                tag=$(date "+v%Y.%-m.%-d-2%H%M-${commit_hash}")
-              fi
+              tag=$(date "+v%Y.%-m.%-d-2%H%M-${commit_hash}")
             fi
+          fi
 
-            echo "raw_tag=$tag"
-            if $is_release; then
-              version=${tag#v}
+          echo "raw_tag=$tag"
+          if $is_release; then
+            version=${tag#v}
+          else
+            ver_core=${tag%-*-*}
+            suffixs=(${tag//-/ })
+            tag=${ver_core}-post.${suffixs[-2]}-ci.${{ github.run_id }}
+            version=${tag#v}+${commit_hash}.$(date +%Y%m%d)
+          fi
+
+          if $is_release; then
+            if $is_pre_release; then
+              build_config="RelWithDebInfo"
             else
-              ver_core=${tag%-*-*}
-              suffixs=(${tag//-/ })
-              tag=${ver_core}-post.${suffixs[-2]}-ci.${{ github.run_id }}
-              version=${tag#v}+${commit_hash}.$(date +%Y%m%d)
+              build_config="Release"
             fi
+          else
+            build_config="Debug"
+          fi
 
-            if $is_release; then
-              if $is_pre_release; then
-                build_config="RelWithDebInfo"
-              else
-                build_config="Release"
-              fi
-            else
-              build_config="Debug"
-            fi
+          echo "tag=$tag
+          version=$version
+          is_release=$is_release
+          is_pre_release=$is_pre_release
+          build_config=$build_config" | tee -a "$GITHUB_OUTPUT"
 
-            echo "tag=$tag
-            version=$version
-            is_release=$is_release
-            is_pre_release=$is_pre_release
-            build_config=$build_config" | tee -a "$GITHUB_OUTPUT"
-
-      - name: Generate a changelog
+      - name: Generate Changelog
         id: changelog
         uses: orhun/git-cliff-action@v4.4.2
         with:
@@ -94,4 +94,3 @@ jobs:
           git add pyproject.toml src/MaaDebugger/__version__.py
           git commit -m "chore: Release ${{ github.ref_name }}"
           git push origin HEAD:main
-

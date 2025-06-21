@@ -53,22 +53,22 @@ body = """
 """
 
 # 尾部
-footer = """
-
-**Full Changelog**: https://github.com/MaaXYZ/MaaDebugger/compare/{{tag_name_prev}}...{{tag_name}}
-"""
+footer = """"""
 
 [git]
 # 过滤提交
 conventional_commits = true # 使用约定式提交格式
 filter_unconventional = false # 不过滤非约定式提交
+filter_commits = true
 commit_parsers = [
+    { message = "^chore: Release .*$", skip = true },        # Github Action Bot's Commit
     { message = "^feat", group = "<!-- 0 -->Feature" },
     { message = "^fix", group = "<!-- 1 -->Fix" },
     { message = "^refactor", group = "<!-- 2 -->Refactor" },
     { message = "^perf", group = "<!-- 3 -->Performance" },
     { message = "^docs", group = "<!-- 4 -->Docs" },
-    { message = "^style", group = "<!-- 5 -->Style" },
+    { message = "^chore", group = "<!-- 5 -->Chore" },
+    { message = "^style", group = "<!-- 6 -->Style" },
 ]
 
 # 忽略这些提交
@@ -76,9 +76,6 @@ ignore_tags = "rc"
 
 # 排序规则
 sort_commits = "oldest"
-
-# 过滤提交
-filter_commits = ["^chore: Release .*$"] # ^chore: Release .*$ | gha bot 发版提交
 
 # 启用GitHub集成
 [git.github]
