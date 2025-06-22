@@ -1,13 +1,14 @@
-from nicegui import ui
+from nicegui import app, ui
 
-from .master_control import main as master_control
-from .runtime_control import main as runtime_control
+from . import master_control, runtime_control
+from ...utils import update_checker
+from ...webpage.traceback_page import on_exception
 
 
 def index():
-
-    master_control()
-
+    master_control.main()
     ui.separator()
+    runtime_control.main()
 
-    runtime_control()
+    app.on_exception(on_exception)
+    ui.timer(0.5, update_checker.main, once=True)  # Check update

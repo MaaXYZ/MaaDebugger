@@ -1,7 +1,7 @@
 from nicegui import ui, app
 
-from src.MaaDebugger.main import main
+from src.MaaDebugger import MaaDebugger
 
 ui.timer(3, lambda: app.shutdown(), once=True)
 
-main()
+MaaDebugger.run_in_cli()

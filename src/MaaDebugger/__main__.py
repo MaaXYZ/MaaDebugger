@@ -1,4 +1,4 @@
-from .main import main
+from . import MaaDebugger
 
 if __name__ == "__main__":
-    main()
+    MaaDebugger.run_in_cli()
