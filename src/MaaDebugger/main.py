@@ -8,6 +8,8 @@ from .webpage import reco_page
 from .utils import args, update_checker
 from .webpage.traceback_page import on_exception
 
+ICON_PATH = Path(__file__).parent.parent / "assets" / "favicon.png"
+
 
 def main():
     host = args.get_host()
@@ -28,6 +30,6 @@ def main():
         port=find_open_port(port, end_port=port + 100),
         show=show,
         dark=dark,
-        favicon=Path(__file__).parent / "maa.ico",
+        favicon=ICON_PATH,
         # root_path="/proxy/8011",
     )
