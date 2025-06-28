@@ -70,7 +70,7 @@ class MaaDebugger:
         :param port: Run on which port.
         :param show: If automatically open the UI in a browser tab.
         :param dark: Enable dark mode. If set to `None`, it will be auto-detected based on the system settings.
-        :param kwargs: Additional keyword arguments to pass to `ui.run()`. For more information, please see https://nicegui.io/documentation/run#ui_run
+        :param **kwargs: Additional keyword arguments to pass to `ui.run()`. For more information, please see https://nicegui.io/documentation/run#ui_run
         """
         cls.init_page()
 
