@@ -5,7 +5,7 @@ from ...utils import update_checker
 from ...webpage.traceback_page import on_exception
 
 
-def index():
+def main():
     master_control.main()
     ui.separator()
     runtime_control.main()

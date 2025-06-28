@@ -10,12 +10,15 @@ from .webpage import reco_page
 from .webpage.index_page import runtime_control
 from .utils import args
 from .maafw import maafw
+from .__version__ import version
+
+TITLE = f"Maa Debugger ({version})"
 
 
 class MaaDebugger:
     @staticmethod
     def init_page() -> None:
-        index_page.index()
+        index_page.main()
 
     @staticmethod
     def set_pagination(per_page: Optional[int]) -> None:
@@ -41,7 +44,7 @@ class MaaDebugger:
         cls.init_page()
 
         ui.run(
-            title="Maa Debugger",
+            title=TITLE,
             storage_secret="maadbg",
             reload=False,
             host=host,
@@ -72,7 +75,7 @@ class MaaDebugger:
         cls.init_page()
 
         ui.run(
-            title="Maa Debugger",
+            title=TITLE,
             storage_secret="maadbg",
             reload=False,
             host=host,
