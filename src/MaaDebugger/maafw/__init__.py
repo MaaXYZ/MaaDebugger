@@ -20,6 +20,7 @@ class MaaFW:
     tasker: Optional[Tasker]
     agent: Optional[AgentClient]
     notification_handler: Optional[NotificationHandler]
+    use_cpu: bool
 
     def __init__(self):
         Toolkit.init_option("./")
@@ -32,6 +33,7 @@ class MaaFW:
 
         self.screenshotter = Screenshotter(self.screencap)
         self.notification_handler = None
+        self.use_cpu = False
 
     @staticmethod
     @asyncify
@@ -76,7 +78,7 @@ class MaaFW:
         if not connected:
             return (False, f"Failed to connect {hex(hwnd)}")
 
-        return (True, None)
+        return True, None
 
     @asyncify
     def load_resource(self, dir: List[Path]) -> Tuple[bool, Optional[str]]:
@@ -94,10 +96,13 @@ class MaaFW:
                     False,
                     "Fail to load resource,please check the outputs of CLI.",
                 )
-        return (True, None)
+        if self.use_cpu:
+            self.resource.use_cpu()  # Use CPU
+
+        return True, None
 
     @asyncify
-    def create_agent(self, identifier: str) -> str:
+    def create_agent(self, identifier: str) -> Optional[str]:
         if not self.resource:
             self.resource = Resource()
 
