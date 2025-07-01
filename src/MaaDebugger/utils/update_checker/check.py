@@ -18,12 +18,15 @@ class CheckStatus(Enum):
 
 async def get_from_pypi(url: str) -> Optional[str]:  # -> '1.8.0b1'
     try:
-        async with httpx.AsyncClient(trust_env=False) as client:
+        async with httpx.AsyncClient() as client:
             req = await client.get(url, timeout=5)
             if req.status_code == 200:
                 return req.json().get("info", {}).get("version", None)
+            else:
+                return None
     except Exception as e:
-        print(f"WARNING: Failed to GET PyPi API", e)
+        print(f"WARNING: Failed to check update from {url}", e)
+        return None
 
 
 def compare_version(ver: Union[str, Any]) -> bool:
@@ -41,9 +44,9 @@ def compare_version(ver: Union[str, Any]) -> bool:
 
 async def check_update() -> Union[CheckStatus, str, None]:
     """
-    If updatable, return a version str (like 1.8.0b1); else return None\n
+    When succeed, if updatable, return a version str (like 1.8.0b1); else return None\n
     If checking was skipped, return 'SKIPPED'\n
-    If checking is failed, return 'FAILED'
+    If checking was failed, return 'FAILED'
     """
     if "PASS" in (__version__.tag_name, __version__.version):
         return CheckStatus.SKIPPED
@@ -56,17 +59,21 @@ async def check_update() -> Union[CheckStatus, str, None]:
 
         vers = await asyncio.gather(pypi, tsinghua_pypi, return_exceptions=True)
 
+        check_number = len(vers)
+        check_succeed_number = 0
+
+        for ver in vers:
+            if type(ver) == str:
+                check_succeed_number += 1
+        print(
+            f"NOTICE: Update Check: {check_number}, Succeed: {check_succeed_number}, Failed: {check_number-check_succeed_number}"
+        )
+
         if all(ver is None for ver in vers):
             return CheckStatus.FAILED
 
-        if "DEBUG" in [__version__.tag_name, __version__.version]:
-            for ver in vers:
-                if ver and type(ver) == str:
-                    return ver
-            return None
-
         for ver in vers:
-            if ver and type(ver) == str:
+            if type(ver) == str:
                 if compare_version(ver):
                     return ver
         return None
