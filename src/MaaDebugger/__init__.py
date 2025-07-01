@@ -17,10 +17,6 @@ TITLE = f"Maa Debugger ({version})"
 
 class MaaDebugger:
     @staticmethod
-    def init_page() -> None:
-        index_page.main()
-
-    @staticmethod
     def set_pagination(per_page: Optional[int]) -> None:
         """
         Set the number of items per page for the pagination in the MaaDebugger UI.
@@ -33,30 +29,8 @@ class MaaDebugger:
     def use_cpu() -> None:
         maafw.use_cpu = True
 
-    @classmethod
-    def run_in_cli(cls) -> None:
-        """This is a **internal method** to run the MaaDebugger in CLI mode. For user, please use `MaaDebugger.run()` instead."""
-        host = args.get_host()
-        port = args.get_port() or 8011
-        show = args.get_hide()
-        dark = args.get_dark()
-
-        cls.init_page()
-
-        ui.run(
-            title=TITLE,
-            storage_secret="maadbg",
-            reload=False,
-            host=host,
-            port=find_open_port(port, end_port=port + 100),
-            show=show,
-            dark=dark,
-            favicon=Path(__file__).parent / "maa.ico",
-        )
-
-    @classmethod
+    @staticmethod
     def run(
-        cls,
         host: str = "localhost",
         port: int = 8011,
         show: bool = True,
@@ -72,16 +46,16 @@ class MaaDebugger:
         :param dark: Enable dark mode. If set to `None`, it will be auto-detected based on the system settings.
         :param **kwargs: Additional keyword arguments to pass to `ui.run()`. For more information, please see https://nicegui.io/documentation/run#ui_run
         """
-        cls.init_page()
+        index_page.main()
 
         ui.run(
             title=TITLE,
             storage_secret="maadbg",
             reload=False,
+            favicon=Path(__file__).parent / "maa.ico",
             host=host,
             port=find_open_port(port, end_port=port + 100),
             show=show,
             dark=dark,
-            favicon=Path(__file__).parent / "maa.ico",
             **kwargs,
         )
