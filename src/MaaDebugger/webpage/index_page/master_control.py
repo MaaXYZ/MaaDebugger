@@ -1,4 +1,5 @@
 import asyncio
+import io
 import json
 from pathlib import Path
 import time
@@ -306,9 +307,14 @@ def screenshot_control():
         await maafw.screenshotter.refresh(True)
 
     def on_download_image(img: Image):
-        if img:
-            # Use timestamp as filename
-            ui.download(img.tobytes(), f"{int(time.time())}.png")
+        if not img:
+            return
+
+        # Image to Bytes
+        img_bytes = io.BytesIO()
+        img.save(img_bytes, format="PNG")
+        # Use timestamp as filename
+        ui.download(img_bytes.getvalue(), f"{int(time.time())}.png")
 
 
 def load_resource_control():
