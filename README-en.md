@@ -49,7 +49,7 @@ MaaDebugger uses port **8011** by default. You can specify the port MaaDebugger 
 python -m MaaDebugger --port 8080
 ```
 
-For other command line arguments, please use `py -m MaaDebugger -h` to view.
+For other command line arguments, please use `python -m MaaDebugger -h` to view.
 
 ### Start with script
 

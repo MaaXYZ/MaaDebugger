@@ -49,7 +49,7 @@ MaaDebugger 默认使用端口 **8011**。你可以通过使用 --port [port] �
 python -m MaaDebugger --port 8080
 ```
 
-其他命令行参数请自行使用 `py -m MaaDebugger -h` 查看。
+其他命令行参数请自行使用 `python -m MaaDebugger -h` 查看。
 
 ### 使用脚本启动
 
