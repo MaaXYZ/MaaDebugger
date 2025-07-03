@@ -24,27 +24,39 @@ Python >= 3.9
 ## Installation
 
 ```bash
-python -m pip install MaaDebugger
+pip install MaaDebugger
 ```
 
 ## Update
 
 ```bash
-python -m pip install MaaDebugger MaaFW --upgrade
+pip install MaaDebugger MaaFW --upgrade
 ```
 
 ## Usage
+
+### Start from CLI
 
 ```bash
 python -m MaaDebugger
 ```
 
-### Specifying a Port
+#### Specify port
 
-MaaDebugger uses port **8011** by default. You can specify a port to run MaaDebugger on by using the `--port [port]` option. For example, to run MaaDebugger on port **8080**:
+MaaDebugger uses port **8011** by default. You can specify the port MaaDebugger runs on by using the --port [port] option. For example, to run MaaDebugger on port **8080**:
 
 ```bash
 python -m MaaDebugger --port 8080
+```
+
+For other command line arguments, please use `py -m MaaDebugger -h` to view.
+
+### Start with script
+
+```python
+from MaaDebugger import MaaDebugger
+
+MaaDebugger.run()
 ```
 
 ## Development of MaaDebugger itself
