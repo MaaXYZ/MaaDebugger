@@ -2,7 +2,6 @@ import asyncio
 import io
 import json
 from pathlib import Path
-import time
 from typing import Optional, List
 
 from maa.define import MaaWin32ScreencapMethodEnum, MaaWin32InputMethodEnum
@@ -311,10 +310,12 @@ def screenshot_control():
             return
 
         # Image to Bytes
-        img_bytes = io.BytesIO()
-        img.save(img_bytes, format="PNG")
+        bytes_io = io.BytesIO()
+        img.save(bytes_io, format="PNG")
+        img_bytes = bytes_io.getvalue()
+
         # Use timestamp as filename
-        ui.download(img_bytes.getvalue(), f"{int(time.time())}.png")
+        ui.download(img_bytes, f"{hash(img_bytes)}.png")
 
 
 def load_resource_control():
