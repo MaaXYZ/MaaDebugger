@@ -27,6 +27,7 @@ class MaaDebugger:
 
     @staticmethod
     def use_cpu() -> None:
+        """**(Use only when necessary)**Disable GPU inference acceleration"""
         maafw.use_cpu = True
 
     @staticmethod

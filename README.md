@@ -24,27 +24,39 @@ Python >= 3.9
 ## 安装
 
 ```bash
-python -m pip install MaaDebugger
+pip install MaaDebugger
 ```
 
 ## 更新
 
 ```bash
-python -m pip install MaaDebugger MaaFW --upgrade
+pip install MaaDebugger MaaFW --upgrade
 ```
 
-## 使用
+## 启动
+
+### 从命令行启动
 
 ```bash
 python -m MaaDebugger
 ```
 
-### 指定端口
+#### 指定端口
 
-MaaDebugger 默认使用端口 **8011**。你可以通过使用 --port [port] 选项来指定 MaaDebugger 运行的端口。例如，要在端口 **8080** 上运行 MaaDebugger
+MaaDebugger 默认使用端口 **8011**。你可以通过使用 --port [port] 选项来指定 MaaDebugger 运行的端口。例如，要在端口 **8080** 上运行 MaaDebugger :
 
 ```bash
 python -m MaaDebugger --port 8080
+```
+
+其他命令行参数请自行使用 `py -m MaaDebugger -h` 查看。
+
+### 使用脚本启动
+
+```python
+from MaaDebugger import MaaDebugger
+
+MaaDebugger.run()
 ```
 
 ## 开发 MaaDebugger
