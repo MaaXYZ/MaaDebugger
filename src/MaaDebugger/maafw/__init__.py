@@ -179,23 +179,11 @@ class MaaFW:
 
 
 class Screenshotter:
-    source: Optional[Image.Image]
+    source: Optional[Image.Image] = None
     screencap_func: Callable
-
-    disconnected_path: Path = (
-        Path(__file__).parent.parent.parent / "assets" / "disconnected.png"
-    )
-    disconnected_source: Optional[Image.Image] = None
-    disconnected_source_id: Optional[int] = None
 
     def __init__(self, screencap_func: Callable):
         self.screencap_func = screencap_func
-
-        if self.disconnected_path.exists():
-            self.disconnected_source = Image.open(self.disconnected_path)
-            self.disconnected_source_id = id(self.disconnected_source)
-
-        self.source = self.disconnected_source  # Use disconnected image as default
 
     def __del__(self):
         self.source = None

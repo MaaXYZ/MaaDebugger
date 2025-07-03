@@ -7,8 +7,9 @@ from .webpage import index_page
 from .webpage import reco_page
 from .utils import args, update_checker
 from .webpage.traceback_page import on_exception
+from .assets import ASSETS_PATH
 
-ICON_PATH = Path(__file__).parent.parent / "assets" / "favicon.png"
+ICON_PATH = ASSETS_PATH / "favicon.png"
 
 
 def main():

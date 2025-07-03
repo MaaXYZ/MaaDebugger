@@ -294,9 +294,7 @@ def screenshot_control():
         ui.button(
             icon="download",
             on_click=lambda: on_download_image(img.source),  # type:ignore
-        ).bind_enabled_from(
-            img, "source", lambda x: id(x) != maafw.screenshotter.disconnected_source_id
-        )
+        ).bind_enabled_from(img, "source", lambda x: x is not None)
 
     async def on_click_image(x, y):
         print(f"on_click_image: {x}, {y}")
@@ -308,8 +306,9 @@ def screenshot_control():
         await maafw.screenshotter.refresh(True)
 
     def on_download_image(img: Image):
-        print(id(img))
-        ui.download(img.tobytes(), f"{int(time.time())}.png")
+        if img:
+            # Use timestamp as filename
+            ui.download(img.tobytes(), f"{int(time.time())}.png")
 
 
 def load_resource_control():
@@ -423,9 +422,7 @@ def run_task_control():
         NodeListElement.on_value_change(
             lambda: entry_select.set_value(
                 check_entry_node(task_entry, NodeListElement.value)
-                or NodeListElement.value[0]
-                if NodeListElement.value
-                else None
+                or (NodeListElement.value[0] if NodeListElement.value else None)
             )
         )
 
