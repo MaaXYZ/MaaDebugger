@@ -1,8 +1,10 @@
 import argparse
-from typing import Optional
+from typing import Any, Optional
 
 
 class ArgParser:
+    args: Any = None
+
     def __init__(self) -> None:
         self.parser = argparse.ArgumentParser(
             description="A debugger specifically for MaaFramework."
@@ -10,8 +12,6 @@ class ArgParser:
 
         self._add_argument()
         self._add_dark_group()
-
-        self.args = self.parser.parse_args()
 
     def _add_argument(self):
         """
@@ -54,6 +54,9 @@ class ArgParser:
             action="store_true",
             default=None,
         )
+
+    def parse(self) -> None:
+        self.args = self.parser.parse_args()
 
     def get_port(self) -> Optional[int]:
         """

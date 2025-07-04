@@ -8,14 +8,16 @@ from nicegui.native.native_mode import find_open_port
 from .webpage import index_page
 from .webpage import reco_page
 from .webpage.index_page import runtime_control
-from .utils import args
 from .maafw import maafw
+from .utils import update_checker
 from .__version__ import version
 
 TITLE = f"Maa Debugger ({version})"
 
 
 class MaaDebugger:
+    check_update: bool = True
+
     @staticmethod
     def set_pagination(per_page: Optional[int]) -> None:
         """
@@ -30,8 +32,15 @@ class MaaDebugger:
         """**(Use only when necessary)**Disable GPU inference acceleration"""
         maafw.use_cpu = True
 
-    @staticmethod
+    @classmethod
+    def disable_update_checking(cls):
+        """Disable the automatic update checking."""
+        cls.check_update = False
+
+    @classmethod
     def run(
+        cls,
+        *,
         host: str = "localhost",
         port: int = 8011,
         show: bool = True,
@@ -48,6 +57,9 @@ class MaaDebugger:
         :param **kwargs: Additional keyword arguments to pass to `ui.run()`. For more information, please see https://nicegui.io/documentation/run#ui_run
         """
         index_page.main()
+
+        if cls.check_update:
+            ui.timer(0.5, update_checker.main, once=True)  # Check update
 
         ui.run(
             title=TITLE,
