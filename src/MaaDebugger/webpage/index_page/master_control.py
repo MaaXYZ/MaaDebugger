@@ -314,7 +314,7 @@ def screenshot_control():
         img.save(bytes_io, format="PNG")
         img_bytes = bytes_io.getvalue()
 
-        # Use timestamp as filename
+        # Use hash of bytes as filename
         ui.download(img_bytes, f"{hash(img_bytes)}.png")
 
 
