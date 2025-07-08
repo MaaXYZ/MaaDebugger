@@ -7,6 +7,7 @@ from .webpage import index_page
 from .webpage import reco_page
 from .utils import args, update_checker
 from .webpage.traceback_page import on_exception
+from .assets import FAVICON_PATH
 
 
 def main():
@@ -23,11 +24,11 @@ def main():
     ui.run(
         title="Maa Debugger",
         storage_secret="maadbg",
+        favicon=FAVICON_PATH,
         reload=False,
         host=host,
         port=find_open_port(port, end_port=port + 100),
         show=show,
         dark=dark,
-        favicon=Path(__file__).parent / "maa.ico",
         # root_path="/proxy/8011",
     )
