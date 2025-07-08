@@ -2,7 +2,7 @@ import asyncio
 import io
 import json
 from pathlib import Path
-from typing import Optional, List
+from typing import Any, Optional, List, Union
 
 from maa.define import MaaWin32ScreencapMethodEnum, MaaWin32InputMethodEnum
 from nicegui import app, binding, ui
@@ -305,8 +305,8 @@ def screenshot_control():
     async def on_click_refresh():
         await maafw.screenshotter.refresh(True)
 
-    def on_download_image(img: Image):
-        if not img:
+    def on_download_image(img: Union[Image, Any]):
+        if not img or type(img) != Image:
             return
 
         # Image to Bytes
@@ -314,7 +314,7 @@ def screenshot_control():
         img.save(bytes_io, format="PNG")
         img_bytes = bytes_io.getvalue()
 
-        # Use hash of bytes as filename
+        # Use hash of Bytes as filename
         ui.download(img_bytes, f"{hash(img_bytes)}.png")
 
 
