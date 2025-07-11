@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from nicegui import app, ui
 from nicegui.native.native_mode import find_open_port
 
