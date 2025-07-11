@@ -16,6 +16,9 @@ def main():
     show = args.get_hide()
     dark = args.get_dark()
 
+    ui.add_css("body--dark { background-color: #121212; color: white; }", shared=True)
+    ui.add_css("body--light { background-color: #f9f9f9; color: black; }", shared=True)
+
     index_page.index()
 
     app.on_exception(on_exception)
