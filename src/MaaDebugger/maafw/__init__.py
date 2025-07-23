@@ -97,7 +97,7 @@ class MaaFW:
         return (True, None)
 
     @asyncify
-    def create_agent(self, identifier: str) -> str:
+    def create_agent(self, identifier: str) -> Optional[str]:
         if not self.resource:
             self.resource = Resource()
 
