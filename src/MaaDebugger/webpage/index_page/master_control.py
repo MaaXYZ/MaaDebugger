@@ -9,7 +9,6 @@ from nicegui.elements.mixins.value_element import ValueElement
 
 from ...maafw import maafw
 from ...utils import input_checker as ic
-from ...utils import update_checker
 from ...webpage.components.status_indicator import Status, StatusIndicator
 from .global_status import GlobalStatus
 
