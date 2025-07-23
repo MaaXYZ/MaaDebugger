@@ -2,7 +2,7 @@ from . import MaaDebugger
 from .utils import args
 
 if __name__ == "__main__":
-    args.parse()
+    args.parse()  # Parse command line arguments on startup to ensure pyinstaller works correctly
 
     host = args.get_host()
     port = args.get_port() or 8011
