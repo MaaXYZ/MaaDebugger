@@ -24,13 +24,13 @@ Python >= 3.9
 ## 安装
 
 ```bash
-pip install MaaDebugger
+python - m pip install MaaDebugger
 ```
 
 ## 更新
 
 ```bash
-pip install MaaDebugger MaaFW --upgrade
+python -m pip install MaaDebugger MaaFW --upgrade
 ```
 
 ## 启动

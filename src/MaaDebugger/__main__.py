@@ -5,7 +5,7 @@ if __name__ == "__main__":
     args.parse()  # Parse command line arguments on startup to ensure pyinstaller works correctly
 
     host = args.get_host()
-    port = args.get_port() or 8011
+    port = args.get_port()
     show = args.get_hide()
     dark = args.get_dark()
 

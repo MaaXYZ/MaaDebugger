@@ -58,13 +58,11 @@ class ArgParser:
     def parse(self) -> None:
         self.args = self.parser.parse_args()
 
-    def get_port(self) -> Optional[int]:
+    def get_port(self) -> int:
         """
         Determine the port to use based on the provided arguments.
         """
-        port: Optional[int] = self.args.port
-
-        return port
+        return self.args.port or 8011
 
     def get_host(self) -> str:
         """
