@@ -5,6 +5,7 @@ from typing import Callable, List, Optional, Tuple, Union
 from asyncify import asyncify
 from PIL import Image
 from maa.controller import AdbController, Win32Controller
+from maa.define import MaaInferenceExecutionProviderEnum
 from maa.tasker import Tasker, RecognitionDetail, NotificationHandler
 from maa.resource import Resource
 from maa.toolkit import Toolkit, AdbDevice, DesktopWindow
@@ -21,6 +22,7 @@ class MaaFW:
     agent: Optional[AgentClient]
     notification_handler: Optional[NotificationHandler]
     use_cpu: bool
+    device_id: int
 
     def __init__(self):
         Toolkit.init_option("./")
@@ -34,6 +36,7 @@ class MaaFW:
         self.screenshotter = Screenshotter(self.screencap)
         self.notification_handler = None
         self.use_cpu = False
+        self.device_id = -1  # Auto
 
     @staticmethod
     @asyncify
@@ -96,8 +99,10 @@ class MaaFW:
                     False,
                     "Fail to load resource,please check the outputs of CLI.",
                 )
-        if self.use_cpu:
-            self.resource.use_cpu()  # Use CPU
+
+        self.resource.set_inference(
+            MaaInferenceExecutionProviderEnum.Auto, self.device_id
+        )
 
         return True, None
 
