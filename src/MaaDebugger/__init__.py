@@ -6,7 +6,7 @@ from nicegui import ui
 from nicegui.native.native_mode import find_open_port
 
 from .webpage import index_page
-from .webpage import reco_page
+from .webpage import reco_page  # noqa: F401
 from .webpage.index_page import runtime_control
 from .maafw import maafw
 from .utils import update_checker
