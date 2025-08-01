@@ -59,7 +59,7 @@ class MaaDebugger:
         index_page.main()
 
         if cls.check_update:
-            ui.timer(0.5, update_checker.main, once=True)  # Check update
+            ui.timer(2, update_checker.main, once=True)  # Check update
 
         ui.run(
             title=TITLE,
