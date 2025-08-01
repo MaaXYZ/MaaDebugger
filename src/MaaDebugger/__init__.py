@@ -19,18 +19,6 @@ class MaaDebugger:
     check_update: bool = True
 
     @staticmethod
-    def set_device(device_id: int = -1) -> None:
-        """
-        Set the device ID. For more information, please see `define.MaaInferenceDeviceEnum` .
-
-        :param device_id: The ID of the device to be used.
-        """
-        if type(device_id) != int or device_id < -2:
-            raise ValueError("device_id must be an integer greater than or equal to -2")
-
-        maafw.device_id = device_id
-
-    @staticmethod
     def set_pagination(per_page: Optional[int]) -> None:
         """
         Set the number of items per page for the pagination in the MaaDebugger UI.
@@ -38,6 +26,11 @@ class MaaDebugger:
         :param per_page: The number of items to display per page.
         """
         runtime_control.PER_PAGE_ITEM_NUM = per_page
+
+    @staticmethod
+    def use_cpu() -> None:
+        """**(Use only when necessary)**Disable GPU inference acceleration"""
+        maafw.use_cpu = True
 
     @classmethod
     def disable_update_checking(cls):
@@ -66,7 +59,7 @@ class MaaDebugger:
         index_page.main()
 
         if cls.check_update:
-            ui.timer(2, update_checker.main, once=True)  # Check update
+            ui.timer(0.5, update_checker.main, once=True)  # Check update
 
         ui.run(
             title=TITLE,
