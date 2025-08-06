@@ -274,12 +274,17 @@ def connect_win32_control():
 
 
 def screenshot_control():
-    with ui.row().style("align-items: flex-end;"):
+    with (
+        ui.row()
+        .style("align-items: flex-end;")
+        .bind_visibility_from(
+            maafw.screenshotter, "source", backward=lambda x: x is not None
+        )
+    ):
         with ui.card().tight():
             img = (
                 ui.interactive_image(
                     cross="green",
-                    size=(1280, 720),
                     on_mouse=lambda e: on_click_image(int(e.image_x), int(e.image_y)),
                 )
                 .bind_source_from(maafw.screenshotter, "source")
