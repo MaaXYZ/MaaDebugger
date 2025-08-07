@@ -301,10 +301,12 @@ def screenshot_control():
         ).bind_enabled_from(img, "source", lambda x: x is not None)
 
     async def on_click_image(x, y):
-        print(f"on_click_image: {x}, {y}")
-        await maafw.click(x, y)
-        await asyncio.sleep(1)
-        await on_click_refresh()
+        if await maafw.click(x, y):
+            print(f"on_click_image: {x}, {y}")
+            await asyncio.sleep(1)
+            await on_click_refresh()
+        else:
+            print(f"Failed to click at {x}, {y}")
 
     async def on_click_refresh():
         await maafw.screenshotter.refresh(True)
