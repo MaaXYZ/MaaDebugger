@@ -3,17 +3,17 @@ name: test
 on:
   push:
     branches:
-      - '**'
+      - "**"
     paths:
-      - '**.py'
-      - '.github/workflows/test.yml'
+      - "**.py"
+      - ".github/workflows/test.yml"
 
   pull_request:
     branches:
-      - '**'
+      - "**"
     paths:
-      - '**.py'
-      - '.github/workflows/test.yml'
+      - "**.py"
+      - ".github/workflows/test.yml"
 
 jobs:
   test:
@@ -33,4 +33,5 @@ jobs:
       - name: Run Test
         timeout-minutes: 1
         run: |
+          cp tools/test.py .
           python test.py
