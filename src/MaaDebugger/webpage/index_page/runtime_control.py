@@ -2,6 +2,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Callable, Optional
 import asyncio
+import os
 
 from nicegui import app, ui
 from nicegui.binding import bindable_dataclass
@@ -12,12 +13,14 @@ from ...webpage.components.status_indicator import Status, StatusIndicator
 from ...webpage.reco_page import RecoData
 from .global_status import GlobalStatus
 
-PAGINATION_DOCS_URL = "https://github.com"  # wait for complete
 
 STORAGE = app.storage.general
 
+PAGINATION_DOCS_URL = "https://github.com/MaaXYZ/MaaDebugger/discussions/120"
 # Set None to disable pagination or warning
-PER_PAGE_ITEM_NUM: Optional[int] = None
+PER_PAGE_ITEM_NUM: Optional[int] = (
+    int(os.getenv("MAADBG_PER_PAGE_ITEM_NUM") or 0) or None
+)
 # When the pagination is disabled and the item number reaches this value, a warning will be displayed.
 ITEM_NUMBER_WARING: Optional[int] = 400
 
