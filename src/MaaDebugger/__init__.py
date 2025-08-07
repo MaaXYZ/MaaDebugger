@@ -41,7 +41,7 @@ class MaaDebugger:
         ui.timer(2, update_checker.main, once=True)  # Check update
 
         ui.run(
-            title="MaaDebugger",
+            title="Maa Debugger",
             storage_secret="maadbg",
             reload=False,
             favicon=Path(__file__).parent / "maa.ico",
