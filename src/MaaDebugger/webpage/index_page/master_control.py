@@ -1,11 +1,13 @@
 import asyncio
+import io
 import json
 from pathlib import Path
-from typing import Optional, List
+from typing import Any, Optional, List, Union
 
 from maa.define import MaaWin32ScreencapMethodEnum, MaaWin32InputMethodEnum
 from nicegui import app, binding, ui
 from nicegui.elements.mixins.value_element import ValueElement
+from PIL.Image import Image
 
 from ...maafw import maafw
 from ...utils import input_checker as ic
@@ -30,8 +32,7 @@ def main():
             with ui.row(align_items="center").classes("w-full"):
                 run_task_control()
 
-        with ui.column():
-            screenshot_control()
+    screenshot_control()
 
 
 def connect_control():
@@ -252,7 +253,7 @@ def connect_win32_control():
         windows = await maafw.detect_win32hwnd(window_name_input.value)
         options = {}
         for w in windows:
-            options[hex(w.hwnd)] = hex(w.hwnd) + " " + w.window_name
+            options[hex(w.hwnd)] = hex(w.hwnd) + " " + w.window_name  # type:ignore
 
         hwnd_select.set_options(options)
         hwnd_select.update()
@@ -272,26 +273,32 @@ def connect_win32_control():
 
 
 def screenshot_control():
-    with ui.row().style("align-items: flex-end;"):
+    with (
+        ui.row()
+        .style("align-items: flex-end;")
+        .bind_visibility_from(
+            maafw.screenshotter, "source", backward=lambda x: x is not None
+        )
+    ):
         with ui.card().tight():
-            ui.interactive_image(
-                cross="green",
-                on_mouse=lambda e: on_click_image(int(e.image_x), int(e.image_y)),
-            ).bind_source_from(maafw.screenshotter, "source").style(
-                "height: 200px;"
-            ).bind_visibility_from(
-                GlobalStatus,
-                "ctrl_connecting",
-                backward=lambda s: s == Status.SUCCEEDED,
+            img = (
+                ui.interactive_image(
+                    cross="green",
+                    on_mouse=lambda e: on_click_image(int(e.image_x), int(e.image_y)),
+                )
+                .bind_source_from(maafw.screenshotter, "source")
+                .style("height: 200px;")
             )
 
         ui.button(
             icon="refresh", on_click=lambda: on_click_refresh()
-        ).bind_visibility_from(
-            GlobalStatus, "ctrl_connecting", backward=lambda s: s == Status.SUCCEEDED
         ).bind_enabled_from(
             GlobalStatus, "task_running", backward=lambda s: s != Status.RUNNING
         )
+        ui.button(
+            icon="download",
+            on_click=lambda: on_download_image(img.source),  # type:ignore
+        ).bind_enabled_from(img, "source", lambda x: x is not None)
 
     async def on_click_image(x, y):
         print(f"on_click_image: {x}, {y}")
@@ -301,6 +308,18 @@ def screenshot_control():
 
     async def on_click_refresh():
         await maafw.screenshotter.refresh(True)
+
+    def on_download_image(img: Union[Image, Any]):
+        if not img or type(img) != Image:
+            return
+
+        # Image to Bytes
+        bytes_io = io.BytesIO()
+        img.save(bytes_io, format="PNG")
+        img_bytes = bytes_io.getvalue()
+
+        # Use hash of Bytes as filename
+        ui.download(img_bytes, f"{hash(img_bytes)}.png")
 
 
 def load_resource_control():
@@ -414,9 +433,7 @@ def run_task_control():
         NodeListElement.on_value_change(
             lambda: entry_select.set_value(
                 check_entry_node(task_entry, NodeListElement.value)
-                or NodeListElement.value[0]
-                if NodeListElement.value
-                else None
+                or (NodeListElement.value[0] if NodeListElement.value else None)
             )
         )
 

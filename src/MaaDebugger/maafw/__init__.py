@@ -178,36 +178,20 @@ class MaaFW:
             return []
 
 
-# class Screenshotter(threading.Thread):
 class Screenshotter:
+    source: Optional[Image.Image] = None
+    screencap_func: Callable
+
     def __init__(self, screencap_func: Callable):
-        super().__init__()
-        self.source = None
         self.screencap_func = screencap_func
-        # self.active = False
 
     def __del__(self):
         self.source = None
-        # self.active = False
 
     async def refresh(self, capture: bool = True):
-        im = await self.screencap_func(capture)
-        if not im:
-            return
-
-        self.source = im
-
-    # def run(self):
-    #     while self.active:
-    #         self.refresh()
-    #         time.sleep(0)
-
-    # def start(self):
-    #     self.active = True
-    #     super().start()
-
-    # def stop(self):
-    #     self.active = False
+        im: Image.Image = await self.screencap_func(capture)
+        if im is not None:
+            self.source = im
 
 
 maafw = MaaFW()
