@@ -4,7 +4,7 @@ from .master_control import main as master_control
 from .runtime_control import main as runtime_control
 
 
-def index():
+def main():
 
     master_control()
 
