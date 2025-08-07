@@ -9,6 +9,11 @@ from .webpage import index_page
 from .webpage import reco_page  # noqa: F401
 from .webpage.index_page import runtime_control
 from .utils import update_checker
+from .maafw import maafw
+from .__version__ import version
+
+
+APP_TITLE = f"Maa Debugger ({version})"
 
 
 class MaaDebugger:
@@ -31,6 +36,8 @@ class MaaDebugger:
         :param dark: Enable dark mode. If set to `None`, it will be auto-detected based on the system settings.
         :param **kwargs: Additional keyword arguments to pass to `ui.run()`. For more information, please see https://nicegui.io/documentation/run#ui_run
         """
+        print(f"MaaFramework version: {maafw.version}")
+
         if host in ["localhost", "127.0.0.1", "::1"]:
             print("NOTICE: Only the local machine can access MaaDebugger.")
         else:
@@ -41,7 +48,7 @@ class MaaDebugger:
         ui.timer(2, update_checker.main, once=True)  # Check update
 
         ui.run(
-            title="Maa Debugger",
+            title=APP_TITLE,
             storage_secret="maadbg",
             reload=False,
             favicon=Path(__file__).parent / "maa.ico",

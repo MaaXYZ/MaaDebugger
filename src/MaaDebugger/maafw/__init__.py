@@ -9,6 +9,7 @@ from maa.tasker import Tasker, RecognitionDetail, NotificationHandler
 from maa.resource import Resource
 from maa.toolkit import Toolkit, AdbDevice, DesktopWindow
 from maa.agent_client import AgentClient
+from maa.library import Library
 
 from ..utils import cvmat_to_image
 
@@ -32,6 +33,10 @@ class MaaFW:
 
         self.screenshotter = Screenshotter(self.screencap)
         self.notification_handler = None
+
+    @property
+    def version(self) -> str:
+        return Library.version()
 
     @staticmethod
     @asyncify
