@@ -74,9 +74,9 @@ class MaaFW:
         )
         connected = self.controller.post_connection().wait().succeeded
         if not connected:
-            return (False, f"Failed to connect {hex(hwnd)}")
+            return False, f"Failed to connect {hex(hwnd)}"
 
-        return (True, None)
+        return True, None
 
     @asyncify
     def load_resource(self, dir: List[Path]) -> Tuple[bool, Optional[str]]:
@@ -92,9 +92,9 @@ class MaaFW:
             if not status:
                 return (
                     False,
-                    "Fail to load resource,please check the outputs of CLI.",
+                    "Fail to load resource, please check the outputs of CLI.",
                 )
-        return (True, None)
+        return True, None
 
     @asyncify
     def create_agent(self, identifier: str) -> Optional[str]:
@@ -111,7 +111,7 @@ class MaaFW:
         if self.agent and self.agent.connect():
             return True, None
         else:
-            return False, "Failed to connect agent"
+            return False, "Failed to connect agent."
 
     @asyncify
     def run_task(
@@ -120,17 +120,20 @@ class MaaFW:
         if not self.tasker:
             self.tasker = Tasker(notification_handler=self.notification_handler)
 
-        if not self.resource or not self.controller:
-            return False, "Resource or Controller not initialized"
+        if not self.resource:
+            return False, "Resource is not initialized."
+
+        if not self.controller:
+            return False, "Controller is not initialized."
 
         self.tasker.bind(self.resource, self.controller)
         if not self.tasker.inited:
-            return False, "Failed to init MaaFramework tasker"
+            return False, "Failed to initialize Tasker."
 
         return self.tasker.post_task(entry, pipeline_override).wait().succeeded, None
 
     @asyncify
-    def stop_task(self):
+    def stop_task(self) -> None:
         if not self.tasker:
             return
 
