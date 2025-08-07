@@ -55,35 +55,24 @@ class ArgParser:
             default=None,
         )
 
-    def get_port(self) -> Optional[int]:
+    def get_port(self) -> int:
         """
         Determine the port to use based on the provided arguments.
         """
-        port: Optional[int] = self.args.port
-
-        return port
+        return self.args.port or 8011
 
     def get_host(self) -> str:
         """
         When the value is 'localhost' (or '127.0.0.1'), only the local machine can access it.
         If you want to change this,you can set value as '0.0.0.0'
         """
+        return self.args.host
 
-        host = self.args.host
-
-        if host in ["localhost", "127.0.0.1"]:
-            print("NOTICE: Only the local machine can access MaaDebugger.")
-        else:
-            print("WARNING: All devices in the LAN can access MaaDebugger.")
-        return host
-
-    def get_hide(self) -> bool:
+    def get_show(self) -> bool:
         """
         NOTICE: ui.run(show = not self.args.hide)
         """
-        hide = self.args.hide
-
-        return not bool(hide)
+        return not bool(self.args.hide)
 
     def get_dark(self) -> Optional[bool]:
         dark = self.args.dark
