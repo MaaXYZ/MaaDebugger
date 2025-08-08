@@ -49,7 +49,7 @@ python -m MaaDebugger --port 8080
 
 ## 打包
 
-MaaDebugger 可以通过 `pyinstaller` 打包成为可在**无 Python 环境下运行的独立软件**。要进行这一操作，请先克隆本仓库并阅读折叠内容。
+MaaDebugger 可以打包成为可在**无 Python 环境下运行的独立软件**。要进行这一操作，请先克隆本仓库并阅读折叠内容。
 
 <details>
 
