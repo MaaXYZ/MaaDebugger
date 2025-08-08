@@ -14,6 +14,7 @@ from .__version__ import version
 
 
 APP_TITLE = f"Maa Debugger ({version})"
+FAVICON_PATH = Path(__file__).parent / "maa.ico"
 
 
 class MaaDebugger:
@@ -51,7 +52,7 @@ class MaaDebugger:
             title=APP_TITLE,
             storage_secret="maadbg",
             reload=False,
-            favicon=Path(__file__).parent / "maa.ico",
+            favicon=FAVICON_PATH if FAVICON_PATH.exists() else None,
             host=host,
             port=find_open_port(port, end_port=port + 100),
             show=show,
