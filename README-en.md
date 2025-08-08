@@ -47,6 +47,35 @@ MaaDebugger uses port **8011** by default. You can specify a port to run MaaDebu
 python -m MaaDebugger --port 8080
 ```
 
+<details>
+
+### Install dependencies
+
+```bash
+pip install MaaDebugger pyinstaller
+```
+
+### Execute the packaging command
+
+```bash
+cd tools
+nicegui-pack --onefile --name "MaaDebugger" main.py
+```
+
+The packaging product will be output to `tools/dist`
+
+### Distribute the dynamic library with the software
+
+```python
+# tools/main.py
+...
+os.environ["MAAFW_BINARY_PATH"] = str(Path.cwd() / "bin")
+```
+
+MaaDebugger depends on MaaFramework to run. You need to place its dependent dynamic libraries in `/bin`. You can find the dynamic libraries for your platform here [here](https://github.com/MaaXYZ/MaaFramework/releases/latest).
+
+</details>
+
 ## Development of MaaDebugger itself
 
 ```bash
