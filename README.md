@@ -47,6 +47,39 @@ MaaDebugger 默认使用端口 **8011**。你可以通过使用 --port [port] �
 python -m MaaDebugger --port 8080
 ```
 
+## 打包
+
+MaaDebugger 可以通过 `pyinstaller` 打包成为可在**无 Python 环境下运行的独立软件**。要进行这一操作，请先克隆本仓库并阅读折叠内容。
+
+<details>
+
+### 安装依赖
+
+```bash
+pip install MaaDebugger pyinstaller
+```
+
+### 执行打包命令
+
+```bash
+cd tools
+nicegui-pack --onefile --name "MaaDebugger" main.py
+```
+
+打包产物将输出至 `tools/dist`
+
+### 将动态库随软件分发
+
+```python
+# tools/main.py
+...
+os.environ["MAAFW_BINARY_PATH"] = str(Path.cwd() / "bin")
+```
+
+MaaDebugger 依赖于 MaaFramework 运行，你需要将其依赖的动态库放置在 `/bin` 中。你可以在 [这里](https://github.com/MaaXYZ/MaaFramework/releases/latest) 找到对应平台的动态库。
+
+</details>
+
 ## 开发 MaaDebugger
 
 ```bash
