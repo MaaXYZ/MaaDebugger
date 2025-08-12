@@ -11,6 +11,7 @@ from .webpage.index_page import runtime_control
 from .utils import update_checker
 from .maafw import maafw
 from .__version__ import version
+from .assets import FAVICON_PATH
 
 
 APP_TITLE = f"Maa Debugger ({version})"
@@ -51,7 +52,7 @@ class MaaDebugger:
             title=APP_TITLE,
             storage_secret="maadbg",
             reload=False,
-            favicon=Path(__file__).parent / "maa.ico",
+            favicon=FAVICON_PATH,
             host=host,
             port=find_open_port(port, end_port=port + 100),
             show=show,
