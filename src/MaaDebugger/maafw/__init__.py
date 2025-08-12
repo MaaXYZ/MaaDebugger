@@ -185,6 +185,13 @@ class MaaFW:
         else:
             return []
 
+    # @asyncify
+    def get_node_data(self, name: str) -> dict:
+        if self.resource:
+            return self.resource.get_node_data(name) or {}
+        else:
+            return {}
+
 
 class Screenshotter:
     source: Optional[Image.Image] = None
