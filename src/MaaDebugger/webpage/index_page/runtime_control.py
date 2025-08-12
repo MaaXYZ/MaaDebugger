@@ -194,7 +194,7 @@ class RecognitionRow:
         target_item.reco_id = reco_id
         target_item.status = hit and Status.SUCCEEDED or Status.FAILED
 
-        RecoData.data[reco_id] = name, hit
+        RecoData.data[reco_id] = name, hit, maafw.get_node_data(name)
         asyncio.run(maafw.screenshotter.refresh(False))
 
     # maafw

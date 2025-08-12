@@ -392,7 +392,6 @@ async def on_click_resource_load(values: Optional[str]):
         GlobalStatus.res_loading = Status.FAILED
         ui.notify(error, position="bottom-right", type="negative")
         print(error)
-        return
     else:
         GlobalStatus.res_loading = Status.SUCCEEDED
         node_list = sorted(await maafw.get_node_list())
