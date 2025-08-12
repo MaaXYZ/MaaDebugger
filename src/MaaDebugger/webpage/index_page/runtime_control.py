@@ -144,7 +144,6 @@ class RecognitionRow:
     async def clear(self):
         await maafw.clear_cache()
         self.clear_items()
-        self.data.clear()
 
     def clear_items(self):
         self.row_len = 0
