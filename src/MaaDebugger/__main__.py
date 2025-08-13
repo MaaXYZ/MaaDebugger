@@ -1,5 +1,5 @@
 from . import MaaDebugger
-from .utils import ArgParser
+from .utils.arg_parser import ArgParser
 
 if __name__ == "__main__":
     args = ArgParser()
