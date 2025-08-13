@@ -3,6 +3,14 @@ from pathlib import Path
 from typing import Optional
 
 
+def ascii_str(data: str) -> Optional[str]:
+    if not data:
+        return
+
+    if not data.isascii():
+        return "Please ensure the input is correct."
+
+
 def hwnd(data: str) -> Optional[str]:
     if not data:
         return

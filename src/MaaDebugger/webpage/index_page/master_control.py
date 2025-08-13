@@ -72,6 +72,7 @@ def connect_adb_control():
             ui.input(
                 "ADB Address",
                 placeholder="eg: 127.0.0.1:5555",
+                validation=ic.ascii_str,
             )
             .props("size=20")
             .bind_value(STORAGE, "adb_address")
