@@ -432,8 +432,11 @@ def run_task_control():
             .bind_value(STORAGE, "task_pipeline_override")
         )
 
-        ui.button("Start", on_click=lambda: on_click_start())
-        ui.button("Stop", on_click=lambda: on_click_stop())
+        # TODO: UI Design
+        with ui.row(align_items="stretch"):
+            ui.checkbox("Single Step", value=False).bind_value(STORAGE, "single_step")
+            ui.button("Start", on_click=lambda: on_click_start())
+            ui.button("Stop", on_click=lambda: on_click_stop())
 
         task_entry = STORAGE.get("task_entry", None)
 
@@ -450,13 +453,16 @@ def run_task_control():
     async def on_click_start():
         GlobalStatus.task_running = Status.RUNNING
 
-        if not entry_select.value:
+        entry = entry_select.value
+
+        if not entry:
             GlobalStatus.task_running = Status.FAILED
             return
         if not pipeline_override_input.value:
             pipeline_override_input.value = "{}"
+
         try:
-            pipeline_override = json.loads(pipeline_override_input.value)
+            pipeline_override: dict = json.loads(pipeline_override_input.value)
         except json.JSONDecodeError as e:
             ui.notify(
                 f"Error parsing pipeline override: {e}",
@@ -468,7 +474,10 @@ def run_task_control():
 
         await on_click_resource_load(STORAGE.get("resource_dir"))  # type:ignore
 
-        run, error = await maafw.run_task(entry_select.value, pipeline_override)
+        if STORAGE.get("single_step", False):
+            pipeline_override.update({entry: {"next": []}})
+
+        run, error = await maafw.run_task(entry, pipeline_override)
         if not run:
             GlobalStatus.task_running = Status.FAILED
             print(error)
