@@ -11,6 +11,7 @@ from PIL.Image import Image
 
 from ...maafw import maafw
 from ...utils import input_checker as ic
+from ...utils import system
 from ...webpage.components.status_indicator import Status, StatusIndicator
 from .global_status import GlobalStatus
 
@@ -40,13 +41,19 @@ def connect_control():
         adb = ui.tab("Adb")
         win32 = ui.tab("Win32")
 
-    with ui.tab_panels(tabs, value="Adb").bind_value(STORAGE, "controller_type"):
+    tab_panels = ui.tab_panels(tabs, value="Adb").bind_value(STORAGE, "controller_type")
+    with tab_panels:
         with ui.tab_panel(adb):
             with ui.row(align_items="center").classes("w-full"):
                 connect_adb_control()
         with ui.tab_panel(win32):
             with ui.row(align_items="center").classes("w-full"):
                 connect_win32_control()
+
+    os_type = system.get_os_type()
+    if os_type == system.OSTypeEnum.macOS or os_type == system.OSTypeEnum.Linux:
+        win32.disable()
+        tab_panels.set_value("Adb")
 
 
 def connect_adb_control():
