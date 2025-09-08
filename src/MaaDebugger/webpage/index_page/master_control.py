@@ -432,7 +432,9 @@ def run_task_control():
             .bind_value(STORAGE, "task_pipeline_override")
         )
 
-        ui.button("Start", on_click=lambda: on_click_start())
+        ui.button("Start", on_click=lambda: on_click_start()).bind_enabled_from(
+            GlobalStatus, "task_running", backward=lambda s: s != Status.RUNNING
+        )
         ui.button("Stop", on_click=lambda: on_click_stop())
 
         task_entry = STORAGE.get("task_entry", None)
