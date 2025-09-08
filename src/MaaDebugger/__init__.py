@@ -14,7 +14,7 @@ from .__version__ import version
 from .assets import FAVICON_PATH
 
 
-APP_TITLE = f"Maa Debugger ({version})"
+APP_TITLE = f"Maa Debugger (v{version})"
 
 
 class MaaDebugger:
