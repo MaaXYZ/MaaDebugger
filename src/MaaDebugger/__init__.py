@@ -7,7 +7,6 @@ from nicegui.native.native_mode import find_open_port
 
 from .webpage import index_page
 from .webpage import reco_page  # noqa: F401
-from .webpage.index_page import runtime_control
 from .utils import update_checker
 from .maafw import maafw
 from .__version__ import version
@@ -38,6 +37,7 @@ class MaaDebugger:
         :param **kwargs: Additional keyword arguments to pass to `ui.run()`. For more information, please see https://nicegui.io/documentation/run#ui_run
         """
         print(f"MaaFramework version: {maafw.version}")
+        print(f"Log located at {Path.cwd()/'debug'/'maa.log'}")
 
         if host in ["localhost", "127.0.0.1", "::1"]:
             print("NOTICE: Only the local machine can access MaaDebugger.")
