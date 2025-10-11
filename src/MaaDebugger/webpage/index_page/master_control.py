@@ -20,6 +20,7 @@ STORAGE = app.storage.general
 
 
 NodeListElement = ValueElement(value=[])
+entry_select_value: Optional[str] = None  # store the last selected entry value
 
 
 def main():
@@ -394,8 +395,11 @@ async def on_click_resource_load(values: Optional[str]):
         return
 
     paths = [Path(p) for p in values.split("\n") if p]
-
     loaded, error = await maafw.load_resource(paths)
+
+    global entry_select_value
+    entry_select_value = STORAGE.get("task_entry", None)
+
     if not loaded:
         NodeListElement.value = []
         GlobalStatus.res_loading = Status.FAILED
@@ -437,14 +441,12 @@ def run_task_control():
         )
         ui.button("Stop", on_click=lambda: on_click_stop())
 
-        task_entry = STORAGE.get("task_entry", None)
-
         NodeListElement.on_value_change(
             lambda: entry_select.set_options(NodeListElement.value)
         )
         NodeListElement.on_value_change(
             lambda: entry_select.set_value(
-                check_entry_node(task_entry, NodeListElement.value)
+                check_entry_node(entry_select_value, NodeListElement.value)
                 or (NodeListElement.value[0] if NodeListElement.value else None)
             )
         )
