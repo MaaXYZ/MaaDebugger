@@ -6,8 +6,7 @@
 
 # MaaDebugger
 
-<a href="https://pypi.org/project/MaaDebugger/" target="_blank"><img alt="pypi" src="https://img.shields.io/badge/PyPI-3775A9?logo=pypi&logoColor=white"></a>
-<a href="https://pypi.org/project/MaaDebugger/" target="_blank"><img alt="pypi-downloads" src="https://img.shields.io/pypi/dm/MaaDebugger?label=Downloads"></a>
+<a href="https://pypi.org/project/MaaDebugger/" target="_blank"><img alt="pypi" src="https://img.shields.io/pypi/dm/MaaDebugger?logo=pypi&label=PyPI"></a>
 
 <a href="https://github.com/MaaXYZ/MaaDebugger/releases/latest" target="_blank"><img alt="release" src="https://img.shields.io/github/v/release/MaaXYZ/MaaDebugger?label=Release"></a>
 <a href="https://github.com/MaaXYZ/MaaDebugger/releases" target="_blank"><img alt="pre-release" src="https://img.shields.io/github/v/release/MaaXYZ/MaaDebugger?include_prereleases&label=Pre-Release"></a>
@@ -42,7 +41,7 @@ python -m MaaDebugger
 
 ### 指定端口
 
-MaaDebugger 默认使用端口 **8011**。你可以通过使用 --port [port] 选项来指定 MaaDebugger 运行的端口。例如，要在端口 **8080** 上运行 MaaDebugger
+MaaDebugger 默认使用端口 **8011**。你可以通过使用 --port [port] 选项来指定 MaaDebugger 运行的端口。例如，要在端口 **8080** 上运行 MaaDebugger：
 
 ```bash
 python -m MaaDebugger --port 8080
@@ -57,4 +56,4 @@ python -m MaaDebugger
 
 或者
 
-使用 VSCode，在项目目录中按下 F5
+使用 VSCode，在项目目录中按下 `F5`

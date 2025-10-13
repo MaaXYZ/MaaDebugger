@@ -6,8 +6,7 @@
 
 # MaaDebugger
 
-<a href="https://pypi.org/project/MaaDebugger/" target="_blank"><img alt="pypi" src="https://img.shields.io/badge/PyPI-3775A9?logo=pypi&logoColor=white"></a>
-<a href="https://pypi.org/project/MaaDebugger/" target="_blank"><img alt="pypi-downloads" src="https://img.shields.io/pypi/dm/MaaDebugger?label=Downloads"></a>
+<a href="https://pypi.org/project/MaaDebugger/" target="_blank"><img alt="pypi" src="https://img.shields.io/pypi/dm/MaaDebugger?logo=pypi&label=PyPI"></a>
 
 <a href="https://github.com/MaaXYZ/MaaDebugger/releases/latest" target="_blank"><img alt="release" src="https://img.shields.io/github/v/release/MaaXYZ/MaaDebugger?label=Release"></a>
 <a href="https://github.com/MaaXYZ/MaaDebugger/releases" target="_blank"><img alt="pre-release" src="https://img.shields.io/github/v/release/MaaXYZ/MaaDebugger?include_prereleases&label=Pre-Release"></a>
@@ -58,4 +57,4 @@ python -m MaaDebugger
 
 or
 
-Using VSCode, press F5 in the project directory.
+Using VSCode, press `F5` in the project directory.
