@@ -18,9 +18,7 @@ from .global_status import GlobalStatus
 binding.MAX_PROPAGATION_TIME = 1
 STORAGE = app.storage.general
 
-
 NodeListElement = ValueElement(value=[])
-entry_select_value: Optional[str] = None  # store the last selected entry value
 
 
 def main():
@@ -397,9 +395,6 @@ async def on_click_resource_load(values: Optional[str]):
     paths = [Path(p) for p in values.split("\n") if p]
     loaded, error = await maafw.load_resource(paths)
 
-    global entry_select_value
-    entry_select_value = STORAGE.get("task_entry", None)
-
     if not loaded:
         NodeListElement.value = []
         GlobalStatus.res_loading = Status.FAILED
@@ -442,12 +437,8 @@ def run_task_control():
         ui.button("Stop", on_click=lambda: on_click_stop())
 
         NodeListElement.on_value_change(
-            lambda: entry_select.set_options(NodeListElement.value)
-        )
-        NodeListElement.on_value_change(
-            lambda: entry_select.set_value(
-                check_entry_node(entry_select_value, NodeListElement.value)
-                or (NodeListElement.value[0] if NodeListElement.value else None)
+            lambda: entry_select.set_options(
+                NodeListElement.value, value=get_entry_node()
             )
         )
 
@@ -492,11 +483,17 @@ def run_task_control():
         await maafw.screenshotter.refresh(True)
 
 
-def check_entry_node(entry: Optional[str], node_list: List[str]) -> Optional[str]:
+def get_entry_node() -> Optional[str]:
     """
-    Check if the entry node is in the node list.
+    Get a entry node value. (Current Node -> List[0] -> None)
     """
-    if not entry or not node_list or entry not in node_list:
+    node_list: List[str] = NodeListElement.value
+
+    if not node_list:
         return None
+
+    entry = STORAGE.get("task_entry", None)
+    if entry is None or entry not in node_list:
+        return node_list[0] or None
     else:
         return entry
