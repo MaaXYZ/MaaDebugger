@@ -154,7 +154,6 @@ def connect_adb_control():
             options[v] = l
 
         device_select.set_options(options)
-        device_select.update()
 
         if not options:
             GlobalStatus.ctrl_detecting = Status.FAILED
@@ -264,7 +263,6 @@ def connect_win32_control():
             options[hex(w.hwnd)] = hex(w.hwnd) + " " + w.window_name  # type:ignore
 
         hwnd_select.set_options(options)
-        hwnd_select.update()
         if not options:
             GlobalStatus.ctrl_detecting = Status.FAILED
             return
