@@ -50,7 +50,7 @@ def connect_control():
                 connect_win32_control()
 
     os_type = system.get_os_type()
-    if os_type == system.OSTypeEnum.macOS or os_type == system.OSTypeEnum.Linux:
+    if os_type != system.OSTypeEnum.Windows:
         win32.disable()
         win32.tooltip("Only available on Windows.")
         tab_panels.set_value("Adb")
