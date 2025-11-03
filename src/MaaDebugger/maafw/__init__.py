@@ -227,8 +227,6 @@ class MyTaskerEventSink(ContextEventSink):
         noti_type: NotificationType,
         detail: ContextEventSink.NodeRecognitionDetail,
     ):
-        print(detail, noti_type)
-
         if (
             noti_type != NotificationType.Succeeded
             and noti_type != NotificationType.Failed
