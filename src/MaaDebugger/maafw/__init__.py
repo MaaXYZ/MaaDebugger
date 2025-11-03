@@ -5,11 +5,13 @@ from typing import Callable, List, Optional, Tuple, Union
 from asyncify import asyncify
 from PIL import Image
 from maa.controller import AdbController, Win32Controller
-from maa.tasker import Tasker, RecognitionDetail, NotificationHandler
+from maa.context import Context, ContextEventSink
+from maa.tasker import Tasker, RecognitionDetail
 from maa.resource import Resource
 from maa.toolkit import Toolkit, AdbDevice, DesktopWindow
 from maa.agent_client import AgentClient
 from maa.library import Library
+from maa.event_sink import NotificationType
 
 from ..utils import cvmat_to_image
 
@@ -20,7 +22,7 @@ class MaaFW:
     controller: Union[AdbController, Win32Controller, None]
     tasker: Optional[Tasker]
     agent: Optional[AgentClient]
-    notification_handler: Optional[NotificationHandler]
+    event_sink: Optional[ContextEventSink]
 
     def __init__(self):
         Toolkit.init_option("./")
@@ -32,7 +34,7 @@ class MaaFW:
         self.agent = None
 
         self.screenshotter = Screenshotter(self.screencap)
-        self.notification_handler = None
+        self.event_sink = None
 
     @property
     def version(self) -> str:
@@ -121,8 +123,12 @@ class MaaFW:
     def run_task(
         self, entry: str, pipeline_override: dict = {}
     ) -> Tuple[bool, Optional[str]]:
+        if not self.event_sink:
+            assert ValueError("EventSink is None.")
+
         if not self.tasker:
-            self.tasker = Tasker(notification_handler=self.notification_handler)
+            self.tasker = Tasker()
+            self.tasker.add_context_sink(self.event_sink)
 
         if not self.resource:
             return False, "Resource is not initialized."
@@ -190,6 +196,49 @@ class MaaFW:
             return self.resource.get_node_data(name) or {}
         else:
             return {}
+
+
+class MyTaskerEventSink(ContextEventSink):
+    def __init__(
+        self,
+        on_next_list_starting: Optional[Callable],
+        on_recognized: Optional[Callable],
+    ) -> None:
+        # super().__init__()
+
+        self.on_next_list_starting = on_next_list_starting
+        self.on_recognized = on_recognized
+
+    def on_node_next_list(
+        self,
+        _: Context,
+        noti_type: NotificationType,
+        detail: ContextEventSink.NodeNextListDetail,
+    ):
+        if noti_type != NotificationType.Starting:
+            return
+
+        if self.on_next_list_starting is not None:
+            self.on_next_list_starting(detail.name, detail.next_list)
+
+    def on_node_recognition(
+        self,
+        _: Context,
+        noti_type: NotificationType,
+        detail: ContextEventSink.NodeRecognitionDetail,
+    ):
+        print(detail, noti_type)
+
+        if (
+            noti_type != NotificationType.Succeeded
+            and noti_type != NotificationType.Failed
+        ):
+            return
+
+        if self.on_recognized is not None:
+            self.on_recognized(
+                detail.reco_id, detail.name, noti_type == NotificationType.Succeeded
+            )
 
 
 class Screenshotter:

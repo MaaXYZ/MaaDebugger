@@ -1,14 +1,13 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Callable, Optional
+from typing import Optional
 import asyncio
 import os
 
 from nicegui import app, ui
 from nicegui.binding import bindable_dataclass
-from maa.notification_handler import NotificationHandler, NotificationType
 
-from ...maafw import maafw
+from ...maafw import maafw, MyTaskerEventSink
 from ...webpage.components.status_indicator import Status, StatusIndicator
 from ...webpage.reco_page import RecoData
 from .global_status import GlobalStatus
@@ -46,41 +45,6 @@ def main():
     reco_data.init_elements()
 
 
-class MyNotificationHandler(NotificationHandler):
-    def __init__(self) -> None:
-        super().__init__()
-
-        self.on_next_list_starting: Optional[Callable] = None
-        self.on_recognized: Optional[Callable] = None
-
-    def on_node_next_list(
-        self,
-        noti_type: NotificationType,
-        detail: NotificationHandler.NodeNextListDetail,
-    ):
-        if noti_type != NotificationType.Starting:
-            return
-
-        if self.on_next_list_starting is not None:
-            self.on_next_list_starting(detail.name, detail.next_list)
-
-    def on_node_recognition(
-        self,
-        noti_type: NotificationType,
-        detail: NotificationHandler.NodeRecognitionDetail,
-    ):
-        if (
-            noti_type != NotificationType.Succeeded
-            and noti_type != NotificationType.Failed
-        ):
-            return
-
-        if self.on_recognized is not None:
-            self.on_recognized(
-                detail.reco_id, detail.name, noti_type == NotificationType.Succeeded
-            )
-
-
 class RecognitionRow:
     def __init__(self) -> None:
         self.row_len = 0
@@ -91,11 +55,11 @@ class RecognitionRow:
 
     def register_notification_handler(self):
         """Register the custom notification handler to maafw."""
-        self.notification_handler = MyNotificationHandler()
-        self.notification_handler.on_next_list_starting = self.on_next_list_starting
-        self.notification_handler.on_recognized = self.on_recognized
+        self.task_event_sink = MyTaskerEventSink(
+            self.on_next_list_starting, self.on_recognized
+        )
 
-        maafw.notification_handler = self.notification_handler
+        maafw.event_sink = self.task_event_sink
 
     def init_elements(self):
         """Initialize the UI elements."""
