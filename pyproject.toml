@@ -4,7 +4,7 @@ version = "v1.12.1"
 description = "MaaDebugger"
 authors = [{ name = "MaaXYZ" }]
 dependencies = [
-    "MaaFw>=5.0.0a3",
+    "MaaFw>=5.0.0b3",
     "nicegui>=2.21,<3.0",
     "asyncify",
     "pillow",
