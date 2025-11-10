@@ -1,7 +1,8 @@
 from . import MaaDebugger
 from .utils.arg_parser import ArgParser
 
-if __name__ == "__main__":
+
+def main():
     args = ArgParser()
     host = args.get_host()
     port = args.get_port()
@@ -14,3 +15,7 @@ if __name__ == "__main__":
         show=show,
         dark=dark,
     )
+
+
+if __name__ == "__main__":
+    main()
