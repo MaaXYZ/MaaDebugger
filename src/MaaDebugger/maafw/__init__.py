@@ -205,14 +205,12 @@ class MaaFW:
             return {}
 
 
-class MyTaskerEventSink(ContextEventSink):
+class MyContextEventSink(ContextEventSink):
     def __init__(
         self,
         on_next_list_starting: Optional[Callable],
         on_recognized: Optional[Callable],
     ) -> None:
-        # super().__init__()
-
         self.on_next_list_starting = on_next_list_starting
         self.on_recognized = on_recognized
 

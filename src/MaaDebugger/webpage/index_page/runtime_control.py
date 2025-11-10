@@ -7,7 +7,7 @@ import os
 from nicegui import app, ui
 from nicegui.binding import bindable_dataclass
 
-from ...maafw import maafw, MyTaskerEventSink
+from ...maafw import maafw, MyContextEventSink
 from ...webpage.components.status_indicator import Status, StatusIndicator
 from ...webpage.reco_page import RecoData
 from .global_status import GlobalStatus
@@ -55,7 +55,7 @@ class RecognitionRow:
 
     def register_notification_handler(self):
         """Register the custom notification handler to maafw."""
-        self.task_event_sink = MyTaskerEventSink(
+        self.task_event_sink = MyContextEventSink(
             self.on_next_list_starting, self.on_recognized
         )
 
