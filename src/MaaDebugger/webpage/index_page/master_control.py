@@ -174,21 +174,27 @@ def connect_adb_control():
 
 def connect_win32_control():
     SCREENCAP_DICT = {
-        MaaWin32ScreencapMethodEnum.GDI: "Screencap_GDI",
-        MaaWin32ScreencapMethodEnum.DXGI_DesktopDup: "Screencap_DXGI_DesktopDup",
-        MaaWin32ScreencapMethodEnum.FramePool: "Screencap_DXGI_FramePool",
+        MaaWin32ScreencapMethodEnum.GDI: "GDI",
+        MaaWin32ScreencapMethodEnum.DXGI_DesktopDup: "DXGI_DesktopDup",
+        MaaWin32ScreencapMethodEnum.FramePool: "DXGI_FramePool",
+        MaaWin32ScreencapMethodEnum.DXGI_DesktopDup_Window: "DXGI_DesktopDup_Window",
+        MaaWin32ScreencapMethodEnum.PrintWindow: "PrintWindow",
+        MaaWin32ScreencapMethodEnum.ScreenDC: "ScreenDC",
     }
 
     INPUT_DICT = {
-        MaaWin32InputMethodEnum.SendMessage: "Input_SendMessage",
-        MaaWin32InputMethodEnum.Seize: "Input_Seize",
+        MaaWin32InputMethodEnum.SendMessage: "SendMessage",
+        MaaWin32InputMethodEnum.Seize: "Seize",
+        MaaWin32InputMethodEnum.PostMessage: "PostMessage",
+        MaaWin32InputMethodEnum.LegacyEvent: "LegacyEvent",
+        MaaWin32InputMethodEnum.PostThreadMessage: "PostThreadMessage",
     }
 
     with ui.row(align_items="baseline"):
         StatusIndicator(GlobalStatus, "ctrl_connecting")
         hwnd_input = (
             ui.input("HWND", placeholder="0x11451", validation=ic.hwnd)
-            .props("size=30")
+            .props("size=15")
             .bind_value(STORAGE, "hwnd")
             .on("keydown.enter", lambda: on_click_connect())
         )
@@ -197,21 +203,31 @@ def connect_win32_control():
             label="Screencap Method",
             value=MaaWin32ScreencapMethodEnum.DXGI_DesktopDup,
         ).bind_value(STORAGE, "win32_screencap")
-        input_select = ui.select(
-            INPUT_DICT,
-            label="Input Method",
-            value=MaaWin32InputMethodEnum.Seize,
-        ).bind_value(STORAGE, "win32_input")
+        mouse_select = (
+            ui.select(
+                INPUT_DICT,
+                label="Mouse Input Method",
+                value=MaaWin32InputMethodEnum.Seize,
+            )
+            .tooltip("Mouse Input Method")
+            .bind_value(STORAGE, "win32_mouse")
+        )
+        keyboard_select = (
+            ui.select(
+                INPUT_DICT,
+                label="Keyboard Input Method",
+                value=MaaWin32InputMethodEnum.Seize,
+            )
+            .tooltip("Keyboard Input Method")
+            .bind_value(STORAGE, "win32_keyboard")
+        )
 
         ui.button(
             "Connect",
             on_click=lambda: on_click_connect(),
         )
         window_name_input = (
-            ui.input(
-                "Search Window Name", placeholder="Supports regex, eg: File Explorer"
-            )
-            .props("size=30")
+            ui.input("Window Name", placeholder="Supports regex")
             .bind_value(STORAGE, "window_name")
             .on("keydown.enter", lambda: on_click_scan())
         )
@@ -242,7 +258,10 @@ def connect_win32_control():
             return
 
         connected, error = await maafw.connect_win32hwnd(
-            hwnd_input.value, screencap_select.value, input_select.value  # type:ignore
+            hwnd_input.value,
+            screencap_select.value,  # type:ignore
+            mouse_select.value,  # type:ignore
+            keyboard_select.value,  # type:ignore
         )
         if not connected:
             GlobalStatus.ctrl_connecting = Status.FAILED

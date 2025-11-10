@@ -71,12 +71,19 @@ class MaaFW:
 
     @asyncify
     def connect_win32hwnd(
-        self, hwnd: str, screencap_method: int, input_method: int
+        self,
+        hwnd: str,
+        screencap_method: int,
+        mouse_method: int,
+        keyboard_method: int,
     ) -> Tuple[bool, Optional[str]]:
         _hwnd = int(hwnd, 16)
 
         self.controller = Win32Controller(
-            _hwnd, screencap_method=screencap_method, input_method=input_method
+            _hwnd,
+            screencap_method=screencap_method,
+            mouse_method=mouse_method,
+            keyboard_method=keyboard_method,
         )
         connected = self.controller.post_connection().wait().succeeded
         if not connected:
