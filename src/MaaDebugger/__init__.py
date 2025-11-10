@@ -38,7 +38,7 @@ class MaaDebugger:
         :param **kwargs: Additional keyword arguments to pass to `ui.run()`. For more information, please see https://nicegui.io/documentation/run#ui_run
         """
         print(f"MaaFramework version: {maafw.version}")
-        print(f"Log located at {Path.cwd()/'debug'/'maa.log'}")
+        print(f"Log located at {Path.cwd()/'debug'/'maa.log'}\n")
 
         if host in ["localhost", "127.0.0.1", "::1"]:
             print("NOTICE: Only the local machine can access MaaDebugger.")
