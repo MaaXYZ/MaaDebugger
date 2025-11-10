@@ -198,18 +198,22 @@ def connect_win32_control():
             .bind_value(STORAGE, "hwnd")
             .on("keydown.enter", lambda: on_click_connect())
         )
-        screencap_select = ui.select(
-            SCREENCAP_DICT,
-            label="Screencap Method",
-            value=MaaWin32ScreencapMethodEnum.DXGI_DesktopDup,
-        ).bind_value(STORAGE, "win32_screencap")
+        screencap_select = (
+            ui.select(
+                SCREENCAP_DICT,
+                label="Screencap Method",
+                value=MaaWin32ScreencapMethodEnum.DXGI_DesktopDup,
+            )
+            .style("min-width: 100px")
+            .bind_value(STORAGE, "win32_screencap")
+        )
         mouse_select = (
             ui.select(
                 INPUT_DICT,
                 label="Mouse Input Method",
                 value=MaaWin32InputMethodEnum.Seize,
             )
-            .tooltip("Mouse Input Method")
+            .style("min-width: 100px")
             .bind_value(STORAGE, "win32_mouse")
         )
         keyboard_select = (
@@ -218,7 +222,7 @@ def connect_win32_control():
                 label="Keyboard Input Method",
                 value=MaaWin32InputMethodEnum.Seize,
             )
-            .tooltip("Keyboard Input Method")
+            .style("min-width: 100px")
             .bind_value(STORAGE, "win32_keyboard")
         )
 
