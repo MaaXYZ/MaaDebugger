@@ -175,16 +175,16 @@ def connect_adb_control():
 def connect_win32_control():
     SCREENCAP_DICT = {
         MaaWin32ScreencapMethodEnum.GDI: "GDI",
+        MaaWin32ScreencapMethodEnum.FramePool: "FramePool",
         MaaWin32ScreencapMethodEnum.DXGI_DesktopDup: "DXGI_DesktopDup",
-        MaaWin32ScreencapMethodEnum.FramePool: "DXGI_FramePool",
         MaaWin32ScreencapMethodEnum.DXGI_DesktopDup_Window: "DXGI_DesktopDup_Window",
         MaaWin32ScreencapMethodEnum.PrintWindow: "PrintWindow",
         MaaWin32ScreencapMethodEnum.ScreenDC: "ScreenDC",
     }
 
     INPUT_DICT = {
-        MaaWin32InputMethodEnum.SendMessage: "SendMessage",
         MaaWin32InputMethodEnum.Seize: "Seize",
+        MaaWin32InputMethodEnum.SendMessage: "SendMessage",
         MaaWin32InputMethodEnum.PostMessage: "PostMessage",
         MaaWin32InputMethodEnum.LegacyEvent: "LegacyEvent",
         MaaWin32InputMethodEnum.PostThreadMessage: "PostThreadMessage",
