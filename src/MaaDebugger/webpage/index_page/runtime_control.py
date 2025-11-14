@@ -1,13 +1,15 @@
+import asyncio
+import os
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Optional
-import asyncio
-import os
+
 
 from nicegui import app, ui
 from nicegui.binding import bindable_dataclass
+from maa.resource import Resource, NotificationType
 
-from ...maafw import maafw, MyContextEventSink
+from ...maafw import maafw, MyContextEventSink, MyResourceEventSink
 from ...webpage.components.status_indicator import Status, StatusIndicator
 from ...webpage.reco_page import RecoData
 from .global_status import GlobalStatus
@@ -51,15 +53,18 @@ class RecognitionRow:
         self.data = defaultdict(dict)
         self.list_data_map: dict[int, ListData] = {}
 
-        self.register_notification_handler()
+        self.register_sink()
 
-    def register_notification_handler(self):
+    def register_sink(self):
         """Register the custom notification handler to maafw."""
-        self.task_event_sink = MyContextEventSink(
-            self.on_next_list_starting, self.on_recognized
+        context_event_sink = MyContextEventSink(
+            self.on_next_list_starting,
+            self.on_recognized,
         )
+        resource_event_sink = MyResourceEventSink(self.on_resource_loading)
 
-        maafw.event_sink = self.task_event_sink
+        maafw.context_event_sink = context_event_sink
+        maafw.resource_event_sink = resource_event_sink
 
     def init_elements(self):
         """Initialize the UI elements."""
@@ -143,6 +148,58 @@ class RecognitionRow:
             for row_len in row_len_list[start_index:end_index]:
                 self.create_list(self.other_page_row, self.list_data_map[row_len])
 
+    def add_item_data(self, index, name, row_len: int):
+        data = ItemData(row_len, index, name)
+        self.data[row_len][index] = data
+
+    def create_list(self, row: ui.row, data: ListData):
+        reverse: bool = self.reverse_switch.value
+
+        with row:
+            with ui.list().props("bordered separator") as ls:
+                ls.set_visibility(False)  # The list will be hidden until prepared
+
+                # reverse
+                if row == self.homepage_row and reverse:
+                    ls.move(row, 0)
+                elif row == self.other_page_row and not reverse:
+                    # As
+                    # When in other page, we need to reverse the reverse logic
+                    ls.move(row, 0)
+
+                ui.item_label(data.current).props("header").classes("text-bold")
+                ui.separator()
+
+                for index in range(len(data.list_to_reco)):
+                    name = data.list_to_reco[index]
+                    self.create_items(index, name, data.row_len)
+
+                ls.set_visibility(True)
+
+    def create_items(self, index: int, name: str, row_len: int):
+        data: ItemData = self.data[row_len][index]
+
+        with ui.item(on_click=lambda data=data: self.on_click_item(data)):  # type: ignore
+            with ui.item_section().props("side"):
+                StatusIndicator(data, "status")
+
+            with ui.item_section():
+                ui.item_label(name)
+
+            with ui.item_section().props("side"):
+                ui.item_label().bind_text_from(data, "reco_id").bind_visibility_from(
+                    data, "reco_id", backward=lambda i: i != 0
+                ).props("caption")
+
+    def on_click_item(self, data: ItemData):
+        if data.reco_id == 0:
+            return
+        else:
+            print(
+                f"on_click_item ({data.col}, {data.row}): {data.name} ({data.reco_id})"
+            )
+            ui.navigate.to(f"reco/{data.reco_id}", new_tab=True)
+
     # maafw
     def on_recognized(self, reco_id: int, name: str, hit: bool):
         target_item = None
@@ -214,54 +271,18 @@ class RecognitionRow:
             name = data.list_to_reco[index]
             self.add_item_data(index, name, data.row_len)
 
-    def add_item_data(self, index, name, row_len: int):
-        data = ItemData(row_len, index, name)
-        self.data[row_len][index] = data
-
-    def create_list(self, row: ui.row, data: ListData):
-        reverse: bool = self.reverse_switch.value
-
-        with row:
-            with ui.list().props("bordered separator") as ls:
-                ls.set_visibility(False)  # The list will be hidden until prepared
-
-                # reverse
-                if row == self.homepage_row and reverse:
-                    ls.move(row, 0)
-                elif row == self.other_page_row and not reverse:
-                    # As
-                    # When in other page, we need to reverse the reverse logic
-                    ls.move(row, 0)
-
-                ui.item_label(data.current).props("header").classes("text-bold")
-                ui.separator()
-
-                for index in range(len(data.list_to_reco)):
-                    name = data.list_to_reco[index]
-                    self.create_items(index, name, data.row_len)
-
-                ls.set_visibility(True)
-
-    def create_items(self, index: int, name: str, row_len: int):
-        data: ItemData = self.data[row_len][index]
-
-        with ui.item(on_click=lambda data=data: self.on_click_item(data)):  # type: ignore
-            with ui.item_section().props("side"):
-                StatusIndicator(data, "status")
-
-            with ui.item_section():
-                ui.item_label(name)
-
-            with ui.item_section().props("side"):
-                ui.item_label().bind_text_from(data, "reco_id").bind_visibility_from(
-                    data, "reco_id", backward=lambda i: i != 0
-                ).props("caption")
-
-    def on_click_item(self, data: ItemData):
-        if data.reco_id == 0:
-            return
-        else:
-            print(
-                f"on_click_item ({data.col}, {data.row}): {data.name} ({data.reco_id})"
-            )
-            ui.navigate.to(f"reco/{data.reco_id}", new_tab=True)
+    def on_resource_loading(
+        self,
+        _: Resource,
+        noti_type: NotificationType,
+        detail: MyResourceEventSink.ResourceLoadingDetail,
+    ):
+        if noti_type == NotificationType.Failed:
+            with self.homepage_row:
+                ui.notification(
+                    f"Fail to load: {detail.path}",
+                    position="bottom-right",
+                    type="negative",
+                    timeout=20,
+                    close_button=True,
+                )

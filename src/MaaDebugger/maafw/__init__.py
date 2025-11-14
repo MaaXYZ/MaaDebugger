@@ -7,7 +7,7 @@ from PIL import Image
 from maa.controller import AdbController, Win32Controller
 from maa.context import Context, ContextEventSink
 from maa.tasker import Tasker, RecognitionDetail
-from maa.resource import Resource
+from maa.resource import Resource, ResourceEventSink
 from maa.toolkit import Toolkit, AdbDevice, DesktopWindow
 from maa.agent_client import AgentClient
 from maa.library import Library
@@ -22,7 +22,8 @@ class MaaFW:
     controller: Union[AdbController, Win32Controller, None]
     tasker: Optional[Tasker]
     agent: Optional[AgentClient]
-    event_sink: Optional[ContextEventSink]
+    context_event_sink: Optional[ContextEventSink]
+    resource_event_sink: Optional[ResourceEventSink]
 
     def __init__(self):
         Toolkit.init_option("./")
@@ -34,7 +35,6 @@ class MaaFW:
         self.agent = None
 
         self.screenshotter = Screenshotter(self.screencap)
-        self.event_sink = None
 
     @property
     def version(self) -> str:
@@ -95,6 +95,7 @@ class MaaFW:
     def load_resource(self, dir: List[Path]) -> Tuple[bool, Optional[str]]:
         if not self.resource:
             self.resource = Resource()
+            self.resource.add_sink(self.resource_event_sink)  # type:ignore
 
         self.resource.clear()
         for d in dir:
@@ -130,12 +131,12 @@ class MaaFW:
     def run_task(
         self, entry: str, pipeline_override: dict = {}
     ) -> Tuple[bool, Optional[str]]:
-        if not self.event_sink:
+        if not self.context_event_sink:
             assert ValueError("EventSink is None.")
 
         if not self.tasker:
             self.tasker = Tasker()
-            self.tasker.add_context_sink(self.event_sink)
+            self.tasker.add_context_sink(self.context_event_sink)
 
         if not self.resource:
             return False, "Resource is not initialized."
@@ -242,6 +243,11 @@ class MyContextEventSink(ContextEventSink):
             self.on_recognized(
                 detail.reco_id, detail.name, noti_type == NotificationType.Succeeded
             )
+
+
+class MyResourceEventSink(ResourceEventSink):
+    def __init__(self, on_resource_loading: Callable) -> None:
+        self.on_resource_loading = on_resource_loading
 
 
 class Screenshotter:
