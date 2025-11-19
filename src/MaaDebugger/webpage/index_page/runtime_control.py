@@ -62,10 +62,11 @@ class RecognitionRow:
             self.on_next_list_starting,
             self.on_recognized,
         )
+        task_event_sink = MyTaskEventSink()
 
         maafw.resource_event_sink = resource_event_sink
         maafw.context_event_sink = context_event_sink
-        maafw.tasker_event_sink = MyTaskEventSink()
+        maafw.tasker_event_sink = task_event_sink
 
     def init_elements(self):
         """Initialize the UI elements."""

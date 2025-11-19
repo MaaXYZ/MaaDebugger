@@ -94,9 +94,14 @@ class MaaFW:
 
     @asyncify
     def load_resource(self, dir: List[Path]) -> Tuple[bool, Optional[str]]:
+        if not self.resource_event_sink:
+            assert ValueError("ResourceEventSink is None.")
+            return False, "ResourceEventSink is None."
+
         if not self.resource:
             self.resource = Resource()
-            self.resource.add_sink(self.resource_event_sink)  # type:ignore
+            self.resource.add_sink(self.resource_event_sink)
+            AgentServer.add_resource_sink(self.resource_event_sink)
 
         self.resource.clear()
         for d in dir:
@@ -140,6 +145,9 @@ class MaaFW:
             self.tasker = Tasker()
             self.tasker.add_sink(self.tasker_event_sink)
             self.tasker.add_context_sink(self.context_event_sink)
+
+            AgentServer.add_tasker_sink(self.tasker_event_sink)
+            AgentServer.add_context_sink(self.context_event_sink)
 
         if not self.resource:
             return False, "Resource is not initialized."
@@ -209,7 +217,6 @@ class MaaFW:
             return {}
 
 
-@AgentServer.context_sink()
 class MyContextEventSink(ContextEventSink):
     def __init__(
         self,
@@ -249,13 +256,11 @@ class MyContextEventSink(ContextEventSink):
             )
 
 
-@AgentServer.resource_sink()
 class MyResourceEventSink(ResourceEventSink):
     def __init__(self, on_resource_loading: Callable) -> None:
         self.on_resource_loading = on_resource_loading
 
 
-@AgentServer.tasker_sink()
 class MyTaskEventSink(TaskerEventSink):
     pass
 
