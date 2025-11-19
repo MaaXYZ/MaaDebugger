@@ -51,10 +51,8 @@ class MaaFW:
         windows = Toolkit.find_desktop_windows()
         result = []
         for win in windows:
-            if not re.search(window_regex, win.window_name):
-                continue
-
-            result.append(win)
+            if re.search(window_regex, win.window_name):
+                result.append(win)
 
         return result
 
