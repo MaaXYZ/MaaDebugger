@@ -9,7 +9,7 @@ from nicegui import app, ui
 from nicegui.binding import bindable_dataclass
 from maa.resource import Resource, NotificationType
 
-from ...maafw import maafw, MyContextEventSink, MyResourceEventSink, MyTaskEventSink
+from ...maafw import maafw, MyContextEventSink, MyResourceEventSink
 from ...webpage.components.status_indicator import Status, StatusIndicator
 from ...webpage.reco_page import RecoData
 from .global_status import GlobalStatus
@@ -57,16 +57,14 @@ class RecognitionRow:
 
     def register_sink(self):
         """Register the custom notification handler to maafw."""
-        resource_event_sink = MyResourceEventSink(self.on_resource_loading)
         context_event_sink = MyContextEventSink(
             self.on_next_list_starting,
             self.on_recognized,
         )
-        task_event_sink = MyTaskEventSink()
+        resource_event_sink = MyResourceEventSink(self.on_resource_loading)
 
-        maafw.resource_event_sink = resource_event_sink
         maafw.context_event_sink = context_event_sink
-        maafw.tasker_event_sink = task_event_sink
+        maafw.resource_event_sink = resource_event_sink
 
     def init_elements(self):
         """Initialize the UI elements."""
