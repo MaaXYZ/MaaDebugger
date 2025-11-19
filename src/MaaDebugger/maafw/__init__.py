@@ -6,10 +6,12 @@ from asyncify import asyncify
 from PIL import Image
 from maa.controller import AdbController, Win32Controller
 from maa.context import Context, ContextEventSink
-from maa.tasker import Tasker, RecognitionDetail
+from maa.define import RecognitionDetail
+from maa.tasker import Tasker, TaskerEventSink
 from maa.resource import Resource, ResourceEventSink
 from maa.toolkit import Toolkit, AdbDevice, DesktopWindow
 from maa.agent_client import AgentClient
+from maa.agent.agent_server import AgentServer
 from maa.library import Library
 from maa.event_sink import NotificationType
 
@@ -24,6 +26,7 @@ class MaaFW:
     agent: Optional[AgentClient]
     context_event_sink: Optional[ContextEventSink]
     resource_event_sink: Optional[ResourceEventSink]
+    tasker_event_sink: Optional[TaskerEventSink]
 
     def __init__(self):
         Toolkit.init_option("./")
@@ -129,11 +132,13 @@ class MaaFW:
     def run_task(
         self, entry: str, pipeline_override: dict = {}
     ) -> Tuple[bool, Optional[str]]:
-        if not self.context_event_sink:
+        if not self.context_event_sink or not self.tasker_event_sink:
             assert ValueError("EventSink is None.")
+            return False, "EventSink is None."
 
         if not self.tasker:
             self.tasker = Tasker()
+            self.tasker.add_sink(self.tasker_event_sink)
             self.tasker.add_context_sink(self.context_event_sink)
 
         if not self.resource:
@@ -204,6 +209,7 @@ class MaaFW:
             return {}
 
 
+@AgentServer.context_sink()
 class MyContextEventSink(ContextEventSink):
     def __init__(
         self,
@@ -243,9 +249,15 @@ class MyContextEventSink(ContextEventSink):
             )
 
 
+@AgentServer.resource_sink()
 class MyResourceEventSink(ResourceEventSink):
     def __init__(self, on_resource_loading: Callable) -> None:
         self.on_resource_loading = on_resource_loading
+
+
+@AgentServer.tasker_sink()
+class MyTaskEventSink(TaskerEventSink):
+    pass
 
 
 class Screenshotter:
