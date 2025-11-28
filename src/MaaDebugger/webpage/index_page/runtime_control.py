@@ -9,7 +9,7 @@ from nicegui import app, ui
 from nicegui.binding import bindable_dataclass
 from maa.resource import Resource, NotificationType
 
-from ...maafw import maafw, MyContextEventSink, MyResourceEventSink
+from ...maafw import maafw, MyContextEventSink, MyResourceEventSink, NodeAttr
 from ...webpage.components.status_indicator import Status, StatusIndicator
 from ...webpage.reco_page import RecoData
 from .global_status import GlobalStatus
@@ -39,7 +39,7 @@ class ItemData:
 class ListData:
     row_len: int
     current: str
-    list_to_reco: list[str]
+    list_to_reco: list[NodeAttr]
 
 
 def main():
@@ -171,7 +171,7 @@ class RecognitionRow:
                 ui.separator()
 
                 for index in range(len(data.list_to_reco)):
-                    name = data.list_to_reco[index]
+                    name = data.list_to_reco[index].name
                     self.create_items(index, name, data.row_len)
 
                 ls.set_visibility(True)
@@ -218,7 +218,7 @@ class RecognitionRow:
         asyncio.run(maafw.screenshotter.refresh(False))
 
     # maafw
-    def on_next_list_starting(self, current: str, list_to_reco: list[str]):
+    def on_next_list_starting(self, current: str, list_to_reco: list[NodeAttr]):
         self.row_len += 1
 
         list_data = ListData(self.row_len, current, list_to_reco)
@@ -268,7 +268,7 @@ class RecognitionRow:
     def add_list_data(self, data: ListData):
         self.list_data_map[data.row_len] = data
         for index in range(len(data.list_to_reco)):
-            name = data.list_to_reco[index]
+            name = data.list_to_reco[index].name
             self.add_item_data(index, name, data.row_len)
 
     def on_resource_loading(
