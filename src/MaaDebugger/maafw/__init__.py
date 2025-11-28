@@ -5,7 +5,7 @@ from typing import Callable, List, Optional, Tuple, Union
 from asyncify import asyncify
 from PIL import Image
 from maa.controller import AdbController, Win32Controller
-from maa.context import Context, ContextEventSink
+from maa.context import Context, ContextEventSink, JNodeAttr
 from maa.tasker import Tasker, RecognitionDetail
 from maa.resource import Resource, ResourceEventSink
 from maa.toolkit import Toolkit, AdbDevice, DesktopWindow
@@ -14,8 +14,6 @@ from maa.library import Library
 from maa.event_sink import NotificationType
 
 from ..utils import cvmat_to_image
-
-NextListItem = ContextEventSink.NextListItem
 
 
 class MaaFW:
