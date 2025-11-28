@@ -9,7 +9,7 @@ from nicegui import app, ui
 from nicegui.binding import bindable_dataclass
 from maa.resource import Resource, NotificationType
 
-from ...maafw import maafw, MyContextEventSink, MyResourceEventSink, NodeAttr
+from ...maafw import maafw, MyContextEventSink, MyResourceEventSink, NextListItem
 from ...webpage.components.status_indicator import Status, StatusIndicator
 from ...webpage.reco_page import RecoData
 from .global_status import GlobalStatus
@@ -39,7 +39,7 @@ class ItemData:
 class ListData:
     row_len: int
     current: str
-    list_to_reco: list[NodeAttr]
+    list_to_reco: list[NextListItem]
 
 
 def main():
@@ -218,7 +218,7 @@ class RecognitionRow:
         asyncio.run(maafw.screenshotter.refresh(False))
 
     # maafw
-    def on_next_list_starting(self, current: str, list_to_reco: list[NodeAttr]):
+    def on_next_list_starting(self, current: str, list_to_reco: list[NextListItem]):
         self.row_len += 1
 
         list_data = ListData(self.row_len, current, list_to_reco)

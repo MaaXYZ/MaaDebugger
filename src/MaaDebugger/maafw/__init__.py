@@ -15,7 +15,7 @@ from maa.event_sink import NotificationType
 
 from ..utils import cvmat_to_image
 
-NodeAttr = ContextEventSink.NodeAttr
+NextListItem = ContextEventSink.NextListItem
 
 
 class MaaFW:
