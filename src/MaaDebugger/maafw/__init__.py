@@ -5,7 +5,8 @@ from typing import Callable, List, Optional, Tuple, Union
 from asyncify import asyncify
 from PIL import Image
 from maa.controller import AdbController, Win32Controller
-from maa.context import Context, ContextEventSink, JNodeAttr
+from maa.context import Context, ContextEventSink
+from maa.pipeline import JNodeAttr
 from maa.tasker import Tasker, RecognitionDetail
 from maa.resource import Resource, ResourceEventSink
 from maa.toolkit import Toolkit, AdbDevice, DesktopWindow
