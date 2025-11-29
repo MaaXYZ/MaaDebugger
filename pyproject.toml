@@ -1,6 +1,6 @@
 [project]
 name = "MaaDebugger"
-version = "v1.13.3"
+version = "v1.13.4"
 description = "MaaDebugger"
 authors = [{ name = "MaaXYZ" }]
 dependencies = [
