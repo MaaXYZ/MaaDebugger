@@ -8,8 +8,9 @@ from typing import Optional
 from nicegui import app, ui
 from nicegui.binding import bindable_dataclass
 from maa.resource import Resource, NotificationType
+from maa.pipeline import JNodeAttr
 
-from ...maafw import maafw, MyContextEventSink, MyResourceEventSink, JNodeAttr
+from ...maafw import maafw, MyContextEventSink, MyResourceEventSink
 from ...webpage.components.status_indicator import Status, StatusIndicator
 from ...webpage.reco_page import RecoData
 from .global_status import GlobalStatus
