@@ -2,7 +2,7 @@ from typing import Dict, Tuple, Optional
 
 from nicegui import ui
 
-from ...utils import cvmat_to_image
+from ...utils.img_tools import cvmat_to_image
 from ...maafw import maafw, RecognitionDetail
 
 
