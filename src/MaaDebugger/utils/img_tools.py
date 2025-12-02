@@ -8,7 +8,7 @@ def cvmat_to_image(cvmat: ndarray) -> Image.Image:
     return Image.merge("RGB", (r, g, b))
 
 
-def rgb_to_rbg(arr: ndarray) -> ndarray:
+def rgb_to_bgr(arr: ndarray) -> ndarray:
     """RGB -> BGR 转换"""
     if arr.ndim == 3 and arr.shape[2] >= 3:
         return arr[:, :, ::-1].copy()

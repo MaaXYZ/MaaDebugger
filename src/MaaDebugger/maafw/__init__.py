@@ -15,7 +15,7 @@ from maa.library import Library
 from maa.event_sink import NotificationType
 import numpy as np
 
-from ..utils.img_tools import cvmat_to_image, rgb_to_rbg
+from ..utils.img_tools import cvmat_to_image, rgb_to_bgr
 
 
 class MyCustomController(CustomController):
@@ -23,7 +23,7 @@ class MyCustomController(CustomController):
         super().__init__()
 
         img = Image.open(io.BytesIO(img_bytes))
-        self.ndarray = rgb_to_rbg(np.array(img))
+        self.ndarray = rgb_to_bgr(np.array(img))
 
     def connect(self) -> bool:
         return True
