@@ -1,5 +1,5 @@
 # If you wish to disable checking for updates on startup, you can change any of the following values to "PASS"
 # For example, version = "PASS"
 
-version = "1.14.0"
-tag_name = "v1.14.0"
+version = "1.14.1"
+tag_name = "v1.14.1"
