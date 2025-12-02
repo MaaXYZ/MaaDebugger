@@ -188,6 +188,8 @@ def connect_win32_control():
         MaaWin32InputMethodEnum.PostMessage: "PostMessage",
         MaaWin32InputMethodEnum.LegacyEvent: "LegacyEvent",
         MaaWin32InputMethodEnum.PostThreadMessage: "PostThreadMessage",
+        MaaWin32InputMethodEnum.SendMessageWithCursorPos: "SendMessageWithCursorPos",
+        MaaWin32InputMethodEnum.PostThreadMessage: "PostMessageWithCursorPos",
     }
 
     with ui.row(align_items="baseline"):
