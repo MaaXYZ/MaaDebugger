@@ -311,9 +311,11 @@ def connect_custom_control():
         GlobalStatus.ctrl_connecting = Status.RUNNING
         try:
             maafw.connect_custom_controller(e.content.read())
-        except:
+        except Exception as e:
             GlobalStatus.ctrl_connecting = Status.FAILED
-            ui.notify("Failed to load image.", position="bottom-right", type="negative")
+            ui.notify(
+                f"Failed to load image. {e}", position="bottom-right", type="negative"
+            )
             return
 
         GlobalStatus.ctrl_connecting = Status.SUCCEEDED
