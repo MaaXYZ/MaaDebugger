@@ -39,6 +39,7 @@ def connect_control():
     with ui.tabs() as tabs:
         adb = ui.tab("Adb")
         win32 = ui.tab("Win32")
+        custom = ui.tab("Custom")
 
     tab_panels = ui.tab_panels(tabs, value="Adb").bind_value(STORAGE, "controller_type")
     with tab_panels:
@@ -48,6 +49,10 @@ def connect_control():
         with ui.tab_panel(win32):
             with ui.row(align_items="center").classes("w-full"):
                 connect_win32_control()
+
+        with ui.tab_panel(custom):
+            with ui.row(align_items="center").classes("w-full"):
+                connect_custom_control()
 
     os_type = system.get_os_type()
     if os_type != system.OSTypeEnum.Windows:
@@ -301,6 +306,24 @@ def connect_win32_control():
             return
 
         hwnd_input.value = value
+
+
+def connect_custom_control():
+    def on_upload(e):
+        GlobalStatus.ctrl_connecting = Status.RUNNING
+        try:
+            maafw.connect_custom_controller(e.content.read())
+        except Exception as e:
+            GlobalStatus.ctrl_connecting = Status.FAILED
+            ui.notify(
+                f"Failed to load image. {e}", position="bottom-right", type="negative"
+            )
+            return
+
+        GlobalStatus.ctrl_connecting = Status.SUCCEEDED
+
+    StatusIndicator(GlobalStatus, "ctrl_connecting")
+    ui.upload(auto_upload=True, on_upload=lambda e: on_upload(e))
 
 
 def screenshot_control():

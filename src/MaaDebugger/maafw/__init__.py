@@ -1,10 +1,11 @@
 import re
+import io
 from pathlib import Path
 from typing import Callable, List, Optional, Tuple, Union
 
 from asyncify import asyncify
 from PIL import Image
-from maa.controller import AdbController, Win32Controller
+from maa.controller import AdbController, Win32Controller, CustomController
 from maa.context import Context, ContextEventSink
 from maa.tasker import Tasker, RecognitionDetail
 from maa.resource import Resource, ResourceEventSink
@@ -12,14 +13,32 @@ from maa.toolkit import Toolkit, AdbDevice, DesktopWindow
 from maa.agent_client import AgentClient
 from maa.library import Library
 from maa.event_sink import NotificationType
+import numpy as np
 
-from ..utils import cvmat_to_image
+from ..utils.img_tools import cvmat_to_image, rgb_to_bgr
+
+
+class MyCustomController(CustomController):
+    def __init__(self, img_bytes: bytes):
+        super().__init__()
+
+        img = Image.open(io.BytesIO(img_bytes))
+        self.ndarray = rgb_to_bgr(np.array(img))
+
+    def connect(self) -> bool:
+        return True
+
+    def request_uuid(self) -> str:
+        return "0"
+
+    def screencap(self) -> np.ndarray:
+        return self.ndarray
 
 
 class MaaFW:
 
     resource: Optional[Resource]
-    controller: Union[AdbController, Win32Controller, None]
+    controller: Union[AdbController, Win32Controller, CustomController, None]
     tasker: Optional[Tasker]
     agent: Optional[AgentClient]
     context_event_sink: Optional[ContextEventSink]
@@ -89,6 +108,12 @@ class MaaFW:
 
         return True, None
 
+    def connect_custom_controller(self, img_bytes) -> Tuple[bool, Optional[str]]:
+        self.controller = MyCustomController(img_bytes)
+        self.controller.post_connection().wait()
+
+        return True, None
+
     @asyncify
     def load_resource(self, dir: List[Path]) -> Tuple[bool, Optional[str]]:
         if not self.resource:
@@ -149,7 +174,20 @@ class MaaFW:
         if not AgentClient().register_sink(self.resource, self.controller, self.tasker):
             return False, "Failed to register Agent sink."
 
-        return self.tasker.post_task(entry, pipeline_override).wait().succeeded, None
+        if isinstance(self.controller, CustomController):
+            # disable action
+            pipeline_override.update(
+                {entry: {"action": {"type": "DoNothing"}, "next": []}}
+            )
+            return (
+                self.tasker.post_task(entry, pipeline_override).wait().succeeded,
+                None,
+            )
+        else:
+            return (
+                self.tasker.post_task(entry, pipeline_override).wait().succeeded,
+                None,
+            )
 
     @asyncify
     def stop_task(self) -> None:
@@ -174,6 +212,9 @@ class MaaFW:
     @asyncify
     def click(self, x, y) -> bool:
         if not self.controller:
+            return False
+
+        if isinstance(self.controller, CustomController):
             return False
 
         return self.controller.post_click(x, y).wait().succeeded
