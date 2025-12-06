@@ -19,8 +19,8 @@ s
 
 ## Requirement
 
-- Python >= 3.9
-- nicegui >= 2.21,<3.0
+- Python >= 3.9, <= 3.13
+- nicegui >= 2.21,< 3.0
 
 ## Installation
 
