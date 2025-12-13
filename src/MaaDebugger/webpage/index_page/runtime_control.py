@@ -6,7 +6,6 @@ from typing import Optional
 
 
 from nicegui import app, ui
-from nicegui.binding import bindable_dataclass
 from maa.resource import Resource, NotificationType
 from maa.pipeline import JNodeAttr
 
@@ -27,7 +26,7 @@ PER_PAGE_ITEM_NUM: Optional[int] = (
 ITEM_NUMBER_WARING: Optional[int] = 400
 
 
-@bindable_dataclass
+@dataclass
 class ItemData:
     col: int
     row: int
