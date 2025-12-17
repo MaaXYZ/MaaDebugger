@@ -116,6 +116,7 @@ class RecognitionRow:
 
     def clear_items(self):
         self.row_len = 0
+        RecoData.data.clear()
         self.data.clear()
         self.list_data_map.clear()
 
