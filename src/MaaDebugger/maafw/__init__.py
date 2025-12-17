@@ -171,8 +171,11 @@ class MaaFW:
         if not self.tasker.inited:
             return False, "Failed to initialize Tasker."
 
-        if not AgentClient().register_sink(self.resource, self.controller, self.tasker):
-            return False, "Failed to register Agent sink."
+        if self.agent:
+            if not AgentClient(self.agent.identifier).register_sink(
+                self.resource, self.controller, self.tasker
+            ):
+                return False, "Failed to register AgentClientSink."
 
         if isinstance(self.controller, CustomController):
             # disable action

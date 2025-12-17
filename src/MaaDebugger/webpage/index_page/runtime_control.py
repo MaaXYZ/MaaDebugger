@@ -202,17 +202,12 @@ class RecognitionRow:
 
     # maafw
     def on_recognized(self, reco_id: int, name: str, hit: bool):
-        target_item = None
         for item in self.data[self.row_len].values():
             if item.status == Status.PENDING and item.name == name:
-                target_item = item
+                item.reco_id = reco_id
+                item.status = Status.SUCCEEDED if hit else Status.FAILED
                 break
-
-        if not target_item:
             return
-
-        target_item.reco_id = reco_id
-        target_item.status = hit and Status.SUCCEEDED or Status.FAILED
 
         RecoData.data[reco_id] = name, hit, maafw.get_node_data(name)
         asyncio.run(maafw.screenshotter.refresh(False))
