@@ -147,6 +147,9 @@ class MaaFW:
     @asyncify
     def connect_agent(self) -> Tuple[bool, Optional[str]]:
         if self.agent:
+            if self.agent.connected:
+                self.agent.disconnect()
+
             if self.agent.connect():
                 return True, None
             else:
