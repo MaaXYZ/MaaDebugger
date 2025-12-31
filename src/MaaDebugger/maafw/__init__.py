@@ -140,15 +140,19 @@ class MaaFW:
 
         self.agent = AgentClient(identifier)
         self.agent.bind(self.resource)
+        self.agent.set_timeout(3000)
 
         return self.agent.identifier
 
     @asyncify
     def connect_agent(self) -> Tuple[bool, Optional[str]]:
-        if self.agent and self.agent.connect():
-            return True, None
+        if self.agent:
+            if self.agent.connect():
+                return True, None
+            else:
+                return False, "Failed to connect AgentClient."
         else:
-            return False, "Failed to connect agent."
+            return False, "Internal Error: AgentClient is None."
 
     @asyncify
     def run_task(
