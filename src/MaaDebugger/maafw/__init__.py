@@ -41,6 +41,7 @@ class MaaFW:
     controller: Union[AdbController, Win32Controller, CustomController, None]
     tasker: Optional[Tasker]
     agent: Optional[AgentClient]
+    agent_identifier: Optional[str]
     context_event_sink: Optional[ContextEventSink]
     resource_event_sink: Optional[ResourceEventSink]
 
@@ -52,6 +53,7 @@ class MaaFW:
         self.controller = None
         self.tasker = None
         self.agent = None
+        self.agent_identifier = None
 
         self.screenshotter = Screenshotter(self.screencap)
 
@@ -133,29 +135,28 @@ class MaaFW:
                 )
         return True, None
 
-    @asyncify
-    def create_agent(self, identifier: str) -> Optional[str]:
+    def create_agent(self, identifier: Optional[str]) -> Optional[AgentClient]:
         if not self.resource:
             self.resource = Resource()
 
-        self.agent = AgentClient(identifier)
-        self.agent.bind(self.resource)
-        self.agent.set_timeout(3000)
+        agent = AgentClient(identifier or None)
+        agent.bind(self.resource)
+        agent.set_timeout(1000 * 5)
 
-        return self.agent.identifier
+        return agent
 
     @asyncify
-    def connect_agent(self) -> Tuple[bool, Optional[str]]:
-        if self.agent:
-            if self.agent.connected:
-                self.agent.disconnect()
+    def connect_agent(self, identifier: Optional[str]) -> Tuple[bool, Optional[str]]:
+        if agent := self.create_agent(identifier):
+            self.agent = agent
+            self.agent_identifier = agent.identifier
 
             if self.agent.connect():
                 return True, None
             else:
                 return False, "Failed to connect AgentClient."
         else:
-            return False, "Internal Error: AgentClient is None."
+            return False, "Failed to create AgentClient."
 
     @asyncify
     def run_task(
