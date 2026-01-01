@@ -30,8 +30,8 @@ async def reco_page(reco_id: int):
         ui.markdown("## Not Found")
         return
 
-    ui.markdown(f"#### {details.algorithm}")
-    ui.markdown(f"#### {details.best_result}")
+    ui.markdown(f"#### `{details.algorithm}`")
+    ui.markdown(f"#### `{details.best_result}`")
 
     for draw in details.draw_images:
         ui.image(cvmat_to_image(draw)).props("fit=scale-down")
