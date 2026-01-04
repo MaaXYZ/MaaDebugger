@@ -135,28 +135,28 @@ class MaaFW:
                 )
         return True, None
 
-    def create_agent(self, identifier: Optional[str]) -> Optional[AgentClient]:
+    def create_agent(self, identifier: Optional[str]) -> Tuple[bool, Optional[str]]:
         if not self.resource:
             self.resource = Resource()
 
         agent = AgentClient(identifier or None)
-        agent.bind(self.resource)
         agent.set_timeout(1000 * 5)
+        if not agent.bind(self.resource):
+            return False, "Failed to bind Resource to AgentClient."
 
-        return agent
+        self.agent_identifier = agent.identifier
+        self.agent = agent
+        return True, None
 
     @asyncify
-    def connect_agent(self, identifier: Optional[str]) -> Tuple[bool, Optional[str]]:
-        if agent := self.create_agent(identifier):
-            self.agent = agent
-            self.agent_identifier = agent.identifier
+    def connect_agent(self) -> Tuple[bool, Optional[str]]:
+        if not self.agent:
+            return False, "AgentClient is not created."
 
-            if self.agent.connect():
-                return True, None
-            else:
-                return False, "Failed to connect AgentClient."
+        if self.agent.connect():
+            return True, None
         else:
-            return False, "Failed to create AgentClient."
+            return False, "Failed to connect AgentClient."
 
     @asyncify
     def run_task(
