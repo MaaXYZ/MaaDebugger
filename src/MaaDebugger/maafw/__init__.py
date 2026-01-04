@@ -147,6 +147,10 @@ class MaaFW:
 
     @asyncify
     def connect_agent(self, identifier: Optional[str]) -> Tuple[bool, Optional[str]]:
+        # 连接时，若有旧的连接，清理旧的连接
+        if self.agent:
+            self.agent = None
+        
         if agent := self.create_agent(identifier):
             self.agent = agent
             self.agent_identifier = agent.identifier
