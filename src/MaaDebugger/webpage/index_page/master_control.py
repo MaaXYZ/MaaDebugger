@@ -418,12 +418,10 @@ def agent_control():
     async def on_click_agent():
         GlobalStatus.agent_connecting = Status.RUNNING
 
-        await maafw.connect_agent(agent_identifier_input.value)
-        agent_identifier_input.value = maafw.agent_identifier
-
         connected, error = await maafw.connect_agent(agent_identifier_input.value)
         if not connected:
             GlobalStatus.agent_connecting = Status.FAILED
+            agent_identifier_input.value = maafw.agent_identifier
             ui.notify(error, position="bottom-right", type="negative")
             print(error)
             return

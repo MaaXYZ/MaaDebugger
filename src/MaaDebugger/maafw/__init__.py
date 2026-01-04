@@ -145,8 +145,18 @@ class MaaFW:
 
         return agent
 
+    def clean_agent(self):
+        if self.agent:
+            # 不使用 self.agent.disconnect() 方法进行断开连接
+            # 因为该方法会导致后续 agent 无法连接
+            self.agent = None
+            self.agent_identifier = None
+
     @asyncify
     def connect_agent(self, identifier: Optional[str]) -> Tuple[bool, Optional[str]]:
+        # 连接时，若有旧的连接，清理旧的连接
+        self.clean_agent()
+
         if agent := self.create_agent(identifier):
             self.agent = agent
             self.agent_identifier = agent.identifier
