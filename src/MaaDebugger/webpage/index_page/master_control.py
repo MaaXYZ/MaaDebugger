@@ -407,7 +407,7 @@ def agent_control():
         ui.input(
             "Agent Identifier",
         )
-        .props("size=20")
+        .props("size=40")
         .bind_value(STORAGE, "agent_identifier")
     )
     ui.button(
