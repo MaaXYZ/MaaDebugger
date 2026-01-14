@@ -199,27 +199,16 @@ class RecognitionRow:
         reverse: bool = self.reverse_switch.value
 
         with row:
-            # 设置固定宽度避免布局偏移
-            # width: 280px 固定宽度，flex-shrink: 0 防止被压缩
-            with (
-                ui.list()
-                .props("bordered separator")
-                .style("width: 280px; flex-shrink: 0;") as ls
-            ):
+            with ui.list().props("bordered separator") as ls:
                 ls.set_visibility(False)  # The list will be hidden until prepared
 
                 # reverse
                 if row == self.homepage_row and reverse:
                     ls.move(row, 0)
                 elif row == self.other_page_row and not reverse:
-                    # As
-                    # When in other page, we need to reverse the reverse logic
                     ls.move(row, 0)
 
-                # 标题也需要处理文本溢出
-                ui.item_label(data.current).props("header").classes("text-bold").style(
-                    "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                ).tooltip(data.current)
+                ui.item_label(data.current).props("header").classes("text-bold")
                 ui.separator()
 
                 for index in range(len(data.next_list)):
@@ -235,11 +224,8 @@ class RecognitionRow:
             with ui.item_section().props("side"):
                 StatusIndicator(data, "status")
 
-            with ui.item_section().style("overflow: hidden;"):
-                # 处理过长的节点名称：文本溢出显示省略号，并添加 tooltip 显示完整名称
-                ui.item_label(name).style(
-                    "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                ).tooltip(name)
+            with ui.item_section():
+                ui.item_label(name)
 
             with ui.item_section().props("side"):
                 ui.item_label().bind_text_from(data, "reco_id").bind_visibility_from(
@@ -374,11 +360,8 @@ class RecognitionRow:
                 ui.icon("subdirectory_arrow_right", size="xs").classes("text-grey")
             with ui.item_section().props("side"):
                 StatusIndicator(data, "status")
-            with ui.item_section().style("overflow: hidden;"):
-                # 处理过长的节点名称
-                ui.item_label(data.name).classes("text-sm").style(
-                    "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                ).tooltip(data.name)
+            with ui.item_section():
+                ui.item_label(data.name)
             with ui.item_section().props("side"):
                 ui.item_label().bind_text_from(data, "reco_id").bind_visibility_from(
                     data, "reco_id", backward=lambda i: i != 0
