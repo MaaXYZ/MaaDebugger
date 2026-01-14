@@ -28,6 +28,12 @@ from .launch_graph import (
     Scope,
     ScopeType,
     GeneralStatus,
+    # 辅助函数
+    is_nested_recognition,
+    get_parent_chain,
+    find_root_pipeline_node,
+    find_immediate_pipeline_node,
+    get_nesting_depth,
 )
 
 

@@ -82,6 +82,106 @@ def _last_of(arr: List[Any]) -> Optional[Any]:
     return arr[-1] if arr else None
 
 
+# ============ 辅助函数 ============
+
+
+def is_nested_recognition(scope: Scope) -> bool:
+    """
+    判断 Recognition 是否来自嵌套调用（RecognitionNode）
+
+    Args:
+        scope: 要检查的作用域
+
+    Returns:
+        True 如果该 Recognition 是在 RecognitionNode 内部触发的（嵌套调用）
+        False 如果是来自 NextList 的正常识别流程
+    """
+    if scope.type != ScopeType.RECO:
+        return False
+    # 如果父节点是 RECO_NODE，则是嵌套调用
+    return scope.parent is not None and scope.parent.type == ScopeType.RECO_NODE
+
+
+def get_parent_chain(scope: Scope) -> List[Scope]:
+    """
+    获取从当前节点到根节点的完整路径
+
+    Args:
+        scope: 起始作用域
+
+    Returns:
+        从当前节点到根节点的路径列表（包含当前节点）
+    """
+    chain: List[Scope] = []
+    current: Optional[Scope] = scope
+    while current is not None:
+        chain.append(current)
+        current = current.parent
+    return chain
+
+
+def find_root_pipeline_node(scope: Scope) -> Optional[Scope]:
+    """
+    找到最顶层的 PipelineNode
+
+    从当前节点向上遍历，找到最接近根的 PipelineNode。
+    这在追踪嵌套调用时很有用，可以确定某个识别属于哪个顶层任务。
+
+    Args:
+        scope: 起始作用域
+
+    Returns:
+        最顶层的 PipelineNode，如果没有找到则返回 None
+    """
+    root_pipeline: Optional[Scope] = None
+    current: Optional[Scope] = scope
+    while current is not None:
+        if current.type == ScopeType.PIPELINE_NODE:
+            root_pipeline = current
+        current = current.parent
+    return root_pipeline
+
+
+def find_immediate_pipeline_node(scope: Scope) -> Optional[Scope]:
+    """
+    找到最近的 PipelineNode 父节点
+
+    Args:
+        scope: 起始作用域
+
+    Returns:
+        最近的 PipelineNode 父节点，如果没有找到则返回 None
+    """
+    current: Optional[Scope] = scope.parent
+    while current is not None:
+        if current.type == ScopeType.PIPELINE_NODE:
+            return current
+        current = current.parent
+    return None
+
+
+def get_nesting_depth(scope: Scope) -> int:
+    """
+    获取当前作用域的嵌套深度
+
+    计算从当前节点到根的 PipelineNode 数量。
+    深度为 1 表示顶层执行，大于 1 表示嵌套调用。
+
+    Args:
+        scope: 要检查的作用域
+
+    Returns:
+        嵌套深度（PipelineNode 的数量）
+    """
+    depth = 0
+    current: Optional[Scope] = scope
+    while current is not None:
+        if current.type == ScopeType.PIPELINE_NODE:
+            depth += 1
+        current = current.parent
+    return depth
+
+
 def _iterate_tracker(tracker: Scope) -> Optional[Scope]:
     """
     迭代追踪器，找到当前深度的下一个节点
