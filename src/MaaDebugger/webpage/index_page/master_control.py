@@ -485,8 +485,8 @@ async def on_click_resource_load(values: Optional[str]):
     if not loaded:
         NodeListElement.value = []
         GlobalStatus.res_loading = Status.FAILED
-        # ui.notify(error, position="bottom-right", type="negative")
-        # print(error)
+        ui.notify(error, position="bottom-right", type="negative")
+        print(error)
     else:
         GlobalStatus.res_loading = Status.SUCCEEDED
         node_list = sorted(await maafw.get_node_list())
@@ -504,6 +504,7 @@ def run_task_control():
                 with_input=True,
             )
             .props("size=30")
+            .props("")
             .bind_value(STORAGE, "task_entry")
         )
 

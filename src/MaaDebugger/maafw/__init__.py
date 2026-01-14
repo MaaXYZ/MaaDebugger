@@ -158,7 +158,9 @@ class MaaFW:
         if not self.resource:
             return False, "Resource is None!"
 
-        self.resource.clear()
+        if not self.resource.clear():
+            return False, "Fail to clear Resource!"
+
         for d in dir:
             if not d.exists():
                 return False, f"{d} does not exist."
