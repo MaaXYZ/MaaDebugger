@@ -15,7 +15,7 @@ from PIL.Image import Image
 
 from ...maafw import maafw
 from ...utils import input_checker as ic
-from ...utils import system
+from ...utils import system, js
 from ...webpage.components.status_indicator import Status, StatusIndicator
 from .global_status import GlobalStatus
 
@@ -498,14 +498,14 @@ def run_task_control():
 
     with ui.row(align_items="baseline"):
         entry_select = (
-            ui.select(
-                [],
-                label="Task Entry",
-                with_input=True,
-            )
+            ui.select([], label="Task Entry", with_input=True)
             .props("size=30")
-            .props("")
             .bind_value(STORAGE, "task_entry")
+        )
+        ui.timer(
+            0.1,
+            lambda: ui.run_javascript(js.select_filter(entry_select.id)),
+            once=True,
         )
 
         pipeline_override_input = (
