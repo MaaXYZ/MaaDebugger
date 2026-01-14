@@ -413,7 +413,7 @@ def agent_control():
     ui.button(
         "Connect",
         on_click=lambda: on_click_agent(),
-    )
+    ).bind_enabled_from(GlobalStatus, "agent_connecting", lambda x: x != Status.RUNNING)
 
     async def on_click_agent():
         GlobalStatus.agent_connecting = Status.RUNNING
