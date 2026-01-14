@@ -5,7 +5,13 @@ from typing import Callable, List, Optional, Tuple, Union
 
 from asyncify import asyncify
 from PIL import Image
-from maa.controller import AdbController, Win32Controller, CustomController
+from maa.controller import (
+    AdbController,
+    Win32Controller,
+    GamepadController,
+    CustomController,
+)
+from maa.define import MaaGamepadTypeEnum
 from maa.context import Context, ContextEventSink
 from maa.tasker import Tasker, RecognitionDetail
 from maa.resource import Resource, ResourceEventSink
@@ -38,7 +44,9 @@ class MyCustomController(CustomController):
 class MaaFW:
 
     resource: Optional[Resource]
-    controller: Union[AdbController, Win32Controller, CustomController, None]
+    controller: Union[
+        AdbController, Win32Controller, GamepadController, CustomController, None
+    ]
     tasker: Optional[Tasker]
     agent: Optional[AgentClient]
     agent_identifier: Optional[str]
@@ -82,6 +90,9 @@ class MaaFW:
         self, path: Path, address: str, config: dict
     ) -> Tuple[bool, Optional[str]]:
         self.controller = AdbController(path, address, config=config)
+
+        if self.controller is None:
+            return False, "Controller is None!"
         connected = self.controller.post_connection().wait().succeeded
         if not connected:
             return False, f"Failed to connect {path} {address}"
@@ -104,14 +115,36 @@ class MaaFW:
             mouse_method=mouse_method,
             keyboard_method=keyboard_method,
         )
+
+        if self.controller is None:
+            return False, "Controller is None!"
         connected = self.controller.post_connection().wait().succeeded
         if not connected:
-            return False, f"Failed to connect {hex(_hwnd)}"
+            return False, f"Failed to connect {hwnd}"
+
+        return True, None
+
+    @asyncify
+    def connect_gamepad_controller(
+        self, hwnd: str, gamepad_type: MaaGamepadTypeEnum, screencap_method: int
+    ):
+        _hwnd = int(hwnd, 16)
+
+        self.controller = GamepadController(_hwnd, gamepad_type, screencap_method)
+
+        if self.controller is None:
+            return False, "Controller is None!"
+        connected = self.controller.post_connection().wait().succeeded
+        if not connected:
+            return False, f"Failed to connect {hwnd}"
 
         return True, None
 
     def connect_custom_controller(self, img_bytes) -> Tuple[bool, Optional[str]]:
         self.controller = MyCustomController(img_bytes)
+
+        if self.controller is None:
+            return False, "Controller is None!"
         self.controller.post_connection().wait()
 
         return True, None
@@ -121,6 +154,9 @@ class MaaFW:
         if not self.resource:
             self.resource = Resource()
             self.resource.add_sink(self.resource_event_sink)  # type:ignore
+
+        if not self.resource:
+            return False, "Resource is None!"
 
         self.resource.clear()
         for d in dir:
@@ -169,13 +205,16 @@ class MaaFW:
 
         if not self.tasker:
             self.tasker = Tasker()
-            self.tasker.add_context_sink(self.context_event_sink)
+            self.tasker.add_context_sink(self.context_event_sink)  # type: ignore
 
         if not self.resource:
             return False, "Resource is not initialized."
 
         if not self.controller:
             return False, "Controller is not initialized."
+
+        if not self.tasker:
+            return False, "Tasker is None!"
 
         self.tasker.bind(self.resource, self.controller)
         if not self.tasker.inited:

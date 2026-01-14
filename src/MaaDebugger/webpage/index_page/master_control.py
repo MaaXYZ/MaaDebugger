@@ -2,9 +2,13 @@ import asyncio
 import io
 import json
 from pathlib import Path
-from typing import Any, Optional, List, Union
+from typing import Any, Optional, List, Union, Literal
 
-from maa.define import MaaWin32ScreencapMethodEnum, MaaWin32InputMethodEnum
+from maa.define import (
+    MaaWin32ScreencapMethodEnum,
+    MaaWin32InputMethodEnum,
+    MaaGamepadTypeEnum,
+)
 from nicegui import app, binding, ui
 from nicegui.elements.mixins.value_element import ValueElement
 from PIL.Image import Image
@@ -39,29 +43,36 @@ def connect_control():
     with ui.tabs() as tabs:
         adb = ui.tab("Adb")
         win32 = ui.tab("Win32")
+        gamepad = ui.tab("Gamepad")
         custom = ui.tab("Custom")
 
-    tab_panels = ui.tab_panels(tabs, value="Adb").bind_value(STORAGE, "controller_type")
+    tab_panels = (
+        ui.tab_panels(tabs, value="Adb")
+        .bind_value(STORAGE, "controller_type")
+        .props("no-caps")
+    )
     with tab_panels:
         with ui.tab_panel(adb):
             with ui.row(align_items="center").classes("w-full"):
-                connect_adb_control()
+                adb_control()
         with ui.tab_panel(win32):
             with ui.row(align_items="center").classes("w-full"):
-                connect_win32_control()
-
+                win32_control("win32")
+        with ui.tab_panel(gamepad):
+            with ui.row(align_items="center").classes("w-full"):
+                win32_control("gamepad")
         with ui.tab_panel(custom):
             with ui.row(align_items="center").classes("w-full"):
-                connect_custom_control()
+                custom_control()
 
     os_type = system.get_os_type()
     if os_type != system.OSTypeEnum.Windows:
-        win32.disable()
-        win32.tooltip("Only available on Windows.")
+        win32.set_visibility(False)
+        gamepad.set_visibility(False)
         tab_panels.set_value("Adb")
 
 
-def connect_adb_control():
+def adb_control():
     with ui.row(align_items="baseline"):
         StatusIndicator(GlobalStatus, "ctrl_connecting")
         adb_path_input = (
@@ -177,7 +188,7 @@ def connect_adb_control():
         adb_config_input.value = value[2]
 
 
-def connect_win32_control():
+def win32_control(type: Literal["win32", "gamepad"] = "win32"):
     SCREENCAP_DICT = {
         MaaWin32ScreencapMethodEnum.GDI: "GDI",
         MaaWin32ScreencapMethodEnum.FramePool: "FramePool",
@@ -187,15 +198,23 @@ def connect_win32_control():
         MaaWin32ScreencapMethodEnum.ScreenDC: "ScreenDC",
     }
 
-    INPUT_DICT = {
-        MaaWin32InputMethodEnum.Seize: "Seize",
-        MaaWin32InputMethodEnum.SendMessage: "SendMessage",
-        MaaWin32InputMethodEnum.PostMessage: "PostMessage",
-        MaaWin32InputMethodEnum.LegacyEvent: "LegacyEvent",
-        MaaWin32InputMethodEnum.PostThreadMessage: "PostThreadMessage",
-        MaaWin32InputMethodEnum.SendMessageWithCursorPos: "SendMessageWithCursorPos",
-        MaaWin32InputMethodEnum.PostMessageWithCursorPos: "PostMessageWithCursorPos",
-    }
+    if type == "win32":
+        STORAGE_TARGET_PREFIX = "win32_"
+        INPUT_DICT = {
+            MaaWin32InputMethodEnum.Seize: "Seize",
+            MaaWin32InputMethodEnum.SendMessage: "SendMessage",
+            MaaWin32InputMethodEnum.PostMessage: "PostMessage",
+            MaaWin32InputMethodEnum.LegacyEvent: "LegacyEvent",
+            MaaWin32InputMethodEnum.PostThreadMessage: "PostThreadMessage",
+            MaaWin32InputMethodEnum.SendMessageWithCursorPos: "SendMessageWithCursorPos",
+            MaaWin32InputMethodEnum.PostMessageWithCursorPos: "PostMessageWithCursorPos",
+        }
+    else:  # elif type == "gamepad":
+        STORAGE_TARGET_PREFIX = "gamepad_"
+        GAMEPAD_TYPE_DICT = {
+            MaaGamepadTypeEnum.Xbox360: "Xbox360",
+            MaaGamepadTypeEnum.DualShock4: "DualShock4",
+        }
 
     with ui.row(align_items="baseline"):
         StatusIndicator(GlobalStatus, "ctrl_connecting")
@@ -212,26 +231,34 @@ def connect_win32_control():
                 value=MaaWin32ScreencapMethodEnum.DXGI_DesktopDup,
             )
             .style("min-width: 100px")
-            .bind_value(STORAGE, "win32_screencap")
+            .bind_value(STORAGE, STORAGE_TARGET_PREFIX + "screencap")
         )
-        mouse_select = (
-            ui.select(
-                INPUT_DICT,
-                label="Mouse Input Method",
-                value=MaaWin32InputMethodEnum.Seize,
+
+        if type == "win32":
+            mouse_select = (
+                ui.select(
+                    INPUT_DICT,
+                    label="Mouse Input Method",
+                    value=MaaWin32InputMethodEnum.Seize,
+                )
+                .style("min-width: 100px")
+                .bind_value(STORAGE, "win32_mouse")
             )
-            .style("min-width: 100px")
-            .bind_value(STORAGE, "win32_mouse")
-        )
-        keyboard_select = (
-            ui.select(
-                INPUT_DICT,
-                label="Keyboard Input Method",
-                value=MaaWin32InputMethodEnum.Seize,
+            keyboard_select = (
+                ui.select(
+                    INPUT_DICT,
+                    label="Keyboard Input Method",
+                    value=MaaWin32InputMethodEnum.Seize,
+                )
+                .style("min-width: 100px")
+                .bind_value(STORAGE, "win32_keyboard")
             )
-            .style("min-width: 100px")
-            .bind_value(STORAGE, "win32_keyboard")
-        )
+        else:  # elif type == "gamepad":
+            gamepad_type_select = (
+                ui.select(GAMEPAD_TYPE_DICT, label="Gamepad Type")
+                .style("min-width: 100px")
+                .bind_value(STORAGE, "gamepad_keyboard")
+            )
 
         ui.button(
             "Connect",
@@ -268,12 +295,21 @@ def connect_win32_control():
             GlobalStatus.ctrl_connecting = Status.FAILED
             return
 
-        connected, error = await maafw.connect_win32hwnd(
-            hwnd_input.value,
-            screencap_select.value,  # type:ignore
-            mouse_select.value,  # type:ignore
-            keyboard_select.value,  # type:ignore
-        )
+        if type == "win32":
+            connected, error = await maafw.connect_win32hwnd(
+                str(hwnd_input.value),
+                int(screencap_select.value),  # type:ignore
+                mouse_select.value,  # type:ignore
+                keyboard_select.value,  # type:ignore
+            )
+
+        elif type == "gamepad":
+            connected, error = await maafw.connect_gamepad_controller(
+                str(hwnd_input.value),  # type:ignore
+                gamepad_type_select.value,  # type:ignore
+                screencap_select.value,  # type:ignore
+            )
+
         if not connected:
             GlobalStatus.ctrl_connecting = Status.FAILED
             ui.notify(error, position="bottom-right", type="negative")
@@ -308,7 +344,7 @@ def connect_win32_control():
         hwnd_input.value = value
 
 
-def connect_custom_control():
+def custom_control():
     def on_upload(e):
         GlobalStatus.ctrl_connecting = Status.RUNNING
         try:

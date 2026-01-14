@@ -168,3 +168,6 @@ debug
 
 # pdm
 .pdm-python
+
+# uv
+uv.lock
