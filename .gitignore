@@ -171,3 +171,5 @@ debug
 
 # uv
 uv.lock
+
+test.py

@@ -299,15 +299,15 @@ def win32_control(type: Literal["win32", "gamepad"] = "win32"):
             connected, error = await maafw.connect_win32hwnd(
                 str(hwnd_input.value),
                 int(screencap_select.value),  # type:ignore
-                mouse_select.value,  # type:ignore
-                keyboard_select.value,  # type:ignore
+                int(mouse_select.value),  # type:ignore
+                int(keyboard_select.value),  # type:ignore
             )
 
         elif type == "gamepad":
             connected, error = await maafw.connect_gamepad_controller(
                 str(hwnd_input.value),  # type:ignore
-                gamepad_type_select.value,  # type:ignore
-                screencap_select.value,  # type:ignore
+                int(gamepad_type_select.value),  # type:ignore
+                int(screencap_select.value),  # type:ignore
             )
 
         if not connected:
