@@ -3,8 +3,7 @@ def select_filter(element_id: int) -> str:
     为 NiceGUI select 组件设置自定义过滤逻辑。
 
     过滤规则：
-    1. 仅当输入字符 >= 2 时才触发筛选
-    2. 优先级排序：startsWith > endsWith > includes
+    1. 优先级排序：startsWith > endsWith > includes
     """
     return f"""
             const el = getElement({element_id});
