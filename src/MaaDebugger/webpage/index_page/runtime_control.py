@@ -1,7 +1,7 @@
 import asyncio
 import os
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, Any, Dict, List
 from queue import Queue
 from threading import Lock
@@ -44,6 +44,14 @@ class ItemData:
     name: str
     reco_id: int = 0
     status: Status = Status.PENDING
+    # 嵌套子项的容器引用（用于 RecognitionNode 添加子识别项）
+    nested_container: Optional[Any] = field(default=None, repr=False)
+    # 嵌套子项列表
+    nested_items: List["ItemData"] = field(default_factory=list)
+    # 是否为嵌套项
+    is_nested: bool = False
+    # 父项引用
+    parent_item: Optional["ItemData"] = field(default=None, repr=False)
 
 
 @dataclass
@@ -65,6 +73,13 @@ class RecognitionRow:
         self.list_data_map: dict[int, ListData] = {}
         self._pending_messages: Queue = Queue()
         self._lock = Lock()
+        # 追踪当前正在处理的识别项栈（用于嵌套）
+        # 栈顶是当前正在执行的识别项
+        self._recognition_stack: List[ItemData] = []
+        # 追踪 RecognitionNode 的嵌套深度
+        self._reco_node_depth: int = 0
+        # 追踪所有通过 reco_id 索引的识别项
+        self._reco_id_map: Dict[int, ItemData] = {}
 
         self.register_sink()
 
@@ -142,6 +157,10 @@ class RecognitionRow:
         self.list_data_map.clear()
         # 重置状态机
         launch_graph_manager.reset()
+        # 重置追踪状态
+        self._recognition_stack.clear()
+        self._reco_node_depth = 0
+        self._reco_id_map.clear()
 
         self.homepage_row.clear()
         self.other_page_row.clear()
@@ -180,7 +199,13 @@ class RecognitionRow:
         reverse: bool = self.reverse_switch.value
 
         with row:
-            with ui.list().props("bordered separator") as ls:
+            # 设置固定宽度避免布局偏移
+            # width: 280px 固定宽度，flex-shrink: 0 防止被压缩
+            with (
+                ui.list()
+                .props("bordered separator")
+                .style("width: 280px; flex-shrink: 0;") as ls
+            ):
                 ls.set_visibility(False)  # The list will be hidden until prepared
 
                 # reverse
@@ -191,7 +216,10 @@ class RecognitionRow:
                     # When in other page, we need to reverse the reverse logic
                     ls.move(row, 0)
 
-                ui.item_label(data.current).props("header").classes("text-bold")
+                # 标题也需要处理文本溢出
+                ui.item_label(data.current).props("header").classes("text-bold").style(
+                    "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                ).tooltip(data.current)
                 ui.separator()
 
                 for index in range(len(data.next_list)):
@@ -207,13 +235,27 @@ class RecognitionRow:
             with ui.item_section().props("side"):
                 StatusIndicator(data, "status")
 
-            with ui.item_section():
-                ui.item_label(name)
+            with ui.item_section().style("overflow: hidden;"):
+                # 处理过长的节点名称：文本溢出显示省略号，并添加 tooltip 显示完整名称
+                ui.item_label(name).style(
+                    "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                ).tooltip(name)
 
             with ui.item_section().props("side"):
                 ui.item_label().bind_text_from(data, "reco_id").bind_visibility_from(
                     data, "reco_id", backward=lambda i: i != 0
                 ).props("caption")
+
+        # 为每个识别项创建一个可展开的嵌套容器
+        # 使用 expansion 组件来显示嵌套的识别项
+        # 默认折叠（value=False），用户可以点击展开
+        with (
+            ui.expansion(value=False)
+            .classes("w-full nested-reco")
+            .props("dense header-class='text-caption'") as expansion
+        ):
+            expansion.set_visibility(False)  # 初始隐藏，有嵌套项时才显示
+            data.nested_container = expansion
 
     def on_click_item(self, data: ItemData):
         if data.reco_id == 0:
@@ -259,15 +301,29 @@ class RecognitionRow:
             self._on_next_list_starting(name, next_names)
             await maafw.screenshotter.refresh(False)
 
-        # TODO: 等待嵌套处理 - RecognitionNode.Starting 创建独立 UI 条目
-        # RecognitionNode 内部会触发 Recognition，但这些 Recognition 不属于任何 NextList
-        # 需要为它们创建独立的 UI 条目
+        # RecognitionNode.Starting - 标记进入嵌套识别模式
         elif msg_type == "RecognitionNode.Starting":
             name = msg.get("name", "")
             node_id = msg.get("node_id", 0)
             print(f"[DEBUG] RecognitionNode.Starting: name={name}, node_id={node_id}")
             self._on_reco_node_starting(name, node_id)
             await maafw.screenshotter.refresh(False)
+
+        # RecognitionNode.Succeeded/Failed - 退出嵌套识别模式
+        elif msg_type in ("RecognitionNode.Succeeded", "RecognitionNode.Failed"):
+            name = msg.get("name", "")
+            node_id = msg.get("node_id", 0)
+            print(
+                f"[DEBUG] RecognitionNode.{msg_type.split('.')[1]}: name={name}, node_id={node_id}"
+            )
+            self._on_reco_node_ended()
+
+        # 处理 Recognition.Starting - 创建识别项（可能是嵌套的）
+        elif msg_type == "Recognition.Starting":
+            name = msg.get("name", "")
+            reco_id = msg.get("reco_id", 0)
+            print(f"[DEBUG] Recognition.Starting: name={name}, reco_id={reco_id}")
+            self._on_recognition_starting(name, reco_id)
 
         # 处理 Recognition.Succeeded/Failed - 更新识别状态
         elif msg_type in ("Recognition.Succeeded", "Recognition.Failed"):
@@ -278,24 +334,95 @@ class RecognitionRow:
             self._on_recognized(reco_id, name, hit)
             await maafw.screenshotter.refresh(False)
 
+    def _on_recognition_starting(self, name: str, reco_id: int):
+        """
+        处理 Recognition.Starting 事件
+        如果在嵌套模式下（_reco_node_depth > 0），将识别项添加为父项的子项
+        """
+        if self._reco_node_depth > 0 and len(self._recognition_stack) > 0:
+            # 嵌套识别：添加到栈顶父项的嵌套容器中
+            parent = self._recognition_stack[-1]
+            nested_item = ItemData(
+                col=parent.col,
+                row=len(parent.nested_items),
+                name=name,
+                reco_id=reco_id,
+                status=Status.PENDING,
+                is_nested=True,
+                parent_item=parent,
+            )
+            parent.nested_items.append(nested_item)
+            self._reco_id_map[reco_id] = nested_item
+            # 将嵌套项也压入栈中（它可能也会有自己的嵌套）
+            self._recognition_stack.append(nested_item)
+
+            # 在父项的嵌套容器中创建 UI
+            if parent.nested_container is not None:
+                parent.nested_container.set_visibility(True)
+                with parent.nested_container:
+                    self._create_nested_item(nested_item)
+        else:
+            # 非嵌套：这是一个顶层识别，将其压入栈中等待匹配
+            # 实际的 ItemData 在 NextList.Starting 时已经创建
+            # 这里只是记录 reco_id 以便后续匹配
+            pass
+
+    def _create_nested_item(self, data: ItemData):
+        """创建嵌套的识别项 UI"""
+        with ui.item(on_click=lambda data=data: self.on_click_item(data)).classes("ml-4"):  # type: ignore
+            with ui.item_section().props("side"):
+                ui.icon("subdirectory_arrow_right", size="xs").classes("text-grey")
+            with ui.item_section().props("side"):
+                StatusIndicator(data, "status")
+            with ui.item_section().style("overflow: hidden;"):
+                # 处理过长的节点名称
+                ui.item_label(data.name).classes("text-sm").style(
+                    "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                ).tooltip(data.name)
+            with ui.item_section().props("side"):
+                ui.item_label().bind_text_from(data, "reco_id").bind_visibility_from(
+                    data, "reco_id", backward=lambda i: i != 0
+                ).props("caption")
+
     def _on_recognized(self, reco_id: int, name: str, hit: bool):
         """处理识别完成事件"""
         found = False
-        for item in self.data[self.row_len].values():
-            if item.status == Status.PENDING and item.name == name:
-                item.reco_id = reco_id
-                item.status = Status.SUCCEEDED if hit else Status.FAILED
-                found = True
-                break
+        matched_item: Optional[ItemData] = None
 
-        # TODO: 等待嵌套处理 - 如果在当前 row 没找到匹配项，检查 RecognitionNode 创建的条目
+        # 首先通过 reco_id 直接查找（嵌套项在 Starting 时就已设置 reco_id）
+        if reco_id in self._reco_id_map:
+            matched_item = self._reco_id_map[reco_id]
+            matched_item.status = Status.SUCCEEDED if hit else Status.FAILED
+            found = True
+            # 从栈中弹出已完成的识别项
+            if (
+                len(self._recognition_stack) > 0
+                and self._recognition_stack[-1] is matched_item
+            ):
+                self._recognition_stack.pop()
+
+        # 如果通过 reco_id 没找到，检查当前 row（非嵌套项）
         if not found:
-            # 遍历所有 row 寻找匹配的 pending 条目
+            for item in self.data[self.row_len].values():
+                if item.status == Status.PENDING and item.name == name:
+                    item.reco_id = reco_id
+                    item.status = Status.SUCCEEDED if hit else Status.FAILED
+                    matched_item = item
+                    self._reco_id_map[reco_id] = item
+                    found = True
+                    # 压入栈中作为潜在的父项
+                    self._recognition_stack.append(item)
+                    break
+
+        # 如果还没找到，遍历所有 row
+        if not found:
             for row_data in self.data.values():
                 for item in row_data.values():
                     if item.status == Status.PENDING and item.name == name:
                         item.reco_id = reco_id
                         item.status = Status.SUCCEEDED if hit else Status.FAILED
+                        matched_item = item
+                        self._reco_id_map[reco_id] = item
                         found = True
                         break
                 if found:
@@ -306,27 +433,25 @@ class RecognitionRow:
     def _on_reco_node_starting(self, name: str, node_id: int):
         """
         处理 RecognitionNode 开始事件
-        TODO: 等待嵌套处理 - 为 RecognitionNode 内部的 Recognition 创建独立 UI 条目
-
         RecognitionNode 是在 custom recognizer/action 内部调用 ctx.run_recognition() 时触发的
-        它不属于任何 NextList，所以需要创建独立的 UI 列表来展示
+
+        进入嵌套模式：后续的 Recognition 将作为栈顶识别项的子项
         """
-        self.row_len += 1
+        self._reco_node_depth += 1
+        print(
+            f"[DEBUG] RecognitionNode depth increased to {self._reco_node_depth}, stack size: {len(self._recognition_stack)}"
+        )
 
-        # 创建一个只包含单个识别项的列表
-        # 列表标题使用 "RecognitionNode:" 前缀以区分
-        list_data = ListData(self.row_len, f"RecognitionNode: {name}", [name])
-        self.add_list_data(list_data)
-
-        # 分页处理
-        if (
-            PER_PAGE_ITEM_NUM is not None
-            and self.row_len / PER_PAGE_ITEM_NUM >= self.pagination.max
-        ):
-            self.pagination.max += 1
-            self.homepage_row.clear()
-
-        self.create_list(self.homepage_row, list_data)
+    def _on_reco_node_ended(self):
+        """
+        处理 RecognitionNode 结束事件
+        退出嵌套模式
+        """
+        if self._reco_node_depth > 0:
+            self._reco_node_depth -= 1
+        print(
+            f"[DEBUG] RecognitionNode depth decreased to {self._reco_node_depth}, stack size: {len(self._recognition_stack)}"
+        )
 
     def _on_next_list_starting(self, current: str, next_list: List[str]):
         """处理 NextList 开始事件"""
