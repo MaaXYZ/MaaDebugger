@@ -39,6 +39,7 @@ class Scope:
     reco: Optional[List["Scope"]] = None  # for pipeline_node
     action: Optional["Scope"] = None  # for pipeline_node, act_node
     reco_detail: Optional["Scope"] = None  # for reco_node
+    parent: Optional["Scope"] = field(default=None, repr=False)  # 父节点引用
 
 
 @dataclass
@@ -126,13 +127,12 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
 
     # 处理 Task 级别的消息
     if msg_type == "Task.Starting":
-        current.childs.append(
-            Scope(
-                type=ScopeType.TASK,
-                msg=msg,
-                status=GeneralStatus.RUNNING,
-            )
+        new_scope = Scope(
+            type=ScopeType.TASK,
+            msg=msg,
+            status=GeneralStatus.RUNNING,
         )
+        current.childs.append(new_scope)
         current.depth = 0
         return current
 
@@ -159,14 +159,14 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
     # 深度为 0 时，只能处理 PipelineNode.Starting
     if current.depth == 0:
         if msg_type == "PipelineNode.Starting":
-            task.childs.append(
-                Scope(
-                    type=ScopeType.PIPELINE_NODE,
-                    msg=msg,
-                    status=GeneralStatus.RUNNING,
-                    reco=[],
-                )
+            new_scope = Scope(
+                type=ScopeType.PIPELINE_NODE,
+                msg=msg,
+                status=GeneralStatus.RUNNING,
+                reco=[],
+                parent=task,
             )
+            task.childs.append(new_scope)
             current.depth += 1
             return current
         else:
@@ -192,14 +192,14 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
     # 根据消息类型更新状态机
     if msg_type == "PipelineNode.Starting":
         if tracker.type in (ScopeType.RECO, ScopeType.ACTION):
-            tracker.childs.append(
-                Scope(
-                    type=ScopeType.PIPELINE_NODE,
-                    msg=msg,
-                    status=GeneralStatus.RUNNING,
-                    reco=[],
-                )
+            new_scope = Scope(
+                type=ScopeType.PIPELINE_NODE,
+                msg=msg,
+                status=GeneralStatus.RUNNING,
+                reco=[],
+                parent=tracker,
             )
+            tracker.childs.append(new_scope)
             current.depth += 1
         else:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
@@ -218,13 +218,13 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
 
     elif msg_type == "RecognitionNode.Starting":
         if tracker.type in (ScopeType.RECO, ScopeType.ACTION):
-            tracker.childs.append(
-                Scope(
-                    type=ScopeType.RECO_NODE,
-                    msg=msg,
-                    status=GeneralStatus.RUNNING,
-                )
+            new_scope = Scope(
+                type=ScopeType.RECO_NODE,
+                msg=msg,
+                status=GeneralStatus.RUNNING,
+                parent=tracker,
             )
+            tracker.childs.append(new_scope)
             current.depth += 1
         else:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
@@ -249,13 +249,13 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
 
     elif msg_type == "ActionNode.Starting":
         if tracker.type in (ScopeType.RECO, ScopeType.ACTION):
-            tracker.childs.append(
-                Scope(
-                    type=ScopeType.ACTION_NODE,
-                    msg=msg,
-                    status=GeneralStatus.RUNNING,
-                )
+            new_scope = Scope(
+                type=ScopeType.ACTION_NODE,
+                msg=msg,
+                status=GeneralStatus.RUNNING,
+                parent=tracker,
             )
+            tracker.childs.append(new_scope)
             current.depth += 1
         else:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
@@ -276,13 +276,13 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
         if tracker.type == ScopeType.PIPELINE_NODE:
             if tracker.reco is None:
                 tracker.reco = []
-            tracker.reco.append(
-                Scope(
-                    type=ScopeType.NEXT_LIST,
-                    msg=msg,
-                    status=GeneralStatus.RUNNING,
-                )
+            new_scope = Scope(
+                type=ScopeType.NEXT_LIST,
+                msg=msg,
+                status=GeneralStatus.RUNNING,
+                parent=tracker,
             )
+            tracker.reco.append(new_scope)
             current.depth += 1
         else:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
@@ -301,20 +301,22 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
 
     elif msg_type == "Recognition.Starting":
         if tracker.type == ScopeType.RECO_NODE:
-            tracker.reco_detail = Scope(
+            new_scope = Scope(
                 type=ScopeType.RECO,
                 msg=msg,
                 status=GeneralStatus.RUNNING,
+                parent=tracker,
             )
+            tracker.reco_detail = new_scope
             current.depth += 1
         elif tracker.type == ScopeType.NEXT_LIST:
-            tracker.childs.append(
-                Scope(
-                    type=ScopeType.RECO,
-                    msg=msg,
-                    status=GeneralStatus.RUNNING,
-                )
+            new_scope = Scope(
+                type=ScopeType.RECO,
+                msg=msg,
+                status=GeneralStatus.RUNNING,
+                parent=tracker,
             )
+            tracker.childs.append(new_scope)
             current.depth += 1
         else:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
@@ -333,11 +335,13 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
 
     elif msg_type == "Action.Starting":
         if tracker.type in (ScopeType.PIPELINE_NODE, ScopeType.ACTION_NODE):
-            tracker.action = Scope(
+            new_scope = Scope(
                 type=ScopeType.ACTION,
                 msg=msg,
                 status=GeneralStatus.RUNNING,
+                parent=tracker,
             )
+            tracker.action = new_scope
             current.depth += 1
         else:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
