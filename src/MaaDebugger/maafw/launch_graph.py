@@ -6,7 +6,6 @@ MaaFramework 任务执行状态机
 from dataclasses import dataclass, field
 from typing import Any, Optional, List, Dict
 from enum import Enum
-from copy import deepcopy
 
 
 class GeneralStatus(str, Enum):
@@ -110,18 +109,19 @@ def _iterate_tracker(tracker: Scope) -> Optional[Scope]:
 
 def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGraph:
     """
-    状态机的 reducer 函数，根据消息更新执行图
+    状态机的 reducer 函数，根据消息更新执行图（原地修改）
 
     Args:
         current: 当前的执行图状态
         msg: 从 MaaFramework 接收到的消息
 
     Returns:
-        更新后的执行图（不可变更新）
-    """
-    # 深拷贝以实现不可变更新
-    current = deepcopy(current)
+        更新后的执行图（同一个实例，已被原地修改）
 
+    Note:
+        与 TypeScript 版本使用 immer 实现不可变更新不同，
+        Python 版本采用原地修改以避免 deepcopy 带来的内存开销。
+    """
     msg_type = msg.get("msg", "")
 
     # 处理 Task 级别的消息
