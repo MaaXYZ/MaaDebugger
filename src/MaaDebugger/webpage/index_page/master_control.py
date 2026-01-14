@@ -418,7 +418,7 @@ def agent_control():
     async def on_click_agent():
         GlobalStatus.agent_connecting = Status.RUNNING
 
-        created, error = maafw.create_agent(agent_identifier_input.value)
+        created, error = await maafw.create_agent(agent_identifier_input.value)
         if not created:
             GlobalStatus.agent_connecting = Status.FAILED
             ui.notify(error, position="bottom-right", type="negative")

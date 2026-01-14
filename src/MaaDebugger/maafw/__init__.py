@@ -135,10 +135,12 @@ class MaaFW:
                 )
         return True, None
 
+    @asyncify
     def create_agent(self, identifier: Optional[str]) -> Tuple[bool, Optional[str]]:
+        self.agent = None  # del existing agent
+
         if not self.resource:
             self.resource = Resource()
-
         agent = AgentClient(identifier or None)
         agent.set_timeout(1000 * 5)
         if not agent.bind(self.resource):
