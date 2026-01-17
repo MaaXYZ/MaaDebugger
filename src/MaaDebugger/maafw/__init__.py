@@ -186,6 +186,7 @@ class MaaFW:
         if self.controller is None:
             return False, "Controller is None!"
         self.controller.post_connection().wait()
+        self.controller.screencap()  # 连接时执行截图
 
         return True, None
 

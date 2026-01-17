@@ -53,3 +53,11 @@ def paths_exist(data: str) -> Optional[str]:
 
     if msg:
         return msg
+
+
+def is_file(path: str) -> Optional[str]:
+    if not path:
+        return
+
+    if not Path(path).is_file():
+        return "Please enter a valid file path."

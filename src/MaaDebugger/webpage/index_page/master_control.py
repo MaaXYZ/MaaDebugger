@@ -393,21 +393,42 @@ def playcover_control():
 
 
 def custom_control():
-    def on_upload(e):
+    StatusIndicator(GlobalStatus, "ctrl_connecting")
+    with ui.row(align_items="baseline"):
+        img_path_input = (
+            ui.input(
+                label="Image Path",
+                validation=ic.is_file,
+            )
+            .props("size=80")
+            .bind_value(STORAGE, "custom_controller_img_path")
+        )
+        ui.button("Load").on_click(lambda: on_load_img())
+
+    def on_load_img():
+        if not img_path_input.value or not Path(img_path_input.value).is_file():
+            GlobalStatus.ctrl_connecting = Status.FAILED
+            ui.notify(
+                "Please enter a valid image path.",
+                position="bottom-right",
+                type="negative",
+            )
+            return
+
         GlobalStatus.ctrl_connecting = Status.RUNNING
         try:
-            maafw.connect_custom_controller(e.content.read())
+            with open(img_path_input.value, "rb") as fl:
+                maafw.connect_custom_controller(fl.read())
         except Exception as e:
             GlobalStatus.ctrl_connecting = Status.FAILED
             ui.notify(
-                f"Failed to load image. {e}", position="bottom-right", type="negative"
+                f"Failed to load the provided image. {e}",
+                position="bottom-right",
+                type="negative",
             )
             return
 
         GlobalStatus.ctrl_connecting = Status.SUCCEEDED
-
-    StatusIndicator(GlobalStatus, "ctrl_connecting")
-    ui.upload(auto_upload=True, on_upload=lambda e: on_upload(e))
 
 
 def screenshot_control():
