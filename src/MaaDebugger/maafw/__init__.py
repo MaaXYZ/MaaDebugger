@@ -123,7 +123,7 @@ class MaaFW:
         return True, None
 
     @asyncify
-    def connect_win32hwnd(
+    def connect_win32(
         self,
         hwnd: str,
         screencap_method: int,
@@ -148,9 +148,7 @@ class MaaFW:
         return True, None
 
     @asyncify
-    def connect_playcover_controller(
-        self, address: str, uuid: str
-    ) -> Tuple[bool, Optional[str]]:
+    def connect_playcover(self, address: str, uuid: str) -> Tuple[bool, Optional[str]]:
         self.controller = PlayCoverController(address, uuid)
 
         if self.controller is None:
@@ -162,7 +160,7 @@ class MaaFW:
         return True, None
 
     @asyncify
-    def connect_gamepad_controller(
+    def connect_gamepad(
         self, hwnd: str, gamepad_type: MaaGamepadTypeEnum, screencap_method: int
     ):
         _hwnd = int(hwnd, 16)
