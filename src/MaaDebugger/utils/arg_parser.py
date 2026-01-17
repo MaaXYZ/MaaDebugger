@@ -100,3 +100,6 @@ class ArgParser:
     @classmethod
     def get_debug(cls) -> bool:
         return bool(cls.args.DEBUG)
+
+
+ArgParser.init()
