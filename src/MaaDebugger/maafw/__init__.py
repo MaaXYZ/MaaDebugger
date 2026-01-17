@@ -1,7 +1,7 @@
 import re
 import io
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from asyncify import asyncify
 from PIL import Image
@@ -13,7 +13,7 @@ from maa.controller import (
 )
 from maa.define import MaaGamepadTypeEnum
 from maa.context import Context, ContextEventSink
-from maa.tasker import Tasker, RecognitionDetail
+from maa.tasker import Tasker, TaskerEventSink, RecognitionDetail
 from maa.resource import Resource, ResourceEventSink
 from maa.toolkit import Toolkit, AdbDevice, DesktopWindow
 from maa.agent_client import AgentClient
@@ -22,6 +22,19 @@ from maa.event_sink import NotificationType
 import numpy as np
 
 from ..utils.img_tools import cvmat_to_image, rgb_to_bgr
+from .launch_graph import (
+    LaunchGraph,
+    reduce_launch_graph,
+    Scope,
+    ScopeType,
+    GeneralStatus,
+    # 辅助函数
+    is_nested_recognition,
+    get_parent_chain,
+    find_root_pipeline_node,
+    find_immediate_pipeline_node,
+    get_nesting_depth,
+)
 
 
 class MyCustomController(CustomController):
@@ -52,6 +65,7 @@ class MaaFW:
     agent_identifier: Optional[str]
     context_event_sink: Optional[ContextEventSink]
     resource_event_sink: Optional[ResourceEventSink]
+    tasker_event_sink: Optional[TaskerEventSink]
 
     def __init__(self):
         Toolkit.init_option("./")
@@ -62,6 +76,9 @@ class MaaFW:
         self.tasker = None
         self.agent = None
         self.agent_identifier = None
+        self.context_event_sink = None
+        self.resource_event_sink = None
+        self.tasker_event_sink = None
 
         self.screenshotter = Screenshotter(self.screencap)
 
@@ -153,7 +170,8 @@ class MaaFW:
     def load_resource(self, dir: List[Path]) -> Tuple[bool, Optional[str]]:
         if not self.resource:
             self.resource = Resource()
-            self.resource.add_sink(self.resource_event_sink)  # type:ignore
+            if self.resource_event_sink:
+                self.resource.add_sink(self.resource_event_sink)
 
         if not self.resource:
             return False, "Resource is None!"
@@ -202,12 +220,14 @@ class MaaFW:
     def run_task(
         self, entry: str, pipeline_override: dict = {}
     ) -> Tuple[bool, Optional[str]]:
-        if not self.context_event_sink:
-            assert ValueError("EventSink is None.")
-
         if not self.tasker:
             self.tasker = Tasker()
-            self.tasker.add_context_sink(self.context_event_sink)  # type: ignore
+            # 添加 ContextEventSink
+            if self.context_event_sink:
+                self.tasker.add_context_sink(self.context_event_sink)
+            # 添加 TaskerEventSink 以支持 Task 级别事件
+            if self.tasker_event_sink:
+                self.tasker.add_sink(self.tasker_event_sink)
 
         if not self.resource:
             return False, "Resource is not initialized."
@@ -302,43 +322,247 @@ class MaaFW:
             return {}
 
 
-class MyContextEventSink(ContextEventSink):
-    def __init__(
+class LaunchGraphTaskerEventSink(TaskerEventSink):
+    """Tasker 级别事件处理，用于 Task.Starting/Succeeded/Failed"""
+
+    def __init__(self, graph_manager: "LaunchGraphManager") -> None:
+        self.graph_manager = graph_manager
+
+    def on_tasker_task(
         self,
-        on_next_list_starting: Optional[Callable],
-        on_recognized: Optional[Callable],
-    ) -> None:
-        self.on_next_list_starting = on_next_list_starting
-        self.on_recognized = on_recognized
+        tasker: Tasker,
+        noti_type: NotificationType,
+        detail: Any,  # TaskerEventSink.TaskerTaskDetail
+    ):
+        """处理 Task 级别事件"""
+        msg_suffix = {
+            NotificationType.Starting: "Starting",
+            NotificationType.Succeeded: "Succeeded",
+            NotificationType.Failed: "Failed",
+        }.get(noti_type)
+
+        if msg_suffix:
+            self.graph_manager.dispatch(
+                {
+                    "msg": f"Task.{msg_suffix}",
+                    "entry": detail.entry,
+                    "task_id": detail.task_id,
+                    "uuid": detail.uuid,
+                }
+            )
+
+
+class LaunchGraphContextEventSink(ContextEventSink):
+    """状态机驱动的 EventSink，将所有事件转换为消息发送到状态机"""
+
+    def __init__(self, graph_manager: "LaunchGraphManager") -> None:
+        self.graph_manager = graph_manager
+
+    def _get_msg_suffix(self, noti_type: NotificationType) -> Optional[str]:
+        return {
+            NotificationType.Starting: "Starting",
+            NotificationType.Succeeded: "Succeeded",
+            NotificationType.Failed: "Failed",
+        }.get(noti_type)
+
+    def on_node_pipeline_node(
+        self,
+        _: Context,
+        noti_type: NotificationType,
+        detail: Any,  # ContextEventSink.NodePipelineNodeDetail
+    ):
+        """处理 PipelineNode 事件"""
+        msg_suffix = self._get_msg_suffix(noti_type)
+        if msg_suffix:
+            msg = {
+                "msg": f"PipelineNode.{msg_suffix}",
+                "name": detail.name,
+                "node_id": detail.node_id,
+            }
+            print(f"[DEBUG EventSink] {msg}")
+            self.graph_manager.dispatch(msg)
+
+    def on_node_recognition_node(
+        self,
+        _: Context,
+        noti_type: NotificationType,
+        detail: Any,  # ContextEventSink.NodeRecognitionNodeDetail
+    ):
+        """处理 RecognitionNode 事件"""
+        msg_suffix = self._get_msg_suffix(noti_type)
+        if msg_suffix:
+            msg = {
+                "msg": f"RecognitionNode.{msg_suffix}",
+                "name": detail.name,
+                "node_id": detail.node_id,
+            }
+            print(f"[DEBUG EventSink] {msg}")
+            self.graph_manager.dispatch(msg)
+
+    def on_node_action_node(
+        self,
+        _: Context,
+        noti_type: NotificationType,
+        detail: Any,  # ContextEventSink.NodeActionNodeDetail
+    ):
+        """处理 ActionNode 事件"""
+        msg_suffix = self._get_msg_suffix(noti_type)
+        if msg_suffix:
+            msg = {
+                "msg": f"ActionNode.{msg_suffix}",
+                "name": detail.name,
+                "node_id": detail.node_id,
+            }
+            print(f"[DEBUG EventSink] {msg}")
+            self.graph_manager.dispatch(msg)
 
     def on_node_next_list(
         self,
         _: Context,
         noti_type: NotificationType,
-        detail: ContextEventSink.NodeNextListDetail,
+        detail: Any,  # ContextEventSink.NodeNextListDetail
     ):
-        if noti_type != NotificationType.Starting:
-            return
-
-        if self.on_next_list_starting is not None:
-            self.on_next_list_starting(detail.name, detail.next_list)
+        """处理 NextList 事件"""
+        msg_suffix = self._get_msg_suffix(noti_type)
+        if msg_suffix:
+            msg = {
+                "msg": f"NextList.{msg_suffix}",
+                "name": detail.name,
+                "next_list": [attr.name for attr in detail.next_list],
+            }
+            print(f"[DEBUG EventSink] {msg}")
+            self.graph_manager.dispatch(msg)
 
     def on_node_recognition(
         self,
         _: Context,
         noti_type: NotificationType,
-        detail: ContextEventSink.NodeRecognitionDetail,
+        detail: Any,  # ContextEventSink.NodeRecognitionDetail
     ):
-        if (
-            noti_type != NotificationType.Succeeded
-            and noti_type != NotificationType.Failed
-        ):
-            return
+        """处理 Recognition 事件"""
+        msg_suffix = self._get_msg_suffix(noti_type)
+        if msg_suffix:
+            msg = {
+                "msg": f"Recognition.{msg_suffix}",
+                "name": detail.name,
+                "reco_id": detail.reco_id,
+            }
+            print(f"[DEBUG EventSink] {msg}")
+            self.graph_manager.dispatch(msg)
 
-        if self.on_recognized is not None:
-            self.on_recognized(
-                detail.reco_id, detail.name, noti_type == NotificationType.Succeeded
-            )
+    def on_node_action(
+        self,
+        _: Context,
+        noti_type: NotificationType,
+        detail: Any,  # ContextEventSink.NodeActionDetail
+    ):
+        """处理 Action 事件"""
+        msg_suffix = self._get_msg_suffix(noti_type)
+        if msg_suffix:
+            msg = {
+                "msg": f"Action.{msg_suffix}",
+                "name": detail.name,
+            }
+            print(f"[DEBUG EventSink] {msg}")
+            self.graph_manager.dispatch(msg)
+
+
+class LaunchGraphManager:
+    """
+    状态机管理器
+    负责管理 LaunchGraph 的状态更新和订阅
+    """
+
+    def __init__(self) -> None:
+        self._graph = LaunchGraph()
+        self._subscribers: List[Callable[[LaunchGraph, Dict[str, Any]], None]] = []
+
+    @property
+    def graph(self) -> LaunchGraph:
+        """获取当前状态图（只读）"""
+        return self._graph
+
+    def reset(self) -> None:
+        """重置状态机"""
+        self._graph = LaunchGraph()
+        self._notify_subscribers({"msg": "Reset"})
+
+    def dispatch(self, msg: Dict[str, Any]) -> None:
+        """
+        分发消息到状态机
+
+        Args:
+            msg: 消息字典，必须包含 "msg" 字段
+        """
+        self._graph = reduce_launch_graph(self._graph, msg)
+        self._notify_subscribers(msg)
+
+    def subscribe(
+        self, callback: Callable[[LaunchGraph, Dict[str, Any]], None]
+    ) -> Callable[[], None]:
+        """
+        订阅状态变化
+
+        Args:
+            callback: 状态变化时调用的回调函数，接收 (graph, msg) 两个参数
+
+        Returns:
+            取消订阅的函数
+        """
+        self._subscribers.append(callback)
+
+        def unsubscribe():
+            if callback in self._subscribers:
+                self._subscribers.remove(callback)
+
+        return unsubscribe
+
+    def _notify_subscribers(self, msg: Dict[str, Any]) -> None:
+        """通知所有订阅者"""
+        for callback in self._subscribers:
+            try:
+                callback(self._graph, msg)
+            except Exception as e:
+                print(f"[LaunchGraphManager] Subscriber error: {e}")
+
+    def get_current_task(self) -> Optional[Scope]:
+        """获取当前正在执行的任务"""
+        if self._graph.childs:
+            return self._graph.childs[-1]
+        return None
+
+    def get_all_recognitions(self) -> List[Dict[str, Any]]:
+        """
+        获取所有识别记录
+        遍历整个执行图，收集所有 Recognition 节点
+        """
+        results: List[Dict[str, Any]] = []
+
+        def traverse(scope: Scope, depth: int = 0):
+            if scope.type == ScopeType.RECO:
+                results.append(
+                    {
+                        "msg": scope.msg,
+                        "status": scope.status,
+                        "depth": depth,
+                    }
+                )
+
+            # 递归遍历所有子节点
+            for child in scope.childs:
+                traverse(child, depth + 1)
+            if scope.reco:
+                for reco in scope.reco:
+                    traverse(reco, depth + 1)
+            if scope.action:
+                traverse(scope.action, depth + 1)
+            if scope.reco_detail:
+                traverse(scope.reco_detail, depth + 1)
+
+        for task in self._graph.childs:
+            traverse(task)
+
+        return results
 
 
 class MyResourceEventSink(ResourceEventSink):
