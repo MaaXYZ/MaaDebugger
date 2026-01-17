@@ -36,6 +36,11 @@ from .launch_graph import (
     find_immediate_pipeline_node,
     get_nesting_depth,
 )
+from ..utils.img_tools import cvmat_to_image
+from ..utils.arg_parser import ArgParser
+from .launch_graph import LaunchGraph, reduce_launch_graph, Scope, ScopeType
+
+debug_mode = ArgParser.get_debug()
 
 
 class MyCustomController(CustomController):
@@ -397,7 +402,9 @@ class LaunchGraphContextEventSink(ContextEventSink):
                 "name": detail.name,
                 "node_id": detail.node_id,
             }
-            print(f"[DEBUG EventSink] {msg}")
+            if debug_mode:
+                print(f"[DEBUG EventSink] {msg}")
+                print(f"[DEBUG EventSink] {msg}")
             self.graph_manager.dispatch(msg)
 
     def on_node_recognition_node(
@@ -415,6 +422,8 @@ class LaunchGraphContextEventSink(ContextEventSink):
                 "node_id": detail.node_id,
             }
             print(f"[DEBUG EventSink] {msg}")
+            if debug_mode:
+                print(f"[DEBUG EventSink] {msg}")
             self.graph_manager.dispatch(msg)
 
     def on_node_action_node(
@@ -432,6 +441,8 @@ class LaunchGraphContextEventSink(ContextEventSink):
                 "node_id": detail.node_id,
             }
             print(f"[DEBUG EventSink] {msg}")
+            if debug_mode:
+                print(f"[DEBUG EventSink] {msg}")
             self.graph_manager.dispatch(msg)
 
     def on_node_next_list(
@@ -448,7 +459,8 @@ class LaunchGraphContextEventSink(ContextEventSink):
                 "name": detail.name,
                 "next_list": [attr.name for attr in detail.next_list],
             }
-            print(f"[DEBUG EventSink] {msg}")
+            if debug_mode:
+                print(f"[DEBUG EventSink] {msg}")
             self.graph_manager.dispatch(msg)
 
     def on_node_recognition(
@@ -465,7 +477,8 @@ class LaunchGraphContextEventSink(ContextEventSink):
                 "name": detail.name,
                 "reco_id": detail.reco_id,
             }
-            print(f"[DEBUG EventSink] {msg}")
+            if debug_mode:
+                print(f"[DEBUG EventSink] {msg}")
             self.graph_manager.dispatch(msg)
 
     def on_node_action(
@@ -481,7 +494,8 @@ class LaunchGraphContextEventSink(ContextEventSink):
                 "msg": f"Action.{msg_suffix}",
                 "name": detail.name,
             }
-            print(f"[DEBUG EventSink] {msg}")
+            if debug_mode:
+                print(f"[DEBUG EventSink] {msg}")
             self.graph_manager.dispatch(msg)
 
 

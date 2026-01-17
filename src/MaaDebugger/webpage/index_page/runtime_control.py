@@ -1,4 +1,3 @@
-import asyncio
 import os
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -20,8 +19,9 @@ from ...maafw import (
 from ...webpage.components.status_indicator import Status, StatusIndicator
 from ...webpage.reco_page import RecoData
 from .global_status import GlobalStatus
+from ...utils.arg_parser import ArgParser
 
-
+debug_mode: bool = ArgParser.get_debug()
 # 全局状态机管理器实例
 launch_graph_manager = LaunchGraphManager()
 
@@ -248,7 +248,7 @@ class RecognitionRow:
     def on_click_item(self, data: ItemData):
         if data.reco_id == 0:
             return
-        else:
+        elif debug_mode:
             print(
                 f"on_click_item ({data.col}, {data.row}): {data.name} ({data.reco_id})"
             )
@@ -260,7 +260,8 @@ class RecognitionRow:
         将消息放入队列，由 NiceGUI 主线程处理
         """
         msg_type = msg.get("msg", "")
-        print(f"[DEBUG on_graph_change] msg_type={msg_type}, msg={msg}")
+        if debug_mode:
+            print(f"[DEBUG on_graph_change] msg_type={msg_type}, msg={msg}")
 
         # 将消息放入队列
         self._pending_messages.put(msg)
@@ -295,7 +296,8 @@ class RecognitionRow:
         if msg_type == "NextList.Starting":
             name = msg.get("name", "")
             next_names = msg.get("next_list", [])
-            print(f"[DEBUG] NextList.Starting: name={name}, next_list={next_names}")
+            if debug_mode:
+                print(f"[DEBUG] NextList.Starting: name={name}, next_list={next_names}")
             self._on_next_list_starting(name, next_names)
             await maafw.screenshotter.refresh(False)
 
@@ -303,7 +305,10 @@ class RecognitionRow:
         elif msg_type == "RecognitionNode.Starting":
             name = msg.get("name", "")
             node_id = msg.get("node_id", 0)
-            print(f"[DEBUG] RecognitionNode.Starting: name={name}, node_id={node_id}")
+            if debug_mode:
+                print(
+                    f"[DEBUG] RecognitionNode.Starting: name={name}, node_id={node_id}"
+                )
             self._on_reco_node_starting(name, node_id)
             await maafw.screenshotter.refresh(False)
 
@@ -311,16 +316,18 @@ class RecognitionRow:
         elif msg_type in ("RecognitionNode.Succeeded", "RecognitionNode.Failed"):
             name = msg.get("name", "")
             node_id = msg.get("node_id", 0)
-            print(
-                f"[DEBUG] RecognitionNode.{msg_type.split('.')[1]}: name={name}, node_id={node_id}"
-            )
+            if debug_mode:
+                print(
+                    f"[DEBUG] RecognitionNode.{msg_type.split('.')[1]}: name={name}, node_id={node_id}"
+                )
             self._on_reco_node_ended()
 
         # 处理 Recognition.Starting - 创建识别项（可能是嵌套的）
         elif msg_type == "Recognition.Starting":
             name = msg.get("name", "")
             reco_id = msg.get("reco_id", 0)
-            print(f"[DEBUG] Recognition.Starting: name={name}, reco_id={reco_id}")
+            if debug_mode:
+                print(f"[DEBUG] Recognition.Starting: name={name}, reco_id={reco_id}")
             self._on_recognition_starting(name, reco_id)
 
         # 处理 Recognition.Succeeded/Failed - 更新识别状态
@@ -328,7 +335,8 @@ class RecognitionRow:
             name = msg.get("name", "")
             reco_id = msg.get("reco_id", 0)
             hit = msg_type == "Recognition.Succeeded"
-            print(f"[DEBUG] Recognition: name={name}, reco_id={reco_id}, hit={hit}")
+            if debug_mode:
+                print(f"[DEBUG] Recognition: name={name}, reco_id={reco_id}, hit={hit}")
             self._on_recognized(reco_id, name, hit)
             await maafw.screenshotter.refresh(False)
 
@@ -433,9 +441,10 @@ class RecognitionRow:
         进入嵌套模式：后续的 Recognition 将作为栈顶识别项的子项
         """
         self._reco_node_depth += 1
-        print(
-            f"[DEBUG] RecognitionNode depth increased to {self._reco_node_depth}, stack size: {len(self._recognition_stack)}"
-        )
+        if debug_mode:
+            print(
+                f"[DEBUG] RecognitionNode depth increased to {self._reco_node_depth}, stack size: {len(self._recognition_stack)}"
+            )
 
     def _on_reco_node_ended(self):
         """
@@ -444,9 +453,10 @@ class RecognitionRow:
         """
         if self._reco_node_depth > 0:
             self._reco_node_depth -= 1
-        print(
-            f"[DEBUG] RecognitionNode depth decreased to {self._reco_node_depth}, stack size: {len(self._recognition_stack)}"
-        )
+        if debug_mode:
+            print(
+                f"[DEBUG] RecognitionNode depth decreased to {self._reco_node_depth}, stack size: {len(self._recognition_stack)}"
+            )
 
     def _on_next_list_starting(self, current: str, next_list: List[str]):
         """处理 NextList 开始事件"""
