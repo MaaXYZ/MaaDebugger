@@ -4,12 +4,25 @@ MaaFramework 任务执行状态机
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Optional, List, Dict
+from typing import Optional, List, Dict, TypeVar, Union
 from strenum import StrEnum
 
 from ..utils.arg_parser import ArgParser
 
 debug_mode: bool = ArgParser.get_debug()
+
+# 消息中可能包含的值类型
+MsgValue = Union[str, int, List[str], None]
+
+# 消息字典类型：键为字符串，值可以是字符串、整数、字符串列表或 None
+MsgDict = Dict[str, MsgValue]
+
+# Scope 字典类型（用于序列化）
+ScopeDictValue = Union[str, int, List[str], "ScopeDict", List["ScopeDict"], None]
+ScopeDict = Dict[str, ScopeDictValue]
+
+# 泛型类型变量，用于 _last_of 函数
+T = TypeVar("T")
 
 
 class GeneralStatus(StrEnum):
@@ -37,7 +50,7 @@ class Scope:
     """通用作用域基类"""
 
     type: str
-    msg: Dict[str, Any] = field(default_factory=dict)
+    msg: MsgDict = field(default_factory=dict)
     status: GeneralStatus = GeneralStatus.RUNNING
     childs: List["Scope"] = field(default_factory=list)
     reco: Optional[List["Scope"]] = None  # for pipeline_node
@@ -53,7 +66,7 @@ class LaunchGraph:
     depth: int = 0
     childs: List[Scope] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[str, Union[int, List[ScopeDict]]]:
         """转换为字典，便于序列化和调试"""
         return {
             "depth": self.depth,
@@ -61,7 +74,7 @@ class LaunchGraph:
         }
 
     @staticmethod
-    def _scope_to_dict(scope: Scope) -> Dict[str, Any]:
+    def _scope_to_dict(scope: Scope) -> ScopeDict:
         """递归转换 Scope 为字典"""
         result = {
             "type": scope.type,
@@ -81,7 +94,7 @@ class LaunchGraph:
         return result
 
 
-def _last_of(arr: List[Any]) -> Optional[Any]:
+def _last_of(arr: List[Scope]) -> Optional[Scope]:
     """获取列表的最后一个元素"""
     return arr[-1] if arr else None
 
@@ -186,7 +199,7 @@ def get_nesting_depth(scope: Scope) -> int:
     return depth
 
 
-def _iterate_tracker(tracker: Scope) -> Optional[Scope]:
+def _iterate_tracker(tracker: Optional[Scope]) -> Optional[Scope]:
     """
     迭代追踪器，找到当前深度的下一个节点
 
@@ -196,6 +209,9 @@ def _iterate_tracker(tracker: Scope) -> Optional[Scope]:
     Returns:
         下一个要追踪的作用域，如果没有则返回 None
     """
+    if tracker is None:
+        return None
+
     if tracker.type == ScopeType.PIPELINE_NODE:
         if tracker.action:
             return tracker.action
@@ -209,10 +225,9 @@ def _iterate_tracker(tracker: Scope) -> Optional[Scope]:
         return _last_of(tracker.childs)
     elif tracker.type in (ScopeType.RECO, ScopeType.ACTION):
         return _last_of(tracker.childs)
-    return None
 
 
-def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGraph:
+def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, MsgValue]) -> LaunchGraph:
     """
     状态机的 reducer 函数，根据消息更新执行图（原地修改）
 
@@ -256,8 +271,9 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
 
     # 获取当前任务
     task = _last_of(current.childs)
-    if not task and debug_mode:
-        print(f"[LaunchGraph] Drop msg: {msg_type}, reason: no task")
+    if not task:
+        if debug_mode:
+            print(f"[LaunchGraph] Drop msg: {msg_type}, reason: no task")
         return current
 
     # 深度为 0 时，只能处理 PipelineNode.Starting
@@ -287,7 +303,7 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
     for i in range(1, current.depth):
         new_tracker = _iterate_tracker(tracker)
         if not new_tracker:
-            if debug_mode:
+            if tracker and debug_mode:
                 print(
                     f"[LaunchGraph] Drop msg: {msg_type}, reason: trace failed at depth {i}"
                 )
@@ -296,7 +312,7 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
 
     # 根据消息类型更新状态机
     if msg_type == "PipelineNode.Starting":
-        if tracker.type in (ScopeType.RECO, ScopeType.ACTION):
+        if tracker and tracker.type in (ScopeType.RECO, ScopeType.ACTION):
             new_scope = Scope(
                 type=ScopeType.PIPELINE_NODE,
                 msg=msg,
@@ -306,11 +322,11 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
             )
             tracker.childs.append(new_scope)
             current.depth += 1
-        elif debug_mode:
+        elif tracker and debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type in ("PipelineNode.Succeeded", "PipelineNode.Failed"):
-        if tracker.type == ScopeType.PIPELINE_NODE:
+        if tracker and tracker.type == ScopeType.PIPELINE_NODE:
             tracker.msg = msg
             tracker.status = (
                 GeneralStatus.SUCCESS
@@ -318,11 +334,11 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
                 else GeneralStatus.FAILED
             )
             current.depth -= 1
-        elif debug_mode:
+        elif tracker and debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type == "RecognitionNode.Starting":
-        if tracker.type in (ScopeType.RECO, ScopeType.ACTION):
+        if tracker and tracker.type in (ScopeType.RECO, ScopeType.ACTION):
             new_scope = Scope(
                 type=ScopeType.RECO_NODE,
                 msg=msg,
@@ -331,11 +347,11 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
             )
             tracker.childs.append(new_scope)
             current.depth += 1
-        elif debug_mode:
+        elif tracker and debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type in ("RecognitionNode.Succeeded", "RecognitionNode.Failed"):
-        if tracker.type == ScopeType.RECO_NODE:
+        if tracker and tracker.type == ScopeType.RECO_NODE:
             tracker.msg = msg
             tracker.status = (
                 GeneralStatus.SUCCESS
@@ -344,16 +360,18 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
             )
             current.depth -= 1
         elif (
-            tracker.type == ScopeType.RECO and hasattr(tracker, "reco_detail") is False
+            tracker
+            and tracker.type == ScopeType.RECO
+            and hasattr(tracker, "reco_detail") is False
         ):
             # 如果在 RECO 中但不是标准结构，检查父节点
             # 这种情况可能是从 reco_node.reco_detail 追踪过来的
             current.depth -= 1
-        elif debug_mode:
+        elif tracker and debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type == "ActionNode.Starting":
-        if tracker.type in (ScopeType.RECO, ScopeType.ACTION):
+        if tracker and tracker.type in (ScopeType.RECO, ScopeType.ACTION):
             new_scope = Scope(
                 type=ScopeType.ACTION_NODE,
                 msg=msg,
@@ -362,11 +380,11 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
             )
             tracker.childs.append(new_scope)
             current.depth += 1
-        elif debug_mode:
+        elif tracker and debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type in ("ActionNode.Succeeded", "ActionNode.Failed"):
-        if tracker.type == ScopeType.ACTION_NODE:
+        if tracker and tracker.type == ScopeType.ACTION_NODE:
             tracker.msg = msg
             tracker.status = (
                 GeneralStatus.SUCCESS
@@ -374,11 +392,11 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
                 else GeneralStatus.FAILED
             )
             current.depth -= 1
-        elif debug_mode:
+        elif tracker and debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type == "NextList.Starting":
-        if tracker.type == ScopeType.PIPELINE_NODE:
+        if tracker and tracker.type == ScopeType.PIPELINE_NODE:
             if tracker.reco is None:
                 tracker.reco = []
             new_scope = Scope(
@@ -389,11 +407,11 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
             )
             tracker.reco.append(new_scope)
             current.depth += 1
-        elif debug_mode:
+        elif tracker and debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type in ("NextList.Succeeded", "NextList.Failed"):
-        if tracker.type == ScopeType.NEXT_LIST:
+        if tracker and tracker.type == ScopeType.NEXT_LIST:
             tracker.msg = msg
             tracker.status = (
                 GeneralStatus.SUCCESS
@@ -401,11 +419,11 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
                 else GeneralStatus.FAILED
             )
             current.depth -= 1
-        elif debug_mode:
+        elif tracker and debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type == "Recognition.Starting":
-        if tracker.type == ScopeType.RECO_NODE:
+        if tracker and tracker.type == ScopeType.RECO_NODE:
             new_scope = Scope(
                 type=ScopeType.RECO,
                 msg=msg,
@@ -414,7 +432,7 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
             )
             tracker.reco_detail = new_scope
             current.depth += 1
-        elif tracker.type == ScopeType.NEXT_LIST:
+        elif tracker and tracker.type == ScopeType.NEXT_LIST:
             new_scope = Scope(
                 type=ScopeType.RECO,
                 msg=msg,
@@ -423,11 +441,11 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
             )
             tracker.childs.append(new_scope)
             current.depth += 1
-        elif debug_mode:
+        elif tracker and debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type in ("Recognition.Succeeded", "Recognition.Failed"):
-        if tracker.type == ScopeType.RECO:
+        if tracker and tracker.type == ScopeType.RECO:
             tracker.msg = msg
             tracker.status = (
                 GeneralStatus.SUCCESS
@@ -435,11 +453,11 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
                 else GeneralStatus.FAILED
             )
             current.depth -= 1
-        elif debug_mode:
+        elif tracker and debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type == "Action.Starting":
-        if tracker.type in (ScopeType.PIPELINE_NODE, ScopeType.ACTION_NODE):
+        if tracker and tracker.type in (ScopeType.PIPELINE_NODE, ScopeType.ACTION_NODE):
             new_scope = Scope(
                 type=ScopeType.ACTION,
                 msg=msg,
@@ -448,11 +466,11 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
             )
             tracker.action = new_scope
             current.depth += 1
-        elif debug_mode:
+        elif tracker and debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type in ("Action.Succeeded", "Action.Failed"):
-        if tracker.type == ScopeType.ACTION:
+        if tracker and tracker.type == ScopeType.ACTION:
             tracker.msg = msg
             tracker.status = (
                 GeneralStatus.SUCCESS
@@ -460,7 +478,7 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
                 else GeneralStatus.FAILED
             )
             current.depth -= 1
-        elif debug_mode:
+        elif tracker and debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif debug_mode:
