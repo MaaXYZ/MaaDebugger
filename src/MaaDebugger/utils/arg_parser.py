@@ -3,44 +3,48 @@ from typing import Optional
 
 
 class ArgParser:
-    def __init__(self) -> None:
-        self.parser = argparse.ArgumentParser(
-            description="A debugger specifically for MaaFramework."
-        )
+    parser = argparse.ArgumentParser(
+        description="A debugger specifically for MaaFramework."
+    )
 
-        self._add_argument()
-        self._add_dark_group()
+    args = parser.parse_args()
 
-        self.args = self.parser.parse_args()
-
-    def _add_argument(self):
+    @classmethod
+    def _add_argument(cls):
         """
         Add command line arguments to the parser.
         """
-        self.parser.add_argument(
+        cls.parser.add_argument(
             "--port",
             type=int,
             help="Run on which port",
             default=None,
         )
-        self.parser.add_argument(
+        cls.parser.add_argument(
             "--host",
             type=str,
             help="When the value is 'localhost', only the local machine can access it. If you want to change this, you can set value as '0.0.0.0'. (Default: localhost)",
             default="localhost",
         )
-        self.parser.add_argument(
+        cls.parser.add_argument(
             "--hide",
             action="store_true",
             help="DON'T automatically open the UI in a browser tab. (Default: False)",
             default=False,
         )
+        cls.parser.add_argument(
+            "--DEBUG",
+            action="store_true",
+            help="Enable Debug mode. (Default: False)",
+            default=False,
+        )
 
-    def _add_dark_group(self):
+    @classmethod
+    def _add_dark_group(cls):
         """
         Add command line arguments about dark_mode to the parser.
         """
-        group = self.parser.add_mutually_exclusive_group()
+        group = cls.parser.add_mutually_exclusive_group()
 
         group.add_argument(
             "--dark",
@@ -55,28 +59,32 @@ class ArgParser:
             default=None,
         )
 
-    def get_port(self) -> int:
+    @classmethod
+    def get_port(cls) -> int:
         """
         Determine the port to use based on the provided arguments.
         """
-        return self.args.port or 8011
+        return cls.args.port or 8011
 
-    def get_host(self) -> str:
+    @classmethod
+    def get_host(cls) -> str:
         """
         When the value is 'localhost' (or '127.0.0.1'), only the local machine can access it.
         If you want to change this,you can set value as '0.0.0.0'
         """
-        return self.args.host
+        return cls.args.host
 
-    def get_show(self) -> bool:
+    @classmethod
+    def get_show(cls) -> bool:
         """
-        NOTICE: ui.run(show = not self.args.hide)
+        NOTICE: ui.run(show = not cls.args.hide)
         """
-        return not bool(self.args.hide)
+        return not bool(cls.args.hide)
 
-    def get_dark(self) -> Optional[bool]:
-        dark = self.args.dark
-        light = self.args.light
+    @classmethod
+    def get_dark(cls) -> Optional[bool]:
+        dark = cls.args.dark
+        light = cls.args.light
 
         if dark:
             return True
@@ -84,3 +92,11 @@ class ArgParser:
             return False
         else:
             return None
+
+    @classmethod
+    def get_debug(cls) -> bool:
+        return bool(cls.args.DEBUG)
+
+
+ArgParser._add_argument()
+ArgParser._add_dark_group()

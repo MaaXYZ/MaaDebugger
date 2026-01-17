@@ -73,6 +73,8 @@ class RecognitionRow:
         self.list_data_map: dict[int, ListData] = {}
         self._pending_messages: Queue = Queue()
         self._lock = Lock()
+        # 标志位：确保任意时刻只有一个消息处理任务在运行
+        self._processing_messages: bool = False
         # 追踪当前正在处理的识别项栈（用于嵌套）
         # 栈顶是当前正在执行的识别项
         self._recognition_stack: List[ItemData] = []
@@ -264,16 +266,26 @@ class RecognitionRow:
         self._pending_messages.put(msg)
 
         # 使用 background_tasks 在主线程中处理消息
-        background_tasks.create(self._process_pending_messages())
+        # 只有当没有正在运行的处理任务时才创建新任务
+        if not self._processing_messages:
+            background_tasks.create(self._process_pending_messages())
 
     async def _process_pending_messages(self):
         """在主线程中处理待处理的消息"""
-        while not self._pending_messages.empty():
-            try:
-                msg = self._pending_messages.get_nowait()
-                await self._handle_message(msg)
-            except Exception as e:
-                print(f"[ERROR] Failed to process message: {e}")
+        # 如果已经有任务在处理，直接返回
+        if self._processing_messages:
+            return
+
+        self._processing_messages = True
+        try:
+            while not self._pending_messages.empty():
+                try:
+                    msg = self._pending_messages.get_nowait()
+                    await self._handle_message(msg)
+                except Exception as e:
+                    print(f"[ERROR] Failed to process message: {e}")
+        finally:
+            self._processing_messages = False
 
     async def _handle_message(self, msg: Dict[str, Any]):
         """处理单个消息"""

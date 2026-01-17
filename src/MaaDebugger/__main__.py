@@ -3,11 +3,10 @@ from .utils.arg_parser import ArgParser
 
 
 def main():
-    args = ArgParser()
-    host = args.get_host()
-    port = args.get_port()
-    show = args.get_show()
-    dark = args.get_dark()
+    host = ArgParser.get_host()
+    port = ArgParser.get_port()
+    show = ArgParser.get_show()
+    dark = ArgParser.get_dark()
 
     MaaDebugger.run(
         host=host,

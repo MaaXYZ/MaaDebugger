@@ -5,10 +5,14 @@ MaaFramework 任务执行状态机
 
 from dataclasses import dataclass, field
 from typing import Any, Optional, List, Dict
-from enum import Enum
+from strenum import StrEnum
+
+from ..utils.arg_parser import ArgParser
+
+debug_mode: bool = ArgParser.get_debug()
 
 
-class GeneralStatus(str, Enum):
+class GeneralStatus(StrEnum):
     """通用状态枚举"""
 
     RUNNING = "running"
@@ -16,7 +20,7 @@ class GeneralStatus(str, Enum):
     FAILED = "failed"
 
 
-class ScopeType(str, Enum):
+class ScopeType(StrEnum):
     """作用域类型枚举"""
 
     TASK = "task"
@@ -252,7 +256,7 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
 
     # 获取当前任务
     task = _last_of(current.childs)
-    if not task:
+    if not task and debug_mode:
         print(f"[LaunchGraph] Drop msg: {msg_type}, reason: no task")
         return current
 
@@ -269,13 +273,13 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
             task.childs.append(new_scope)
             current.depth += 1
             return current
-        else:
+        elif debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, reason: no root")
-            return current
+        return current
 
     # 深度 > 0，需要追踪到当前节点
     top_scope = _last_of(task.childs)
-    if not top_scope:
+    if not top_scope and debug_mode:
         print(f"[LaunchGraph] Drop msg: {msg_type}, reason: no root")
         return current
 
@@ -283,9 +287,10 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
     for i in range(1, current.depth):
         new_tracker = _iterate_tracker(tracker)
         if not new_tracker:
-            print(
-                f"[LaunchGraph] Drop msg: {msg_type}, reason: trace failed at depth {i}"
-            )
+            if debug_mode:
+                print(
+                    f"[LaunchGraph] Drop msg: {msg_type}, reason: trace failed at depth {i}"
+                )
             return current
         tracker = new_tracker
 
@@ -301,7 +306,7 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
             )
             tracker.childs.append(new_scope)
             current.depth += 1
-        else:
+        elif debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type in ("PipelineNode.Succeeded", "PipelineNode.Failed"):
@@ -313,7 +318,7 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
                 else GeneralStatus.FAILED
             )
             current.depth -= 1
-        else:
+        elif debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type == "RecognitionNode.Starting":
@@ -326,7 +331,7 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
             )
             tracker.childs.append(new_scope)
             current.depth += 1
-        else:
+        elif debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type in ("RecognitionNode.Succeeded", "RecognitionNode.Failed"):
@@ -344,7 +349,7 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
             # 如果在 RECO 中但不是标准结构，检查父节点
             # 这种情况可能是从 reco_node.reco_detail 追踪过来的
             current.depth -= 1
-        else:
+        elif debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type == "ActionNode.Starting":
@@ -357,7 +362,7 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
             )
             tracker.childs.append(new_scope)
             current.depth += 1
-        else:
+        elif debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type in ("ActionNode.Succeeded", "ActionNode.Failed"):
@@ -369,7 +374,7 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
                 else GeneralStatus.FAILED
             )
             current.depth -= 1
-        else:
+        elif debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type == "NextList.Starting":
@@ -384,7 +389,7 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
             )
             tracker.reco.append(new_scope)
             current.depth += 1
-        else:
+        elif debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type in ("NextList.Succeeded", "NextList.Failed"):
@@ -396,7 +401,7 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
                 else GeneralStatus.FAILED
             )
             current.depth -= 1
-        else:
+        elif debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type == "Recognition.Starting":
@@ -418,7 +423,7 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
             )
             tracker.childs.append(new_scope)
             current.depth += 1
-        else:
+        elif debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type in ("Recognition.Succeeded", "Recognition.Failed"):
@@ -430,7 +435,7 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
                 else GeneralStatus.FAILED
             )
             current.depth -= 1
-        else:
+        elif debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type == "Action.Starting":
@@ -443,7 +448,7 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
             )
             tracker.action = new_scope
             current.depth += 1
-        else:
+        elif debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
     elif msg_type in ("Action.Succeeded", "Action.Failed"):
@@ -455,10 +460,10 @@ def reduce_launch_graph(current: LaunchGraph, msg: Dict[str, Any]) -> LaunchGrap
                 else GeneralStatus.FAILED
             )
             current.depth -= 1
-        else:
+        elif debug_mode:
             print(f"[LaunchGraph] Drop msg: {msg_type}, tracker type: {tracker.type}")
 
-    else:
+    elif debug_mode:
         print(f"[LaunchGraph] Drop msg: unknown type {msg_type}")
 
     return current
