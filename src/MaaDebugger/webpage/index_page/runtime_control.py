@@ -252,7 +252,7 @@ class RecognitionRow:
             print(
                 f"on_click_item ({data.col}, {data.row}): {data.name} ({data.reco_id})"
             )
-            ui.navigate.to(f"reco/{data.reco_id}", new_tab=True)
+        ui.navigate.to(f"reco/{data.reco_id}", new_tab=True)
 
     def on_graph_change(self, graph: LaunchGraph, msg: Dict[str, Any]):
         """
