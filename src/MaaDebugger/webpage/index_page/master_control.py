@@ -76,6 +76,7 @@ def connect_control():
         tab_panels.set_value("Adb")
     if os_type != system.OSTypeEnum.macOS:
         playcover.set_visibility(False)
+        tab_panels.set_value("Adb")
 
 
 def adb_control():
