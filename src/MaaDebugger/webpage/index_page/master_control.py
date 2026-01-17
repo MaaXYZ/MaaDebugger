@@ -44,6 +44,7 @@ def connect_control():
         adb = ui.tab("Adb")
         win32 = ui.tab("Win32")
         gamepad = ui.tab("Gamepad")
+        playcover = ui.tab("PlayCover")
         custom = ui.tab("Custom")
 
     tab_panels = (
@@ -58,6 +59,9 @@ def connect_control():
         with ui.tab_panel(win32):
             with ui.row(align_items="center").classes("w-full"):
                 win32_control("win32")
+        with ui.tab_panel(playcover):
+            with ui.row(align_items="center").classes("w-full"):
+                playcover_control()
         with ui.tab_panel(gamepad):
             with ui.row(align_items="center").classes("w-full"):
                 win32_control("gamepad")
@@ -70,6 +74,8 @@ def connect_control():
         win32.set_visibility(False)
         gamepad.set_visibility(False)
         tab_panels.set_value("Adb")
+    if os_type != system.OSTypeEnum.macOS:
+        playcover.set_visibility(False)
 
 
 def adb_control():
@@ -342,6 +348,47 @@ def win32_control(type: Literal["win32", "gamepad"] = "win32"):
             return
 
         hwnd_input.value = value
+
+
+def playcover_control():
+    StatusIndicator(GlobalStatus, "ctrl_connecting")
+
+    with ui.row(align_items="baseline"):
+        address_input = (
+            ui.input(label="Address")
+            .tooltip("PlayTools service endpoint (host:port)")
+            .props("size=30")
+            .bind_value(STORAGE, "playcover_address")
+        )
+        uuid_input = (
+            ui.input(label="UUID")
+            .tooltip("Target app bundle identifier")
+            .props("size=30")
+            .bind_value(STORAGE, "playcover_uuid")
+        )
+        ui.button(
+            "Connect",
+            on_click=lambda: on_click_connect(),
+        )
+
+    async def on_click_connect():
+        GlobalStatus.ctrl_connecting = Status.RUNNING
+        connected, err = await maafw.connect_playcover_controller(
+            address_input.value, uuid_input.value
+        )
+        if not connected:
+            GlobalStatus.ctrl_connecting = Status.FAILED
+            ui.notify(
+                f"Failed to connect PlayCover controller. {err}",
+                position="bottom-right",
+                type="negative",
+            )
+            return
+
+        GlobalStatus.ctrl_connecting = Status.SUCCEEDED
+        GlobalStatus.ctrl_detecting = Status.PENDING
+
+        await maafw.screenshotter.refresh(True)
 
 
 def custom_control():

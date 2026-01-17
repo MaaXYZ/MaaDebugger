@@ -10,6 +10,7 @@ from maa.controller import (
     Win32Controller,
     GamepadController,
     CustomController,
+    PlayCoverController,
 )
 from maa.define import MaaGamepadTypeEnum
 from maa.context import Context, ContextEventSink
@@ -58,7 +59,12 @@ class MaaFW:
 
     resource: Optional[Resource]
     controller: Union[
-        AdbController, Win32Controller, GamepadController, CustomController, None
+        AdbController,
+        Win32Controller,
+        GamepadController,
+        CustomController,
+        PlayCoverController,
+        None,
     ]
     tasker: Optional[Tasker]
     agent: Optional[AgentClient]
@@ -138,6 +144,20 @@ class MaaFW:
         connected = self.controller.post_connection().wait().succeeded
         if not connected:
             return False, f"Failed to connect {hwnd}"
+
+        return True, None
+
+    @asyncify
+    def connect_playcover_controller(
+        self, address: str, uuid: str
+    ) -> Tuple[bool, Optional[str]]:
+        self.controller = PlayCoverController(address, uuid)
+
+        if self.controller is None:
+            return False, "Controller is None!"
+        connected = self.controller.post_connection().wait().succeeded
+        if not connected:
+            return False, f"Failed to connect {address}"
 
         return True, None
 
