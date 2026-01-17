@@ -3,6 +3,7 @@ from .utils.arg_parser import ArgParser
 
 
 def main():
+    ArgParser.init()
     host = ArgParser.get_host()
     port = ArgParser.get_port()
     show = ArgParser.get_show()

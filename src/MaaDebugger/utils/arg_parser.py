@@ -7,7 +7,11 @@ class ArgParser:
         description="A debugger specifically for MaaFramework."
     )
 
-    args = parser.parse_args()
+    @classmethod
+    def init(cls):
+        cls._add_argument()
+        cls._add_dark_group()
+        cls.args = cls.parser.parse_args()
 
     @classmethod
     def _add_argument(cls):
@@ -96,7 +100,3 @@ class ArgParser:
     @classmethod
     def get_debug(cls) -> bool:
         return bool(cls.args.DEBUG)
-
-
-ArgParser._add_argument()
-ArgParser._add_dark_group()
