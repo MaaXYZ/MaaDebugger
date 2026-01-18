@@ -32,13 +32,12 @@ debug_mode = ArgParser.get_debug()
 
 
 class MyCustomController(CustomController):
-    def __init__(self, img_bytes: bytes):
+    def __init__(self, img_path: str):
         super().__init__()
-        import cv2  # lazy import
 
-        nparr = np.frombuffer(img_bytes, dtype=np.uint8)
-        decoded = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        self.img: np.ndarray = decoded  # type: ignore[assignment]
+        img = Image.open(img_path).convert("RGB")
+        # 将 RGB 转换为 BGR 供 OpenCV 使用
+        self.img = np.array(img)[:, :, ::-1]
 
     def connect(self) -> bool:
         return True
@@ -170,8 +169,8 @@ class MaaFW:
 
         return True, None
 
-    def connect_custom_controller(self, img_bytes) -> Tuple[bool, Optional[str]]:
-        self.controller = MyCustomController(img_bytes)
+    def connect_custom_controller(self, img_path: str) -> Tuple[bool, Optional[str]]:
+        self.controller = MyCustomController(img_path)
 
         if self.controller is None:
             return False, "Controller is None!"

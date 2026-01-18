@@ -3,4 +3,3 @@ nicegui>=2.21,<3.0
 asyncify
 pillow
 packaging
-opencv-python

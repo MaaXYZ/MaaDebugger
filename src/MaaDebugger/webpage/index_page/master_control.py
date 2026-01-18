@@ -417,16 +417,10 @@ def custom_control():
 
         GlobalStatus.ctrl_connecting = Status.RUNNING
         try:
-            with open(img_path_input.value, "rb") as fl:
-                maafw.connect_custom_controller(fl.read())
+            maafw.connect_custom_controller(img_path_input.value)
         except Exception as e:
             GlobalStatus.ctrl_connecting = Status.FAILED
-            ui.notify(
-                f"Failed to load the provided image. {e}",
-                position="bottom-right",
-                type="negative",
-            )
-            return
+            raise e
 
         GlobalStatus.ctrl_connecting = Status.SUCCEEDED
         await maafw.screenshotter.refresh(True)
