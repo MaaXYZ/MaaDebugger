@@ -32,7 +32,7 @@ debug_mode = ArgParser.get_debug()
 
 
 class MyCustomController(CustomController):
-    def __init__(self, img_path: str):
+    def __init__(self, img_path: Path):
         super().__init__()
 
         img = Image.open(img_path).convert("RGB")
@@ -169,7 +169,7 @@ class MaaFW:
 
         return True, None
 
-    def connect_custom_controller(self, img_path: str) -> Tuple[bool, Optional[str]]:
+    def connect_custom_controller(self, img_path: Path) -> Tuple[bool, Optional[str]]:
         self.controller = MyCustomController(img_path)
 
         if self.controller is None:

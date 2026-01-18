@@ -406,10 +406,20 @@ def custom_control():
         ui.button("Load").on_click(lambda: on_load_img())
 
     async def on_load_img():
-        if not img_path_input.value or not Path(img_path_input.value).is_file():
+        if not img_path_input.value:
             GlobalStatus.ctrl_connecting = Status.FAILED
             ui.notify(
-                "Please enter a valid image path.",
+                "Image path cannot be empty.",
+                position="bottom-right",
+                type="negative",
+            )
+            return
+
+        _path = Path(img_path_input.value)
+        if not _path.is_file():
+            GlobalStatus.ctrl_connecting = Status.FAILED
+            ui.notify(
+                "Please enter a valid image file path.",
                 position="bottom-right",
                 type="negative",
             )
@@ -417,7 +427,7 @@ def custom_control():
 
         GlobalStatus.ctrl_connecting = Status.RUNNING
         try:
-            maafw.connect_custom_controller(img_path_input.value)
+            maafw.connect_custom_controller(_path)
         except Exception as e:
             GlobalStatus.ctrl_connecting = Status.FAILED
             raise e
