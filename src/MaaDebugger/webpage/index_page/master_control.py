@@ -405,7 +405,7 @@ def custom_control():
         )
         ui.button("Load").on_click(lambda: on_load_img())
 
-    def on_load_img():
+    async def on_load_img():
         if not img_path_input.value or not Path(img_path_input.value).is_file():
             GlobalStatus.ctrl_connecting = Status.FAILED
             ui.notify(
@@ -429,6 +429,7 @@ def custom_control():
             return
 
         GlobalStatus.ctrl_connecting = Status.SUCCEEDED
+        await maafw.screenshotter.refresh(True)
 
 
 def screenshot_control():

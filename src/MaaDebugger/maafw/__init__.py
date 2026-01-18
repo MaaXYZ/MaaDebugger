@@ -22,20 +22,8 @@ from maa.library import Library
 from maa.event_sink import NotificationType
 import numpy as np
 
-from ..utils.img_tools import cvmat_to_image, rgb_to_bgr
-from .launch_graph import (
-    LaunchGraph,
-    reduce_launch_graph,
-    Scope,
-    ScopeType,
-    GeneralStatus,
-    # 辅助函数
-    is_nested_recognition,
-    get_parent_chain,
-    find_root_pipeline_node,
-    find_immediate_pipeline_node,
-    get_nesting_depth,
-)
+from ..utils.img_tools import cvmat_to_image
+from .launch_graph import LaunchGraph, reduce_launch_graph, Scope, ScopeType
 from ..utils.img_tools import cvmat_to_image
 from ..utils.arg_parser import ArgParser
 from .launch_graph import LaunchGraph, reduce_launch_graph, Scope, ScopeType
@@ -46,9 +34,11 @@ debug_mode = ArgParser.get_debug()
 class MyCustomController(CustomController):
     def __init__(self, img_bytes: bytes):
         super().__init__()
+        import cv2  # lazy import
 
-        img = Image.open(io.BytesIO(img_bytes))
-        self.ndarray = rgb_to_bgr(np.array(img))
+        nparr = np.frombuffer(img_bytes, dtype=np.uint8)
+        decoded = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        self.img: np.ndarray = decoded  # type: ignore[assignment]
 
     def connect(self) -> bool:
         return True
@@ -57,7 +47,7 @@ class MyCustomController(CustomController):
         return "0"
 
     def screencap(self) -> np.ndarray:
-        return self.ndarray
+        return self.img
 
 
 class MaaFW:
@@ -185,8 +175,8 @@ class MaaFW:
 
         if self.controller is None:
             return False, "Controller is None!"
+        self.controller.set_screenshot_use_raw_size(True)
         self.controller.post_connection().wait()
-        self.controller.screencap()  # 连接时执行截图
 
         return True, None
 

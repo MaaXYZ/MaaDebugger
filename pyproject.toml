@@ -9,6 +9,7 @@ dependencies = [
     "asyncify",
     "pillow",
     "packaging",
+    "opencv-python",
 ]
 readme = "README.md"
 urls = { Homepage = "https://github.com/MaaXYZ/MaaDebugger" }
