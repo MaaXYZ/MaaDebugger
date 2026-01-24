@@ -239,6 +239,7 @@ def win32_control(type: Literal["win32", "gamepad"] = "win32"):
             )
             .style("min-width: 100px")
             .bind_value(STORAGE, STORAGE_TARGET_PREFIX + "screencap")
+            .on_value_change(lambda: on_connect_params_change())
         )
 
         if type == "win32":
@@ -250,6 +251,7 @@ def win32_control(type: Literal["win32", "gamepad"] = "win32"):
                 )
                 .style("min-width: 100px")
                 .bind_value(STORAGE, "win32_mouse")
+                .on_value_change(lambda: on_connect_params_change())
             )
             keyboard_select = (
                 ui.select(
@@ -259,12 +261,14 @@ def win32_control(type: Literal["win32", "gamepad"] = "win32"):
                 )
                 .style("min-width: 100px")
                 .bind_value(STORAGE, "win32_keyboard")
+                .on_value_change(lambda: on_connect_params_change())
             )
         else:  # elif type == "gamepad":
             gamepad_type_select = (
                 ui.select(GAMEPAD_TYPE_DICT, label="Gamepad Type")
                 .style("min-width: 100px")
                 .bind_value(STORAGE, "gamepad_keyboard")
+                .on_value_change(lambda: on_connect_params_change())
             )
 
         ui.button(
@@ -294,6 +298,10 @@ def win32_control(type: Literal["win32", "gamepad"] = "win32"):
         "ctrl_detecting",
         backward=lambda s: s == Status.RUNNING or s == Status.FAILED,
     )
+
+    async def on_connect_params_change():
+        if GlobalStatus.ctrl_connecting == Status.SUCCEEDED:
+            await on_click_connect()
 
     async def on_click_connect():
         GlobalStatus.ctrl_connecting = Status.RUNNING
