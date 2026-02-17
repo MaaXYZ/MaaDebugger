@@ -12,7 +12,7 @@ dependencies = [
 ]
 readme = "README.md"
 urls = { Homepage = "https://github.com/MaaXYZ/MaaDebugger" }
-requires-python = ">=3.9,<=3.13"
+requires-python = ">=3.9,<3.14"
 scripts = { MaaDebugger = "MaaDebugger.__main__:main" }
 
 [build-system]
