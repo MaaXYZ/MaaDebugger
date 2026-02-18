@@ -1,4 +1,5 @@
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from enum import auto, Enum
 from typing import Any, Optional, Union
 
@@ -10,16 +11,19 @@ from ... import __version__
 PYPI_API = "https://pypi.org/pypi/MaaDebugger/json"
 TSINGHUA_PYPI_API = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/json/maadebugger"
 
+_executor = ThreadPoolExecutor(max_workers=2)
+
 
 class CheckStatus(Enum):
     FAILED = auto()
     SKIPPED = auto()
 
 
-async def get_from_pypi(url: str) -> Optional[str]:  # -> '1.8.0b1'
+def _sync_get_from_pypi(url: str) -> Optional[str]:  # -> '1.8.0b1'
+    """Synchronous version of get_from_pypi, runs in a thread pool."""
     try:
-        async with httpx.AsyncClient() as client:
-            req = await client.get(url, timeout=5)
+        with httpx.Client() as client:
+            req = client.get(url, timeout=5)
             if req.status_code == 200:
                 return req.json().get("info", {}).get("version", None)
             else:
@@ -54,8 +58,11 @@ async def check_update() -> Union[CheckStatus, str, None]:
         return CheckStatus.FAILED
 
     else:
-        pypi = get_from_pypi(PYPI_API)
-        tsinghua_pypi = get_from_pypi(TSINGHUA_PYPI_API)
+        loop = asyncio.get_event_loop()
+        pypi = loop.run_in_executor(_executor, _sync_get_from_pypi, PYPI_API)
+        tsinghua_pypi = loop.run_in_executor(
+            _executor, _sync_get_from_pypi, TSINGHUA_PYPI_API
+        )
 
         vers = await asyncio.gather(pypi, tsinghua_pypi, return_exceptions=True)
 
