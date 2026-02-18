@@ -215,6 +215,8 @@ def win32_control(type: Literal["win32", "gamepad"] = "win32"):
             MaaWin32InputMethodEnum.PostThreadMessage: "PostThreadMessage",
             MaaWin32InputMethodEnum.SendMessageWithCursorPos: "SendMessageWithCursorPos",
             MaaWin32InputMethodEnum.PostMessageWithCursorPos: "PostMessageWithCursorPos",
+            MaaWin32InputMethodEnum.SendMessageWithWindowPos: "SendMessageWithWindowPos",
+            MaaWin32InputMethodEnum.PostMessageWithWindowPos: "PostMessageWithWindowPos",
         }
     else:  # elif type == "gamepad":
         STORAGE_TARGET_PREFIX = "gamepad_"
