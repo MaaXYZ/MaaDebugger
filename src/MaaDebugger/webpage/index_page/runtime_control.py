@@ -44,6 +44,8 @@ class ItemData:
     name: str
     reco_id: int = 0
     status: Status = Status.PENDING
+    # 是否通过 anchor 解析得到
+    is_anchor: bool = False
     # 嵌套子项的容器引用（用于 RecognitionNode 添加子识别项）
     nested_container: Optional[Any] = field(default=None, repr=False)
     # 嵌套子项列表
@@ -59,6 +61,7 @@ class ListData:
     row_len: int
     current: str
     next_list: List[str]
+    anchor_flags: List[bool] = field(default_factory=list)
 
 
 def main():
@@ -193,8 +196,8 @@ class RecognitionRow:
             for row_len in row_len_list[start_index:end_index]:
                 self.create_list(self.other_page_row, self.list_data_map[row_len])
 
-    def add_item_data(self, index, name, row_len: int):
-        data = ItemData(row_len, index, name)
+    def add_item_data(self, index, name, row_len: int, is_anchor: bool = False):
+        data = ItemData(row_len, index, name, is_anchor=is_anchor)
         self.data[row_len][index] = data
 
     def create_list(self, row: ui.row, data: ListData):
@@ -227,7 +230,14 @@ class RecognitionRow:
                 StatusIndicator(data, "status")
 
             with ui.item_section():
-                ui.item_label(name)
+                if data.is_anchor:
+                    with ui.row(wrap=False).classes("items-center gap-1"):
+                        ui.item_label(name)
+                        ui.badge("⚓", color="blue-grey-4").props("rounded").tooltip(
+                            "Anchor"
+                        )
+                else:
+                    ui.item_label(name)
 
             with ui.item_section().props("side"):
                 ui.item_label().bind_text_from(data, "reco_id").bind_visibility_from(
@@ -296,9 +306,12 @@ class RecognitionRow:
         if msg_type == "NextList.Starting":
             name = msg.get("name", "")
             next_names = msg.get("next_list", [])
+            anchor_flags = msg.get("anchor_flags", [])
             if debug_mode:
-                print(f"[DEBUG] NextList.Starting: name={name}, next_list={next_names}")
-            self._on_next_list_starting(name, next_names)
+                print(
+                    f"[DEBUG] NextList.Starting: name={name}, next_list={next_names}, anchor_flags={anchor_flags}"
+                )
+            self._on_next_list_starting(name, next_names, anchor_flags)
             await maafw.screenshotter.refresh(False)
 
         # RecognitionNode.Starting - 标记进入嵌套识别模式
@@ -458,11 +471,13 @@ class RecognitionRow:
                 f"[DEBUG] RecognitionNode depth decreased to {self._reco_node_depth}, stack size: {len(self._recognition_stack)}"
             )
 
-    def _on_next_list_starting(self, current: str, next_list: List[str]):
+    def _on_next_list_starting(
+        self, current: str, next_list: List[str], anchor_flags: List[bool] = []
+    ):
         """处理 NextList 开始事件"""
         self.row_len += 1
 
-        list_data = ListData(self.row_len, current, next_list)
+        list_data = ListData(self.row_len, current, next_list, anchor_flags)
         self.add_list_data(list_data)
 
         # 299/300 -> page:1 | 300/300 -> page:2
@@ -507,7 +522,8 @@ class RecognitionRow:
         self.list_data_map[data.row_len] = data
         for index in range(len(data.next_list)):
             name = data.next_list[index]
-            self.add_item_data(index, name, data.row_len)
+            is_anchor = index < len(data.anchor_flags) and data.anchor_flags[index]
+            self.add_item_data(index, name, data.row_len, is_anchor=is_anchor)
 
     def on_resource_loading(
         self,
