@@ -46,6 +46,12 @@ class ItemData:
     status: Status = Status.PENDING
     # 是否通过 anchor 解析得到
     is_anchor: bool = False
+    # 锚点名称（如 "锚点"），仅当 is_anchor=True 时有效
+    anchor_name: str = ""
+    # 锚点指向的目标节点名称
+    anchor_target: str = ""
+    # 锚点设置者节点名称（即定义 anchor 的节点）
+    anchor_setter: str = ""
     # 嵌套子项的容器引用（用于 RecognitionNode 添加子识别项）
     nested_container: Optional[Any] = field(default=None, repr=False)
     # 嵌套子项列表
@@ -62,6 +68,10 @@ class ListData:
     current: str
     next_list: List[str]
     anchor_flags: List[bool] = field(default_factory=list)
+    # 每个 next_list 项对应的锚点名称（空字符串表示非锚点）
+    anchor_names: List[str] = field(default_factory=list)
+    # 每个 next_list 项对应的锚点目标节点名称（空字符串表示非锚点）
+    anchor_targets: List[str] = field(default_factory=list)
 
 
 def main():
@@ -196,8 +206,25 @@ class RecognitionRow:
             for row_len in row_len_list[start_index:end_index]:
                 self.create_list(self.other_page_row, self.list_data_map[row_len])
 
-    def add_item_data(self, index, name, row_len: int, is_anchor: bool = False):
-        data = ItemData(row_len, index, name, is_anchor=is_anchor)
+    def add_item_data(
+        self,
+        index,
+        name,
+        row_len: int,
+        is_anchor: bool = False,
+        anchor_name: str = "",
+        anchor_target: str = "",
+        anchor_setter: str = "",
+    ):
+        data = ItemData(
+            row_len,
+            index,
+            name,
+            is_anchor=is_anchor,
+            anchor_name=anchor_name,
+            anchor_target=anchor_target,
+            anchor_setter=anchor_setter,
+        )
         self.data[row_len][index] = data
 
     def create_list(self, row: ui.row, data: ListData):
@@ -232,10 +259,13 @@ class RecognitionRow:
             with ui.item_section():
                 if data.is_anchor:
                     with ui.row(wrap=False).classes("items-center gap-1"):
-                        ui.item_label(name)
-                        ui.badge("⚓", color="blue-grey-4").props("rounded").tooltip(
-                            "Anchor"
+                        display_name = data.anchor_target or name
+                        anchor_label = (
+                            f"{display_name} (anchor:{data.anchor_name or '未知'}, "
+                            f"from:{data.anchor_setter or '未知'})"
                         )
+                        ui.item_label(anchor_label)
+                        ui.badge("⚓", color="blue-grey-4").props("rounded")
                 else:
                     ui.item_label(name)
 
@@ -477,7 +507,53 @@ class RecognitionRow:
         """处理 NextList 开始事件"""
         self.row_len += 1
 
-        list_data = ListData(self.row_len, current, next_list, anchor_flags)
+        # 从 pipeline 的 next 列表中提取 [Anchor] 标记，得到锚点名和目标节点
+        anchor_names: List[str] = []
+        anchor_targets: List[str] = []
+        if any(anchor_flags):
+            node_data = maafw.get_node_data(current)
+            node_next = node_data.get("next", [])
+            anchor_map = (
+                node_data.get("anchor", {}) if isinstance(node_data, dict) else {}
+            )
+            for i, _name in enumerate(next_list):
+                is_anchor = i < len(anchor_flags) and anchor_flags[i]
+                if not is_anchor:
+                    anchor_names.append("")
+                    anchor_targets.append("")
+                    continue
+
+                anchor_name = ""
+                anchor_target = ""
+
+                if i < len(node_next) and isinstance(node_next[i], str):
+                    raw_next = node_next[i]
+                    if raw_next.startswith("[Anchor]"):
+                        anchor_name = raw_next.replace("[Anchor]", "", 1)
+                        if isinstance(anchor_map, dict):
+                            anchor_target = anchor_map.get(anchor_name, "")
+
+                if (
+                    not anchor_name
+                    and isinstance(anchor_map, dict)
+                    and isinstance(_name, str)
+                ):
+                    if _name in anchor_map:
+                        anchor_name = _name
+                        anchor_target = anchor_map.get(_name, "")
+
+                if not anchor_target and isinstance(_name, str):
+                    anchor_target = _name
+
+                anchor_names.append(anchor_name)
+                anchor_targets.append(anchor_target)
+        else:
+            anchor_names = [""] * len(next_list)
+            anchor_targets = [""] * len(next_list)
+
+        list_data = ListData(
+            self.row_len, current, next_list, anchor_flags, anchor_names, anchor_targets
+        )
         self.add_list_data(list_data)
 
         # 299/300 -> page:1 | 300/300 -> page:2
@@ -523,7 +599,21 @@ class RecognitionRow:
         for index in range(len(data.next_list)):
             name = data.next_list[index]
             is_anchor = index < len(data.anchor_flags) and data.anchor_flags[index]
-            self.add_item_data(index, name, data.row_len, is_anchor=is_anchor)
+            anchor_name = (
+                data.anchor_names[index] if index < len(data.anchor_names) else ""
+            )
+            anchor_target = (
+                data.anchor_targets[index] if index < len(data.anchor_targets) else ""
+            )
+            self.add_item_data(
+                index,
+                name,
+                data.row_len,
+                is_anchor=is_anchor,
+                anchor_name=anchor_name,
+                anchor_target=anchor_target,
+                anchor_setter=data.current if is_anchor else "",
+            )
 
     def on_resource_loading(
         self,
