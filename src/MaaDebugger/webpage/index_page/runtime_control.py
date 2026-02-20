@@ -450,7 +450,11 @@ class RecognitionRow:
         # 如果通过 reco_id 没找到，检查当前 row（非嵌套项）
         if not found:
             for item in self.data[self.row_len].values():
-                if item.status == Status.PENDING and item.name == name:
+                if item.status != Status.PENDING:
+                    continue
+                name_matched = item.name == name
+                anchor_matched = item.is_anchor and item.anchor_target == name
+                if name_matched or anchor_matched:
                     item.reco_id = reco_id
                     item.status = Status.SUCCEEDED if hit else Status.FAILED
                     matched_item = item
@@ -464,7 +468,11 @@ class RecognitionRow:
         if not found:
             for row_data in self.data.values():
                 for item in row_data.values():
-                    if item.status == Status.PENDING and item.name == name:
+                    if item.status != Status.PENDING:
+                        continue
+                    name_matched = item.name == name
+                    anchor_matched = item.is_anchor and item.anchor_target == name
+                    if name_matched or anchor_matched:
                         item.reco_id = reco_id
                         item.status = Status.SUCCEEDED if hit else Status.FAILED
                         matched_item = item
