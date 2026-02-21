@@ -53,7 +53,6 @@ async def check_update() -> Union[CheckStatus, str, None]:
         return CheckStatus.SKIPPED
     elif "FAILED" in (__version__.tag_name, __version__.version):
         return CheckStatus.FAILED
-
     else:
         vers = await asyncio.gather(
             _get_from_pypi(PYPI_API),
