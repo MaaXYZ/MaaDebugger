@@ -448,6 +448,7 @@ class LaunchGraphContextEventSink(ContextEventSink):
                 "msg": f"NextList.{msg_suffix}",
                 "name": detail.name,
                 "next_list": [attr.name for attr in detail.next_list],
+                "anchor_flags": [attr.anchor for attr in detail.next_list],
             }
             if debug_mode:
                 print(f"[DEBUG EventSink] {msg}")
