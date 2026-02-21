@@ -510,22 +510,32 @@ class RecognitionRow:
             )
 
     def _on_next_list_starting(
-        self, current: str, next_list: List[str], anchor_flags: List[bool] = []
+        self,
+        current: str,
+        next_list: List[str],
+        anchor_flags: Optional[List[bool]] = None,
     ):
         """处理 NextList 开始事件"""
         self.row_len += 1
 
+        normalized_anchor_flags = anchor_flags or []
+
         # 从 pipeline 的 next 列表中提取 [Anchor] 标记，得到锚点名和目标节点
         anchor_names: List[str] = []
         anchor_targets: List[str] = []
-        if any(anchor_flags):
+        if any(normalized_anchor_flags):
             node_data = maafw.get_node_data(current)
-            node_next = node_data.get("next", [])
-            anchor_map = (
-                node_data.get("anchor", {}) if isinstance(node_data, dict) else {}
-            )
+            if isinstance(node_data, dict):
+                node_next = node_data.get("next", [])
+                anchor_map = node_data.get("anchor", {})
+            else:
+                node_next = []
+                anchor_map = {}
+
             for i, _name in enumerate(next_list):
-                is_anchor = i < len(anchor_flags) and anchor_flags[i]
+                is_anchor = (
+                    i < len(normalized_anchor_flags) and normalized_anchor_flags[i]
+                )
                 if not is_anchor:
                     anchor_names.append("")
                     anchor_targets.append("")
@@ -560,7 +570,12 @@ class RecognitionRow:
             anchor_targets = [""] * len(next_list)
 
         list_data = ListData(
-            self.row_len, current, next_list, anchor_flags, anchor_names, anchor_targets
+            self.row_len,
+            current,
+            next_list,
+            normalized_anchor_flags,
+            anchor_names,
+            anchor_targets,
         )
         self.add_list_data(list_data)
 
