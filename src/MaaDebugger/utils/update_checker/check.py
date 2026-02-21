@@ -1,5 +1,4 @@
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 from enum import auto, Enum
 from typing import Any, Optional, Union
 
@@ -11,7 +10,7 @@ from ... import __version__
 PYPI_API = "https://pypi.org/pypi/MaaDebugger/json"
 TSINGHUA_PYPI_API = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/json/maadebugger"
 
-_executor = ThreadPoolExecutor(max_workers=2)
+_client = httpx.AsyncClient()
 
 
 class CheckStatus(Enum):
@@ -19,15 +18,13 @@ class CheckStatus(Enum):
     SKIPPED = auto()
 
 
-def _sync_get_from_pypi(url: str) -> Optional[str]:  # -> '1.8.0b1'
-    """Synchronous version of get_from_pypi, runs in a thread pool."""
+async def _get_from_pypi(url: str) -> Optional[str]:  # -> '1.8.0b1'
     try:
-        with httpx.Client() as client:
-            req = client.get(url, timeout=5)
-            if req.status_code == 200:
-                return req.json().get("info", {}).get("version", None)
-            else:
-                return None
+        req = await _client.get(url, timeout=5)
+        if req.status_code == 200:
+            return req.json().get("info", {}).get("version", None)
+        else:
+            return None
     except Exception as e:
         print(f"WARNING: Failed to check update from {url}", e)
         return None
@@ -56,15 +53,12 @@ async def check_update() -> Union[CheckStatus, str, None]:
         return CheckStatus.SKIPPED
     elif "FAILED" in (__version__.tag_name, __version__.version):
         return CheckStatus.FAILED
-
     else:
-        loop = asyncio.get_event_loop()
-        pypi = loop.run_in_executor(_executor, _sync_get_from_pypi, PYPI_API)
-        tsinghua_pypi = loop.run_in_executor(
-            _executor, _sync_get_from_pypi, TSINGHUA_PYPI_API
+        vers = await asyncio.gather(
+            _get_from_pypi(PYPI_API),
+            _get_from_pypi(TSINGHUA_PYPI_API),
+            return_exceptions=True,
         )
-
-        vers = await asyncio.gather(pypi, tsinghua_pypi, return_exceptions=True)
 
         check_number = len(vers)
         check_succeed_number = 0
