@@ -633,10 +633,21 @@ def run_task_control():
             GlobalStatus.task_running = Status.FAILED
             return
 
-        await on_click_resource_load(STORAGE.get("resource_dir"))  # type:ignore
+        # 重新加载资源 / 连接 Agent
+        _, agent_err = await maafw.connect_agent()
+        await on_click_resource_load(STORAGE.get("resource_dir"))
 
-        run, error = await maafw.run_task(entry_select.value, pipeline_override)
-        if not run:
+        if agent_err:
+            GlobalStatus.task_running = Status.FAILED
+            ui.notify(
+                f"Failed to connect agent: {agent_err}",
+                position="bottom-right",
+                type="negative",
+            )
+            return
+
+        _, error = await maafw.run_task(entry_select.value, pipeline_override)
+        if error:
             GlobalStatus.task_running = Status.FAILED
             print(error)
             if error is not None:
