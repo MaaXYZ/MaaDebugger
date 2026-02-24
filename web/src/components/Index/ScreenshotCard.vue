@@ -81,8 +81,7 @@
                 @wheel.prevent="onFullscreenWheel">
                 <div class="flex items-center justify-center cursor-grab select-none"
                     :class="{ 'cursor-grabbing': isFullscreenDragging }" @mousedown="onFullscreenDragStart"
-                    @mousemove="onFullscreenDragMove" @mouseup="onFullscreenDragEnd"
-                    @mouseleave="onFullscreenDragEnd">
+                    @mousemove="onFullscreenDragMove" @mouseup="onFullscreenDragEnd" @mouseleave="onFullscreenDragEnd">
                     <img v-if="imageUrl" :src="imageUrl" alt="Screenshot" draggable="false"
                         class="pointer-events-none max-w-none" :style="fullscreenImageStyle" />
                 </div>
@@ -130,8 +129,6 @@ const imageUrl = ref<string | null>(null)
 const aspectMode = ref<'landscape' | 'portrait'>('landscape')
 const zoomLevel = ref(1)
 const isFullscreen = ref(false)
-const containerRef = ref<HTMLElement | null>(null)
-const imgRef = ref<HTMLImageElement | null>(null)
 
 // Drag state (card view)
 const isDragging = ref(false)
@@ -276,7 +273,7 @@ function downloadImage() {
     if (!imageData.value) return
 
     const blob = new Blob(
-        [imageData.value instanceof ArrayBuffer ? new Uint8Array(imageData.value) : imageData.value],
+        [imageData.value instanceof ArrayBuffer ? new Uint8Array(imageData.value as ArrayBuffer) : imageData.value as BlobPart],
         { type: 'image/png' }
     )
     const url = URL.createObjectURL(blob)
@@ -308,7 +305,7 @@ function updateImageUrl() {
     if (!imageData.value) return
 
     const blob = new Blob(
-        [imageData.value instanceof ArrayBuffer ? new Uint8Array(imageData.value) : imageData.value],
+        [imageData.value instanceof ArrayBuffer ? new Uint8Array(imageData.value as ArrayBuffer) : imageData.value as BlobPart],
         { type: 'image/png' }
     )
     imageUrl.value = URL.createObjectURL(blob)
@@ -403,7 +400,7 @@ function generateMockImage(): Uint8Array {
 
     // Convert canvas to PNG binary
     const dataUrl = canvas.toDataURL('image/png')
-    const base64 = dataUrl.split(',')[1]
+    const base64 = dataUrl.split(',')[1] ?? ''
     const binaryStr = atob(base64)
     const bytes = new Uint8Array(binaryStr.length)
     for (let i = 0; i < binaryStr.length; i++) {
@@ -440,4 +437,3 @@ onUnmounted(() => {
     }
 })
 </script>
-
