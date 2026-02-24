@@ -9,26 +9,26 @@ importers:
   .:
     dependencies:
       '@hono/node-server':
-        specifier: ^1.14.1
+        specifier: ^1.19.9
         version: 1.19.9(hono@4.12.2)
       hono:
-        specifier: ^4.7.5
+        specifier: ^4.12.2
         version: 4.12.2
       ws:
-        specifier: ^8.18.2
+        specifier: ^8.19.0
         version: 8.19.0
     devDependencies:
       '@maaxyz/maa-node':
-        specifier: ^5.7.1
-        version: 5.7.1
+        specifier: ^5.7.2
+        version: 5.7.2
       '@types/node':
-        specifier: ^24.10.1
-        version: 24.10.13
+        specifier: ^25.3.0
+        version: 25.3.0
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1
       tsx:
-        specifier: ^4.19.4
+        specifier: ^4.21.0
         version: 4.21.0
       typescript:
         specifier: ~5.9.3
@@ -198,42 +198,42 @@ packages:
     peerDependencies:
       hono: ^4
 
-  '@maaxyz/maa-node-darwin-arm64@5.7.1':
-    resolution: {integrity: sha512-zH/vtTRyxy7snrm4S6Wo1PUBB85Mo0UL5Qe8ggQnIZXHG6Q7iTIYf3sug24xcib4rYAa85k8QvdG6xhC4TvmHQ==}
+  '@maaxyz/maa-node-darwin-arm64@5.7.2':
+    resolution: {integrity: sha512-x2H0TGArjfaz5lIarH/mLn1zdEOPMsQ5i30SAbYxQ5zntHlnLUiTRw6cx2aNKdq/WoChCZriMJBLgbfQ7ZGx5A==}
     cpu: [arm64]
     os: [darwin]
 
-  '@maaxyz/maa-node-darwin-x64@5.7.1':
-    resolution: {integrity: sha512-QFqhuV9RJLnhOwNDJzPoaVtp0CVfXoF8GjZWnDsPfgXj0/NTNE+x0g5L43QEOLbziASDnhSPyqaheWOIosoXDQ==}
+  '@maaxyz/maa-node-darwin-x64@5.7.2':
+    resolution: {integrity: sha512-qP3vwfPGSfM/cV3WCgZjy/SvcRPN6kI4bHzAryijs+nomcEe7yNxQJwYQQY8ExFLyd6YMdw83qo4kNbA69vwxw==}
     cpu: [x64]
     os: [darwin]
 
-  '@maaxyz/maa-node-linux-arm64@5.7.1':
-    resolution: {integrity: sha512-KAmTa/MSLBC2nTVVPMcTY1D8bRvQmbgKKlJwZW5UEf+jiw71GpiL1YVto0Sx5+L1l0tEDtrmOlnKuSDURW3Mjw==}
+  '@maaxyz/maa-node-linux-arm64@5.7.2':
+    resolution: {integrity: sha512-bHq2NifGA9kxPDd+fBOGP13Ke6yeNlfrAbAqmDNVJY48Mv0506Y+CrctQSg8gOdmUXBSFdP0tZX/M4sA+0lX+w==}
     cpu: [arm64]
     os: [linux]
 
-  '@maaxyz/maa-node-linux-x64@5.7.1':
-    resolution: {integrity: sha512-vDmLfULDyXksXRemX8ambiJLSNOGQhCxNP6IhDZhYwx/1zRGljdoRUwBbDeGqedfvfQFBD3LZIVwcD8ZeYAojw==}
+  '@maaxyz/maa-node-linux-x64@5.7.2':
+    resolution: {integrity: sha512-O9pS4irWs8mJnbksP6wPAs0bTp3JF2aoA8K1qAMBDvNBkNqIKjWyL254DzcM5SFAQWav/wGo//9gMa8wkZO81Q==}
     cpu: [x64]
     os: [linux]
 
-  '@maaxyz/maa-node-win32-arm64@5.7.1':
-    resolution: {integrity: sha512-nEc1uvBvohymVgWSdV2CPWxvxyagtlEveJWPn7Ux/opYfWB2YtgiNhvenDdaJzx+XSkC0r8egavcym/fnTwkLA==}
+  '@maaxyz/maa-node-win32-arm64@5.7.2':
+    resolution: {integrity: sha512-pvv2zDrMR+2C6tPhOlhxGiPlA0WrpRf8w3aMroMLtBJqucyZFwsIjGIXaJj+7Zl/adhVGz5goTbTM9dvZspvbg==}
     cpu: [arm64]
     os: [win32]
 
-  '@maaxyz/maa-node-win32-x64@5.7.1':
-    resolution: {integrity: sha512-tkzY7Xp/pQ7VyM2J3Uls4yeA5QnkMCJjJWq6I0c3AwcRJBRdUbsQGbeWPL+pcKO/EzbirIwjbgUyPu+E/hAuDQ==}
+  '@maaxyz/maa-node-win32-x64@5.7.2':
+    resolution: {integrity: sha512-6CiaoI6P7d8DgqS5frDiunOatt5FD5d2+jDqMfZgHRicLMrymF1RX2RFAFxGm4J0IGtX3ydpZRlPodtW3YUUsg==}
     cpu: [x64]
     os: [win32]
 
-  '@maaxyz/maa-node@5.7.1':
-    resolution: {integrity: sha512-aof/H9im7n3etYOzOQaQfMyWyF7k8aUkEJAQaIlpJ96dBgM98O8w3R5+gXZsNYt+fnTQGCzgDsMSTfACPyPm7A==}
+  '@maaxyz/maa-node@5.7.2':
+    resolution: {integrity: sha512-hFSasRVISGdOYPbNwC2QQs/RSURrI3Aa4oi+dg0QfXjOS8Fc1gAK1eEjbpIjuZw4qFQkb1I+TlxwwtLLCGf/iA==}
     engines: {node: '>= 20.0.0'}
 
-  '@types/node@24.10.13':
-    resolution: {integrity: sha512-oH72nZRfDv9lADUBSo104Aq7gPHpQZc4BTx38r9xf9pg5LfP6EzSyH2n7qFmmxRQXh7YlUXODcYsg6PuTDSxGg==}
+  '@types/node@25.3.0':
+    resolution: {integrity: sha512-4K3bqJpXpqfg2XKGK9bpDTc6xO/xoUP/RBWS7AtRMug6zZFaRekiLzjVtAoZMquxoAbzBvy5nxQ7veS5eYzf8A==}
 
   '@types/ws@8.18.1':
     resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
@@ -268,8 +268,8 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  undici-types@7.16.0:
-    resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
+  undici-types@7.18.2:
+    resolution: {integrity: sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w==}
 
   ws@8.19.0:
     resolution: {integrity: sha512-blAT2mjOEIi0ZzruJfIhb3nps74PRWTCz1IjglWEEpQl5XS/UNama6u2/rjFkDDouqr4L67ry+1aGIALViWjDg==}
@@ -367,40 +367,40 @@ snapshots:
     dependencies:
       hono: 4.12.2
 
-  '@maaxyz/maa-node-darwin-arm64@5.7.1':
+  '@maaxyz/maa-node-darwin-arm64@5.7.2':
     optional: true
 
-  '@maaxyz/maa-node-darwin-x64@5.7.1':
+  '@maaxyz/maa-node-darwin-x64@5.7.2':
     optional: true
 
-  '@maaxyz/maa-node-linux-arm64@5.7.1':
+  '@maaxyz/maa-node-linux-arm64@5.7.2':
     optional: true
 
-  '@maaxyz/maa-node-linux-x64@5.7.1':
+  '@maaxyz/maa-node-linux-x64@5.7.2':
     optional: true
 
-  '@maaxyz/maa-node-win32-arm64@5.7.1':
+  '@maaxyz/maa-node-win32-arm64@5.7.2':
     optional: true
 
-  '@maaxyz/maa-node-win32-x64@5.7.1':
+  '@maaxyz/maa-node-win32-x64@5.7.2':
     optional: true
 
-  '@maaxyz/maa-node@5.7.1':
+  '@maaxyz/maa-node@5.7.2':
     optionalDependencies:
-      '@maaxyz/maa-node-darwin-arm64': 5.7.1
-      '@maaxyz/maa-node-darwin-x64': 5.7.1
-      '@maaxyz/maa-node-linux-arm64': 5.7.1
-      '@maaxyz/maa-node-linux-x64': 5.7.1
-      '@maaxyz/maa-node-win32-arm64': 5.7.1
-      '@maaxyz/maa-node-win32-x64': 5.7.1
+      '@maaxyz/maa-node-darwin-arm64': 5.7.2
+      '@maaxyz/maa-node-darwin-x64': 5.7.2
+      '@maaxyz/maa-node-linux-arm64': 5.7.2
+      '@maaxyz/maa-node-linux-x64': 5.7.2
+      '@maaxyz/maa-node-win32-arm64': 5.7.2
+      '@maaxyz/maa-node-win32-x64': 5.7.2
 
-  '@types/node@24.10.13':
+  '@types/node@25.3.0':
     dependencies:
-      undici-types: 7.16.0
+      undici-types: 7.18.2
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 24.10.13
+      '@types/node': 25.3.0
 
   esbuild@0.27.3:
     optionalDependencies:
@@ -451,6 +451,6 @@ snapshots:
 
   typescript@5.9.3: {}
 
-  undici-types@7.16.0: {}
+  undici-types@7.18.2: {}
 
   ws@8.19.0: {}

@@ -8,15 +8,15 @@
     "start": "tsx src/index.ts"
   },
   "dependencies": {
-    "@hono/node-server": "^1.14.1",
-    "hono": "^4.7.5",
-    "ws": "^8.18.2"
+    "@hono/node-server": "^1.19.9",
+    "hono": "^4.12.2",
+    "ws": "^8.19.0"
   },
   "devDependencies": {
-    "@maaxyz/maa-node": "^5.7.1",
-    "@types/node": "^24.10.1",
+    "@maaxyz/maa-node": "^5.7.2",
+    "@types/node": "^25.3.0",
     "@types/ws": "^8.18.1",
-    "tsx": "^4.19.4",
+    "tsx": "^4.21.0",
     "typescript": "~5.9.3"
   }
 }
