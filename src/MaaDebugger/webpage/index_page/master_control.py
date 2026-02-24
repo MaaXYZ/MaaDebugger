@@ -535,33 +535,35 @@ def agent_control():
         on_click=lambda: on_click_agent(),
     ).bind_enabled_from(GlobalStatus, "agent_connecting", lambda x: x != Status.RUNNING)
 
-    async def on_click_agent():
-        GlobalStatus.agent_connecting = Status.RUNNING
 
-        created, error = await maafw.create_agent(agent_identifier_input.value)
-        if not created:
-            GlobalStatus.agent_connecting = Status.FAILED
-            ui.notify(error, position="bottom-right", type="negative")
-            print(error)
-            return
+async def on_click_agent() -> bool:
+    GlobalStatus.agent_connecting = Status.RUNNING
 
-        agent_identifier_input.value = maafw.agent_identifier
-        connected, error = await maafw.connect_agent()
-        if not connected:
-            GlobalStatus.agent_connecting = Status.FAILED
-            ui.notify(error, position="bottom-right", type="negative")
-            print(error)
-            return
+    created, error = await maafw.create_agent(STORAGE.get("agent_identifier"))
+    if not created:
+        GlobalStatus.agent_connecting = Status.FAILED
+        ui.notify(error, position="bottom-right", type="negative")
+        print(error)
+        return False
 
-        GlobalStatus.agent_connecting = Status.SUCCEEDED
+    STORAGE["agent_identifier"] = maafw.agent_identifier
+    connected, error = await maafw.connect_agent()
+    if not connected:
+        GlobalStatus.agent_connecting = Status.FAILED
+        ui.notify(error, position="bottom-right", type="negative")
+        print(error)
+        return False
+
+    GlobalStatus.agent_connecting = Status.SUCCEEDED
+    return True
 
 
-async def on_click_resource_load(values: Optional[str]):
+async def on_click_resource_load(values: Optional[str]) -> bool:
     GlobalStatus.res_loading = Status.RUNNING
 
     if not values:
         GlobalStatus.res_loading = Status.FAILED
-        return
+        return False
 
     paths = [Path(p) for p in values.split("\n") if p]
     loaded, error = await maafw.load_resource(paths)
@@ -571,10 +573,12 @@ async def on_click_resource_load(values: Optional[str]):
         GlobalStatus.res_loading = Status.FAILED
         ui.notify(error, position="bottom-right", type="negative")
         print(error)
+        return False
     else:
         GlobalStatus.res_loading = Status.SUCCEEDED
         node_list = sorted(await maafw.get_node_list())
         NodeListElement.value = node_list
+        return True
 
 
 def run_task_control():
@@ -634,16 +638,11 @@ def run_task_control():
             return
 
         # 重新加载资源 / 连接 Agent
-        _, agent_err = await maafw.connect_agent()
-        await on_click_resource_load(STORAGE.get("resource_dir"))
+        res_status = await on_click_resource_load(STORAGE.get("resource_dir"))
+        agent_status = await on_click_agent()
 
-        if agent_err:
+        if not (res_status and agent_status):
             GlobalStatus.task_running = Status.FAILED
-            ui.notify(
-                f"Failed to connect agent: {agent_err}",
-                position="bottom-right",
-                type="negative",
-            )
             return
 
         _, error = await maafw.run_task(entry_select.value, pipeline_override)
