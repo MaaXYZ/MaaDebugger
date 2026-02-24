@@ -27,3 +27,6 @@ dist-ssr
 # NuxtUI
 auto-imports.d.ts
 components.d.ts
+
+# LLM
+plans/*
