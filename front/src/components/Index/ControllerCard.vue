@@ -1,5 +1,5 @@
 <template>
-    <UCard class="" w-full size="xl">
+    <UCard class="w-full" size="xl">
         <template #header>
             <span class="font-bold">Controller</span>
         </template>

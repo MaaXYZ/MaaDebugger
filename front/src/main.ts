@@ -6,7 +6,12 @@ import App from "./App.vue";
 import "./style.css";
 
 const router = createRouter({
-  routes: [],
+  routes: [
+    {
+      path: "/settings",
+      component: () => import("./router/SettingsPage.vue"),
+    },
+  ],
   history: createWebHistory(),
 });
 const pinia = createPinia();
