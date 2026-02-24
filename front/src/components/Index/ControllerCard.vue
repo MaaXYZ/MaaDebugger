@@ -1,7 +1,7 @@
 <template>
     <UCard class="w-full" size="xl">
         <template #header>
-            <div class="flex flex-row items-center gap-2">
+            <div class="flex flex-row items-center gap-2 min-h-10">
                 <span class="font-bold">Controller</span>
                 <USelect v-model="controllerValue" value-key="value" :items="controllerItems" :icon="controllerIcon"
                     class="w-full" size="xl" arrow />
@@ -9,9 +9,11 @@
         </template>
 
         <template #default>
-            <ADB v-if="controllerValue === 'adb'" />
-            <Win32 v-else-if="controllerValue === 'win32'" />
-            <Gamepad v-else-if="controllerValue === 'gamepad'" />
+            <div class="min-h-40">
+                <ADB v-if="controllerValue === 'adb'" />
+                <Win32 v-else-if="controllerValue === 'win32'" />
+                <Gamepad v-else-if="controllerValue === 'gamepad'" />
+            </div>
         </template>
     </UCard>
 </template>

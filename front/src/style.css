@@ -1,2 +1,10 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+[data-slot="trailingIcon"] {
+    transition: transform 0.2s ease;
+}
+
+[data-state="open"] [data-slot="trailingIcon"] {
+    transform: rotate(180deg);
+}

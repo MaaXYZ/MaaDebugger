@@ -1,5 +1,5 @@
 <template>
-    <div class="flex flex-col gap-3">
+    <div class="flex flex-col gap-3 h-full">
         <!-- Action Buttons Row -->
         <div class="flex flex-row gap-2">
             <UTooltip text="Detect">
@@ -17,8 +17,10 @@
         </div>
 
         <!-- Device Select -->
-        <USelect v-model="selectedDevice" value-key="value" :items="deviceItems" placeholder="Select a device..."
-            icon="i-lucide-smartphone" class="w-full" size="xl" arrow />
+        <USelectMenu v-model="selectedDevice" value-key="value" :items="deviceItems" :search-input="{
+            placeholder: 'Filter...',
+            icon: 'i-lucide-search'
+        }" placeholder="Select a device..." icon="i-lucide-smartphone" class="w-full" size="xl" arrow />
 
         <!-- Edit Modal -->
         <UModal v-model:open="editModalOpen" title="ADB Configuration" description="Configure ADB connection settings">

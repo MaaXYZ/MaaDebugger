@@ -1,5 +1,5 @@
 <template>
-    <div class="flex flex-col gap-3">
+    <div class="flex flex-col gap-3 h-full">
         <!-- Action Buttons Row: Search + Edit + Disconnect -->
         <div class="flex flex-row gap-2">
             <UTooltip text="Search Windows">
