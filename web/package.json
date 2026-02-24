@@ -13,6 +13,7 @@
     "@iconify-json/material-symbols": "^1.2.57",
     "@iconify-json/simple-icons": "^1.2.71",
     "@nuxt/ui": "^4.2.1",
+    "@tanstack/vue-virtual": "^3.13.19",
     "@unhead/vue": "^2.0.19",
     "monaco-editor": "^0.55.1",
     "pinia": "^3.0.4",
