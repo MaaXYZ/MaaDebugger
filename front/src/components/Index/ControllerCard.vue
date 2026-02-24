@@ -1,18 +1,26 @@
 <template>
     <UCard class="w-full" size="xl">
         <template #header>
-            <span class="font-bold">Controller</span>
+            <div class="flex flex-row items-center gap-2">
+                <span class="font-bold">Controller</span>
+                <USelect v-model="controllerValue" value-key="value" :items="controllerItems" :icon="controllerIcon"
+                    class="w-full" size="xl" arrow />
+            </div>
         </template>
 
         <template #default>
-            <USelect v-model="controllerValue" value-key="value" :items="controllerItems" :icon="controllerIcon"
-                class="w-full" size="xl" arrow />
+            <ADB v-if="controllerValue === 'adb'" />
+            <Win32 v-else-if="controllerValue === 'win32'" />
+            <Gamepad v-else-if="controllerValue === 'gamepad'" />
         </template>
     </UCard>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import ADB from './controller/ADB.vue'
+import Win32 from './controller/Win32.vue'
+import Gamepad from './controller/Gamepad.vue'
 
 interface ControllerItem {
     label: string
