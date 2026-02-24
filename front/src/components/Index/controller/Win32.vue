@@ -18,7 +18,10 @@
         </div>
 
         <!-- Window Search (shared component) -->
-        <WindowSearch ref="windowSearchRef" />
+        <div class="flex flex-1 items-center gap-2">
+            <WindowSearch ref="windowSearchRef" />
+        </div>
+
 
         <!-- Edit Modal -->
         <UModal v-model:open="editModalOpen" title="Win32 Configuration"

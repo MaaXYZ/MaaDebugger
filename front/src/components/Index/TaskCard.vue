@@ -11,10 +11,15 @@
         <template #default>
             <div class="flex flex-col gap-3">
                 <!-- Task Entry SelectMenu + Edit Override -->
-                <div class="flex flex-row items-center gap-2">
-                    <UIcon name="i-lucide-list-todo" class="size-4 shrink-0 text-dimmed" />
-                    <USelectMenu v-model="selectedEntry" :items="entrySelectItems" placeholder="Select task entry..."
-                        class="flex-1" size="xl" value-key="value" :disabled="isRunning" />
+                <div class="flex flex-col items-start gap-4">
+                    <div class="flex flex-row items-center gap-2 w-full">
+                        <UIcon name="i-lucide-list-todo" class="size-4 shrink-0 text-dimmed" />
+                        <USelectMenu v-model="selectedEntry" :items="entrySelectItems"
+                            placeholder="Select task entry..." :search-input="{
+                                placeholder: 'Filter...',
+                                icon: 'i-lucide-search'
+                            }" class="flex-1 w-full" size="xl" value-key="value" :disabled="isRunning" />
+                    </div>
                     <UTooltip text="Edit task override">
                         <UButton color="neutral" variant="outline" icon="i-lucide-file-edit" label="Edit Override"
                             @click="onEditOverride" />
@@ -26,8 +31,8 @@
         <template #footer>
             <div class="flex flex-row gap-2">
                 <!-- Start / Stop Button -->
-                <UButton v-if="!isRunning" color="success" variant="soft" icon="i-lucide-play" label="Start"
-                    block :disabled="!selectedEntry" @click="onStart" />
+                <UButton v-if="!isRunning" color="success" variant="soft" icon="i-lucide-play" label="Start" block
+                    :disabled="!selectedEntry" @click="onStart" />
                 <UButton v-else color="error" variant="soft" icon="i-lucide-square" label="Stop" block
                     @click="onStop" />
             </div>

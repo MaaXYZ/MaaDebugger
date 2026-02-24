@@ -17,10 +17,14 @@
         </div>
 
         <!-- Device Select -->
-        <USelectMenu v-model="selectedDevice" value-key="value" :items="deviceItems" :search-input="{
-            placeholder: 'Filter...',
-            icon: 'i-lucide-search'
-        }" placeholder="Select a device..." icon="i-lucide-smartphone" class="w-full" size="xl" arrow />
+        <div class="flex flex-1 items-center gap-2">
+            <USelectMenu v-model="selectedDevice" value-key="value" :items="deviceItems" :search-input="{
+                placeholder: 'Filter...',
+                icon: 'i-lucide-search'
+            }" placeholder="Select a device..." icon="i-lucide-smartphone" class="w-full" size="xl" arrow />
+        </div>
+
+
 
         <!-- Edit Modal -->
         <UModal v-model:open="editModalOpen" title="ADB Configuration" description="Configure ADB connection settings">

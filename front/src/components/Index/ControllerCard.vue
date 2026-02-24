@@ -9,7 +9,7 @@
         </template>
 
         <template #default>
-            <div class="min-h-40">
+            <div class="h-40">
                 <ADB v-if="controllerValue === 'adb'" />
                 <Win32 v-else-if="controllerValue === 'win32'" />
                 <Gamepad v-else-if="controllerValue === 'gamepad'" />
