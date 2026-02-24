@@ -1,6 +1,7 @@
 import type {
   ApiResponse,
   AdbDeviceInfo,
+  Win32WindowInfo,
   ConnectControllerRequest,
   StatusSnapshot,
 } from "@shared/types/api";
@@ -49,6 +50,22 @@ async function request<T>(
  */
 export async function detectAdbDevices(): Promise<AdbDeviceInfo[]> {
   const result = await request<AdbDeviceInfo[]>("/controller/detect/adb");
+  return result.data ?? [];
+}
+
+/**
+ * 检测桌面窗口（Win32/Gamepad 共用）
+ */
+export async function detectDesktopWindows(
+  classRegex?: string,
+  windowRegex?: string,
+): Promise<Win32WindowInfo[]> {
+  const params = new URLSearchParams();
+  if (classRegex) params.set("class_regex", classRegex);
+  if (windowRegex) params.set("window_regex", windowRegex);
+  const query = params.toString();
+  const path = `/controller/detect/desktop${query ? `?${query}` : ""}`;
+  const result = await request<Win32WindowInfo[]>(path);
   return result.data ?? [];
 }
 

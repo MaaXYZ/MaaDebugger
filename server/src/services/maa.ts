@@ -1,5 +1,6 @@
 import type {
   AdbDeviceInfo,
+  Win32WindowInfo,
   ControllerStatus,
   ResourceStatus,
   TaskStatus,
@@ -175,6 +176,118 @@ export async function disconnectController(): Promise<void> {
     controller = null;
   }
   setControllerStatus("disconnected");
+}
+
+/**
+ * 检测桌面窗口（Win32/Gamepad 共用）
+ */
+export async function detectDesktop(): Promise<Win32WindowInfo[]> {
+  try {
+    const maa = getMaa();
+    const devices = await maa.Win32Controller.find();
+    if (!devices) return [];
+
+    // find() 返回 DesktopDevice 元组数组: [handle, class_name, window_name][]
+    return devices.map((d: maa.DesktopDevice) => ({
+      hwnd: String(d[0]),
+      class_name: d[1] ?? "",
+      window_name: d[2] ?? "",
+    }));
+  } catch (err) {
+    console.error("[MaaService] detectDesktop failed:", err);
+    return [];
+  }
+}
+
+/**
+ * 连接 Win32 控制器
+ */
+export async function connectWin32(
+  hwnd: maa.DesktopHandle,
+  screencapMethod: maa.ScreencapOrInputMethods,
+  mouseMethod: maa.ScreencapOrInputMethods,
+  keyboardMethod: maa.ScreencapOrInputMethods,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const maa = getMaa();
+
+    // 断开旧连接
+    if (controller) {
+      controller.destroy();
+      controller = null;
+    }
+
+    setControllerStatus("connecting");
+
+    controller = new maa.Win32Controller(
+      hwnd,
+      screencapMethod,
+      mouseMethod,
+      keyboardMethod,
+    );
+
+    await controller.post_connection().wait();
+
+    if (controller.connected) {
+      setControllerStatus("connected");
+      return { success: true };
+    } else {
+      controller.destroy();
+      controller = null;
+      setControllerStatus("disconnected");
+      return { success: false, error: `Failed to connect Win32 hwnd: ${hwnd}` };
+    }
+  } catch (err) {
+    controller = null;
+    setControllerStatus("disconnected");
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[MaaService] connectWin32 failed:", message);
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * 连接 Gamepad 控制器
+ */
+export async function connectGamepad(
+  hwnd: maa.DesktopHandle,
+  screencapMethod: maa.ScreencapOrInputMethods,
+  gamepadType: maa.ScreencapOrInputMethods,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const maa = getMaa();
+
+    // 断开旧连接
+    if (controller) {
+      controller.destroy();
+      controller = null;
+    }
+
+    setControllerStatus("connecting");
+
+    controller = new maa.GamepadController(hwnd, screencapMethod, gamepadType);
+
+    await controller.post_connection().wait();
+
+    if (controller.connected) {
+      setControllerStatus("connected");
+      return { success: true };
+    } else {
+      controller.destroy();
+      controller = null;
+      setControllerStatus("disconnected");
+      return {
+        success: false,
+        error: `Failed to connect Gamepad hwnd: ${hwnd}`,
+      };
+    }
+  } catch (err) {
+    controller = null;
+    setControllerStatus("disconnected");
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[MaaService] connectGamepad failed:", message);
+    return { success: false, error: message };
+  }
 }
 
 // ============================================================

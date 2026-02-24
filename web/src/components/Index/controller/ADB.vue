@@ -12,10 +12,6 @@
                     :disabled="!selectedDevice || connecting" @click="onConnect" />
             </UTooltip>
 
-            <UTooltip text="Edit">
-                <UButton color="neutral" variant="outline" icon="i-lucide-square-pen" size="xl" @click="onOpenEdit" />
-            </UTooltip>
-
             <UTooltip text="Disconnect">
                 <UButton color="error" variant="outline" icon="i-lucide-unlink" size="xl" @click="onDisconnect" />
             </UTooltip>
@@ -27,45 +23,27 @@
                 placeholder="Select a device..." icon="i-lucide-smartphone" class="w-full" size="xl" />
         </div>
 
+        <!-- ADB Configuration (inline, no modal) -->
+        <UFormField name="adb_path" label="ADB Path">
+            <UInput v-model="config.adb_path" placeholder="/path/to/adb" icon="i-lucide-folder" class="w-full" />
+        </UFormField>
 
+        <UFormField name="adb_address" label="ADB Address">
+            <UInput v-model="config.adb_address" placeholder="127.0.0.1:5555" icon="i-lucide-network" class="w-full" />
+        </UFormField>
 
-        <!-- Edit Modal -->
-        <UModal v-model:open="editModalOpen" title="ADB Configuration" description="Configure ADB connection settings">
-            <template #body>
-                <div class="flex flex-col gap-4">
-                    <UFormField name="adb_path" label="ADB Path">
-                        <UInput v-model="config.adb_path" placeholder="/path/to/adb" icon="i-lucide-folder"
-                            class="w-full" />
-                    </UFormField>
+        <UFormField name="screencap" label="Screencap Method">
+            <USelect v-model="config.screencap_method" :items="screencapMethods" class="w-full" />
+        </UFormField>
 
-                    <UFormField name="adb_address" label="ADB Address">
-                        <UInput v-model="config.adb_address" placeholder="127.0.0.1:5555" icon="i-lucide-network"
-                            class="w-full" />
-                    </UFormField>
+        <UFormField name="input" label="Input Method">
+            <USelect v-model="config.input_method" :items="inputMethods" class="w-full" />
+        </UFormField>
 
-                    <UFormField name="screencap" label="Screencap Method">
-                        <USelect v-model="config.screencap_method" :items="screencapMethods" class="w-full" />
-                    </UFormField>
-
-                    <UFormField name="input" label="Input Method">
-                        <USelect v-model="config.input_method" :items="inputMethods" class="w-full" />
-                    </UFormField>
-
-                    <UFormField name="extra" label="Extra Config">
-                        <UButton color="neutral" variant="outline" icon="i-lucide-file-json" label="Edit JSON"
-                            class="w-full" @click="onEditExtra" />
-                    </UFormField>
-                </div>
-            </template>
-
-            <template #footer>
-                <div class="flex justify-end gap-2 w-full">
-                    <UButton color="neutral" variant="ghost" label="Cancel" @click="editModalOpen = false" />
-                    <UButton color="primary" icon="i-lucide-link" label="Connect" :loading="connecting"
-                        @click="onConnectFromEdit" />
-                </div>
-            </template>
-        </UModal>
+        <UFormField name="extra" label="Extra Config">
+            <UButton color="neutral" variant="outline" icon="i-lucide-file-json" label="Edit JSON" class="w-full"
+                @click="onEditExtra" />
+        </UFormField>
     </div>
 </template>
 
@@ -163,7 +141,7 @@ async function onDetect() {
 // --- 连接核心逻辑 ---
 
 /**
- * 内部统一连接函数，避免 onConnect / onConnectFromEdit 重复
+ * 内部统一连接函数
  */
 async function doConnect(params: ConnectControllerRequest): Promise<boolean> {
     if (!params.adb_address) {
@@ -227,20 +205,7 @@ async function onDisconnect() {
     }
 }
 
-/**
- * Update device list from backend data (legacy API for parent).
- */
-function updateDevices(devices: DeviceItem[]) {
-    deviceItems.value = devices
-    const first = devices[0]
-    if (first && !selectedDevice.value) {
-        selectedDevice.value = first.value
-        controllerStore.selectedAdbDevice = first.value
-    }
-}
-
-// --- Edit Modal ---
-const editModalOpen = ref(false)
+// --- ADB Configuration (inline) ---
 
 // 与 maa-node AdbScreencapMethod / AdbInputMethod 常量保持一致
 const screencapMethods = [
@@ -264,7 +229,7 @@ const inputMethods = [
     { label: 'EmulatorExtras', value: '8' },
 ]
 
-// 编辑弹窗的本地状态，watch immediate 会从 store 同步初始值
+// 编辑状态
 const config = reactive({
     adb_path: '',
     adb_address: '',
@@ -299,38 +264,29 @@ watch(
     { immediate: true },
 )
 
-// --- Actions ---
-
-/**
- * 打开编辑弹窗，并将选中设备的信息填入 config
- */
-function onOpenEdit() {
-    const device = selectedDevice.value ? deviceMap.value[selectedDevice.value] : null
+// 选中设备变化时，自动填充检测到的设备信息到 config
+watch(selectedDevice, (value) => {
+    const device = value ? deviceMap.value[value] : null
     if (device) {
         config.adb_path = device.adb_path
         config.adb_address = device.address
         config.screencap_method = device.screencap_methods
         config.input_method = device.input_methods
     }
-    editModalOpen.value = true
-}
+})
 
-/**
- * 从编辑弹窗连接 ADB，使用 config 中的手动配置值
- */
-async function onConnectFromEdit() {
-    const ok = await doConnect({
-        type: 'adb',
-        adb_path: config.adb_path,
-        adb_address: config.adb_address,
-        adb_screencap_method: config.screencap_method,
-        adb_input_method: config.input_method,
-        adb_config: '',
-    })
-    if (ok) {
-        editModalOpen.value = false
-    }
-}
+// config 变化时自动保存到 store
+watch(
+    () => [config.adb_path, config.adb_address, config.screencap_method, config.input_method] as const,
+    ([adbPath, adbAddress, screencapMethod, inputMethod]) => {
+        controllerStore.updateAdbConfig({
+            adb_path: adbPath,
+            adb_address: adbAddress,
+            screencap_method: screencapMethod,
+            input_method: inputMethod,
+        })
+    },
+)
 
 function onEditExtra() {
     // TODO: open JSONC editor
@@ -338,7 +294,6 @@ function onEditExtra() {
 
 // Expose for parent component
 defineExpose({
-    updateDevices,
     config,
     selectedDevice,
 })
