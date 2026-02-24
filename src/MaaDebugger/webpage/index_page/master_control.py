@@ -523,17 +523,18 @@ def load_resource_control():
 def agent_control():
     StatusIndicator(GlobalStatus, "agent_connecting")
 
-    agent_identifier_input = (
-        ui.input(
-            "Agent Identifier",
-        )
-        .props("size=40")
-        .bind_value(STORAGE, "agent_identifier")
-    )
+    ui.input(
+        "Agent Identifier",
+    ).props(
+        "size=40"
+    ).bind_value(STORAGE, "agent_identifier")
+
     ui.button(
         "Connect",
         on_click=lambda: on_click_agent(),
     ).bind_enabled_from(GlobalStatus, "agent_connecting", lambda x: x != Status.RUNNING)
+
+    ui.button("Disconnect").on_click(maafw.disconnect_agent)
 
 
 async def on_click_agent() -> bool:

@@ -205,8 +205,16 @@ class MaaFW:
         return True, None
 
     @asyncify
+    def disconnect_agent(self) -> None:
+        if self.agent:
+            self.agent.disconnect()
+            self.agent = None
+
+    @asyncify
     def create_agent(self, identifier: Optional[str]) -> Tuple[bool, Optional[str]]:
-        self.agent = None  # del existing agent
+        if self.agent:
+            self.agent.disconnect()
+            self.agent = None
 
         if not self.resource:
             self.resource = Resource()
