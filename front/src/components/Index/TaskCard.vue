@@ -16,7 +16,7 @@
                         :search-input="{
                             placeholder: 'Filter...',
                             icon: 'i-lucide-search'
-                        }" class="flex-1 w-full" size="xl" value-key="value" :disabled="isRunning" />
+                        }" class="flex-1 w-full" size="xl" value-key="value" :disabled="isRunning" arrow />
                     <UTooltip text="Edit task override">
                         <UButton color="neutral" variant="outline" icon="i-lucide-file-edit" label="Edit Override"
                             @click="onEditOverride" />

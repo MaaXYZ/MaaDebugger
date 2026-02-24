@@ -5,14 +5,12 @@
                 <div class="flex flex-row items-center justify-between gap-4">
                     <span class="font-bold">Resource</span>
                     <div class="flex flex-row items-center gap-2">
-                        <USelect v-model="activeProfileId" :items="profileSelectItems" class="w-32" size="xl" />
+                        <USelect v-model="activeProfileId" :items="profileSelectItems" class="w-32" size="xl" arrow />
                         <UDropdownMenu :items="profileMenuItems">
                             <UButton color="neutral" variant="ghost" icon="i-lucide-ellipsis-vertical" size="xs" />
                         </UDropdownMenu>
-                        <UButton variant="outline" color="neutral"
-                            trailing-icon="i-lucide-chevron-down"
-                            :data-state="showFullCard ? 'open' : 'closed'"
-                            @click="showFullCard = !showFullCard" />
+                        <UButton variant="outline" color="neutral" trailing-icon="i-lucide-chevron-down"
+                            :data-state="showFullCard ? 'open' : 'closed'" @click="showFullCard = !showFullCard" />
                     </div>
                 </div>
                 <div v-show="!showFullCard" class="text-sm text-dimmed">
