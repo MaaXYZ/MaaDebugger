@@ -5,7 +5,7 @@ import Index from '@/router/Index.vue';
 <template>
   <UApp :toaster="{ position: 'button-right', progress: false, duration: 8000 }">
     <UMain>
-      <UHeader title="MaaDebugger" :ui="{ container: '!px-4 sm:!px-4 lg:!px-0', toggle: 'hidden' }">
+      <UHeader title="MaaDebugger" :ui="{ toggle: 'hidden' }">
         <template #right>
           <UColorModeButton />
 

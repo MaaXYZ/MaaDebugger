@@ -29,18 +29,26 @@
             <div class="flex flex-row gap-2">
                 <!-- Start / Stop Button -->
                 <UButton v-if="!isRunning" color="success" variant="soft" icon="i-lucide-play" label="Start" block
-                    :disabled="!selectedEntry" @click="onStart" />
-                <UButton v-else color="error" variant="soft" icon="i-lucide-square" label="Stop" block
-                    @click="onStop" />
+                    :disabled="!selectedEntry" @click="onStart">
+                    <template v-if="startStopKeys.length" #trailing>
+                        <UKbd v-for="k in startStopKeys" :key="k" :value="k" />
+                    </template>
+                </UButton>
+                <UButton v-else color="error" variant="soft" icon="i-lucide-square" label="Stop" block @click="onStop">
+                    <template v-if="startStopKeys.length" #trailing>
+                        <UKbd v-for="k in startStopKeys" :key="k" :value="k" />
+                    </template>
+                </UButton>
             </div>
         </template>
     </UCard>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import TaskStatusBadge from './task/TaskStatusBadge.vue'
 import type { TaskStatus } from './task/types'
+import { useShortcutsStore, formatShortcut } from '@/stores/shortcuts'
 
 // --- Types ---
 interface TaskEntry {
@@ -49,6 +57,7 @@ interface TaskEntry {
 }
 
 // --- State ---
+const shortcutsStore = useShortcutsStore()
 const entries = ref<TaskEntry[]>([])
 const selectedEntry = ref<string>('')
 const taskStatus = ref<TaskStatus>('idle')
@@ -65,6 +74,8 @@ const isRunning = computed(() => {
     return taskStatus.value === 'running'
 })
 
+const startStopKeys = computed(() => formatShortcut(shortcutsStore.getBinding('task.startStop')))
+
 // --- Actions ---
 function onStart() {
     if (!selectedEntry.value) return
@@ -79,6 +90,31 @@ function onStop() {
 function onEditOverride() {
     // TODO: Open editor for task override
 }
+
+// --- Keyboard Shortcut ---
+function onKeydown(e: KeyboardEvent) {
+    // Ignore if typing in an input/textarea/select
+    const tag = (e.target as HTMLElement)?.tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+    if ((e.target as HTMLElement)?.isContentEditable) return
+
+    if (shortcutsStore.matches(e, 'task.startStop')) {
+        e.preventDefault()
+        if (isRunning.value) {
+            onStop()
+        } else {
+            onStart()
+        }
+    }
+}
+
+onMounted(() => {
+    window.addEventListener('keydown', onKeydown)
+})
+
+onUnmounted(() => {
+    window.removeEventListener('keydown', onKeydown)
+})
 
 // --- Public API ---
 function getSelectedEntry() {
