@@ -70,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import { detectAdbDevices, connectController, disconnectController } from '@/api/http'
 import type { AdbDeviceInfo, ConnectControllerRequest } from '@shared/types/api'
 import { useControllerStore, DEFAULT_SCREENCAP_METHOD, DEFAULT_INPUT_METHOD } from '@/stores/controller'
@@ -90,7 +90,11 @@ const controllerStore = useControllerStore()
 
 const selectedDevice = ref<string>(controllerStore.selectedAdbDevice)
 const detecting = ref(false)
-const connecting = ref(false)
+// connecting 使用 store 中的全局状态，以便 TaskCard 等组件检查
+const connecting = computed({
+    get: () => controllerStore.connecting,
+    set: (v: boolean) => { controllerStore.connecting = v },
+})
 
 watch(selectedDevice, (value) => {
     controllerStore.selectedAdbDevice = value

@@ -9,8 +9,7 @@
                     </div>
                     <div class="flex flex-row items-center gap-2">
                         <USelect v-model="controllerValue" value-key="value" :items="controllerItems"
-                            :icon="controllerIcon" class="min-w-40" size="xl" arrow
-                            :disabled="statusStore.controllerStatus !== 'disconnected'" />
+                            :icon="controllerIcon" class="min-w-40" size="xl" arrow />
                         <UButton variant="outline" color="neutral" trailing-icon="i-lucide-chevron-down"
                             :data-state="showFullCard ? 'open' : 'closed'" @click="showFullCard = !showFullCard" />
                     </div>
@@ -38,6 +37,7 @@ import Win32 from './controller/Win32.vue'
 import Gamepad from './controller/Gamepad.vue'
 import { useStatusStore } from '@/stores/status'
 import { useControllerStore } from '@/stores/controller'
+import { disconnectController } from '@/api/http'
 
 const statusStore = useStatusStore()
 const controllerStore = useControllerStore()
@@ -72,8 +72,14 @@ const controllerItems: ControllerItem[] = [
 // 双向同步 store.controllerType ↔ controllerValue
 const controllerValue = ref<string>(controllerStore.controllerType)
 
-watch(controllerValue, (v) => {
+watch(controllerValue, (v, oldV) => {
     controllerStore.controllerType = v
+    // 切换控制器类型时，如果当前已连接则自动断连
+    if (oldV && v !== oldV && statusStore.controllerStatus !== 'disconnected') {
+        disconnectController().catch((err) => {
+            console.error('[Controller] Auto-disconnect on type switch failed:', err)
+        })
+    }
 })
 watch(
     () => controllerStore.controllerType,

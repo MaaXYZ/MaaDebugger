@@ -23,6 +23,9 @@ export const useControllerStore = defineStore(
     // 控制器类型
     const controllerType = ref("adb");
 
+    // 连接中状态（瞬态，不持久化，但全局可访问）
+    const connecting = ref(false);
+
     function updateAdbConfig(config: {
       adb_path: string;
       adb_address: string;
@@ -47,6 +50,7 @@ export const useControllerStore = defineStore(
       adbConfig,
       selectedAdbDevice,
       controllerType,
+      connecting,
       updateAdbConfig,
     };
   },
