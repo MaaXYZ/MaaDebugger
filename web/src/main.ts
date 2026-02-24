@@ -3,6 +3,7 @@ import { createPinia } from "pinia";
 import { createRouter, createWebHistory } from "vue-router";
 import ui from "@nuxt/ui/vue-plugin";
 import App from "./App.vue";
+import { serverPersistPlugin } from "./stores/persist";
 import "./style.css";
 
 const router = createRouter({
@@ -15,6 +16,7 @@ const router = createRouter({
   history: createWebHistory(),
 });
 const pinia = createPinia();
+pinia.use(serverPersistPlugin);
 
 const app = createApp(App);
 

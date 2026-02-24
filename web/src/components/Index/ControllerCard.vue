@@ -3,43 +3,56 @@
         <template #header>
             <div class="flex flex-col gap-2">
                 <div class="flex flex-row items-center justify-between gap-4">
-                    <span class="font-bold">Controller</span>
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold">Controller</span>
+                        <UBadge :color="statusColor" :label="statusStore.controllerStatus" variant="subtle" size="sm" />
+                    </div>
                     <div class="flex flex-row items-center gap-2">
                         <USelect v-model="controllerValue" value-key="value" :items="controllerItems"
-                            :icon="controllerIcon" class="min-w-40" size="xl" arrow />
-                        <UButton variant="outline" color="neutral"
-                            trailing-icon="i-lucide-chevron-down"
-                            :data-state="showFullCard ? 'open' : 'closed'"
-                            @click="showFullCard = !showFullCard" />
+                            :icon="controllerIcon" class="min-w-40" size="xl" arrow
+                            :disabled="statusStore.controllerStatus !== 'disconnected'" />
+                        <UButton variant="outline" color="neutral" trailing-icon="i-lucide-chevron-down"
+                            :data-state="showFullCard ? 'open' : 'closed'" @click="showFullCard = !showFullCard" />
                     </div>
                 </div>
                 <div v-show="!showFullCard" class="text-sm text-dimmed">
-                    {{ controllerLabel }}
+                    {{ summaryText }}
                 </div>
             </div>
         </template>
 
         <template #default>
-            <UCollapsible :open="showFullCard">
-                <template #content>
-                    <div class="p-4 sm:p-6 min-h-36">
-                        <ADB v-if="controllerValue === 'adb'" />
-                        <Win32 v-else-if="controllerValue === 'win32'" />
-                        <Gamepad v-else-if="controllerValue === 'gamepad'" />
-                    </div>
-                </template>
-            </UCollapsible>
+            <div v-show="showFullCard" class="p-4 sm:p-6 min-h-36">
+                <ADB v-show="controllerValue === 'adb'" ref="adbRef" />
+                <Win32 v-show="controllerValue === 'win32'" />
+                <Gamepad v-show="controllerValue === 'gamepad'" />
+            </div>
         </template>
     </UCard>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, type ComponentPublicInstance } from 'vue'
 import ADB from './controller/ADB.vue'
 import Win32 from './controller/Win32.vue'
 import Gamepad from './controller/Gamepad.vue'
+import { useStatusStore } from '@/stores/status'
 
+const statusStore = useStatusStore()
 const showFullCard = ref(true)
+const adbRef = ref<InstanceType<typeof ADB> | null>(null)
+
+const statusColor = computed(() => {
+    switch (statusStore.controllerStatus) {
+        case 'connected':
+            return 'success' as const
+        case 'connecting':
+            return 'warning' as const
+        case 'disconnected':
+        default:
+            return 'neutral' as const
+    }
+})
 
 interface ControllerItem {
     label: string
@@ -76,4 +89,14 @@ const controllerIcon = computed<string>(
 const controllerLabel = computed<string>(
     () => controllerItems.value.find((item) => item.value === controllerValue.value)?.label ?? 'ADB'
 )
+
+/**
+ * 折叠时显示的摘要文本：选中设备的 name (address)
+ */
+const summaryText = computed(() => {
+    if (controllerValue.value === 'adb' && adbRef.value?.selectedDevice) {
+        return adbRef.value.selectedDevice
+    }
+    return controllerLabel.value
+})
 </script>

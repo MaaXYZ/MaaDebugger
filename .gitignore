@@ -30,3 +30,9 @@ components.d.ts
 
 # LLM
 plans/*
+
+maa-js/*
+maa-py/*
+
+# Config persistence
+.maa-debugger/

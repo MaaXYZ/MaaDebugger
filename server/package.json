@@ -1,0 +1,22 @@
+{
+  "name": "maa-debugger-server",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.1",
+    "hono": "^4.7.5",
+    "ws": "^8.18.2"
+  },
+  "devDependencies": {
+    "@maaxyz/maa-node": "^5.7.1",
+    "@types/node": "^24.10.1",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.19.4",
+    "typescript": "~5.9.3"
+  }
+}

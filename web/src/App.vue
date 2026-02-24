@@ -1,5 +1,30 @@
 <script setup lang="ts">
-import Index from '@/router/Index.vue';
+import { onMounted, onUnmounted } from 'vue'
+import Index from '@/router/Index.vue'
+import { wsClient } from '@/api/ws'
+import { getStatusSnapshot } from '@/api/http'
+import { useStatusStore } from '@/stores/status'
+
+const statusStore = useStatusStore()
+
+onMounted(async () => {
+  // 先获取一次当前状态快照
+  const snapshot = await getStatusSnapshot()
+  if (snapshot) {
+    statusStore.updateStatus(snapshot)
+  }
+
+  // 启动 WebSocket 连接，后续状态通过 WS 实时更新
+  wsClient.connect({
+    onStatusUpdate(status) {
+      statusStore.updateStatus(status)
+    },
+  })
+})
+
+onUnmounted(() => {
+  wsClient.disconnect()
+})
 </script>
 
 <template>

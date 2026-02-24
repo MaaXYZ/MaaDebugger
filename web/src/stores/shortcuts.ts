@@ -108,72 +108,77 @@ export function eventToShortcut(event: KeyboardEvent): string | null {
   return parts.join("+");
 }
 
-export const useShortcutsStore = defineStore("shortcuts", () => {
-  // Initialize shortcuts from defaults
-  const shortcuts = ref<Record<ShortcutAction, ShortcutDef>>(
-    Object.fromEntries(
-      Object.entries(DEFAULT_SHORTCUTS).map(([action, def]) => [
-        action,
-        { ...def, binding: def.defaultBinding },
-      ]),
-    ) as Record<ShortcutAction, ShortcutDef>,
-  );
+export const useShortcutsStore = defineStore(
+  "shortcuts",
+  () => {
+    // Initialize shortcuts from defaults
+    const shortcuts = ref<Record<ShortcutAction, ShortcutDef>>(
+      Object.fromEntries(
+        Object.entries(DEFAULT_SHORTCUTS).map(([action, def]) => [
+          action,
+          { ...def, binding: def.defaultBinding },
+        ]),
+      ) as Record<ShortcutAction, ShortcutDef>,
+    );
 
-  /** Get the current binding for an action */
-  function getBinding(action: ShortcutAction): ShortcutBinding {
-    return shortcuts.value[action]?.binding ?? null;
-  }
-
-  /** Get shortcut definition for an action */
-  function getShortcut(action: ShortcutAction): ShortcutDef | undefined {
-    return shortcuts.value[action];
-  }
-
-  /** Set a new binding for an action. Pass `null` to unbind. */
-  function setBinding(action: ShortcutAction, binding: ShortcutBinding) {
-    if (shortcuts.value[action]) {
-      shortcuts.value[action].binding = binding;
+    /** Get the current binding for an action */
+    function getBinding(action: ShortcutAction): ShortcutBinding {
+      return shortcuts.value[action]?.binding ?? null;
     }
-  }
 
-  /** Reset a single action to its default binding */
-  function resetBinding(action: ShortcutAction) {
-    const def = DEFAULT_SHORTCUTS[action];
-    if (def && shortcuts.value[action]) {
-      shortcuts.value[action].binding = def.defaultBinding;
+    /** Get shortcut definition for an action */
+    function getShortcut(action: ShortcutAction): ShortcutDef | undefined {
+      return shortcuts.value[action];
     }
-  }
 
-  /** Reset all shortcuts to defaults */
-  function resetAll() {
-    for (const [action, def] of Object.entries(DEFAULT_SHORTCUTS)) {
-      if (shortcuts.value[action as ShortcutAction]) {
-        shortcuts.value[action as ShortcutAction].binding = def.defaultBinding;
+    /** Set a new binding for an action. Pass `null` to unbind. */
+    function setBinding(action: ShortcutAction, binding: ShortcutBinding) {
+      if (shortcuts.value[action]) {
+        shortcuts.value[action].binding = binding;
       }
     }
-  }
 
-  /** All shortcut actions as a list */
-  const allShortcuts = computed(() => {
-    return Object.entries(shortcuts.value).map(([action, def]) => ({
-      action: action as ShortcutAction,
-      ...def,
-    }));
-  });
+    /** Reset a single action to its default binding */
+    function resetBinding(action: ShortcutAction) {
+      const def = DEFAULT_SHORTCUTS[action];
+      if (def && shortcuts.value[action]) {
+        shortcuts.value[action].binding = def.defaultBinding;
+      }
+    }
 
-  /** Check if an event matches a given action's binding */
-  function matches(event: KeyboardEvent, action: ShortcutAction): boolean {
-    return matchesShortcut(event, getBinding(action));
-  }
+    /** Reset all shortcuts to defaults */
+    function resetAll() {
+      for (const [action, def] of Object.entries(DEFAULT_SHORTCUTS)) {
+        if (shortcuts.value[action as ShortcutAction]) {
+          shortcuts.value[action as ShortcutAction].binding =
+            def.defaultBinding;
+        }
+      }
+    }
 
-  return {
-    shortcuts,
-    getBinding,
-    getShortcut,
-    setBinding,
-    resetBinding,
-    resetAll,
-    allShortcuts,
-    matches,
-  };
-});
+    /** All shortcut actions as a list */
+    const allShortcuts = computed(() => {
+      return Object.entries(shortcuts.value).map(([action, def]) => ({
+        action: action as ShortcutAction,
+        ...def,
+      }));
+    });
+
+    /** Check if an event matches a given action's binding */
+    function matches(event: KeyboardEvent, action: ShortcutAction): boolean {
+      return matchesShortcut(event, getBinding(action));
+    }
+
+    return {
+      shortcuts,
+      getBinding,
+      getShortcut,
+      setBinding,
+      resetBinding,
+      resetAll,
+      allShortcuts,
+      matches,
+    };
+  },
+  { persist: true },
+);

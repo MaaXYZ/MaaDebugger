@@ -5,7 +5,8 @@
                 <div class="flex flex-row items-center justify-between gap-4">
                     <span class="font-bold">Resource</span>
                     <div class="flex flex-row items-center gap-2">
-                        <USelect v-model="activeProfileId" :items="profileSelectItems" class="w-32" size="xl" arrow />
+                        <USelect v-model="resourceStore.activeProfileId" :items="resourceStore.profileSelectItems"
+                            class="w-32" size="xl" arrow />
                         <UDropdownMenu :items="profileMenuItems">
                             <UButton color="neutral" variant="ghost" icon="i-lucide-ellipsis-vertical" size="xs" />
                         </UDropdownMenu>
@@ -14,81 +15,70 @@
                     </div>
                 </div>
                 <div v-show="!showFullCard" class="text-sm text-dimmed">
-                    {{ activeProfile.name }} · {{ activePaths.length }} paths
+                    {{ resourceStore.activeProfile.name }} · {{ resourceStore.activePaths.length }} paths
                 </div>
             </div>
         </template>
 
         <template #default>
-            <UCollapsible :open="showFullCard">
-                <template #content>
-                    <div class="p-4 sm:p-6">
-                        <div class="resource-list flex flex-col gap-2 min-h-12"
-                            :class="activePaths.length > 3 ? 'max-h-48 overflow-y-auto pr-2' : ''">
-                            <div v-if="activePaths.length === 0"
-                                class="flex flex-row items-center justify-center rounded-lg border border-dashed border-default p-2 text-dimmed gap-2">
-                                <UIcon name="i-lucide-folder-open" class="size-5" />
-                                <span class="text-sm">No resource paths added</span>
+            <div v-show="showFullCard" class="p-4 sm:p-6">
+                <div class="resource-list flex flex-col gap-2 min-h-12"
+                    :class="resourceStore.activePaths.length > 3 ? 'max-h-48 overflow-y-auto pr-2' : ''">
+                    <div v-if="resourceStore.activePaths.length === 0"
+                        class="flex flex-row items-center justify-center rounded-lg border border-dashed border-default p-2 text-dimmed gap-2">
+                        <UIcon name="i-lucide-folder-open" class="size-5" />
+                        <span class="text-sm">No resource paths added</span>
+                    </div>
+
+                    <div v-for="(item, index) in resourceStore.activePaths" :key="item.id"
+                        class="group flex flex-row items-center gap-2 rounded-lg border border-default p-2 transition-colors hover:bg-elevated"
+                        :class="{ 'opacity-50': !item.enabled }" :draggable="resourceStore.activePaths.length > 1"
+                        @dragstart="onDragStart(index)" @dragover.prevent="onDragOver(index)" @dragend="onDragEnd">
+
+                        <!-- Enable/Disable Checkbox -->
+                        <UCheckbox v-model="item.enabled" />
+
+                        <!-- Drag Handle -->
+                        <div v-if="resourceStore.activePaths.length > 1"
+                            class="cursor-grab text-dimmed hover:text-default active:cursor-grabbing">
+                            <UIcon name="i-lucide-grip-vertical" class="size-5" />
+                        </div>
+
+                        <!-- Path Input -->
+                        <UInput v-if="editingIndex === index" v-model="item.path" placeholder="/path/to/resource"
+                            class="flex-1" size="xl" autofocus @keydown.enter="onFinishEdit(index)"
+                            @blur="onFinishEdit(index)" />
+
+                        <!-- Path Display -->
+                        <UTooltip v-else :text="item.path" :disabled="!item.path">
+                            <div class="flex-1 flex items-center gap-2 min-w-0 cursor-pointer" @click="onEdit(index)">
+                                <span class="truncate text-xl" :class="item.path ? '' : 'text-dimmed italic'">
+                                    {{ item.path || 'Click to edit path...' }}
+                                </span>
                             </div>
+                        </UTooltip>
 
-                            <div v-for="(item, index) in activePaths" :key="item.id"
-                                class="group flex flex-row items-center gap-2 rounded-lg border border-default p-2 transition-colors hover:bg-elevated"
-                                :class="{ 'opacity-50': !item.enabled }" :draggable="activePaths.length > 1"
-                                @dragstart="onDragStart(index)" @dragover.prevent="onDragOver(index)"
-                                @dragend="onDragEnd">
-
-                                <!-- Enable/Disable Checkbox -->
-                                <UCheckbox v-model="item.enabled" />
-
-                                <!-- Drag Handle -->
-                                <div v-if="activePaths.length > 1"
-                                    class="cursor-grab text-dimmed hover:text-default active:cursor-grabbing">
-                                    <UIcon name="i-lucide-grip-vertical" class="size-5" />
-                                </div>
-
-                                <!-- Path Input -->
-                                <UInput v-if="item.editing" v-model="item.path" placeholder="/path/to/resource"
-                                    class="flex-1" size="xl" autofocus @keydown.enter="onFinishEdit(index)"
-                                    @blur="onFinishEdit(index)" />
-
-                                <!-- Path Display -->
-                                <UTooltip v-else :text="item.path" :disabled="!item.path">
-                                    <div class="flex-1 flex items-center gap-2 min-w-0 cursor-pointer"
-                                        @click="onEdit(index)">
-                                        <span class="truncate text-xl" :class="item.path ? '' : 'text-dimmed italic'">
-                                            {{ item.path || 'Click to edit path...' }}
-                                        </span>
-                                    </div>
-                                </UTooltip>
-
-                                <!-- Action Buttons -->
-                                <div
-                                    class="flex flex-row gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <UTooltip text="Edit">
-                                        <UButton color="neutral" variant="ghost" icon="i-lucide-square-pen" size="xs"
-                                            @click="onEdit(index)" />
-                                    </UTooltip>
-                                    <UTooltip text="Remove">
-                                        <UButton color="error" variant="ghost" icon="i-lucide-trash-2" size="xs"
-                                            @click="onRemove(index)" />
-                                    </UTooltip>
-                                </div>
-                            </div>
+                        <!-- Action Buttons -->
+                        <div class="flex flex-row gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <UTooltip text="Edit">
+                                <UButton color="neutral" variant="ghost" icon="i-lucide-square-pen" size="xs"
+                                    @click="onEdit(index)" />
+                            </UTooltip>
+                            <UTooltip text="Remove">
+                                <UButton color="error" variant="ghost" icon="i-lucide-trash-2" size="xs"
+                                    @click="resourceStore.removePath(index)" />
+                            </UTooltip>
                         </div>
                     </div>
-                </template>
-            </UCollapsible>
+                </div>
+            </div>
         </template>
 
         <template #footer>
-            <UCollapsible :open="showFullCard" :ui="{ content: 'w-full' }" class="w-full">
-                <template #content>
-                    <div class="p-2 sm:p-4">
-                        <UButton color="neutral" variant="ghost" icon="i-lucide-plus" label="Add path" block
-                            @click="onAddPath" />
-                    </div>
-                </template>
-            </UCollapsible>
+            <div v-show="showFullCard" class="p-2 sm:p-4">
+                <UButton color="neutral" variant="ghost" icon="i-lucide-plus" label="Add path" block
+                    @click="onAddPath" />
+            </div>
         </template>
     </UCard>
 
@@ -108,53 +98,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
+import { useResourceStore } from '@/stores/resource'
 
-// --- Types ---
-interface PathItem {
-    id: number
-    path: string
-    enabled: boolean
-    editing: boolean
-}
+const resourceStore = useResourceStore()
 
-interface Profile {
-    id: number
-    name: string
-    paths: PathItem[]
-}
-
-// --- State ---
+// --- UI State (not persisted) ---
 const showFullCard = ref(true)
-let nextId = 0
-let nextProfileId = 0
+const editingIndex = ref<number | null>(null)
 
-const profiles = ref<Profile[]>([
-    { id: nextProfileId++, name: 'Default', paths: [] }
-])
-
-const activeProfileId = ref<number>(profiles.value[0]!.id)
-
-// --- Computed ---
-const activeProfile = computed(() => {
-    return profiles.value.find(p => p.id === activeProfileId.value) ?? profiles.value[0]!
-})
-
-const activePaths = computed({
-    get: () => activeProfile.value.paths,
-    set: (val) => { activeProfile.value.paths = val }
-})
-
-const profileSelectItems = computed(() => {
-    return profiles.value.map(p => ({
-        label: p.name,
-        value: p.id
-    }))
-})
-
-const profileMenuItems = computed(() => [
+// --- Profile Menu ---
+const profileMenuItems = [
     [
-        { label: 'New profile', icon: 'i-lucide-plus', onSelect: onAddProfile },
+        { label: 'New profile', icon: 'i-lucide-plus', onSelect: () => resourceStore.addProfile() },
         { label: 'Rename profile', icon: 'i-lucide-pencil', onSelect: onRenameProfile },
     ],
     [
@@ -162,11 +118,11 @@ const profileMenuItems = computed(() => [
             label: 'Delete profile',
             icon: 'i-lucide-trash-2',
             color: 'error' as const,
-            disabled: profiles.value.length <= 1,
-            onSelect: onDeleteProfile,
+            disabled: resourceStore.profiles.length <= 1,
+            onSelect: () => resourceStore.deleteProfile(),
         },
     ],
-])
+]
 
 // --- Drag & Drop ---
 const dragIndex = ref<number | null>(null)
@@ -177,11 +133,7 @@ function onDragStart(index: number) {
 
 function onDragOver(index: number) {
     if (dragIndex.value === null || dragIndex.value === index) return
-    const items = [...activePaths.value]
-    const dragged = items.splice(dragIndex.value, 1)[0]
-    if (!dragged) return
-    items.splice(index, 0, dragged)
-    activePaths.value = items
+    resourceStore.reorderPaths(dragIndex.value, index)
     dragIndex.value = index
 }
 
@@ -191,101 +143,36 @@ function onDragEnd() {
 
 // --- Path Actions ---
 function onAddPath() {
-    activePaths.value.push({
-        id: nextId++,
-        path: '',
-        enabled: true,
-        editing: true,
-    })
+    resourceStore.addPath()
+    editingIndex.value = resourceStore.activePaths.length - 1
 }
 
 function onEdit(index: number) {
-    const item = activePaths.value[index]
-    if (item) {
-        item.editing = true
-    }
+    editingIndex.value = index
 }
 
 function onFinishEdit(index: number) {
-    const item = activePaths.value[index]
-    if (!item) return
-    item.editing = false
-    // Remove empty paths automatically to keep list clean
-    if (!item.path.trim()) {
-        activePaths.value.splice(index, 1)
+    editingIndex.value = null
+    // Remove empty paths automatically
+    const item = resourceStore.activePaths[index]
+    if (item && !item.path.trim()) {
+        resourceStore.removePath(index)
     }
-}
-
-function onRemove(index: number) {
-    activePaths.value.splice(index, 1)
-}
-
-// --- Profile Actions ---
-function onAddProfile() {
-    const newProfile: Profile = {
-        id: nextProfileId++,
-        name: `Profile ${profiles.value.length + 1}`,
-        paths: []
-    }
-    profiles.value.push(newProfile)
-    activeProfileId.value = newProfile.id
-}
-
-function onDeleteProfile() {
-    if (profiles.value.length <= 1) return
-    const idx = profiles.value.findIndex(p => p.id === activeProfileId.value)
-    if (idx === -1) return
-    profiles.value.splice(idx, 1)
-    activeProfileId.value = profiles.value[0]!.id
-}
-
-function onRenameProfile() {
-    renameInput.value = activeProfile.value.name
-    renameModalOpen.value = true
 }
 
 // --- Rename Modal ---
 const renameModalOpen = ref(false)
 const renameInput = ref('')
 
+function onRenameProfile() {
+    renameInput.value = resourceStore.activeProfile.name
+    renameModalOpen.value = true
+}
+
 function onConfirmRename() {
-    if (renameInput.value.trim()) {
-        activeProfile.value.name = renameInput.value.trim()
-    }
+    resourceStore.renameProfile(renameInput.value)
     renameModalOpen.value = false
 }
-
-// --- Public API ---
-
-/**
- * Get the list of enabled resource paths for the active profile.
- */
-function getPaths(): string[] {
-    return activePaths.value
-        .filter(item => item.enabled && item.path)
-        .map(item => item.path)
-}
-
-/**
- * Set the list of resource paths for the active profile from backend data.
- */
-function setPaths(newPaths: string[]) {
-    activePaths.value = newPaths.map((p) => ({
-        id: nextId++,
-        path: p,
-        enabled: true,
-        editing: false,
-    }))
-}
-
-// Expose for parent component
-defineExpose({
-    paths: activePaths,
-    profiles,
-    activeProfileId,
-    getPaths,
-    setPaths,
-})
 </script>
 
 <style scoped>
