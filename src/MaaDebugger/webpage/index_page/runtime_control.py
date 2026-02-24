@@ -178,6 +178,7 @@ class RecognitionRow:
         self._recognition_stack.clear()
         self._reco_node_depth = 0
         self._reco_id_map.clear()
+        self._current_reco_index = 0
 
         self.homepage_row.clear()
         self.other_page_row.clear()
