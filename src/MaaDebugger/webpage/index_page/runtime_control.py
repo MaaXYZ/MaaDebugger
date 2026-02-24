@@ -95,6 +95,8 @@ class RecognitionRow:
         self._reco_node_depth: int = 0
         # 追踪所有通过 reco_id 索引的识别项
         self._reco_id_map: Dict[int, ItemData] = {}
+        # 追踪当前 NextList 中已处理的 Recognition 索引（按顺序分配）
+        self._current_reco_index: int = 0
 
         self.register_sink()
 
@@ -387,6 +389,7 @@ class RecognitionRow:
         """
         处理 Recognition.Starting 事件
         如果在嵌套模式下（_reco_node_depth > 0），将识别项添加为父项的子项
+        否则，按顺序索引将 reco_id 绑定到当前 NextList 对应的 ItemData 上
         """
         if self._reco_node_depth > 0 and len(self._recognition_stack) > 0:
             # 嵌套识别：添加到栈顶父项的嵌套容器中
@@ -411,10 +414,24 @@ class RecognitionRow:
                 with parent.nested_container:
                     self._create_nested_item(nested_item)
         else:
-            # 非嵌套：这是一个顶层识别，将其压入栈中等待匹配
-            # 实际的 ItemData 在 NextList.Starting 时已经创建
-            # 这里只是记录 reco_id 以便后续匹配
-            pass
+            # 非嵌套：按顺序索引将 reco_id 绑定到当前 row 的对应 ItemData
+            index = self._current_reco_index
+            row_data = self.data.get(self.row_len, {})
+            if index in row_data:
+                item = row_data[index]
+                item.reco_id = reco_id
+                self._reco_id_map[reco_id] = item
+                # 压入栈中作为潜在的父项（用于嵌套）
+                self._recognition_stack.append(item)
+                if debug_mode:
+                    print(
+                        f"[DEBUG] Recognition.Starting: bound reco_id={reco_id} to item index={index}, name={item.name}"
+                    )
+            elif debug_mode:
+                print(
+                    f"[DEBUG] Recognition.Starting: no item at index={index} in row={self.row_len}, reco_id={reco_id}"
+                )
+            self._current_reco_index += 1
 
     def _create_nested_item(self, data: ItemData):
         """创建嵌套的识别项 UI"""
@@ -432,55 +449,22 @@ class RecognitionRow:
 
     def _on_recognized(self, reco_id: int, name: str, hit: bool):
         """处理识别完成事件"""
-        found = False
         matched_item: Optional[ItemData] = None
 
-        # 首先通过 reco_id 直接查找（嵌套项在 Starting 时就已设置 reco_id）
+        # 通过 reco_id 直接查找（在 Recognition.Starting 阶段已绑定）
         if reco_id in self._reco_id_map:
             matched_item = self._reco_id_map[reco_id]
             matched_item.status = Status.SUCCEEDED if hit else Status.FAILED
-            found = True
             # 从栈中弹出已完成的识别项
             if (
                 len(self._recognition_stack) > 0
                 and self._recognition_stack[-1] is matched_item
             ):
                 self._recognition_stack.pop()
-
-        # 如果通过 reco_id 没找到，检查当前 row（非嵌套项）
-        if not found:
-            for item in self.data[self.row_len].values():
-                if item.status != Status.PENDING:
-                    continue
-                name_matched = item.name == name
-                anchor_matched = item.is_anchor and item.anchor_target == name
-                if name_matched or anchor_matched:
-                    item.reco_id = reco_id
-                    item.status = Status.SUCCEEDED if hit else Status.FAILED
-                    matched_item = item
-                    self._reco_id_map[reco_id] = item
-                    found = True
-                    # 压入栈中作为潜在的父项
-                    self._recognition_stack.append(item)
-                    break
-
-        # 如果还没找到，遍历所有 row
-        if not found:
-            for row_data in self.data.values():
-                for item in row_data.values():
-                    if item.status != Status.PENDING:
-                        continue
-                    name_matched = item.name == name
-                    anchor_matched = item.is_anchor and item.anchor_target == name
-                    if name_matched or anchor_matched:
-                        item.reco_id = reco_id
-                        item.status = Status.SUCCEEDED if hit else Status.FAILED
-                        matched_item = item
-                        self._reco_id_map[reco_id] = item
-                        found = True
-                        break
-                if found:
-                    break
+        elif debug_mode:
+            print(
+                f"[DEBUG] _on_recognized: reco_id={reco_id} not found in _reco_id_map, name={name}"
+            )
 
         RecoData.data[reco_id] = name, hit, maafw.get_node_data(name)
 
@@ -517,6 +501,8 @@ class RecognitionRow:
     ):
         """处理 NextList 开始事件"""
         self.row_len += 1
+        # 重置当前 NextList 的 Recognition 索引计数器
+        self._current_reco_index = 0
 
         normalized_anchor_flags = anchor_flags or []
 
