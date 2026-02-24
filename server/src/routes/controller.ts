@@ -27,11 +27,12 @@ controllerRoutes.post("/connect", async (c) => {
   const body = await c.req.json();
 
   if (body.type === "adb") {
+    // 默认值：maa-node AdbScreencapMethod.Default / AdbInputMethod.Default
     const result = await maaService.connectAdb(
       body.adb_path ?? "",
       body.adb_address ?? "",
-      body.adb_screencap_method ?? "18446744073709551559",
-      body.adb_input_method ?? "18446744073709551607",
+      body.adb_screencap_method ?? maaService.DEFAULT_SCREENCAP_METHOD,
+      body.adb_input_method ?? maaService.DEFAULT_INPUT_METHOD,
       body.adb_config ?? "",
     );
     const response: ApiResponse = {

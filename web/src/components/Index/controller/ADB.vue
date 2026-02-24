@@ -72,16 +72,17 @@
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue'
 import { detectAdbDevices, connectController, disconnectController } from '@/api/http'
-import type { AdbDeviceInfo } from '@shared/types/api'
-import { useControllerStore } from '@/stores/controller'
+import type { AdbDeviceInfo, ConnectControllerRequest } from '@shared/types/api'
+import { useControllerStore, DEFAULT_SCREENCAP_METHOD, DEFAULT_INPUT_METHOD } from '@/stores/controller'
+
+/** maa-node All（Uint64 字符串） */
+const ALL_METHODS = '18446744073709551615'
 
 // --- Device Select ---
 interface DeviceItem {
     label: string
     value: string
 }
-
-
 
 const deviceItems = ref<DeviceItem[]>([])
 const deviceMap = ref<Record<string, AdbDeviceInfo>>({})
@@ -105,7 +106,7 @@ function ensureSelectedItemVisible(value: string) {
     deviceItems.value = [{ label: value, value }, ...deviceItems.value]
 }
 
-// 初始恢复持久化选中值时，先放入下拉选项，避免出现“已选中但列表 No data”
+// 初始恢复持久化选中值时，先放入下拉选项，避免出现"已选中但列表 No data"
 ensureSelectedItemVisible(selectedDevice.value)
 
 /**
@@ -132,9 +133,8 @@ async function onDetect() {
         } else {
             const matched = validDevices.find((d) => {
                 if (!controllerStore.adbAddress) return false
-                const sameAddress = d.address === controllerStore.adbAddress
-                const samePath = !controllerStore.adbPath || d.adb_path === controllerStore.adbPath
-                return sameAddress && samePath
+                return d.address === controllerStore.adbAddress
+                    && (!controllerStore.adbPath || d.adb_path === controllerStore.adbPath)
             })
 
             if (matched) {
@@ -156,55 +156,60 @@ async function onDetect() {
     }
 }
 
+// --- 连接核心逻辑 ---
+
 /**
- * 连接选中的 ADB 设备
+ * 内部统一连接函数，避免 onConnect / onConnectFromEdit 重复
+ */
+async function doConnect(params: ConnectControllerRequest): Promise<boolean> {
+    if (!params.adb_address) {
+        console.error('[ADB] Connect failed: adb_address is empty')
+        return false
+    }
+
+    connecting.value = true
+    try {
+        const result = await connectController(params)
+        if (!result.success) {
+            console.error('[ADB] Connect failed:', result.error)
+            return false
+        }
+
+        // 连接成功 → 持久化
+        controllerStore.selectedAdbDevice = selectedDevice.value
+        controllerStore.updateAdbConfig({
+            adb_path: params.adb_path ?? '',
+            adb_address: params.adb_address ?? '',
+            screencap_method: params.adb_screencap_method ?? DEFAULT_SCREENCAP_METHOD,
+            input_method: params.adb_input_method ?? DEFAULT_INPUT_METHOD,
+            adb_config: params.adb_config,
+        })
+        return true
+    } catch (err) {
+        console.error('[ADB] Connect failed:', err)
+        return false
+    } finally {
+        connecting.value = false
+    }
+}
+
+/**
+ * 连接选中的 ADB 设备（工具栏按钮）
  */
 async function onConnect() {
     if (!selectedDevice.value) return
 
     const device = deviceMap.value[selectedDevice.value]
 
-    // 恢复自持久化但当前未 detect 到设备时，允许直接用持久化配置连接
-    const adbPath = config.adb_path || device?.adb_path || controllerStore.adbPath
-    const adbAddress = config.adb_address || device?.address || controllerStore.adbAddress
-    const screencapMethod =
-        config.screencap_method || device?.screencap_methods || controllerStore.screencapMethod
-    const inputMethod =
-        config.input_method || device?.input_methods || controllerStore.inputMethod
-    const adbConfig = device?.config || controllerStore.adbConfig || ''
-
-    if (!adbAddress) {
-        console.error('[ADB] Connect failed: adb_address is empty')
-        return
-    }
-
-    connecting.value = true
-    try {
-        const result = await connectController({
-            type: 'adb',
-            adb_path: adbPath,
-            adb_address: adbAddress,
-            adb_screencap_method: screencapMethod,
-            adb_input_method: inputMethod,
-            adb_config: adbConfig,
-        })
-        if (!result.success) {
-            console.error('[ADB] Connect failed:', result.error)
-        } else {
-            controllerStore.selectedAdbDevice = selectedDevice.value
-            controllerStore.updateAdbConfig({
-                adb_path: adbPath,
-                adb_address: adbAddress,
-                screencap_method: screencapMethod,
-                input_method: inputMethod,
-                adb_config: adbConfig,
-            })
-        }
-    } catch (err) {
-        console.error('[ADB] Connect failed:', err)
-    } finally {
-        connecting.value = false
-    }
+    // 回退链：config（编辑值）→ device（已检测）→ store（持久化）
+    await doConnect({
+        type: 'adb',
+        adb_path: config.adb_path || device?.adb_path || controllerStore.adbPath,
+        adb_address: config.adb_address || device?.address || controllerStore.adbAddress,
+        adb_screencap_method: config.screencap_method || device?.screencap_methods || controllerStore.screencapMethod,
+        adb_input_method: config.input_method || device?.input_methods || controllerStore.inputMethod,
+        adb_config: device?.config || controllerStore.adbConfig || '',
+    })
 }
 
 /**
@@ -235,8 +240,8 @@ const editModalOpen = ref(false)
 
 // 与 maa-node AdbScreencapMethod / AdbInputMethod 常量保持一致
 const screencapMethods = [
-    { label: 'Default', value: '18446744073709551559' },
-    { label: 'All', value: '18446744073709551615' },
+    { label: 'Default', value: DEFAULT_SCREENCAP_METHOD },
+    { label: 'All', value: ALL_METHODS },
     { label: 'EncodeToFileAndPull', value: '1' },
     { label: 'Encode', value: '2' },
     { label: 'RawWithGzip', value: '4' },
@@ -247,19 +252,20 @@ const screencapMethods = [
 ]
 
 const inputMethods = [
-    { label: 'Default', value: '18446744073709551607' },
-    { label: 'All', value: '18446744073709551615' },
+    { label: 'Default', value: DEFAULT_INPUT_METHOD },
+    { label: 'All', value: ALL_METHODS },
     { label: 'AdbShell', value: '1' },
     { label: 'MinitouchAndAdbKey', value: '2' },
     { label: 'Maatouch', value: '4' },
     { label: 'EmulatorExtras', value: '8' },
 ]
 
+// 编辑弹窗的本地状态，watch immediate 会从 store 同步初始值
 const config = reactive({
-    adb_path: controllerStore.adbPath,
-    adb_address: controllerStore.adbAddress,
-    screencap_method: controllerStore.screencapMethod,
-    input_method: controllerStore.inputMethod,
+    adb_path: '',
+    adb_address: '',
+    screencap_method: DEFAULT_SCREENCAP_METHOD,
+    input_method: DEFAULT_INPUT_METHOD,
 })
 
 // 持久化异步恢复后，同步到本地 UI 状态
@@ -273,8 +279,8 @@ watch(
     ([adbPath, adbAddress, screencapMethod, inputMethod]) => {
         config.adb_path = adbPath ?? ''
         config.adb_address = adbAddress ?? ''
-        config.screencap_method = screencapMethod ?? '18446744073709551559'
-        config.input_method = inputMethod ?? '18446744073709551607'
+        config.screencap_method = screencapMethod ?? DEFAULT_SCREENCAP_METHOD
+        config.input_method = inputMethod ?? DEFAULT_INPUT_METHOD
     },
     { immediate: true },
 )
@@ -309,33 +315,16 @@ function onOpenEdit() {
  * 从编辑弹窗连接 ADB，使用 config 中的手动配置值
  */
 async function onConnectFromEdit() {
-    connecting.value = true
-    try {
-        const result = await connectController({
-            type: 'adb',
-            adb_path: config.adb_path,
-            adb_address: config.adb_address,
-            adb_screencap_method: config.screencap_method,
-            adb_input_method: config.input_method,
-            adb_config: '',
-        })
-        if (!result.success) {
-            console.error('[ADB] Connect failed:', result.error)
-        } else {
-            controllerStore.updateAdbConfig({
-                adb_path: config.adb_path,
-                adb_address: config.adb_address,
-                screencap_method: config.screencap_method,
-                input_method: config.input_method,
-                adb_config: '',
-            })
-            controllerStore.selectedAdbDevice = selectedDevice.value
-            editModalOpen.value = false
-        }
-    } catch (err) {
-        console.error('[ADB] Connect failed:', err)
-    } finally {
-        connecting.value = false
+    const ok = await doConnect({
+        type: 'adb',
+        adb_path: config.adb_path,
+        adb_address: config.adb_address,
+        adb_screencap_method: config.screencap_method,
+        adb_input_method: config.input_method,
+        adb_config: '',
+    })
+    if (ok) {
+        editModalOpen.value = false
     }
 }
 

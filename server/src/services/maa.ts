@@ -26,6 +26,12 @@ function getMaa(): typeof globalThis.maa {
   return m;
 }
 
+// --- 常量 ---
+/** maa-node AdbScreencapMethod.Default（Uint64 字符串） */
+export const DEFAULT_SCREENCAP_METHOD = "18446744073709551559";
+/** maa-node AdbInputMethod.Default（Uint64 字符串） */
+export const DEFAULT_INPUT_METHOD = "18446744073709551607";
+
 // --- 状态 ---
 let controllerStatus: ControllerStatus = "disconnected";
 let resourceStatus: ResourceStatus = "unloaded";

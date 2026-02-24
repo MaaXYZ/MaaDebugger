@@ -1,6 +1,11 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
+/** maa-node AdbScreencapMethod.Default（Uint64 字符串） */
+export const DEFAULT_SCREENCAP_METHOD = "18446744073709551559";
+/** maa-node AdbInputMethod.Default（Uint64 字符串） */
+export const DEFAULT_INPUT_METHOD = "18446744073709551607";
+
 /**
  * Controller Store — 持久化 ADB 连接配置
  */
@@ -10,8 +15,8 @@ export const useControllerStore = defineStore(
     // ADB 配置
     const adbPath = ref("");
     const adbAddress = ref("");
-    const screencapMethod = ref("18446744073709551559"); // Default
-    const inputMethod = ref("18446744073709551607"); // Default
+    const screencapMethod = ref(DEFAULT_SCREENCAP_METHOD);
+    const inputMethod = ref(DEFAULT_INPUT_METHOD);
     const adbConfig = ref("");
     const selectedAdbDevice = ref("");
 

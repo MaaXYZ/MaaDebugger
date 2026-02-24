@@ -32,13 +32,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, type ComponentPublicInstance } from 'vue'
+import { computed, ref, watch } from 'vue'
 import ADB from './controller/ADB.vue'
 import Win32 from './controller/Win32.vue'
 import Gamepad from './controller/Gamepad.vue'
 import { useStatusStore } from '@/stores/status'
+import { useControllerStore } from '@/stores/controller'
 
 const statusStore = useStatusStore()
+const controllerStore = useControllerStore()
 const showFullCard = ref(true)
 const adbRef = ref<InstanceType<typeof ADB> | null>(null)
 
@@ -60,34 +62,30 @@ interface ControllerItem {
     icon: string
 }
 
-const controllerItems = ref<ControllerItem[]>([
-    {
-        label: 'ADB',
-        value: 'adb',
-        icon: 'i-material-symbols:android'
-    },
-    {
-        label: 'Win32',
-        value: 'win32',
-        icon: 'i-material-symbols:desktop-windows-outline'
-    },
-    {
-        label: 'Gamepad',
-        value: 'gamepad',
-        icon: 'i-material-symbols:gamepad-outline-rounded'
-    },
-    {
-        label: 'Custom',
-        value: 'custom',
-        icon: 'i-material-symbols:upload-rounded'
-    }
-])
-const controllerValue = ref<string>(controllerItems.value[0]?.value ?? 'adb')
+const controllerItems: ControllerItem[] = [
+    { label: 'ADB', value: 'adb', icon: 'i-material-symbols:android' },
+    { label: 'Win32', value: 'win32', icon: 'i-material-symbols:desktop-windows-outline' },
+    { label: 'Gamepad', value: 'gamepad', icon: 'i-material-symbols:gamepad-outline-rounded' },
+    { label: 'Custom', value: 'custom', icon: 'i-material-symbols:upload-rounded' },
+]
+
+// 双向同步 store.controllerType ↔ controllerValue
+const controllerValue = ref<string>(controllerStore.controllerType)
+
+watch(controllerValue, (v) => {
+    controllerStore.controllerType = v
+})
+watch(
+    () => controllerStore.controllerType,
+    (v) => { if (v !== controllerValue.value) controllerValue.value = v },
+    { immediate: true },
+)
+
 const controllerIcon = computed<string>(
-    () => controllerItems.value.find((item) => item.value === controllerValue.value)?.icon ?? 'i-material-symbols:android'
+    () => controllerItems.find((item) => item.value === controllerValue.value)?.icon ?? 'i-material-symbols:android'
 )
 const controllerLabel = computed<string>(
-    () => controllerItems.value.find((item) => item.value === controllerValue.value)?.label ?? 'ADB'
+    () => controllerItems.find((item) => item.value === controllerValue.value)?.label ?? 'ADB'
 )
 
 /**
