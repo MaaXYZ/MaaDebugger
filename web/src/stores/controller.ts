@@ -47,6 +47,8 @@ export const useControllerStore = defineStore(
     const desktopWindowName = ref("");
     const desktopScreencapMethod = ref(DEFAULT_DESKTOP_SCREENCAP);
     const selectedDesktopWindow = ref(""); // 选中窗口的 hwnd
+    const desktopClassFilter = ref(""); // 搜索窗口时的类名过滤
+    const desktopWindowRegex = ref(""); // 搜索窗口时的窗口名正则
 
     // --- Win32 独有配置 ---
     const win32MouseMethod = ref(DEFAULT_WIN32_MOUSE);
@@ -123,6 +125,8 @@ export const useControllerStore = defineStore(
       desktopWindowName,
       desktopScreencapMethod,
       selectedDesktopWindow,
+      desktopClassFilter,
+      desktopWindowRegex,
       // Win32 独有
       win32MouseMethod,
       win32KeyboardMethod,
@@ -136,5 +140,5 @@ export const useControllerStore = defineStore(
       updateGamepadInput,
     };
   },
-  { persist: true },
+  { persist: true, persistExclude: ["connecting"] },
 );

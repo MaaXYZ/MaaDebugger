@@ -5,7 +5,7 @@
                 <div class="flex flex-row items-center justify-between gap-4">
                     <div class="flex items-center gap-2">
                         <span class="font-bold">Controller</span>
-                        <UBadge :color="statusColor" :label="statusStore.controllerStatus" variant="subtle" size="sm" />
+                        <UBadge :color="statusColor" :label="capitalizedStatus" variant="subtle" size="sm" />
                     </div>
                     <div class="flex flex-row items-center gap-2">
                         <USelect v-model="controllerValue" value-key="value" :items="controllerItems"
@@ -105,11 +105,32 @@ import {
 } from '@/stores/controller'
 import { connectController, disconnectController } from '@/api/http'
 
+const toast = useToast()
 const statusStore = useStatusStore()
 const controllerStore = useControllerStore()
 const showFullCard = ref(true)
 const adbRef = ref<InstanceType<typeof ADB> | null>(null)
 const windowSearchRef = ref<InstanceType<typeof WindowSearch> | null>(null)
+
+function capitalize(s: string): string {
+    return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+/** 是否曾经尝试过连接（用于区分 Idle 和 Disconnected） */
+const hasAttemptedConnection = ref(false)
+
+const capitalizedStatus = computed(() => {
+    switch (statusStore.controllerStatus) {
+        case 'connected':
+            return 'Connected'
+        case 'connecting':
+            return 'Connecting'
+        case 'disconnected':
+            return hasAttemptedConnection.value ? 'Disconnected' : 'Idle'
+        default:
+            return capitalize(statusStore.controllerStatus)
+    }
+})
 
 const statusColor = computed(() => {
     switch (statusStore.controllerStatus) {
@@ -118,8 +139,34 @@ const statusColor = computed(() => {
         case 'connecting':
             return 'warning' as const
         case 'disconnected':
+            return hasAttemptedConnection.value ? 'error' as const : 'neutral' as const
         default:
             return 'neutral' as const
+    }
+})
+
+// 状态变化时显示 toast 通知
+watch(() => statusStore.controllerStatus, (newStatus, oldStatus) => {
+    if (!oldStatus || newStatus === oldStatus) return
+
+    // 标记曾经尝试连接
+    if (newStatus === 'connecting' || newStatus === 'connected') {
+        hasAttemptedConnection.value = true
+    }
+
+    // 仅在 connecting → connected（连接成功）或 connecting → disconnected（连接失败）时发送 toast
+    if (oldStatus === 'connecting' && newStatus === 'connected') {
+        toast.add({
+            title: 'Controller Connected',
+            icon: 'i-lucide-check-circle',
+            color: 'success',
+        })
+    } else if (oldStatus === 'connecting' && newStatus === 'disconnected') {
+        toast.add({
+            title: 'Controller Connect Failed',
+            icon: 'i-lucide-circle-x',
+            color: 'error',
+        })
     }
 })
 
@@ -258,11 +305,34 @@ watch(
 watch(
     [() => controllerStore.desktopHwnd, windowSearchRef],
     ([hwnd, ref]) => {
-        if (hwnd && ref) {
-            ref.initFromPersisted(hwnd, controllerStore.desktopWindowName)
+        if (ref) {
+            // 恢复搜索过滤条件
+            if (controllerStore.desktopClassFilter) {
+                ref.searchFilter.className = controllerStore.desktopClassFilter
+            }
+            if (controllerStore.desktopWindowRegex) {
+                ref.searchFilter.windowRegex = controllerStore.desktopWindowRegex
+            }
+            // 恢复选中的窗口
+            if (hwnd) {
+                ref.initFromPersisted(hwnd, controllerStore.desktopWindowName)
+            }
         }
     },
     { immediate: true },
+)
+
+// 搜索过滤条件变化时保存到 store
+watch(
+    () => [windowSearchRef.value?.searchFilter.className, windowSearchRef.value?.searchFilter.windowRegex] as const,
+    ([className, windowRegex]) => {
+        if (className !== undefined) {
+            controllerStore.desktopClassFilter = className ?? ''
+        }
+        if (windowRegex !== undefined) {
+            controllerStore.desktopWindowRegex = windowRegex ?? ''
+        }
+    },
 )
 
 // --- 连接 / 断连 ---

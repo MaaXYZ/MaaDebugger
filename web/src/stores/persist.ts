@@ -15,6 +15,14 @@ import { getStoreConfig, saveStoreConfig } from "@/api/http";
  *   // ...
  * }, { persist: true })
  * ```
+ *
+ * 排除瞬态字段（不需要持久化的字段）：
+ *
+ * ```ts
+ * export const useMyStore = defineStore("myStore", () => {
+ *   // ...
+ * }, { persist: true, persistExclude: ['connecting'] })
+ * ```
  */
 
 declare module "pinia" {
@@ -24,6 +32,10 @@ declare module "pinia" {
      * 是否将此 store 持久化到服务器
      */
     persist?: boolean;
+    /**
+     * 不需要持久化的字段名列表（瞬态字段）
+     */
+    persistExclude?: string[];
   }
 }
 
@@ -55,10 +67,26 @@ function debouncedSave(storeId: string, state: unknown) {
   }, 500);
 }
 
+/**
+ * 从 state 中过滤掉排除字段
+ */
+function filterState(
+  state: Record<string, unknown>,
+  exclude: string[],
+): Record<string, unknown> {
+  if (exclude.length === 0) return state;
+  const filtered = { ...state };
+  for (const key of exclude) {
+    delete filtered[key];
+  }
+  return filtered;
+}
+
 export const serverPersistPlugin: PiniaPlugin = ({ store, options }) => {
   if (!options.persist) return;
 
   const storeId = store.$id;
+  const excludeKeys = options.persistExclude ?? [];
 
   // 从服务器加载持久化数据
   getStoreConfig(storeId)
@@ -70,19 +98,26 @@ export const serverPersistPlugin: PiniaPlugin = ({ store, options }) => {
           (store as any).syncIds();
         }
       }
+      // 加载完成后保存一次完整 state（确保新增字段的默认值也被持久化）
+      const fullState = filterState(
+        JSON.parse(JSON.stringify(store.$state)),
+        excludeKeys,
+      );
+      debouncedSave(storeId, fullState);
     })
     .catch((err) => {
-      console.error(
-        `[PersistPlugin] Failed to load store "${storeId}":`,
-        err,
-      );
+      console.error(`[PersistPlugin] Failed to load store "${storeId}":`, err);
     });
 
   // 监听 state 变化并保存到服务器（防抖）
   watch(
     () => store.$state,
     (newState) => {
-      debouncedSave(storeId, JSON.parse(JSON.stringify(newState)));
+      const filtered = filterState(
+        JSON.parse(JSON.stringify(newState)),
+        excludeKeys,
+      );
+      debouncedSave(storeId, filtered);
     },
     { deep: true },
   );

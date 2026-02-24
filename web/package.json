@@ -12,21 +12,21 @@
     "@iconify-json/lucide": "^1.2.93",
     "@iconify-json/material-symbols": "^1.2.57",
     "@iconify-json/simple-icons": "^1.2.71",
-    "@nuxt/ui": "^4.2.1",
+    "@nuxt/ui": "^4.5.0",
     "@tanstack/vue-virtual": "^3.13.19",
-    "@unhead/vue": "^2.0.19",
+    "@unhead/vue": "^2.1.6",
     "monaco-editor": "^0.55.1",
     "pinia": "^3.0.4",
-    "tailwindcss": "^4.1.17",
-    "vue": "^3.5.24",
-    "vue-router": "^4.6.3"
+    "tailwindcss": "^4.2.1",
+    "vue": "^3.5.29",
+    "vue-router": "^4.5.0"
   },
   "devDependencies": {
-    "@types/node": "^24.10.1",
-    "@vitejs/plugin-vue": "^6.0.1",
+    "@types/node": "^25.3.0",
+    "@vitejs/plugin-vue": "^6.0.4",
     "@vue/tsconfig": "^0.8.1",
     "typescript": "~5.9.3",
-    "vite": "^7.2.4",
-    "vue-tsc": "^3.1.4"
+    "vite": "^7.3.1",
+    "vue-tsc": "^3.2.5"
   }
 }
