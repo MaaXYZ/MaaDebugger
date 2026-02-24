@@ -13,7 +13,7 @@
 
         <template #default>
             <div class="resource-list flex flex-col gap-2"
-                :class="activePaths.length >= 4 ? 'max-h-49 overflow-y-auto pr-2' : ''">
+                :class="activePaths.length > 3 ? 'max-h-49 overflow-y-auto pr-2' : ''">
                 <div v-if="activePaths.length === 0"
                     class="flex flex-row items-center justify-center rounded-lg border border-dashed border-default p-2 text-dimmed gap-2">
                     <UIcon name="i-lucide-folder-open" class="size-5" />

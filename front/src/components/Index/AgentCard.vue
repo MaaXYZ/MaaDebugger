@@ -8,7 +8,7 @@
 
         <template #default>
             <div class="agent-list flex flex-col gap-2 min-h-24"
-                :class="agents.length >= 4 ? 'max-h-60 overflow-y-auto pr-2' : ''">
+                :class="agents.length > 1 ? 'max-h-24 overflow-y-auto pr-2' : ''">
                 <div v-if="agents.length === 0"
                     class="flex flex-row items-center justify-center rounded-lg border border-dashed border-default p-3 text-dimmed gap-2">
                     <UIcon name="i-lucide-terminal" class="size-5" />
