@@ -12,14 +12,11 @@
             <div class="flex flex-col gap-3">
                 <!-- Task Entry SelectMenu + Edit Override -->
                 <div class="flex flex-col items-start gap-4">
-                    <div class="flex flex-row items-center gap-2 w-full">
-                        <UIcon name="i-lucide-list-todo" class="size-4 shrink-0 text-dimmed" />
-                        <USelectMenu v-model="selectedEntry" :items="entrySelectItems"
-                            placeholder="Select task entry..." :search-input="{
-                                placeholder: 'Filter...',
-                                icon: 'i-lucide-search'
-                            }" class="flex-1 w-full" size="xl" value-key="value" :disabled="isRunning" />
-                    </div>
+                    <USelectMenu v-model="selectedEntry" :items="entrySelectItems" placeholder="Select task entry..."
+                        :search-input="{
+                            placeholder: 'Filter...',
+                            icon: 'i-lucide-search'
+                        }" class="flex-1 w-full" size="xl" value-key="value" :disabled="isRunning" />
                     <UTooltip text="Edit task override">
                         <UButton color="neutral" variant="outline" icon="i-lucide-file-edit" label="Edit Override"
                             @click="onEditOverride" />

@@ -1,19 +1,34 @@
 <template>
-    <UCard class="w-full" size="xl">
+    <UCard class="w-full" size="xl" :ui="{ body: 'p-0 sm:p-0' }">
         <template #header>
-            <div class="flex flex-row items-center gap-2 min-h-10">
-                <span class="font-bold">Controller</span>
-                <USelect v-model="controllerValue" value-key="value" :items="controllerItems" :icon="controllerIcon"
-                    class="w-full" size="xl" arrow />
+            <div class="flex flex-col gap-2">
+                <div class="flex flex-row items-center justify-between gap-4">
+                    <span class="font-bold">Controller</span>
+                    <div class="flex flex-row items-center gap-2">
+                        <USelect v-model="controllerValue" value-key="value" :items="controllerItems"
+                            :icon="controllerIcon" class="min-w-40" size="xl" arrow />
+                        <UButton variant="outline" color="neutral"
+                            trailing-icon="i-lucide-chevron-down"
+                            :data-state="showFullCard ? 'open' : 'closed'"
+                            @click="showFullCard = !showFullCard" />
+                    </div>
+                </div>
+                <div v-show="!showFullCard" class="text-sm text-dimmed">
+                    {{ controllerLabel }}
+                </div>
             </div>
         </template>
 
         <template #default>
-            <div class="h-40">
-                <ADB v-if="controllerValue === 'adb'" />
-                <Win32 v-else-if="controllerValue === 'win32'" />
-                <Gamepad v-else-if="controllerValue === 'gamepad'" />
-            </div>
+            <UCollapsible :open="showFullCard">
+                <template #content>
+                    <div class="p-4 sm:p-6 min-h-36">
+                        <ADB v-if="controllerValue === 'adb'" />
+                        <Win32 v-else-if="controllerValue === 'win32'" />
+                        <Gamepad v-else-if="controllerValue === 'gamepad'" />
+                    </div>
+                </template>
+            </UCollapsible>
         </template>
     </UCard>
 </template>
@@ -23,6 +38,8 @@ import { computed, ref } from 'vue'
 import ADB from './controller/ADB.vue'
 import Win32 from './controller/Win32.vue'
 import Gamepad from './controller/Gamepad.vue'
+
+const showFullCard = ref(true)
 
 interface ControllerItem {
     label: string
@@ -55,5 +72,8 @@ const controllerItems = ref<ControllerItem[]>([
 const controllerValue = ref<string>(controllerItems.value[0]?.value ?? 'adb')
 const controllerIcon = computed<string>(
     () => controllerItems.value.find((item) => item.value === controllerValue.value)?.icon ?? 'i-material-symbols:android'
+)
+const controllerLabel = computed<string>(
+    () => controllerItems.value.find((item) => item.value === controllerValue.value)?.label ?? 'ADB'
 )
 </script>

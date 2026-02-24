@@ -1,69 +1,96 @@
 <template>
-    <UCard class="w-full" size="xl">
+    <UCard class="w-full" size="xl" :ui="{ body: 'p-0 sm:p-0', footer: 'p-0 sm:p-0' }">
         <template #header>
-            <div class="flex flex-row items-center gap-2 min-h-10">
-                <span class="font-bold">Resource</span>
-                <div class="flex-1" />
-                <USelect v-model="activeProfileId" :items="profileSelectItems" class="w-32" size="xl" />
-                <UDropdownMenu :items="profileMenuItems">
-                    <UButton color="neutral" variant="ghost" icon="i-lucide-ellipsis-vertical" size="xs" />
-                </UDropdownMenu>
+            <div class="flex flex-col gap-2">
+                <div class="flex flex-row items-center justify-between gap-4">
+                    <span class="font-bold">Resource</span>
+                    <div class="flex flex-row items-center gap-2">
+                        <USelect v-model="activeProfileId" :items="profileSelectItems" class="w-32" size="xl" />
+                        <UDropdownMenu :items="profileMenuItems">
+                            <UButton color="neutral" variant="ghost" icon="i-lucide-ellipsis-vertical" size="xs" />
+                        </UDropdownMenu>
+                        <UButton variant="outline" color="neutral"
+                            trailing-icon="i-lucide-chevron-down"
+                            :data-state="showFullCard ? 'open' : 'closed'"
+                            @click="showFullCard = !showFullCard" />
+                    </div>
+                </div>
+                <div v-show="!showFullCard" class="text-sm text-dimmed">
+                    {{ activeProfile.name }} · {{ activePaths.length }} paths
+                </div>
             </div>
         </template>
 
         <template #default>
-            <div class="resource-list flex flex-col gap-2"
-                :class="activePaths.length > 3 ? 'max-h-49 overflow-y-auto pr-2' : ''">
-                <div v-if="activePaths.length === 0"
-                    class="flex flex-row items-center justify-center rounded-lg border border-dashed border-default p-2 text-dimmed gap-2">
-                    <UIcon name="i-lucide-folder-open" class="size-5" />
-                    <span class="text-sm">No resource paths added</span>
-                </div>
+            <UCollapsible :open="showFullCard">
+                <template #content>
+                    <div class="p-4 sm:p-6">
+                        <div class="resource-list flex flex-col gap-2 min-h-12"
+                            :class="activePaths.length > 3 ? 'max-h-48 overflow-y-auto pr-2' : ''">
+                            <div v-if="activePaths.length === 0"
+                                class="flex flex-row items-center justify-center rounded-lg border border-dashed border-default p-2 text-dimmed gap-2">
+                                <UIcon name="i-lucide-folder-open" class="size-5" />
+                                <span class="text-sm">No resource paths added</span>
+                            </div>
 
-                <div v-for="(item, index) in activePaths" :key="item.id"
-                    class="group flex flex-row items-center gap-2 rounded-lg border border-default p-2 transition-colors hover:bg-elevated"
-                    :class="{ 'opacity-50': !item.enabled }" :draggable="activePaths.length > 1"
-                    @dragstart="onDragStart(index)" @dragover.prevent="onDragOver(index)" @dragend="onDragEnd">
+                            <div v-for="(item, index) in activePaths" :key="item.id"
+                                class="group flex flex-row items-center gap-2 rounded-lg border border-default p-2 transition-colors hover:bg-elevated"
+                                :class="{ 'opacity-50': !item.enabled }" :draggable="activePaths.length > 1"
+                                @dragstart="onDragStart(index)" @dragover.prevent="onDragOver(index)"
+                                @dragend="onDragEnd">
 
-                    <!-- Enable/Disable Checkbox -->
-                    <UCheckbox v-model="item.enabled" />
+                                <!-- Enable/Disable Checkbox -->
+                                <UCheckbox v-model="item.enabled" />
 
-                    <!-- Drag Handle -->
-                    <div v-if="activePaths.length > 1"
-                        class="cursor-grab text-dimmed hover:text-default active:cursor-grabbing">
-                        <UIcon name="i-lucide-grip-vertical" class="size-5" />
-                    </div>
+                                <!-- Drag Handle -->
+                                <div v-if="activePaths.length > 1"
+                                    class="cursor-grab text-dimmed hover:text-default active:cursor-grabbing">
+                                    <UIcon name="i-lucide-grip-vertical" class="size-5" />
+                                </div>
 
-                    <!-- Path Input -->
-                    <UInput v-if="item.editing" v-model="item.path" placeholder="/path/to/resource" class="flex-1"
-                        size="xl" autofocus @keydown.enter="onFinishEdit(index)" @blur="onFinishEdit(index)" />
+                                <!-- Path Input -->
+                                <UInput v-if="item.editing" v-model="item.path" placeholder="/path/to/resource"
+                                    class="flex-1" size="xl" autofocus @keydown.enter="onFinishEdit(index)"
+                                    @blur="onFinishEdit(index)" />
 
-                    <!-- Path Display -->
-                    <UTooltip v-else :text="item.path" :disabled="!item.path">
-                        <div class="flex-1 flex items-center gap-2 min-w-0 cursor-pointer" @click="onEdit(index)">
-                            <span class="truncate text-xl" :class="item.path ? '' : 'text-dimmed italic'">
-                                {{ item.path || 'Click to edit path...' }}
-                            </span>
+                                <!-- Path Display -->
+                                <UTooltip v-else :text="item.path" :disabled="!item.path">
+                                    <div class="flex-1 flex items-center gap-2 min-w-0 cursor-pointer"
+                                        @click="onEdit(index)">
+                                        <span class="truncate text-xl" :class="item.path ? '' : 'text-dimmed italic'">
+                                            {{ item.path || 'Click to edit path...' }}
+                                        </span>
+                                    </div>
+                                </UTooltip>
+
+                                <!-- Action Buttons -->
+                                <div
+                                    class="flex flex-row gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <UTooltip text="Edit">
+                                        <UButton color="neutral" variant="ghost" icon="i-lucide-square-pen" size="xs"
+                                            @click="onEdit(index)" />
+                                    </UTooltip>
+                                    <UTooltip text="Remove">
+                                        <UButton color="error" variant="ghost" icon="i-lucide-trash-2" size="xs"
+                                            @click="onRemove(index)" />
+                                    </UTooltip>
+                                </div>
+                            </div>
                         </div>
-                    </UTooltip>
-
-                    <!-- Action Buttons -->
-                    <div class="flex flex-row gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <UTooltip text="Edit">
-                            <UButton color="neutral" variant="ghost" icon="i-lucide-square-pen" size="xs"
-                                @click="onEdit(index)" />
-                        </UTooltip>
-                        <UTooltip text="Remove">
-                            <UButton color="error" variant="ghost" icon="i-lucide-trash-2" size="xs"
-                                @click="onRemove(index)" />
-                        </UTooltip>
                     </div>
-                </div>
-            </div>
+                </template>
+            </UCollapsible>
         </template>
 
         <template #footer>
-            <UButton color="neutral" variant="ghost" icon="i-lucide-plus" label="Add path" block @click="onAddPath" />
+            <UCollapsible :open="showFullCard" :ui="{ content: 'w-full' }" class="w-full">
+                <template #content>
+                    <div class="p-2 sm:p-4">
+                        <UButton color="neutral" variant="ghost" icon="i-lucide-plus" label="Add path" block
+                            @click="onAddPath" />
+                    </div>
+                </template>
+            </UCollapsible>
         </template>
     </UCard>
 
@@ -100,6 +127,7 @@ interface Profile {
 }
 
 // --- State ---
+const showFullCard = ref(true)
 let nextId = 0
 let nextProfileId = 0
 
