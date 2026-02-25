@@ -30,6 +30,10 @@ import { connectController, disconnectController } from '@/api/http'
 import type { ConnectControllerRequest } from '@shared/types/api'
 import { useControllerStore } from '@/stores/controller'
 
+const emit = defineEmits<{
+    (e: 'connected'): void
+}>()
+
 const toast = useToast()
 const controllerStore = useControllerStore()
 
@@ -94,6 +98,8 @@ async function onConnect() {
             icon: 'i-lucide-check-circle',
             color: 'success',
         })
+
+        emit('connected')
 
         // 连接成功 → 持久化
         controllerStore.updatePlayCoverConfig({

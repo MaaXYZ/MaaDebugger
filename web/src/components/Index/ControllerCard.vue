@@ -30,10 +30,11 @@
                 <template #content>
                     <div class="p-4 sm:p-6 min-h-36">
                         <!-- ADB -->
-                        <ADB v-show="controllerValue === 'adb'" ref="adbRef" />
+                        <ADB v-show="controllerValue === 'adb'" ref="adbRef" @connected="showFullCard = false" />
 
                         <!-- PlayCover -->
-                        <PlayCover v-show="controllerValue === 'playcover'" ref="playcoverRef" />
+                        <PlayCover v-show="controllerValue === 'playcover'" ref="playcoverRef"
+                            @connected="showFullCard = false" />
 
                         <!-- Win32 / Gamepad: 共享 WindowSearch + screencap + 各自独有配置 -->
                         <div v-show="isDesktopType" class="flex flex-col gap-3 h-full">

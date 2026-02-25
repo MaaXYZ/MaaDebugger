@@ -110,7 +110,7 @@ interface AgentItem {
 }
 
 // --- State ---
-const showFullCard = ref(true)
+const showFullCard = ref(false)
 let nextId = 0
 const agents = ref<AgentItem[]>([])
 

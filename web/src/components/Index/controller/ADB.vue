@@ -53,6 +53,10 @@ import { detectAdbDevices, connectController, disconnectController } from '@/api
 import type { AdbDeviceInfo, ConnectControllerRequest } from '@shared/types/api'
 import { useControllerStore, DEFAULT_SCREENCAP_METHOD, DEFAULT_INPUT_METHOD } from '@/stores/controller'
 
+const emit = defineEmits<{
+    (e: 'connected'): void
+}>()
+
 const toast = useToast()
 
 /** maa-node All（Uint64 字符串） */
@@ -179,6 +183,8 @@ async function doConnect(params: ConnectControllerRequest): Promise<boolean> {
             icon: 'i-lucide-check-circle',
             color: 'success',
         })
+
+        emit('connected')
 
         // 连接成功 → 持久化
         controllerStore.selectedAdbDevice = selectedDevice.value
