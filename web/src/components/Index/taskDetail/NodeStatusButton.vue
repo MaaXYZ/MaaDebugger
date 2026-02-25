@@ -17,7 +17,7 @@ const props = withDefaults(defineProps<{
     label: string
     size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 }>(), {
-    size: 'md',
+    size: 'sm',
     badgeText: undefined
 })
 

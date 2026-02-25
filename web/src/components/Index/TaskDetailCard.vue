@@ -23,7 +23,7 @@
                     <div class="flex flex-row items-center gap-2 text-sm">
                         <UBadge
                             :color="currentTask.status === 'success' ? 'success' : currentTask.status === 'failed' ? 'error' : 'info'"
-                            variant="subtle">
+                            variant="subtle" class="capitalize">
                             {{ currentTask.status }}
                         </UBadge>
                         <span class="text-dimmed">{{ currentTask.msg.entry }}</span>
