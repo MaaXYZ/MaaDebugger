@@ -2,19 +2,18 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-entrypoint = "./tmp/main.exe"
-cmd = "go build -o ./tmp/main.exe ./cmd/server"
+entrypoint = "./tmp/main"
+cmd = "go build -o ./tmp/main ./cmd/server"
 include_ext = ["go"]
 exclude_dir = ["tmp", "vendor", ".git"]
 exclude_regex = ["_test.go"]
-delay = 300
+delay = 500
 stop_on_error = true
 send_interrupt = true
-kill_delay = "500ms"
+kill_delay = "2s"
 
 [log]
 time = true
 
 [misc]
 clean_on_exit = true
-
