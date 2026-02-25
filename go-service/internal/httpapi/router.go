@@ -23,6 +23,7 @@ type Dependencies struct {
 	StatusStore       *state.Store
 	Hub               *ws.Hub
 	ControllerService *maaservice.ControllerService
+	ResourceService   *maaservice.ResourceService
 }
 
 type router struct {
@@ -381,16 +382,37 @@ func (r *router) handleResourceLoad(w http.ResponseWriter, req *http.Request) {
 		Paths []string `json:"paths"`
 	}
 	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+		log.Warn().Err(err).Msg("[Resource] load: invalid json body")
 		response.Fail(w, http.StatusBadRequest, "invalid json body")
 		return
 	}
 	if len(payload.Paths) == 0 {
+		log.Warn().Msg("[Resource] load: no paths provided")
 		response.Fail(w, http.StatusBadRequest, "No resource paths provided")
 		return
 	}
 
-	r.deps.StatusStore.SetResource("loaded")
+	log.Info().Strs("paths", payload.Paths).Msg("[Resource] load request")
+
+	// 设置 loading 状态并广播
+	r.deps.StatusStore.SetResource("loading")
 	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
+
+	result := r.deps.ResourceService.LoadBundles(payload.Paths)
+
+	if result.Success {
+		r.deps.StatusStore.SetResource("loaded")
+		log.Info().Msg("[Resource] load succeeded, status → loaded")
+	} else {
+		r.deps.StatusStore.SetResource("failed")
+		log.Warn().Str("failed_path", result.FailedPath).Msg("[Resource] load failed, status → failed")
+	}
+	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
+
+	if !result.Success {
+		response.Fail(w, http.StatusBadRequest, fmt.Sprintf("Failed to load resource: %s", result.FailedPath))
+		return
+	}
 
 	response.OK(w, nil)
 }

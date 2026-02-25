@@ -172,13 +172,8 @@ watch(() => statusStore.resourceStatus, (newStatus, oldStatus) => {
             icon: 'i-lucide-check-circle',
             color: 'success',
         })
-    } else if (oldStatus === 'loading' && newStatus === 'failed') {
-        toast.add({
-            title: 'Resource Load Failed',
-            icon: 'i-lucide-circle-x',
-            color: 'error',
-        })
     }
+    // failed 的 toast 由 onLoadResource 中处理，避免重复显示
 })
 
 // --- Enabled Paths ---
@@ -193,6 +188,12 @@ async function onLoadResource() {
         const result = await loadResource(paths)
         if (!result.succeed) {
             console.error('[Resource] Load failed:', result.msg)
+            toast.add({
+                title: 'Resource Load Failed',
+                description: result.msg || 'Unknown error',
+                icon: 'i-lucide-circle-x',
+                color: 'error',
+            })
         }
     } catch (err) {
         console.error('[Resource] Load failed:', err)

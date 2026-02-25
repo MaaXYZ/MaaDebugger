@@ -44,11 +44,13 @@ func main() {
 	statusStore := state.NewStore()
 	hub := ws.NewHub()
 	ctrlService := maaservice.NewControllerService()
+	resService := maaservice.NewResourceService()
 
 	router := httpapi.NewRouter(httpapi.Dependencies{
 		StatusStore:       statusStore,
 		Hub:               hub,
 		ControllerService: ctrlService,
+		ResourceService:   resService,
 	})
 
 	srv := &http.Server{
