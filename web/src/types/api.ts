@@ -1,14 +1,17 @@
 /**
- * 统一 REST API 响应格式
+ * 前端类型定义 — 与 Go 后端 JSON 序列化保持一致
+ *
+ * Go 来源:
+ *   - response.Envelope          → ApiResponse
+ *   - httpapi.adbDeviceInfo      → AdbDeviceInfo
+ *   - httpapi.desktopWindowInfo  → Win32WindowInfo
+ *   - state.Snapshot             → StatusSnapshot
+ *   - httpapi.handleControllerConnect payload → ConnectControllerRequest
  */
-export interface ApiResponse<T = unknown> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
 
 /**
- * ADB 设备信息（从 maa-node 返回后映射为此结构）
+ * ADB 设备信息
+ * @see server/internal/httpapi/router.go — adbDeviceInfo
  */
 export interface AdbDeviceInfo {
   name: string;
@@ -21,6 +24,7 @@ export interface AdbDeviceInfo {
 
 /**
  * Win32 窗口信息
+ * @see server/internal/httpapi/router.go — desktopWindowInfo
  */
 export interface Win32WindowInfo {
   hwnd: string;
@@ -30,6 +34,7 @@ export interface Win32WindowInfo {
 
 /**
  * Controller 连接请求
+ * @see server/internal/httpapi/router.go — handleControllerConnect
  */
 export interface ConnectControllerRequest {
   type: "adb" | "win32" | "gamepad" | "playcover";
@@ -58,26 +63,31 @@ export interface ConnectControllerRequest {
 
 /**
  * Controller 连接状态
+ * @see server/internal/state/store.go — Snapshot.Controller
  */
 export type ControllerStatus = "disconnected" | "connecting" | "connected";
 
 /**
  * Resource 加载状态
+ * @see server/internal/state/store.go — Snapshot.Resource
  */
 export type ResourceStatus = "unloaded" | "loading" | "loaded" | "failed";
 
 /**
  * Task 运行状态
+ * @see server/internal/state/store.go — Snapshot.Task
  */
 export type TaskStatus = "idle" | "running" | "success" | "failed" | "stopped";
 
 /**
  * Agent 状态
+ * @see server/internal/state/store.go — Snapshot.Agent
  */
 export type AgentStatus = "disconnected" | "connecting" | "connected";
 
 /**
  * 全局状态快照
+ * @see server/internal/state/store.go — Snapshot
  */
 export interface StatusSnapshot {
   controller: ControllerStatus;

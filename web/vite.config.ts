@@ -9,11 +9,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
-      "@shared": path.resolve(__dirname, "../shared"),
     },
   },
   build: {
-    outDir: path.resolve(__dirname, "../go-service/frontend/dist"),
+    outDir: path.resolve(__dirname, "../server/frontend/dist"),
     emptyOutDir: true,
   },
   server: {

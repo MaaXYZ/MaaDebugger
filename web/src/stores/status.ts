@@ -6,7 +6,7 @@ import type {
   ResourceStatus,
   TaskStatus,
   AgentStatus,
-} from "@shared/types/api";
+} from "@/types/api";
 
 /**
  * 全局 MaaFW 状态 Store

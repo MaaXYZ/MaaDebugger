@@ -50,7 +50,7 @@
 <script setup lang="ts">
 import { ref, reactive, watch, computed } from 'vue'
 import { detectAdbDevices, connectController, disconnectController } from '@/api/http'
-import type { AdbDeviceInfo, ConnectControllerRequest } from '@shared/types/api'
+import type { AdbDeviceInfo, ConnectControllerRequest } from '@/types/api'
 import { useControllerStore, DEFAULT_SCREENCAP_METHOD, DEFAULT_INPUT_METHOD } from '@/stores/controller'
 
 const emit = defineEmits<{

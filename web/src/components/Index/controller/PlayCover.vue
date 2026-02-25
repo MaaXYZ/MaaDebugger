@@ -27,7 +27,7 @@
 <script setup lang="ts">
 import { reactive, watch, computed } from 'vue'
 import { connectController, disconnectController } from '@/api/http'
-import type { ConnectControllerRequest } from '@shared/types/api'
+import type { ConnectControllerRequest } from '@/types/api'
 import { useControllerStore } from '@/stores/controller'
 
 const emit = defineEmits<{

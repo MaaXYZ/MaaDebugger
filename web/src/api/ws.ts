@@ -1,4 +1,4 @@
-import type { StatusSnapshot } from "@shared/types/api";
+import type { StatusSnapshot } from "@/types/api";
 import type { TaskEvent } from "@/components/Index/taskDetail/types";
 
 export type WSEventHandler = {

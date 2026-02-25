@@ -3,7 +3,7 @@ import type {
   Win32WindowInfo,
   ConnectControllerRequest,
   StatusSnapshot,
-} from "@shared/types/api";
+} from "@/types/api";
 
 export interface ApiResponse<T = unknown> {
   succeed: boolean;

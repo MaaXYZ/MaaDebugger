@@ -22,7 +22,7 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { detectDesktopWindows } from '@/api/http'
-import type { Win32WindowInfo } from '@shared/types/api'
+import type { Win32WindowInfo } from '@/types/api'
 
 const toast = useToast()
 
