@@ -13,6 +13,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/MaaXYZ/MaaDebugger/internal/httpapi"
+	"github.com/MaaXYZ/MaaDebugger/internal/maaservice"
 	"github.com/MaaXYZ/MaaDebugger/internal/state"
 	"github.com/MaaXYZ/MaaDebugger/internal/ws"
 )
@@ -42,10 +43,12 @@ func main() {
 
 	statusStore := state.NewStore()
 	hub := ws.NewHub()
+	ctrlService := maaservice.NewControllerService()
 
 	router := httpapi.NewRouter(httpapi.Dependencies{
-		StatusStore: statusStore,
-		Hub:         hub,
+		StatusStore:       statusStore,
+		Hub:               hub,
+		ControllerService: ctrlService,
 	})
 
 	srv := &http.Server{

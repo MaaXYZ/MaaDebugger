@@ -13,14 +13,16 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog/log"
 
+	"github.com/MaaXYZ/MaaDebugger/internal/maaservice"
 	"github.com/MaaXYZ/MaaDebugger/internal/response"
 	"github.com/MaaXYZ/MaaDebugger/internal/state"
 	"github.com/MaaXYZ/MaaDebugger/internal/ws"
 )
 
 type Dependencies struct {
-	StatusStore *state.Store
-	Hub         *ws.Hub
+	StatusStore       *state.Store
+	Hub               *ws.Hub
+	ControllerService *maaservice.ControllerService
 }
 
 type router struct {
@@ -138,8 +140,10 @@ type adbDeviceInfo struct {
 }
 
 func (r *router) handleDetectAdb(w http.ResponseWriter, _ *http.Request) {
+	log.Info().Msg("[Controller] detect ADB devices request")
 	devices, err := maa.FindAdbDevices()
 	if err != nil {
+		log.Error().Err(err).Msg("[Controller] find adb devices failed")
 		response.Fail(w, http.StatusBadRequest, fmt.Sprintf("find adb devices failed: %v", err))
 		return
 	}
@@ -159,6 +163,7 @@ func (r *router) handleDetectAdb(w http.ResponseWriter, _ *http.Request) {
 		})
 	}
 
+	log.Info().Int("count", len(result)).Msg("[Controller] detect ADB devices result")
 	response.OK(w, result)
 }
 
@@ -169,8 +174,13 @@ type desktopWindowInfo struct {
 }
 
 func (r *router) handleDetectDesktop(w http.ResponseWriter, req *http.Request) {
+	classRegex := req.URL.Query().Get("class_regex")
+	windowRegex := req.URL.Query().Get("window_regex")
+	log.Info().Str("class_regex", classRegex).Str("window_regex", windowRegex).Msg("[Controller] detect desktop windows request")
+
 	windows, err := maa.FindDesktopWindows()
 	if err != nil {
+		log.Error().Err(err).Msg("[Controller] find desktop windows failed")
 		response.Fail(w, http.StatusBadRequest, fmt.Sprintf("find desktop windows failed: %v", err))
 		return
 	}
@@ -187,8 +197,6 @@ func (r *router) handleDetectDesktop(w http.ResponseWriter, req *http.Request) {
 		})
 	}
 
-	classRegex := req.URL.Query().Get("class_regex")
-	windowRegex := req.URL.Query().Get("window_regex")
 	if classRegex != "" {
 		filtered := make([]desktopWindowInfo, 0, len(result))
 		for _, w := range result {
@@ -208,26 +216,164 @@ func (r *router) handleDetectDesktop(w http.ResponseWriter, req *http.Request) {
 		result = filtered
 	}
 
+	log.Info().Int("total", len(windows)).Int("filtered", len(result)).Msg("[Controller] detect desktop windows result")
 	response.OK(w, result)
 }
 
 func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Request) {
 	var payload map[string]interface{}
 	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+		log.Warn().Err(err).Msg("[Controller] connect: invalid json body")
 		response.Fail(w, http.StatusBadRequest, "invalid json body")
 		return
 	}
 
-	r.deps.StatusStore.SetController("connected")
+	// 记录请求参数
+	log.Info().Interface("params", payload).Msg("[Controller] connect request")
+
+	ctrlType, _ := payload["type"].(string)
+	if ctrlType == "" {
+		log.Warn().Msg("[Controller] connect: missing controller type")
+		response.Fail(w, http.StatusBadRequest, "missing controller type")
+		return
+	}
+
+	// 设置 connecting 状态并广播
+	r.deps.StatusStore.SetController("connecting")
+	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
+	log.Info().Str("type", ctrlType).Msg("[Controller] status → connecting")
+
+	getString := func(key string) string {
+		v, _ := payload[key].(string)
+		return v
+	}
+
+	var result maaservice.ConnectAdbResult
+
+	switch ctrlType {
+	case "adb":
+		adbPath := getString("adb_path")
+		adbAddress := getString("adb_address")
+		screencapMethod := orDefault(getString("adb_screencap_method"), "18446744073709551559")
+		inputMethod := orDefault(getString("adb_input_method"), "18446744073709551607")
+		adbConfig := getString("adb_config")
+
+		log.Info().
+			Str("adb_path", adbPath).
+			Str("adb_address", adbAddress).
+			Str("screencap_method", screencapMethod).
+			Str("input_method", inputMethod).
+			Str("adb_config", adbConfig).
+			Msg("[Controller] connecting ADB")
+
+		result = r.deps.ControllerService.ConnectAdb(
+			adbPath, adbAddress, screencapMethod, inputMethod, adbConfig,
+		)
+
+	case "win32":
+		hwnd := getString("hwnd")
+		if hwnd == "" {
+			log.Warn().Msg("[Controller] connect win32: hwnd is empty")
+			r.deps.StatusStore.SetController("disconnected")
+			r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
+			response.Fail(w, http.StatusBadRequest, "hwnd is required for Win32 controller")
+			return
+		}
+		screencapMethod := orDefault(getString("win32_screencap_method"), "1")
+		mouseMethod := orDefault(getString("win32_mouse_method"), "1")
+		keyboardMethod := orDefault(getString("win32_keyboard_method"), "1")
+
+		log.Info().
+			Str("hwnd", hwnd).
+			Str("screencap_method", screencapMethod).
+			Str("mouse_method", mouseMethod).
+			Str("keyboard_method", keyboardMethod).
+			Msg("[Controller] connecting Win32")
+
+		result = r.deps.ControllerService.ConnectWin32(
+			hwnd, screencapMethod, mouseMethod, keyboardMethod,
+		)
+
+	case "gamepad":
+		hwnd := getString("hwnd")
+		if hwnd == "" {
+			log.Warn().Msg("[Controller] connect gamepad: hwnd is empty")
+			r.deps.StatusStore.SetController("disconnected")
+			r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
+			response.Fail(w, http.StatusBadRequest, "hwnd is required for Gamepad controller")
+			return
+		}
+		screencapMethod := orDefault(getString("gamepad_screencap_method"), "1")
+		gamepadType := orDefault(getString("gamepad_type"), "0")
+
+		log.Info().
+			Str("hwnd", hwnd).
+			Str("screencap_method", screencapMethod).
+			Str("gamepad_type", gamepadType).
+			Msg("[Controller] connecting Gamepad")
+
+		result = r.deps.ControllerService.ConnectGamepad(
+			hwnd, screencapMethod, gamepadType,
+		)
+
+	case "playcover":
+		address := getString("playcover_address")
+		uuid := getString("playcover_uuid")
+		if address == "" {
+			log.Warn().Msg("[Controller] connect playcover: address is empty")
+			r.deps.StatusStore.SetController("disconnected")
+			r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
+			response.Fail(w, http.StatusBadRequest, "address is required for PlayCover controller")
+			return
+		}
+
+		log.Info().
+			Str("address", address).
+			Str("uuid", uuid).
+			Msg("[Controller] connecting PlayCover")
+
+		result = r.deps.ControllerService.ConnectPlayCover(address, uuid)
+
+	default:
+		log.Warn().Str("type", ctrlType).Msg("[Controller] unsupported controller type")
+		r.deps.StatusStore.SetController("disconnected")
+		r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
+		response.Fail(w, http.StatusBadRequest, fmt.Sprintf("unsupported controller type: %s", ctrlType))
+		return
+	}
+
+	// 记录连接结果
+	if result.Success {
+		r.deps.StatusStore.SetController("connected")
+		log.Info().Str("type", ctrlType).Msg("[Controller] connect succeeded, status → connected")
+	} else {
+		r.deps.StatusStore.SetController("disconnected")
+		log.Warn().Str("type", ctrlType).Str("error", result.Error).Msg("[Controller] connect failed, status → disconnected")
+	}
 	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 
-	response.OK(w, map[string]interface{}{"type": payload["type"]})
+	if !result.Success {
+		response.Fail(w, http.StatusBadRequest, result.Error)
+		return
+	}
+
+	response.OK(w, map[string]interface{}{"type": ctrlType})
 }
 
 func (r *router) handleControllerDisconnect(w http.ResponseWriter, _ *http.Request) {
+	log.Info().Msg("[Controller] disconnect request")
+	r.deps.ControllerService.Disconnect()
 	r.deps.StatusStore.SetController("disconnected")
 	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
+	log.Info().Msg("[Controller] disconnected, status → disconnected")
 	response.OK(w, nil)
+}
+
+func orDefault(val, fallback string) string {
+	if val == "" {
+		return fallback
+	}
+	return val
 }
 
 func (r *router) handleResourceLoad(w http.ResponseWriter, req *http.Request) {

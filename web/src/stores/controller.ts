@@ -57,6 +57,10 @@ export const useControllerStore = defineStore(
     // --- Gamepad 独有配置 ---
     const gamepadType = ref(DEFAULT_GAMEPAD_TYPE);
 
+    // --- PlayCover 配置 ---
+    const playcoverAddress = ref("");
+    const playcoverUuid = ref("");
+
     // 连接中状态（瞬态，不持久化，但全局可访问）
     const connecting = ref(false);
 
@@ -110,6 +114,14 @@ export const useControllerStore = defineStore(
       gamepadType.value = config.gamepad_type;
     }
 
+    /**
+     * 更新 PlayCover 配置
+     */
+    function updatePlayCoverConfig(config: { address: string; uuid: string }) {
+      playcoverAddress.value = config.address;
+      playcoverUuid.value = config.uuid;
+    }
+
     return {
       controllerType,
       // ADB
@@ -132,12 +144,16 @@ export const useControllerStore = defineStore(
       win32KeyboardMethod,
       // Gamepad 独有
       gamepadType,
+      // PlayCover
+      playcoverAddress,
+      playcoverUuid,
       // Shared
       connecting,
       updateAdbConfig,
       updateDesktopConfig,
       updateWin32Input,
       updateGamepadInput,
+      updatePlayCoverConfig,
     };
   },
   { persist: true, persistExclude: ["connecting"] },

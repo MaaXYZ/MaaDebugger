@@ -32,6 +32,9 @@
                         <!-- ADB -->
                         <ADB v-show="controllerValue === 'adb'" ref="adbRef" />
 
+                        <!-- PlayCover -->
+                        <PlayCover v-show="controllerValue === 'playcover'" ref="playcoverRef" />
+
                         <!-- Win32 / Gamepad: 共享 WindowSearch + screencap + 各自独有配置 -->
                         <div v-show="isDesktopType" class="flex flex-col gap-3 h-full">
                             <!-- Action Buttons Row -->
@@ -94,6 +97,7 @@
 <script setup lang="ts">
 import { computed, ref, reactive, watch } from 'vue'
 import ADB from './controller/ADB.vue'
+import PlayCover from './controller/PlayCover.vue'
 import WindowSearch from './controller/WindowSearch.vue'
 import { useStatusStore } from '@/stores/status'
 import {
@@ -110,6 +114,7 @@ const statusStore = useStatusStore()
 const controllerStore = useControllerStore()
 const showFullCard = ref(true)
 const adbRef = ref<InstanceType<typeof ADB> | null>(null)
+const playcoverRef = ref<InstanceType<typeof PlayCover> | null>(null)
 const windowSearchRef = ref<InstanceType<typeof WindowSearch> | null>(null)
 
 function capitalize(s: string): string {
@@ -180,6 +185,7 @@ const controllerItems: ControllerItem[] = [
     { label: 'ADB', value: 'adb', icon: 'i-material-symbols:android' },
     { label: 'Win32', value: 'win32', icon: 'i-material-symbols:desktop-windows-outline' },
     { label: 'Gamepad', value: 'gamepad', icon: 'i-material-symbols:gamepad-outline-rounded' },
+    { label: "PlayCover", value: "playcover", icon: "i-simple-icons:apple" },
     { label: 'Custom', value: 'custom', icon: 'i-material-symbols:upload-rounded' },
 ]
 
@@ -402,6 +408,9 @@ const selectedWindowLabel = computed(() => {
 const summaryText = computed(() => {
     if (controllerValue.value === 'adb' && adbRef.value?.selectedDevice) {
         return adbRef.value.selectedDevice
+    }
+    if (controllerValue.value === 'playcover' && playcoverRef.value?.config?.address) {
+        return playcoverRef.value.config.address
     }
     if (isDesktopType.value && selectedWindowLabel.value) {
         return selectedWindowLabel.value

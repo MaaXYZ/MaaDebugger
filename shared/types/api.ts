@@ -32,7 +32,7 @@ export interface Win32WindowInfo {
  * Controller 连接请求
  */
 export interface ConnectControllerRequest {
-  type: "adb" | "win32" | "gamepad";
+  type: "adb" | "win32" | "gamepad" | "playcover";
 
   // ADB 参数
   adb_path?: string;
@@ -50,6 +50,10 @@ export interface ConnectControllerRequest {
   // Gamepad 参数
   gamepad_type?: string;
   gamepad_screencap_method?: string;
+
+  // PlayCover 参数
+  playcover_address?: string;
+  playcover_uuid?: string;
 }
 
 /**
