@@ -12,6 +12,10 @@ export default defineConfig({
       "@shared": path.resolve(__dirname, "../shared"),
     },
   },
+  build: {
+    outDir: path.resolve(__dirname, "../go-service/frontend/dist"),
+    emptyOutDir: true,
+  },
   server: {
     proxy: {
       "/api": {

@@ -4,7 +4,7 @@ import Index from '@/router/Index.vue'
 import { wsClient } from '@/api/ws'
 import { getStatusSnapshot } from '@/api/http'
 import { useStatusStore } from '@/stores/status'
-import { handleTaskEvent, resetLaunchGraph } from '@/stores/launchGraph'
+import { handleTaskEvent } from '@/stores/launchGraph'
 
 const statusStore = useStatusStore()
 

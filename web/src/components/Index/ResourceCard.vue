@@ -118,7 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useResourceStore } from '@/stores/resource'
 import { useStatusStore } from '@/stores/status'
 import { loadResource } from '@/api/http'

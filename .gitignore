@@ -8,7 +8,6 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
 dist-ssr
 *.local
 
@@ -37,10 +36,18 @@ maa-py/*
 # Config persistence
 */.maa/*
 
+# Node.js
+*/dist/*
+
 # Go
-tmp/*
+*/tmp/*
 
 # bin
 *.exe
+*.exe~
 *.dll
 *.so
+
+# Frontend build output (embedded into Go binary)
+go-service/frontend/dist/*
+!go-service/frontend/dist/.gitkeep

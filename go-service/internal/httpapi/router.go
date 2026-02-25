@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog/log"
 
+	"github.com/MaaXYZ/MaaDebugger/frontend"
 	"github.com/MaaXYZ/MaaDebugger/internal/configstore"
 	"github.com/MaaXYZ/MaaDebugger/internal/maaservice"
 	"github.com/MaaXYZ/MaaDebugger/internal/response"
@@ -47,7 +48,8 @@ func NewRouter(deps Dependencies) http.Handler {
 	})
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /{$}", r.handleRoot)
+
+	// API routes
 	mux.HandleFunc("GET /api/info/version", r.handleInfoVersion)
 	mux.HandleFunc("GET /api/info/status", r.handleInfoStatus)
 	mux.HandleFunc("GET /api/config", r.handleConfigAll)
@@ -65,14 +67,11 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.HandleFunc("GET /api/task/node/{name}", r.handleTaskNodeDetail)
 	mux.HandleFunc("GET /ws", r.handleWS)
 
-	return recoverer(logging(cors(mux)))
-}
+	// Serve embedded frontend SPA for all non-API routes
+	frontendHandler := frontend.Handler()
+	mux.Handle("/", frontendHandler)
 
-func (r *router) handleRoot(w http.ResponseWriter, _ *http.Request) {
-	response.OK(w, map[string]interface{}{
-		"name":    "maa-debugger-go-service",
-		"version": "0.1.0",
-	})
+	return recoverer(logging(cors(mux)))
 }
 
 func (r *router) handleInfoVersion(w http.ResponseWriter, _ *http.Request) {

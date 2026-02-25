@@ -2,19 +2,18 @@
 
 MaaFramework 的可视化调试工具。
 
-## 启动项目
+## 开发模式
 
 需要同时启动**后端**和**前端**两个终端：
 
-### Terminal 1: 后端 (server)
+### Terminal 1: 后端 (Go Service)
 
 ```bash
-cd server
-pnpm install    # 首次需要安装依赖
-pnpm dev        # 启动后端 (http://127.0.0.1:3000)
+cd go-service
+go run ./cmd/server    # 启动后端 (http://127.0.0.1:8011)
 ```
 
-### Terminal 2: 前端 (web)
+### Terminal 2: 前端 (Web)
 
 ```bash
 cd web
@@ -24,13 +23,28 @@ pnpm dev        # 启动前端 (http://localhost:5173)
 
 然后打开浏览器访问 **<http://localhost:5173>** 即可。
 
-前端会自动将 `/api` 和 `/ws` 请求代理到后端 `http://127.0.0.1:3000`。
+前端会自动将 `/api` 和 `/ws` 请求代理到后端 `http://127.0.0.1:8011`。
+
+## 生产构建
+
+一键构建前端并嵌入到 Go 二进制文件中，最终产物为单个可执行文件：
+
+```bash
+pnpm build              # 构建当前平台
+pnpm build:linux        # 交叉编译 Linux
+pnpm build:windows      # 交叉编译 Windows
+pnpm build:darwin       # 交叉编译 macOS
+pnpm build:skip-frontend  # 跳过前端构建（仅编译 Go）
+```
+
+构建完成后，启动 `go-service/maa-debugger`（Windows 下为 `maa-debugger.exe`），访问 **<http://127.0.0.1:8011>** 即可使用完整的前端 + 后端功能。
 
 ## 技术栈
 
 | 层 | 技术 |
 |----|------|
 | 前端 | Vue 3 + Nuxt UI 4 + Pinia + Vite 7 + TypeScript |
-| 后端 | Hono + ws + Node.js + TypeScript |
-| MaaFW | @maaxyz/maa-node (native addon) |
+| 后端 | Go + net/http + gorilla/websocket + zerolog |
+| MaaFW | maa-framework-go (CGO binding) |
 | 通信 | REST API + WebSocket |
+| 嵌入 | Go `embed` (前端编译产物嵌入到 Go 二进制) |

@@ -1,4 +1,3 @@
-import type { WSServerMessage } from "@shared/types/ws";
 import type { StatusSnapshot } from "@shared/types/api";
 import type { TaskEvent } from "@/components/Index/taskDetail/types";
 
