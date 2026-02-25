@@ -167,6 +167,8 @@ watch(() => statusStore.resourceStatus, (newStatus, oldStatus) => {
     if (!oldStatus || newStatus === oldStatus) return
 
     if (oldStatus === 'loading' && newStatus === 'loaded') {
+        // 加载成功后自动收起卡片
+        showFullCard.value = false
         toast.add({
             title: 'Resource Loaded',
             icon: 'i-lucide-check-circle',

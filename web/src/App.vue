@@ -5,7 +5,6 @@ import { wsClient } from '@/api/ws'
 import { getStatusSnapshot } from '@/api/http'
 import { useStatusStore } from '@/stores/status'
 
-const toaster = { position: 'button-right' }
 
 const statusStore = useStatusStore()
 

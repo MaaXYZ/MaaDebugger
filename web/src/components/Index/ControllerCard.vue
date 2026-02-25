@@ -161,6 +161,8 @@ watch(() => statusStore.controllerStatus, (newStatus, oldStatus) => {
 
     // 仅在 connecting → connected（连接成功）或 connecting → disconnected（连接失败）时发送 toast
     if (oldStatus === 'connecting' && newStatus === 'connected') {
+        // 连接成功后自动收起卡片
+        showFullCard.value = false
         toast.add({
             title: 'Controller Connected',
             icon: 'i-lucide-check-circle',
