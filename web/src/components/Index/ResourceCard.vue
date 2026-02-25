@@ -3,7 +3,10 @@
         <template #header>
             <div class="flex flex-col gap-2">
                 <div class="flex flex-row items-center justify-between gap-4">
-                    <span class="font-bold">Resource</span>
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold">Resource</span>
+                        <UBadge :color="statusColor" :label="statusLabel" variant="subtle" size="sm" />
+                    </div>
                     <div class="flex flex-row items-center gap-2">
                         <USelect v-model="resourceStore.activeProfileId" :items="resourceStore.profileSelectItems"
                             class="w-32" size="xl" arrow />
@@ -86,6 +89,13 @@
                             <UButton color="neutral" variant="ghost" icon="i-lucide-plus" label="Add path" block
                                 @click="onAddPath" />
                         </div>
+
+                        <!-- Load Button -->
+                        <div class="px-2 sm:px-4 pb-2 sm:pb-4">
+                            <UButton color="primary" icon="i-lucide-download" label="Load Resource" block size="xl"
+                                :loading="isLoading" :disabled="enabledPaths.length === 0 || isLoading"
+                                @click="onLoadResource" />
+                        </div>
                     </div>
                 </template>
             </UCollapsible>
@@ -108,14 +118,86 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useResourceStore } from '@/stores/resource'
+import { useStatusStore } from '@/stores/status'
+import { loadResource } from '@/api/http'
 
+const toast = useToast()
 const resourceStore = useResourceStore()
+const statusStore = useStatusStore()
 
 // --- UI State (not persisted) ---
 const showFullCard = ref(true)
 const editingIndex = ref<number | null>(null)
+
+// --- Resource Status ---
+const isLoading = computed(() => statusStore.resourceStatus === 'loading')
+
+const statusLabel = computed(() => {
+    switch (statusStore.resourceStatus) {
+        case 'loaded':
+            return 'Loaded'
+        case 'loading':
+            return 'Loading'
+        case 'failed':
+            return 'Failed'
+        case 'unloaded':
+        default:
+            return 'Idle'
+    }
+})
+
+const statusColor = computed(() => {
+    switch (statusStore.resourceStatus) {
+        case 'loaded':
+            return 'success' as const
+        case 'loading':
+            return 'warning' as const
+        case 'failed':
+            return 'error' as const
+        case 'unloaded':
+        default:
+            return 'neutral' as const
+    }
+})
+
+// --- Resource Status Toast ---
+watch(() => statusStore.resourceStatus, (newStatus, oldStatus) => {
+    if (!oldStatus || newStatus === oldStatus) return
+
+    if (oldStatus === 'loading' && newStatus === 'loaded') {
+        toast.add({
+            title: 'Resource Loaded',
+            icon: 'i-lucide-check-circle',
+            color: 'success',
+        })
+    } else if (oldStatus === 'loading' && newStatus === 'failed') {
+        toast.add({
+            title: 'Resource Load Failed',
+            icon: 'i-lucide-circle-x',
+            color: 'error',
+        })
+    }
+})
+
+// --- Enabled Paths ---
+const enabledPaths = computed(() => resourceStore.getEnabledPaths())
+
+// --- Load Resource ---
+async function onLoadResource() {
+    const paths = enabledPaths.value
+    if (paths.length === 0) return
+
+    try {
+        const result = await loadResource(paths)
+        if (!result.success) {
+            console.error('[Resource] Load failed:', result.error)
+        }
+    } catch (err) {
+        console.error('[Resource] Load failed:', err)
+    }
+}
 
 // --- Profile Menu ---
 const profileMenuItems = [

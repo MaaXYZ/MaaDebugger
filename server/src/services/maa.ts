@@ -296,6 +296,9 @@ export async function connectGamepad(
 
 /**
  * 加载资源路径列表
+ *
+ * 参考 maa-js setupResource：每次加载时创建新的 Resource 实例，
+ * 销毁旧实例，并添加 sink 用于日志输出。
  */
 export async function loadResource(
   paths: string[],
@@ -303,20 +306,37 @@ export async function loadResource(
   try {
     const maa = getMaa();
 
-    if (!resource) {
-      resource = new maa.Resource();
+    // 销毁旧的 resource 实例
+    if (resource) {
+      resource.destroy();
+      resource = null;
     }
 
     setResourceStatus("loading");
 
+    const res = new maa.Resource();
+
+    res.add_sink((_, msg) => {
+      console.log("[MaaService] Resource:", JSON.stringify(msg));
+    });
+
     for (const p of paths) {
-      await resource.post_bundle(p).wait();
+      if (!(await res.post_bundle(p).wait().succeeded)) {
+        setResourceStatus("failed");
+        return { success: false, error: `Fail to load ${p}` };
+      }
     }
+
+    resource = res;
 
     setResourceStatus("loaded");
     return { success: true };
   } catch (err) {
-    setResourceStatus("unloaded");
+    if (resource) {
+      resource.destroy();
+      resource = null;
+    }
+    setResourceStatus("failed");
     const message = err instanceof Error ? err.message : String(err);
     console.error("[MaaService] loadResource failed:", message);
     return { success: false, error: message };

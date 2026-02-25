@@ -8,8 +8,18 @@ import type { Duplex } from "node:stream";
 
 import { controllerRoutes } from "./routes/controller.js";
 import { handleWSConnection } from "./ws/handler.js";
-import { initMaa, getStatus, getVersion } from "./services/maa.js";
-import { getAllConfig, setConfigs, getConfig, setConfig } from "./services/config.js";
+import {
+  initMaa,
+  getStatus,
+  getVersion,
+  loadResource,
+} from "./services/maa.js";
+import {
+  getAllConfig,
+  setConfigs,
+  getConfig,
+  setConfig,
+} from "./services/config.js";
 
 const app = new Hono();
 
@@ -33,6 +43,22 @@ app.get("/api/info/status", (c) => {
 
 // --- Controller 路由 ---
 app.route("/api/controller", controllerRoutes);
+
+// --- Resource 路由 ---
+app.post("/api/resource/load", async (c) => {
+  const body = await c.req.json();
+  const paths: string[] = body.paths ?? [];
+
+  if (paths.length === 0) {
+    return c.json({ success: false, error: "No resource paths provided" }, 400);
+  }
+
+  const result = await loadResource(paths);
+  return c.json(
+    { success: result.success, error: result.error },
+    result.success ? 200 : 400,
+  );
+});
 
 // --- Config 持久化路由 ---
 app.get("/api/config", (c) => {
@@ -76,9 +102,9 @@ console.log(`
 ╔══════════════════════════════════════════╗
 ║         MaaDebugger Server v0.0.1        ║
 ╠══════════════════════════════════════════╣
-║  HTTP:  http://${HOST}:${PORT}             ║
-║  WS:    ws://${HOST}:${PORT}/ws              ║
-║  MaaFW: ${maaAvailable ? "✅ Available" : "❌ Not available"}              ║
+║  HTTP:  http://${HOST}:${PORT}            ║
+║  WS:    ws://${HOST}:${PORT}/ws           ║
+║  MaaFW: ${maaAvailable ? "✅ Available" : "❌ Not available"}                 ║
 ╚══════════════════════════════════════════╝
 `);
 

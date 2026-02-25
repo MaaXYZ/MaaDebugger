@@ -14,7 +14,7 @@ export interface StatusUpdateMessage extends WSMessage {
   type: "status.update";
   payload: {
     controller: "disconnected" | "connecting" | "connected";
-    resource: "unloaded" | "loading" | "loaded";
+    resource: "unloaded" | "loading" | "loaded" | "failed";
     task: "idle" | "running" | "success" | "failed";
     agent: "disconnected" | "connecting" | "connected";
   };

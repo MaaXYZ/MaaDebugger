@@ -60,7 +60,7 @@ export type ControllerStatus = "disconnected" | "connecting" | "connected";
 /**
  * Resource 加载状态
  */
-export type ResourceStatus = "unloaded" | "loading" | "loaded";
+export type ResourceStatus = "unloaded" | "loading" | "loaded" | "failed";
 
 /**
  * Task 运行状态

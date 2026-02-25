@@ -3,7 +3,6 @@
         <template #header>
             <div class="flex flex-row items-center gap-2 min-h-10">
                 <span class="font-bold">Task</span>
-                <div class="flex-1" />
                 <TaskStatusBadge :status="taskStatus" />
             </div>
         </template>

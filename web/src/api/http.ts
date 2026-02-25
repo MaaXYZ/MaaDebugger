@@ -91,6 +91,22 @@ export async function disconnectController(): Promise<ApiResponse> {
 }
 
 // ============================================================
+// Resource API
+// ============================================================
+
+/**
+ * 加载资源
+ */
+export async function loadResource(
+  paths: string[],
+): Promise<ApiResponse> {
+  return request("/resource/load", {
+    method: "POST",
+    body: JSON.stringify({ paths }),
+  });
+}
+
+// ============================================================
 // Info API
 // ============================================================
 
