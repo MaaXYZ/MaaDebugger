@@ -24,6 +24,8 @@ import { ref, reactive } from 'vue'
 import { detectDesktopWindows } from '@/api/http'
 import type { Win32WindowInfo } from '@shared/types/api'
 
+const toast = useToast()
+
 // --- Window Search Filter ---
 const searchFilter = reactive({
     className: '',
@@ -77,23 +79,38 @@ async function onSearch() {
             searchFilter.windowRegex || undefined,
         )
 
-        // 过滤掉没有 window_name 的窗口
+        // Filter out windows without a window_name
         const validWindows = windows.filter((w) => w.window_name)
+
+        const newItems = validWindows.map((w) => ({
+            label: `${w.window_name} - ${w.hwnd}`,
+            value: w.hwnd,
+        }))
+
 
         windowMap.value = Object.fromEntries(
             validWindows.map((w) => [w.hwnd, w])
         )
 
-        windowItems.value = validWindows.map((w) => ({
-            label: `${w.window_name} - ${w.hwnd}`,
-            value: w.hwnd,
-        }))
+        windowItems.value = newItems
 
-        // 自动选中第一个，如果当前没有选中
-        if (windowItems.value.length > 0 && !selectedHwnd.value) {
+        // Warn user when no windows are found
+        if (windowItems.value.length === 0) {
+            toast.add({
+                title: 'No windows found',
+                description: 'Try adjusting your class name or window regex filters.',
+                icon: 'i-lucide-triangle-alert',
+                color: 'warning',
+            })
+            selectedHwnd.value = ''
+            return
+        }
+
+        // Auto-select first item if nothing is currently selected
+        if (!selectedHwnd.value) {
             selectedHwnd.value = windowItems.value[0]!.value
         }
-        // 如果当前选中的不在新列表中，选中第一个
+        // If the previously selected window is no longer in the list, select the first one
         if (selectedHwnd.value && !windowItems.value.some(item => item.value === selectedHwnd.value)) {
             selectedHwnd.value = windowItems.value[0]?.value ?? ''
         }

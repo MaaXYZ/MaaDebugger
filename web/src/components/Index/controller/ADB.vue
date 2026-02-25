@@ -53,6 +53,8 @@ import { detectAdbDevices, connectController, disconnectController } from '@/api
 import type { AdbDeviceInfo, ConnectControllerRequest } from '@shared/types/api'
 import { useControllerStore, DEFAULT_SCREENCAP_METHOD, DEFAULT_INPUT_METHOD } from '@/stores/controller'
 
+const toast = useToast()
+
 /** maa-node All（Uint64 字符串） */
 const ALL_METHODS = '18446744073709551615'
 
@@ -98,16 +100,25 @@ async function onDetect() {
     detecting.value = true
     try {
         const devices = await detectAdbDevices()
-        // 过滤掉 address 为空的设备，因为 SelectItem 不允许空字符串 value
+        // Filter out devices with empty address since SelectItem does not allow empty value
         const validDevices = devices.filter(d => d.address)
-        deviceMap.value = Object.fromEntries(validDevices.map(d => [`${d.name} (${d.address})`, d]))
-        deviceItems.value = validDevices.map(d => ({
+
+        const newItems = validDevices.map(d => ({
             label: `${d.name} (${d.address})`,
             value: `${d.name} (${d.address})`,
         }))
 
-        // 恢复持久化选中项：优先使用持久化的 label，其次按持久化的 adb_address/adb_path 匹配
+        deviceMap.value = Object.fromEntries(validDevices.map(d => [`${d.name} (${d.address})`, d]))
+        deviceItems.value = newItems
+
+        // Warn user when no devices are found
         if (deviceItems.value.length === 0) {
+            toast.add({
+                title: 'No ADB devices found',
+                description: 'Make sure your device is connected and ADB is running.',
+                icon: 'i-lucide-triangle-alert',
+                color: 'warning',
+            })
             selectedDevice.value = ''
             controllerStore.selectedAdbDevice = ''
         } else if (deviceMap.value[controllerStore.selectedAdbDevice]) {
