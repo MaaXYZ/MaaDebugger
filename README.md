@@ -9,7 +9,7 @@ MaaFramework 的可视化调试工具。
 ### Terminal 1: 后端 (Go Service)
 
 ```bash
-cd go-service
+cd server
 go run ./cmd/server    # 启动后端 (http://127.0.0.1:8011)
 ```
 
@@ -30,14 +30,16 @@ pnpm dev        # 启动前端 (http://localhost:5173)
 一键构建前端并嵌入到 Go 二进制文件中，最终产物为单个可执行文件：
 
 ```bash
-pnpm build              # 构建当前平台
-pnpm build:linux        # 交叉编译 Linux
-pnpm build:windows      # 交叉编译 Windows
-pnpm build:darwin       # 交叉编译 macOS
-pnpm build:skip-frontend  # 跳过前端构建（仅编译 Go）
+node build.mjs                     # 构建当前平台
+node build.mjs --os linux          # 交叉编译 Linux
+node build.mjs --os windows        # 交叉编译 Windows
+node build.mjs --os darwin         # 交叉编译 macOS
+node build.mjs --skip-frontend     # 跳过前端构建（仅编译 Go）
 ```
 
-构建完成后，启动 `go-service/maa-debugger`（Windows 下为 `maa-debugger.exe`），访问 **<http://127.0.0.1:8011>** 即可使用完整的前端 + 后端功能。
+构建完成后，启动 `./maa-debugger`（Windows 下为 `maa-debugger.exe`），访问 **<http://127.0.0.1:8011>** 即可使用完整的前端 + 后端功能。
+> [!NOTE]
+> 需要注意的是 `maa-debugger` 将寻找 `./bin` 下的 MaaFramework 动态库。当前阶段请先手动下载并解压，后续将优化这一问题。
 
 ## 技术栈
 
