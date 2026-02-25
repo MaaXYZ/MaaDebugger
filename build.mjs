@@ -19,7 +19,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = __dirname;
 const WEB_DIR = path.join(ROOT, "web");
-const GO_DIR = path.join(ROOT, "go-service");
+const GO_DIR = path.join(ROOT, "server");
 
 // Parse args
 const args = process.argv.slice(2);
@@ -82,11 +82,11 @@ if (targetOS) {
   );
 }
 
-run(`go build -o ${outputName} ./cmd/server`, GO_DIR, goEnv);
+run(`go build -o ${path.join(ROOT, outputName)} ./cmd/server`, GO_DIR, goEnv);
 
 console.log(`
 ========================================
   ✅ Build complete!
-  Binary: go-service/${outputName}
+  Binary: ./${outputName}
 ========================================
 `);

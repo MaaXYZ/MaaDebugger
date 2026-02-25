@@ -36,18 +36,14 @@ maa-py/*
 # Config persistence
 */.maa/*
 
-# Node.js
-*/dist/*
-
 # Go
 */tmp/*
+
+# Fronted
+**/dist/*
 
 # bin
 *.exe
 *.exe~
 *.dll
 *.so
-
-# Frontend build output (embedded into Go binary)
-go-service/frontend/dist/*
-!go-service/frontend/dist/.gitkeep
