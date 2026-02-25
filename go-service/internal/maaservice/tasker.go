@@ -1,8 +1,11 @@
 package maaservice
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"image/png"
+	"strings"
 	"sync"
 
 	maa "github.com/MaaXYZ/maa-framework-go/v4"
@@ -17,6 +20,10 @@ type TaskerService struct {
 
 	controllerSvc *ControllerService
 	resourceSvc   *ResourceService
+
+	// onEvent 广播回调，由 router 设置，用于将事件通过 WS 广播。
+	// 不在 sink 中渲染/处理，只做消息转发。
+	onEvent func(msg map[string]interface{})
 }
 
 // NewTaskerService 创建一个新的 TaskerService。
@@ -25,6 +32,110 @@ func NewTaskerService(ctrlSvc *ControllerService, resSvc *ResourceService) *Task
 		controllerSvc: ctrlSvc,
 		resourceSvc:   resSvc,
 	}
+}
+
+// SetEventCallback 设置事件广播回调。
+func (s *TaskerService) SetEventCallback(fn func(msg map[string]interface{})) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.onEvent = fn
+}
+
+func (s *TaskerService) emitEvent(msg map[string]interface{}) {
+	log.Info().Interface("event", msg).Msg("[MaaService] emitEvent")
+	if s.onEvent != nil {
+		s.onEvent(msg)
+	}
+}
+
+// eventStatusToString 将 EventStatus 转换为字符串后缀。
+func eventStatusToString(status maa.EventStatus) string {
+	switch status {
+	case maa.EventStatusStarting:
+		return "Starting"
+	case maa.EventStatusSucceeded:
+		return "Succeeded"
+	case maa.EventStatusFailed:
+		return "Failed"
+	default:
+		return "Unknown"
+	}
+}
+
+// registerSinks 注册所有事件回调到 Tasker 上。
+// 不在回调中做任何渲染，只将事件消息通过 emitEvent 发出。
+func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
+	tasker.OnTaskerTask(func(event maa.EventStatus, detail maa.TaskerTaskDetail) {
+		suffix := eventStatusToString(event)
+		s.emitEvent(map[string]interface{}{
+			"msg":     fmt.Sprintf("Task.%s", suffix),
+			"task_id": detail.TaskID,
+			"entry":   detail.Entry,
+			"uuid":    detail.UUID,
+		})
+	})
+
+	tasker.OnNodePipelineNodeInContext(func(_ *maa.Context, event maa.EventStatus, detail maa.NodePipelineNodeDetail) {
+		suffix := eventStatusToString(event)
+		s.emitEvent(map[string]interface{}{
+			"msg":     fmt.Sprintf("PipelineNode.%s", suffix),
+			"name":    detail.Name,
+			"node_id": detail.NodeID,
+		})
+	})
+
+	tasker.OnNodeRecognitionNodeInContext(func(_ *maa.Context, event maa.EventStatus, detail maa.NodeRecognitionNodeDetail) {
+		suffix := eventStatusToString(event)
+		s.emitEvent(map[string]interface{}{
+			"msg":     fmt.Sprintf("RecognitionNode.%s", suffix),
+			"name":    detail.Name,
+			"node_id": detail.NodeID,
+		})
+	})
+
+	tasker.OnNodeActionNodeInContext(func(_ *maa.Context, event maa.EventStatus, detail maa.NodeActionNodeDetail) {
+		suffix := eventStatusToString(event)
+		s.emitEvent(map[string]interface{}{
+			"msg":     fmt.Sprintf("ActionNode.%s", suffix),
+			"name":    detail.Name,
+			"node_id": detail.NodeID,
+		})
+	})
+
+	tasker.OnNodeNextListInContext(func(_ *maa.Context, event maa.EventStatus, detail maa.NodeNextListDetail) {
+		suffix := eventStatusToString(event)
+		list := make([]map[string]interface{}, 0, len(detail.NextList))
+		for _, item := range detail.NextList {
+			list = append(list, map[string]interface{}{
+				"name":      item.Name,
+				"jump_back": item.JumpBack,
+				"anchor":    item.Anchor,
+			})
+		}
+		s.emitEvent(map[string]interface{}{
+			"msg":  fmt.Sprintf("NextList.%s", suffix),
+			"name": detail.Name,
+			"list": list,
+		})
+	})
+
+	tasker.OnNodeRecognitionInContext(func(_ *maa.Context, event maa.EventStatus, detail maa.NodeRecognitionDetail) {
+		suffix := eventStatusToString(event)
+		s.emitEvent(map[string]interface{}{
+			"msg":     fmt.Sprintf("Recognition.%s", suffix),
+			"name":    detail.Name,
+			"reco_id": detail.RecognitionID,
+		})
+	})
+
+	tasker.OnNodeActionInContext(func(_ *maa.Context, event maa.EventStatus, detail maa.NodeActionDetail) {
+		suffix := eventStatusToString(event)
+		s.emitEvent(map[string]interface{}{
+			"msg":       fmt.Sprintf("Action.%s", suffix),
+			"name":      detail.Name,
+			"action_id": detail.ActionID,
+		})
+	})
 }
 
 // RunTaskResult 表示任务运行结果。
@@ -62,6 +173,8 @@ func (s *TaskerService) RunTask(entry string, pipelineOverride json.RawMessage) 
 			return RunTaskResult{Error: fmt.Sprintf("Failed to create tasker: %v", err)}
 		}
 		s.tasker = tasker
+		// 注册事件回调
+		s.registerSinks(tasker)
 	}
 
 	if err := s.tasker.BindController(ctrl); err != nil {
@@ -109,19 +222,25 @@ func (s *TaskerService) RunTask(entry string, pipelineOverride json.RawMessage) 
 }
 
 // StopTask 停止当前正在运行的任务。
-func (s *TaskerService) StopTask() {
+func (s *TaskerService) StopTask() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if s.tasker == nil {
 		log.Info().Msg("[MaaService] StopTask: no active tasker")
-		return
+		return true
 	}
 
 	log.Info().Msg("[MaaService] stopping task...")
 	job := s.tasker.PostStop()
 	job.Wait()
-	log.Info().Msg("[MaaService] task stopped")
+
+	if job.Success() {
+		log.Info().Msg("[MaaService] task stopped")
+		return true
+	} else {
+		return false
+	}
 }
 
 // GetNodeList 返回当前 Resource 的节点列表。
@@ -138,6 +257,160 @@ func (s *TaskerService) GetNodeList() []string {
 	}
 
 	return nodes
+}
+
+// RecoDetailResponse 是返回给前端的识别详情。
+type RecoDetailResponse struct {
+	Name           string                `json:"name"`
+	Algorithm      string                `json:"algorithm"`
+	Hit            bool                  `json:"hit"`
+	Box            *RectResponse         `json:"box,omitempty"`
+	DetailJSON     interface{}           `json:"detail_json,omitempty"`
+	CombinedResult []*RecoDetailResponse `json:"combined_result,omitempty"`
+	DrawImages     []string              `json:"draw_images,omitempty"`
+}
+
+// RectResponse 矩形区域。
+type RectResponse struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+	W int `json:"w"`
+	H int `json:"h"`
+}
+
+// convertRecoDetail 递归转换 RecognitionDetail 到响应结构。
+func convertRecoDetail(detail *maa.RecognitionDetail) *RecoDetailResponse {
+	if detail == nil {
+		return nil
+	}
+
+	resp := &RecoDetailResponse{
+		Name:      detail.Name,
+		Algorithm: detail.Algorithm,
+		Hit:       detail.Hit,
+	}
+
+	// Box
+	if detail.Hit {
+		resp.Box = &RectResponse{
+			X: int(detail.Box.X()),
+			Y: int(detail.Box.Y()),
+			W: int(detail.Box.Width()),
+			H: int(detail.Box.Height()),
+		}
+	}
+
+	// DetailJSON
+	if detail.DetailJson != "" {
+		var parsed interface{}
+		if err := json.Unmarshal([]byte(detail.DetailJson), &parsed); err == nil {
+			resp.DetailJSON = parsed
+		} else {
+			resp.DetailJSON = detail.DetailJson
+		}
+	}
+
+	// CombinedResult (for And/Or algorithms)
+	if len(detail.CombinedResult) > 0 {
+		resp.CombinedResult = make([]*RecoDetailResponse, 0, len(detail.CombinedResult))
+		for _, sub := range detail.CombinedResult {
+			resp.CombinedResult = append(resp.CombinedResult, convertRecoDetail(sub))
+		}
+	}
+
+	// Draw images → base64 PNG
+	if len(detail.Draws) > 0 {
+		resp.DrawImages = make([]string, 0, len(detail.Draws))
+		for _, img := range detail.Draws {
+			if img == nil {
+				continue
+			}
+			var buf strings.Builder
+			buf.WriteString("data:image/png;base64,")
+			encoder := base64.NewEncoder(base64.StdEncoding, &buf)
+			if err := png.Encode(encoder, img); err != nil {
+				continue
+			}
+			encoder.Close()
+			resp.DrawImages = append(resp.DrawImages, buf.String())
+		}
+	}
+
+	return resp
+}
+
+// NodeDetailResponse 返回给前端的节点详情（包含 reco + action）。
+type NodeDetailResponse struct {
+	Name         string              `json:"name"`
+	Recognition  *RecoDetailResponse `json:"recognition,omitempty"`
+	Action       *ActionDetailResp   `json:"action,omitempty"`
+	RunCompleted bool                `json:"run_completed"`
+}
+
+// ActionDetailResp 返回给前端的 action 详情。
+type ActionDetailResp struct {
+	Name       string        `json:"name"`
+	Action     string        `json:"action"`
+	Box        *RectResponse `json:"box,omitempty"`
+	Success    bool          `json:"success"`
+	DetailJSON interface{}   `json:"detail_json,omitempty"`
+}
+
+// convertActionDetail 转换 ActionDetail 到响应结构。
+func convertActionDetail(detail *maa.ActionDetail) *ActionDetailResp {
+	if detail == nil {
+		return nil
+	}
+	resp := &ActionDetailResp{
+		Name:    detail.Name,
+		Action:  detail.Action,
+		Success: detail.Success,
+	}
+	resp.Box = &RectResponse{
+		X: detail.Box.X(),
+		Y: detail.Box.Y(),
+		W: detail.Box.Width(),
+		H: detail.Box.Height(),
+	}
+	if detail.DetailJson != "" {
+		var parsed interface{}
+		if err := json.Unmarshal([]byte(detail.DetailJson), &parsed); err == nil {
+			resp.DetailJSON = parsed
+		} else {
+			resp.DetailJSON = detail.DetailJson
+		}
+	}
+	return resp
+}
+
+// GetLatestNodeDetail 获取指定 task name 的最新节点详情。
+func (s *TaskerService) GetLatestNodeDetail(name string) (*NodeDetailResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.tasker == nil {
+		return nil, fmt.Errorf("tasker is not initialized")
+	}
+
+	detail, err := s.tasker.GetLatestNode(name)
+	if err != nil {
+		return nil, fmt.Errorf("get latest node failed: %w", err)
+	}
+	if detail == nil {
+		return nil, fmt.Errorf("node detail not found for %s", name)
+	}
+
+	resp := &NodeDetailResponse{
+		Name:         detail.Name,
+		RunCompleted: detail.RunCompleted,
+	}
+	if detail.Recognition != nil {
+		resp.Recognition = convertRecoDetail(detail.Recognition)
+	}
+	if detail.Action != nil {
+		resp.Action = convertActionDetail(detail.Action)
+	}
+	return resp, nil
 }
 
 // Running 返回 Tasker 是否正在运行任务。

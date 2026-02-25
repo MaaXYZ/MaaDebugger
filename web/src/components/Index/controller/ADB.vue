@@ -165,8 +165,20 @@ async function doConnect(params: ConnectControllerRequest): Promise<boolean> {
         const result = await connectController(params)
         if (!result.succeed) {
             console.error('[ADB] Connect failed:', result.msg)
+            toast.add({
+                title: 'Controller Connect Failed',
+                description: result.msg || 'Unknown error',
+                icon: 'i-lucide-circle-x',
+                color: 'error',
+            })
             return false
         }
+
+        toast.add({
+            title: 'Controller Connected',
+            icon: 'i-lucide-check-circle',
+            color: 'success',
+        })
 
         // 连接成功 → 持久化
         controllerStore.selectedAdbDevice = selectedDevice.value
@@ -210,7 +222,21 @@ async function onConnect() {
  */
 async function onDisconnect() {
     try {
-        await disconnectController()
+        const result = await disconnectController()
+        if (result && !result.succeed) {
+            toast.add({
+                title: 'Controller Disconnect Failed',
+                description: result.msg,
+                icon: 'i-lucide-circle-x',
+                color: 'error',
+            })
+        } else {
+            toast.add({
+                title: 'Controller Disconnected',
+                icon: 'i-lucide-unlink',
+                color: 'warning',
+            })
+        }
     } catch (err) {
         console.error('[ADB] Disconnect failed:', err)
     }

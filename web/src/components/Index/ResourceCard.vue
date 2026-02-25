@@ -162,22 +162,6 @@ const statusColor = computed(() => {
     }
 })
 
-// --- Resource Status Toast ---
-watch(() => statusStore.resourceStatus, (newStatus, oldStatus) => {
-    if (!oldStatus || newStatus === oldStatus) return
-
-    if (oldStatus === 'loading' && newStatus === 'loaded') {
-        // 加载成功后自动收起卡片
-        showFullCard.value = false
-        toast.add({
-            title: 'Resource Loaded',
-            icon: 'i-lucide-check-circle',
-            color: 'success',
-        })
-    }
-    // failed 的 toast 由 onLoadResource 中处理，避免重复显示
-})
-
 // --- Enabled Paths ---
 const enabledPaths = computed(() => resourceStore.getEnabledPaths())
 
@@ -195,6 +179,13 @@ async function onLoadResource() {
                 description: result.msg || 'Unknown error',
                 icon: 'i-lucide-circle-x',
                 color: 'error',
+            })
+        } else {
+            showFullCard.value = false
+            toast.add({
+                title: 'Resource Loaded',
+                icon: 'i-lucide-check-circle',
+                color: 'success',
             })
         }
     } catch (err) {

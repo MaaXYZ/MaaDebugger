@@ -79,25 +79,6 @@ const isRunning = computed(() => {
 
 const startStopKeys = computed(() => formatShortcut(shortcutsStore.getBinding('task.startStop')))
 
-watch(() => statusStore.taskStatus, (newStatus, oldStatus) => {
-    if (!oldStatus || newStatus === oldStatus) return
-    if (oldStatus !== 'running') return
-
-    if (newStatus === 'failed') {
-        toast.add({
-            title: 'Task Failed',
-            icon: 'i-lucide-circle-x',
-            color: 'error',
-        })
-    } else if (newStatus === 'stopped') {
-        toast.add({
-            title: 'Task Stopped',
-            icon: 'i-lucide-circle-stop',
-            color: 'warning',
-        })
-    }
-})
-
 // 资源加载成功后刷新任务节点列表
 watch(() => statusStore.resourceStatus, (newStatus, oldStatus) => {
     if (oldStatus === 'loading' && newStatus === 'loaded') {
@@ -117,6 +98,12 @@ async function onStart() {
             icon: 'i-lucide-circle-x',
             color: 'error',
         })
+    } else {
+        toast.add({
+            title: 'Task Started',
+            icon: 'i-lucide-play',
+            color: 'success',
+        })
     }
 }
 
@@ -128,6 +115,12 @@ async function onStop() {
             description: result.msg,
             icon: 'i-lucide-circle-x',
             color: 'error',
+        })
+    } else {
+        toast.add({
+            title: 'Task Stop Requested',
+            icon: 'i-lucide-circle-stop',
+            color: 'warning',
         })
     }
 }

@@ -41,6 +41,11 @@ func NewRouter(deps Dependencies) http.Handler {
 		},
 	}
 
+	// 设置事件回调：将 Tasker 事件通过 WS 广播（不在 sink 中渲染）
+	deps.TaskerService.SetEventCallback(func(msg map[string]interface{}) {
+		deps.Hub.BroadcastJSON(ws.Message{Type: "task.event", Payload: msg})
+	})
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", r.handleRoot)
 	mux.HandleFunc("GET /api/info/version", r.handleInfoVersion)
@@ -57,6 +62,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.HandleFunc("POST /api/task/run", r.handleTaskRun)
 	mux.HandleFunc("POST /api/task/stop", r.handleTaskStop)
 	mux.HandleFunc("GET /api/task/nodes", r.handleTaskNodes)
+	mux.HandleFunc("GET /api/task/node/{name}", r.handleTaskNodeDetail)
 	mux.HandleFunc("GET /ws", r.handleWS)
 
 	return recoverer(logging(cors(mux)))
@@ -437,15 +443,34 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 
 func (r *router) handleTaskStop(w http.ResponseWriter, _ *http.Request) {
 	log.Info().Msg("[Task] stop request")
-	r.deps.TaskerService.StopTask()
-	r.deps.StatusStore.SetTask("stopped")
-	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
-	response.OK(w, nil)
+	if r.deps.TaskerService.StopTask() {
+		r.deps.StatusStore.SetTask("stopped")
+		r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
+		response.OK(w, nil)
+	} else {
+		// TODO:
+	}
 }
 
 func (r *router) handleTaskNodes(w http.ResponseWriter, _ *http.Request) {
 	nodes := r.deps.TaskerService.GetNodeList()
 	response.OK(w, nodes)
+}
+
+func (r *router) handleTaskNodeDetail(w http.ResponseWriter, req *http.Request) {
+	name := req.PathValue("name")
+	if name == "" {
+		response.Fail(w, http.StatusBadRequest, "name is required")
+		return
+	}
+
+	detail, err := r.deps.TaskerService.GetLatestNodeDetail(name)
+	if err != nil {
+		response.Fail(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.OK(w, detail)
 }
 
 func (r *router) handleWS(w http.ResponseWriter, req *http.Request) {

@@ -150,30 +150,13 @@ const statusColor = computed(() => {
     }
 })
 
-// 状态变化时显示 toast 通知
+// 状态变化时记录是否尝试过连接
 watch(() => statusStore.controllerStatus, (newStatus, oldStatus) => {
     if (!oldStatus || newStatus === oldStatus) return
 
     // 标记曾经尝试连接
     if (newStatus === 'connecting' || newStatus === 'connected') {
         hasAttemptedConnection.value = true
-    }
-
-    // 仅在 connecting → connected（连接成功）或 connecting → disconnected（连接失败）时发送 toast
-    if (oldStatus === 'connecting' && newStatus === 'connected') {
-        // 连接成功后自动收起卡片
-        showFullCard.value = false
-        toast.add({
-            title: 'Controller Connected',
-            icon: 'i-lucide-check-circle',
-            color: 'success',
-        })
-    } else if (oldStatus === 'connecting' && newStatus === 'disconnected') {
-        toast.add({
-            title: 'Controller Connect Failed',
-            icon: 'i-lucide-circle-x',
-            color: 'error',
-        })
     }
 })
 
@@ -369,8 +352,21 @@ async function onConnect() {
         const result = await connectController(params as any)
         if (!result.succeed) {
             console.error(`[${type}] Connect failed:`, result.msg)
+            toast.add({
+                title: 'Controller Connect Failed',
+                description: result.msg || 'Unknown error',
+                icon: 'i-lucide-circle-x',
+                color: 'error',
+            })
             return
         }
+
+        showFullCard.value = false
+        toast.add({
+            title: 'Controller Connected',
+            icon: 'i-lucide-check-circle',
+            color: 'success',
+        })
 
         // 持久化共享桌面配置
         const windowInfo = windowSearchRef.value?.windowMap?.[hwnd]
@@ -389,7 +385,21 @@ async function onConnect() {
 
 async function onDisconnect() {
     try {
-        await disconnectController()
+        const result = await disconnectController()
+        if (result && !result.succeed) {
+            toast.add({
+                title: 'Controller Disconnect Failed',
+                description: result.msg,
+                icon: 'i-lucide-circle-x',
+                color: 'error',
+            })
+        } else {
+            toast.add({
+                title: 'Controller Disconnected',
+                icon: 'i-lucide-unlink',
+                color: 'warning',
+            })
+        }
     } catch (err) {
         console.error('[Desktop] Disconnect failed:', err)
     }

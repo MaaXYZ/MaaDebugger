@@ -118,6 +118,20 @@ export async function loadResource(paths: string[]): Promise<ApiResponse> {
 // ============================================================
 
 /**
+ * 获取指定节点的最新详情（含 reco detail + action detail）
+ */
+export async function getNodeDetail(
+  name: string,
+): Promise<
+  import("@/components/Index/taskDetail/types").NodeDetailResponse | null
+> {
+  const result = await request<
+    import("@/components/Index/taskDetail/types").NodeDetailResponse
+  >(`/task/node/${encodeURIComponent(name)}`);
+  return result.data ?? null;
+}
+
+/**
  * 获取可运行节点列表
  */
 export async function getTaskNodes(): Promise<string[]> {

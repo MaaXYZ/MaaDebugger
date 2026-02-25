@@ -1,8 +1,10 @@
 import type { WSServerMessage } from "@shared/types/ws";
 import type { StatusSnapshot } from "@shared/types/api";
+import type { TaskEvent } from "@/components/Index/taskDetail/types";
 
 export type WSEventHandler = {
   onStatusUpdate?: (status: StatusSnapshot) => void;
+  onTaskEvent?: (event: TaskEvent) => void;
   onLog?: (level: string, message: string) => void;
   onOpen?: () => void;
   onClose?: () => void;
@@ -100,11 +102,15 @@ class WSClient {
 
     // JSON 文本消息
     try {
-      const message = JSON.parse(event.data) as WSServerMessage;
+      const message = JSON.parse(event.data) as Record<string, unknown>;
 
       switch (message.type) {
         case "status.update":
           this.handlers.onStatusUpdate?.(message.payload as StatusSnapshot);
+          break;
+
+        case "task.event":
+          this.handlers.onTaskEvent?.(message.payload as TaskEvent);
           break;
 
         case "log":
@@ -115,7 +121,7 @@ class WSClient {
           break;
 
         default:
-          console.warn("[WS] Unknown message type:", (message as any).type);
+          console.warn("[WS] Unknown message type:", message.type);
       }
     } catch (err) {
       console.error("[WS] Failed to parse message:", err);
