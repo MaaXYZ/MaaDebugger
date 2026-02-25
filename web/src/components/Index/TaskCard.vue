@@ -44,10 +44,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import TaskStatusBadge from './task/TaskStatusBadge.vue'
 import type { TaskStatus } from './task/types'
 import { useShortcutsStore, formatShortcut } from '@/stores/shortcuts'
+import { useStatusStore } from '@/stores/status'
+import { getTaskNodes, runTask, stopTask } from '@/api/http'
 
 // --- Types ---
 interface TaskEntry {
@@ -56,10 +58,12 @@ interface TaskEntry {
 }
 
 // --- State ---
+const toast = useToast()
 const shortcutsStore = useShortcutsStore()
+const statusStore = useStatusStore()
 const entries = ref<TaskEntry[]>([])
 const selectedEntry = ref<string>('')
-const taskStatus = ref<TaskStatus>('idle')
+const taskStatus = computed<TaskStatus>(() => statusStore.taskStatus)
 
 // --- Computed ---
 const entrySelectItems = computed(() => {
@@ -75,19 +79,69 @@ const isRunning = computed(() => {
 
 const startStopKeys = computed(() => formatShortcut(shortcutsStore.getBinding('task.startStop')))
 
+watch(() => statusStore.taskStatus, (newStatus, oldStatus) => {
+    if (!oldStatus || newStatus === oldStatus) return
+    if (oldStatus !== 'running') return
+
+    if (newStatus === 'failed') {
+        toast.add({
+            title: 'Task Failed',
+            icon: 'i-lucide-circle-x',
+            color: 'error',
+        })
+    } else if (newStatus === 'stopped') {
+        toast.add({
+            title: 'Task Stopped',
+            icon: 'i-lucide-circle-stop',
+            color: 'warning',
+        })
+    }
+})
+
+// 资源加载成功后刷新任务节点列表
+watch(() => statusStore.resourceStatus, (newStatus, oldStatus) => {
+    if (oldStatus === 'loading' && newStatus === 'loaded') {
+        refreshNodes()
+    }
+})
+
 // --- Actions ---
-function onStart() {
+async function onStart() {
     if (!selectedEntry.value) return
-    taskStatus.value = 'running'
+
+    const result = await runTask(selectedEntry.value, {})
+    if (!result.succeed) {
+        toast.add({
+            title: 'Task Run Failed',
+            description: result.msg,
+            icon: 'i-lucide-circle-x',
+            color: 'error',
+        })
+    }
 }
 
-function onStop() {
-    // TODO: Replace with actual task stop logic
-    taskStatus.value = 'idle'
+async function onStop() {
+    const result = await stopTask()
+    if (!result.succeed) {
+        toast.add({
+            title: 'Task Stop Failed',
+            description: result.msg,
+            icon: 'i-lucide-circle-x',
+            color: 'error',
+        })
+    }
 }
 
 function onEditOverride() {
     // TODO: Open editor for task override
+}
+
+async function refreshNodes() {
+    const nodes = await getTaskNodes()
+    entries.value = nodes.map((n) => ({ label: n, value: n }))
+    if (!selectedEntry.value && entries.value.length > 0) {
+        selectedEntry.value = entries.value[0]!.value
+    }
 }
 
 // --- Keyboard Shortcut ---
@@ -109,6 +163,7 @@ function onKeydown(e: KeyboardEvent) {
 
 onMounted(() => {
     window.addEventListener('keydown', onKeydown)
+    refreshNodes()
 })
 
 onUnmounted(() => {
@@ -135,5 +190,6 @@ defineExpose({
     getSelectedEntry,
     getTaskStatus,
     setEntries,
+    refreshNodes,
 })
 </script>

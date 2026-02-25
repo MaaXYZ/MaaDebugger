@@ -1,0 +1,61 @@
+{
+  "controller": {
+    "controllerType": "adb",
+    "adbPath": "C:/Program Files/Netease/MuMu Player 12/nx_main/adb.exe",
+    "adbAddress": "127.0.0.1:16384",
+    "screencapMethod": "16",
+    "inputMethod": "2",
+    "adbConfig": "{\"extras\":{\"mumu\":{\"enable\":true,\"index\":0,\"path\":\"C:/Program Files/Netease/MuMu Player 12\"}}}",
+    "selectedAdbDevice": "Dev-MuMuPlayer12 v5 (127.0.0.1:16384)",
+    "desktopHwnd": "67380",
+    "desktopClassName": "Qt51517QWindowToolSaveBits",
+    "desktopWindowName": "WeMail",
+    "desktopScreencapMethod": "32",
+    "selectedDesktopWindow": "67380",
+    "desktopClassFilter": "",
+    "desktopWindowRegex": "",
+    "win32MouseMethod": "256",
+    "win32KeyboardMethod": "1",
+    "gamepadType": "0",
+    "win32Hwnd": "67380",
+    "win32ClassName": "Qt51517QWindowToolSaveBits",
+    "win32WindowName": "WeMail",
+    "win32ScreencapMethod": "1",
+    "selectedWin32Window": "67380",
+    "gamepadHwnd": "23071260",
+    "gamepadClassName": "Chrome_WidgetWin_1",
+    "gamepadWindowName": "MaaDebugger - Google Chrome",
+    "gamepadScreencapMethod": "1",
+    "selectedGamepadWindow": "23071260"
+  },
+  "resource": {
+    "profiles": [
+      {
+        "id": 0,
+        "name": "Default",
+        "paths": [
+          {
+            "id": 3,
+            "path": "C:\\Users\\buliu\\Desktop\\Github\\maafw-test\\resource",
+            "enabled": true
+          },
+          {
+            "id": 5,
+            "path": "C:\\Users\\buliu\\Desktop\\Github\\maafw-test\\resourc",
+            "enabled": false
+          }
+        ]
+      }
+    ],
+    "activeProfileId": 0
+  },
+  "shortcuts": {
+    "shortcuts": {
+      "task.startStop": {
+        "label": "Start / Stop Task",
+        "defaultBinding": "P",
+        "binding": "P"
+      }
+    }
+  }
+}

@@ -114,6 +114,43 @@ export async function loadResource(paths: string[]): Promise<ApiResponse> {
 }
 
 // ============================================================
+// Task API
+// ============================================================
+
+/**
+ * 获取可运行节点列表
+ */
+export async function getTaskNodes(): Promise<string[]> {
+  const result = await request<string[]>("/task/nodes");
+  return Array.isArray(result.data) ? result.data : [];
+}
+
+/**
+ * 运行任务
+ */
+export async function runTask(
+  entry: string,
+  pipelineOverride: Record<string, unknown> = {},
+): Promise<ApiResponse> {
+  return request("/task/run", {
+    method: "POST",
+    body: JSON.stringify({
+      entry,
+      pipeline_override: pipelineOverride,
+    }),
+  });
+}
+
+/**
+ * 停止任务
+ */
+export async function stopTask(): Promise<ApiResponse> {
+  return request("/task/stop", {
+    method: "POST",
+  });
+}
+
+// ============================================================
 // Info API
 // ============================================================
 

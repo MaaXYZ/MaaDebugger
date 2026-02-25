@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"runtime/debug"
 	"strconv"
-	"sync"
 	"time"
 
 	maa "github.com/MaaXYZ/maa-framework-go/v4"
 	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog/log"
 
+	"github.com/MaaXYZ/MaaDebugger/internal/configstore"
 	"github.com/MaaXYZ/MaaDebugger/internal/maaservice"
 	"github.com/MaaXYZ/MaaDebugger/internal/response"
 	"github.com/MaaXYZ/MaaDebugger/internal/state"
@@ -24,19 +24,18 @@ type Dependencies struct {
 	Hub               *ws.Hub
 	ControllerService *maaservice.ControllerService
 	ResourceService   *maaservice.ResourceService
+	TaskerService     *maaservice.TaskerService
+	ConfigStore       *configstore.Store
 }
 
 type router struct {
 	deps     Dependencies
-	cfgMu    sync.RWMutex
-	cfgStore map[string]interface{}
 	upgrader websocket.Upgrader
 }
 
 func NewRouter(deps Dependencies) http.Handler {
 	r := &router{
-		deps:     deps,
-		cfgStore: map[string]interface{}{},
+		deps: deps,
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(_ *http.Request) bool { return true },
 		},
@@ -55,6 +54,9 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.HandleFunc("POST /api/controller/connect", r.handleControllerConnect)
 	mux.HandleFunc("POST /api/controller/disconnect", r.handleControllerDisconnect)
 	mux.HandleFunc("POST /api/resource/load", r.handleResourceLoad)
+	mux.HandleFunc("POST /api/task/run", r.handleTaskRun)
+	mux.HandleFunc("POST /api/task/stop", r.handleTaskStop)
+	mux.HandleFunc("GET /api/task/nodes", r.handleTaskNodes)
 	mux.HandleFunc("GET /ws", r.handleWS)
 
 	return recoverer(logging(cors(mux)))
@@ -76,23 +78,13 @@ func (r *router) handleInfoStatus(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (r *router) handleConfigAll(w http.ResponseWriter, _ *http.Request) {
-	r.cfgMu.RLock()
-	defer r.cfgMu.RUnlock()
-
-	dup := make(map[string]interface{}, len(r.cfgStore))
-	for k, v := range r.cfgStore {
-		dup[k] = v
-	}
-	response.OK(w, dup)
+	response.OK(w, r.deps.ConfigStore.GetAll())
 }
 
 func (r *router) handleConfigGet(w http.ResponseWriter, req *http.Request) {
 	key := req.PathValue("key")
 
-	r.cfgMu.RLock()
-	defer r.cfgMu.RUnlock()
-
-	v, ok := r.cfgStore[key]
+	v, ok := r.deps.ConfigStore.Get(key)
 	if !ok {
 		response.OK(w, nil)
 		return
@@ -108,10 +100,7 @@ func (r *router) handleConfigSet(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	r.cfgMu.Lock()
-	r.cfgStore[key] = payload
-	r.cfgMu.Unlock()
-
+	r.deps.ConfigStore.Set(key, payload)
 	response.OK(w, nil)
 }
 
@@ -122,12 +111,7 @@ func (r *router) handleConfigMerge(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	r.cfgMu.Lock()
-	for k, v := range payload {
-		r.cfgStore[k] = v
-	}
-	r.cfgMu.Unlock()
-
+	r.deps.ConfigStore.Merge(payload)
 	response.OK(w, nil)
 }
 
@@ -415,6 +399,53 @@ func (r *router) handleResourceLoad(w http.ResponseWriter, req *http.Request) {
 	}
 
 	response.OK(w, nil)
+}
+
+func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
+	var payload struct {
+		Entry            string          `json:"entry"`
+		PipelineOverride json.RawMessage `json:"pipeline_override"`
+	}
+	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+		log.Warn().Err(err).Msg("[Task] run: invalid json body")
+		response.Fail(w, http.StatusBadRequest, "Invalid json body")
+		return
+	}
+	if payload.Entry == "" {
+		response.Fail(w, http.StatusBadRequest, "Entry is required")
+		return
+	}
+
+	log.Info().Str("entry", payload.Entry).Msg("[Task] run request")
+	r.deps.StatusStore.SetTask("running")
+	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
+
+	result := r.deps.TaskerService.RunTask(payload.Entry, payload.PipelineOverride)
+	if result.Success {
+		r.deps.StatusStore.SetTask("success")
+		log.Info().Str("entry", payload.Entry).Msg("[Task] run succeeded, status → success")
+		r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
+		response.OK(w, nil)
+		return
+	}
+
+	r.deps.StatusStore.SetTask("failed")
+	log.Warn().Str("entry", payload.Entry).Str("error", result.Error).Msg("[Task] run failed, status → failed")
+	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
+	response.Fail(w, http.StatusBadRequest, result.Error)
+}
+
+func (r *router) handleTaskStop(w http.ResponseWriter, _ *http.Request) {
+	log.Info().Msg("[Task] stop request")
+	r.deps.TaskerService.StopTask()
+	r.deps.StatusStore.SetTask("stopped")
+	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
+	response.OK(w, nil)
+}
+
+func (r *router) handleTaskNodes(w http.ResponseWriter, _ *http.Request) {
+	nodes := r.deps.TaskerService.GetNodeList()
+	response.OK(w, nodes)
 }
 
 func (r *router) handleWS(w http.ResponseWriter, req *http.Request) {

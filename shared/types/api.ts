@@ -69,7 +69,7 @@ export type ResourceStatus = "unloaded" | "loading" | "loaded" | "failed";
 /**
  * Task 运行状态
  */
-export type TaskStatus = "idle" | "running" | "success" | "failed";
+export type TaskStatus = "idle" | "running" | "success" | "failed" | "stopped";
 
 /**
  * Agent 状态

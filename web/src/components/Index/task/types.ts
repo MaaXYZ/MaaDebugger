@@ -1,1 +1,1 @@
-export type TaskStatus = "idle" | "running" | "succeed" | "failed";
+export type TaskStatus = "idle" | "running" | "success" | "failed" | "stopped";

@@ -23,8 +23,9 @@ const statusLabel = computed(() => {
     switch (props.status) {
         case 'idle': return 'Idle'
         case 'running': return 'Running'
-        case 'succeed': return 'Succeed'
+        case 'success': return 'Success'
         case 'failed': return 'Failed'
+        case 'stopped': return 'Stopped'
         default: return 'Unknown'
     }
 })
@@ -32,8 +33,9 @@ const statusLabel = computed(() => {
 const badgeColor = computed(() => {
     switch (props.status) {
         case 'running': return 'info' as const
-        case 'succeed': return 'success' as const
+        case 'success': return 'success' as const
         case 'failed': return 'error' as const
+        case 'stopped': return 'warning' as const
         default: return 'neutral' as const
     }
 })
@@ -43,8 +45,9 @@ const badgeVariant = computed(() => 'subtle' as const)
 const dotColorClass = computed(() => {
     switch (props.status) {
         case 'running': return 'bg-info'
-        case 'succeed': return 'bg-success'
+        case 'success': return 'bg-success'
         case 'failed': return 'bg-error'
+        case 'stopped': return 'bg-warning'
         default: return 'bg-gray-400 dark:bg-gray-500'
     }
 })

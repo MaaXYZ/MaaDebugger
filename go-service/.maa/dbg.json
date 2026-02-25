@@ -1,0 +1,48 @@
+{
+  "controller": {
+    "adbAddress": "127.0.0.1:16384",
+    "adbConfig": "{\"extras\":{\"mumu\":{\"enable\":true,\"index\":0,\"path\":\"C:/Program Files/Netease/MuMu Player 12\"}}}",
+    "adbPath": "C:/Program Files/Netease/MuMu Player 12/nx_main/adb.exe",
+    "controllerType": "adb",
+    "desktopClassFilter": "",
+    "desktopClassName": "",
+    "desktopHwnd": "",
+    "desktopScreencapMethod": "1",
+    "desktopWindowName": "",
+    "desktopWindowRegex": "",
+    "gamepadType": "0",
+    "inputMethod": "All",
+    "playcoverAddress": "",
+    "playcoverUuid": "",
+    "screencapMethod": "EmulatorExtras",
+    "selectedAdbDevice": "Dev-MuMuPlayer12 v5 (127.0.0.1:16384)",
+    "selectedDesktopWindow": "",
+    "win32KeyboardMethod": "1",
+    "win32MouseMethod": "1"
+  },
+  "resource": {
+    "activeProfileId": 0,
+    "profiles": [
+      {
+        "id": 0,
+        "name": "Default",
+        "paths": [
+          {
+            "enabled": true,
+            "id": 1,
+            "path": "C:\\Users\\buliu\\Desktop\\Github\\maafw-test\\resource"
+          }
+        ]
+      }
+    ]
+  },
+  "shortcuts": {
+    "shortcuts": {
+      "task.startStop": {
+        "binding": "P",
+        "defaultBinding": "P",
+        "label": "Start / Stop Task"
+      }
+    }
+  }
+}

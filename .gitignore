@@ -35,7 +35,7 @@ maa-js/*
 maa-py/*
 
 # Config persistence
-.maa-debugger/
+.maa/*
 
 # Go
 tmp/*
