@@ -152,8 +152,8 @@ async function doConnect(params: ConnectControllerRequest): Promise<boolean> {
     connecting.value = true
     try {
         const result = await connectController(params)
-        if (!result.success) {
-            console.error('[ADB] Connect failed:', result.error)
+        if (!result.succeed) {
+            console.error('[ADB] Connect failed:', result.msg)
             return false
         }
 

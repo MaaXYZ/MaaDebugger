@@ -359,8 +359,8 @@ async function onConnect() {
         }
 
         const result = await connectController(params as any)
-        if (!result.success) {
-            console.error(`[${type}] Connect failed:`, result.error)
+        if (!result.succeed) {
+            console.error(`[${type}] Connect failed:`, result.msg)
             return
         }
 

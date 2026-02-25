@@ -1,5 +1,5 @@
 <template>
-    <UCard class="w-full" size="xl">
+    <UCard class="w-full h-full" size="xl">
         <template #header>
             <div class="flex flex-row items-center gap-2 min-h-10">
                 <span class="font-bold">Task Detail</span>

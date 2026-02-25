@@ -36,3 +36,11 @@ maa-py/*
 
 # Config persistence
 .maa-debugger/
+
+# Go
+tmp/*
+
+# bin
+*.exe
+*.dll
+*.so

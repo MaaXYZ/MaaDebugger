@@ -1,10 +1,15 @@
 import type {
-  ApiResponse,
   AdbDeviceInfo,
   Win32WindowInfo,
   ConnectControllerRequest,
   StatusSnapshot,
 } from "@shared/types/api";
+
+export interface ApiResponse<T = unknown> {
+  succeed: boolean;
+  msg: string;
+  data?: T;
+}
 
 /**
  * API 基础 URL
@@ -35,8 +40,9 @@ async function request<T>(
     return data;
   } catch (err) {
     return {
-      success: false,
-      error: err instanceof Error ? err.message : "Network error",
+      succeed: false,
+      msg: err instanceof Error ? err.message : "Network error",
+      data: undefined,
     };
   }
 }
@@ -50,7 +56,10 @@ async function request<T>(
  */
 export async function detectAdbDevices(): Promise<AdbDeviceInfo[]> {
   const result = await request<AdbDeviceInfo[]>("/controller/detect/adb");
-  return result.data ?? [];
+  if (!result.succeed) {
+    throw new Error(result.msg || "Detect ADB failed");
+  }
+  return Array.isArray(result.data) ? result.data : [];
 }
 
 /**
@@ -97,9 +106,7 @@ export async function disconnectController(): Promise<ApiResponse> {
 /**
  * 加载资源
  */
-export async function loadResource(
-  paths: string[],
-): Promise<ApiResponse> {
+export async function loadResource(paths: string[]): Promise<ApiResponse> {
   return request("/resource/load", {
     method: "POST",
     body: JSON.stringify({ paths }),

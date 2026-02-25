@@ -5,10 +5,10 @@
             <ControllerCard />
             <ResourceCard />
             <AgentCard />
-        </div>
-        <!-- 第二列: Task / Screenshot -->
-        <div class="w-full flex flex-col gap-4 order-2 lg:order-0">
             <TaskCard />
+        </div>
+        <!-- 第二列: Screenshot -->
+        <div class="w-full flex flex-col gap-4 order-2 lg:order-0">
             <ScreenshotCard />
         </div>
         <!-- 第三列: Task Detail -->

@@ -191,8 +191,8 @@ async function onLoadResource() {
 
     try {
         const result = await loadResource(paths)
-        if (!result.success) {
-            console.error('[Resource] Load failed:', result.error)
+        if (!result.succeed) {
+            console.error('[Resource] Load failed:', result.msg)
         }
     } catch (err) {
         console.error('[Resource] Load failed:', err)
