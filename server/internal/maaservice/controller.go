@@ -3,7 +3,7 @@ package maaservice
 import (
 	"fmt"
 	"strconv"
-	"sync"
+	"sync/atomic"
 	"unsafe"
 
 	maa "github.com/MaaXYZ/maa-framework-go/v4"
@@ -14,8 +14,7 @@ import (
 
 // ControllerService 管理 MaaFW Controller 实例的生命周期。
 type ControllerService struct {
-	mu         sync.Mutex
-	controller *maa.Controller
+	controller atomic.Pointer[maa.Controller]
 }
 
 // NewControllerService 创建一个新的 ControllerService。
@@ -33,9 +32,6 @@ type ConnectAdbResult struct {
 func (s *ControllerService) ConnectAdb(
 	adbPath, address, screencapMethod, inputMethod, config string,
 ) ConnectAdbResult {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	log.Info().
 		Str("adb_path", adbPath).
 		Str("address", address).
@@ -43,13 +39,6 @@ func (s *ControllerService) ConnectAdb(
 		Str("input_method", inputMethod).
 		Str("config", config).
 		Msg("[MaaService] ConnectAdb called")
-
-	// 销毁旧连接
-	if s.controller != nil {
-		log.Info().Msg("[MaaService] destroying previous controller")
-		s.controller.Destroy()
-		s.controller = nil
-	}
 
 	scMethod, err := adb.ParseScreencapMethod(screencapMethod)
 	if err != nil {
@@ -96,7 +85,12 @@ func (s *ControllerService) ConnectAdb(
 		return ConnectAdbResult{Error: errMsg}
 	}
 
-	s.controller = ctrl
+	// 替换旧实例
+	if old := s.controller.Swap(ctrl); old != nil {
+		log.Info().Msg("[MaaService] destroying previous controller")
+		old.Destroy()
+	}
+
 	log.Info().Str("address", address).Msg("[MaaService] ADB controller connected successfully")
 	return ConnectAdbResult{Success: true}
 }
@@ -105,22 +99,12 @@ func (s *ControllerService) ConnectAdb(
 func (s *ControllerService) ConnectWin32(
 	hwndStr, screencapMethod, mouseMethod, keyboardMethod string,
 ) ConnectAdbResult {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	log.Info().
 		Str("hwnd", hwndStr).
 		Str("screencap_method", screencapMethod).
 		Str("mouse_method", mouseMethod).
 		Str("keyboard_method", keyboardMethod).
 		Msg("[MaaService] ConnectWin32 called")
-
-	// 销毁旧连接
-	if s.controller != nil {
-		log.Info().Msg("[MaaService] destroying previous controller")
-		s.controller.Destroy()
-		s.controller = nil
-	}
 
 	hwnd, err := parseHwnd(hwndStr)
 	if err != nil {
@@ -179,7 +163,12 @@ func (s *ControllerService) ConnectWin32(
 		return ConnectAdbResult{Error: errMsg}
 	}
 
-	s.controller = ctrl
+	// 替换旧实例
+	if old := s.controller.Swap(ctrl); old != nil {
+		log.Info().Msg("[MaaService] destroying previous controller")
+		old.Destroy()
+	}
+
 	log.Info().Str("hwnd", hwndStr).Msg("[MaaService] Win32 controller connected successfully")
 	return ConnectAdbResult{Success: true}
 }
@@ -188,21 +177,11 @@ func (s *ControllerService) ConnectWin32(
 func (s *ControllerService) ConnectGamepad(
 	hwndStr, screencapMethod, gamepadTypeStr string,
 ) ConnectAdbResult {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	log.Info().
 		Str("hwnd", hwndStr).
 		Str("screencap_method", screencapMethod).
 		Str("gamepad_type", gamepadTypeStr).
 		Msg("[MaaService] ConnectGamepad called")
-
-	// 销毁旧连接
-	if s.controller != nil {
-		log.Info().Msg("[MaaService] destroying previous controller")
-		s.controller.Destroy()
-		s.controller = nil
-	}
 
 	hwnd, err := parseHwnd(hwndStr)
 	if err != nil {
@@ -247,20 +226,21 @@ func (s *ControllerService) ConnectGamepad(
 		return ConnectAdbResult{Error: errMsg}
 	}
 
-	s.controller = ctrl
+	// 替换旧实例
+	if old := s.controller.Swap(ctrl); old != nil {
+		log.Info().Msg("[MaaService] destroying previous controller")
+		old.Destroy()
+	}
+
 	log.Info().Str("hwnd", hwndStr).Msg("[MaaService] Gamepad controller connected successfully")
 	return ConnectAdbResult{Success: true}
 }
 
 // Disconnect 断开当前 Controller 连接。
 func (s *ControllerService) Disconnect() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.controller != nil {
+	if old := s.controller.Swap(nil); old != nil {
 		log.Info().Msg("[MaaService] disconnecting controller...")
-		s.controller.Destroy()
-		s.controller = nil
+		old.Destroy()
 		log.Info().Msg("[MaaService] controller disconnected")
 	} else {
 		log.Info().Msg("[MaaService] disconnect called but no active controller")
@@ -271,20 +251,10 @@ func (s *ControllerService) Disconnect() {
 func (s *ControllerService) ConnectPlayCover(
 	address, uuid string,
 ) ConnectAdbResult {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	log.Info().
 		Str("address", address).
 		Str("uuid", uuid).
 		Msg("[MaaService] ConnectPlayCover called")
-
-	// 销毁旧连接
-	if s.controller != nil {
-		log.Info().Msg("[MaaService] destroying previous controller")
-		s.controller.Destroy()
-		s.controller = nil
-	}
 
 	log.Info().Msg("[MaaService] creating PlayCover controller...")
 	ctrl, err := maa.NewPlayCoverController(address, uuid)
@@ -310,27 +280,28 @@ func (s *ControllerService) ConnectPlayCover(
 		return ConnectAdbResult{Error: errMsg}
 	}
 
-	s.controller = ctrl
+	// 替换旧实例
+	if old := s.controller.Swap(ctrl); old != nil {
+		log.Info().Msg("[MaaService] destroying previous controller")
+		old.Destroy()
+	}
+
 	log.Info().Str("address", address).Str("uuid", uuid).Msg("[MaaService] PlayCover controller connected successfully")
 	return ConnectAdbResult{Success: true}
 }
 
 // Connected 返回当前是否已连接。
 func (s *ControllerService) Connected() bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.controller == nil {
+	ctrl := s.controller.Load()
+	if ctrl == nil {
 		return false
 	}
-	return s.controller.Connected()
+	return ctrl.Connected()
 }
 
 // Controller 返回当前的 Controller 实例（可能为 nil）。
 func (s *ControllerService) Controller() *maa.Controller {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.controller
+	return s.controller.Load()
 }
 
 // parseHwnd 将 hwnd 字符串解析为 unsafe.Pointer。

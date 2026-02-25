@@ -28,12 +28,13 @@
             <div class="flex flex-row gap-2">
                 <!-- Start / Stop Button -->
                 <UButton v-if="!isRunning" color="success" variant="soft" icon="i-lucide-play" label="Start" block
-                    :disabled="!selectedEntry" @click="onStart">
+                    :disabled="!canStart" @click="onStart">
                     <template v-if="startStopKeys.length" #trailing>
                         <UKbd v-for="k in startStopKeys" :key="k" :value="k" />
                     </template>
                 </UButton>
-                <UButton v-else color="error" variant="soft" icon="i-lucide-square" label="Stop" block @click="onStop">
+                <UButton v-else color="error" variant="soft" icon="i-lucide-square" label="Stop" block
+                    :loading="isStopping" :disabled="isStopping" @click="onStop">
                     <template v-if="startStopKeys.length" #trailing>
                         <UKbd v-for="k in startStopKeys" :key="k" :value="k" />
                     </template>
@@ -77,6 +78,20 @@ const isRunning = computed(() => {
     return taskStatus.value === 'running'
 })
 
+/**
+ * 是否可以启动任务：必须 controller 已连接 且 resource 已加载
+ */
+const canStart = computed(() => {
+    return statusStore.controllerStatus === 'connected'
+        && statusStore.resourceStatus === 'loaded'
+        && !!selectedEntry.value
+})
+
+/**
+ * 是否正在停止中（前端局部状态，用于防止重复点击 Stop）
+ */
+const isStopping = ref(false)
+
 const startStopKeys = computed(() => formatShortcut(shortcutsStore.getBinding('task.startStop')))
 
 // 资源加载成功后刷新任务节点列表
@@ -88,7 +103,7 @@ watch(() => statusStore.resourceStatus, (newStatus, oldStatus) => {
 
 // --- Actions ---
 async function onStart() {
-    if (!selectedEntry.value) return
+    if (!canStart.value) return
 
     const result = await runTask(selectedEntry.value, {})
     if (!result.succeed) {
@@ -108,20 +123,26 @@ async function onStart() {
 }
 
 async function onStop() {
-    const result = await stopTask()
-    if (!result.succeed) {
-        toast.add({
-            title: 'Task Stop Failed',
-            description: result.msg,
-            icon: 'i-lucide-circle-x',
-            color: 'error',
-        })
-    } else {
-        toast.add({
-            title: 'Task Stop Requested',
-            icon: 'i-lucide-circle-stop',
-            color: 'warning',
-        })
+    if (isStopping.value) return
+    isStopping.value = true
+    try {
+        const result = await stopTask()
+        if (!result.succeed) {
+            toast.add({
+                title: 'Task Stop Failed',
+                description: result.msg,
+                icon: 'i-lucide-circle-x',
+                color: 'error',
+            })
+        } else {
+            toast.add({
+                title: 'Task Stop Requested',
+                icon: 'i-lucide-circle-stop',
+                color: 'warning',
+            })
+        }
+    } finally {
+        isStopping.value = false
     }
 }
 
@@ -148,7 +169,7 @@ function onKeydown(e: KeyboardEvent) {
         e.preventDefault()
         if (isRunning.value) {
             onStop()
-        } else {
+        } else if (canStart.value) {
             onStart()
         }
     }

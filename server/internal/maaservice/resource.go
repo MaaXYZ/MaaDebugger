@@ -2,7 +2,7 @@ package maaservice
 
 import (
 	"fmt"
-	"sync"
+	"sync/atomic"
 
 	maa "github.com/MaaXYZ/maa-framework-go/v4"
 	"github.com/rs/zerolog/log"
@@ -10,8 +10,7 @@ import (
 
 // ResourceService 管理 MaaFW Resource 实例的生命周期。
 type ResourceService struct {
-	mu       sync.Mutex
-	resource *maa.Resource
+	resource atomic.Pointer[maa.Resource]
 }
 
 // NewResourceService 创建一个新的 ResourceService。
@@ -27,17 +26,7 @@ type LoadResult struct {
 
 // LoadBundles 逐个加载资源路径，遇到失败立即返回失败路径。
 func (s *ResourceService) LoadBundles(paths []string) LoadResult {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	log.Info().Strs("paths", paths).Int("count", len(paths)).Msg("[MaaService] LoadBundles called")
-
-	// 销毁旧的 resource 实例
-	if s.resource != nil {
-		log.Info().Msg("[MaaService] destroying previous resource")
-		s.resource.Destroy()
-		s.resource = nil
-	}
 
 	res, err := maa.NewResource()
 	if err != nil {
@@ -58,24 +47,26 @@ func (s *ResourceService) LoadBundles(paths []string) LoadResult {
 		log.Info().Str("path", p).Msg("[MaaService] bundle loaded successfully")
 	}
 
-	s.resource = res
+	// 替换旧实例
+	if old := s.resource.Swap(res); old != nil {
+		old.Destroy()
+		log.Info().Msg("[MaaService] previous resource destroyed")
+	}
+
 	log.Info().Int("count", len(paths)).Msg("[MaaService] all bundles loaded successfully")
 	return LoadResult{Success: true}
 }
 
 // Resource 返回当前的 Resource 实例（可能为 nil）。
 func (s *ResourceService) Resource() *maa.Resource {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.resource
+	return s.resource.Load()
 }
 
 // Loaded 返回当前是否已加载资源。
 func (s *ResourceService) Loaded() bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.resource == nil {
+	res := s.resource.Load()
+	if res == nil {
 		return false
 	}
-	return s.resource.Loaded()
+	return res.Loaded()
 }

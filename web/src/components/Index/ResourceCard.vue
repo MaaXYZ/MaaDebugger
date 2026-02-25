@@ -1,5 +1,6 @@
 <template>
-    <UCard class="w-full" size="xl" :ui="{ body: 'p-0 sm:p-0', footer: 'p-0 sm:p-0' }">
+    <UCard class="w-full transition-opacity duration-200" :class="{ 'opacity-50 pointer-events-none': isCardDisabled }"
+        size="xl" :ui="{ body: 'p-0 sm:p-0', footer: 'p-0 sm:p-0' }">
         <template #header>
             <div class="flex flex-col gap-2">
                 <div class="flex flex-row items-center justify-between gap-4">
@@ -9,9 +10,10 @@
                     </div>
                     <div class="flex flex-row items-center gap-2">
                         <USelect v-model="resourceStore.activeProfileId" :items="resourceStore.profileSelectItems"
-                            class="w-32" size="xl" arrow />
+                            class="w-32" size="xl" arrow :disabled="isCardDisabled" />
                         <UDropdownMenu :items="profileMenuItems">
-                            <UButton color="neutral" variant="ghost" icon="i-lucide-ellipsis-vertical" size="xs" />
+                            <UButton color="neutral" variant="ghost" icon="i-lucide-ellipsis-vertical" size="xs"
+                                :disabled="isCardDisabled" />
                         </UDropdownMenu>
                         <UButton variant="outline" color="neutral" trailing-icon="i-lucide-chevron-down"
                             :data-state="showFullCard ? 'open' : 'closed'" @click="showFullCard = !showFullCard" />
@@ -133,6 +135,12 @@ const editingIndex = ref<number | null>(null)
 
 // --- Resource Status ---
 const isLoading = computed(() => statusStore.resourceStatus === 'loading')
+const isConnecting = computed(() => statusStore.controllerStatus === 'connecting')
+
+/**
+ * 当 controller 正在连接或资源正在加载时，禁用整个 ResourceCard 的交互
+ */
+const isCardDisabled = computed(() => isConnecting.value || isLoading.value)
 
 const statusLabel = computed(() => {
     switch (statusStore.resourceStatus) {

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"image/png"
 	"strings"
-	"sync"
+	"sync/atomic"
 
 	maa "github.com/MaaXYZ/maa-framework-go/v4"
 	"github.com/rs/zerolog/log"
@@ -15,15 +15,14 @@ import (
 // TaskerService 管理 MaaFW Tasker 实例的生命周期。
 // 参考 maa-js server 中的状态机：idle → running → success/failed
 type TaskerService struct {
-	mu     sync.Mutex
-	tasker *maa.Tasker
+	tasker atomic.Pointer[maa.Tasker]
 
 	controllerSvc *ControllerService
 	resourceSvc   *ResourceService
 
 	// onEvent 广播回调，由 router 设置，用于将事件通过 WS 广播。
 	// 不在 sink 中渲染/处理，只做消息转发。
-	onEvent func(msg map[string]interface{})
+	onEvent atomic.Pointer[func(msg map[string]interface{})]
 }
 
 // NewTaskerService 创建一个新的 TaskerService。
@@ -36,15 +35,13 @@ func NewTaskerService(ctrlSvc *ControllerService, resSvc *ResourceService) *Task
 
 // SetEventCallback 设置事件广播回调。
 func (s *TaskerService) SetEventCallback(fn func(msg map[string]interface{})) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.onEvent = fn
+	s.onEvent.Store(&fn)
 }
 
 func (s *TaskerService) emitEvent(msg map[string]interface{}) {
 	log.Info().Interface("event", msg).Msg("[MaaService] emitEvent")
-	if s.onEvent != nil {
-		s.onEvent(msg)
+	if fn := s.onEvent.Load(); fn != nil {
+		(*fn)(msg)
 	}
 }
 
@@ -148,9 +145,6 @@ type RunTaskResult struct {
 // 状态机：idle → running → success/failed
 // 不在 sink 中做任何渲染/回调，避免影响运行速度。
 func (s *TaskerService) RunTask(entry string, pipelineOverride json.RawMessage) RunTaskResult {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	log.Info().Str("entry", entry).Msg("[MaaService] RunTask called")
 
 	ctrl := s.controllerSvc.Controller()
@@ -166,28 +160,36 @@ func (s *TaskerService) RunTask(entry string, pipelineOverride json.RawMessage) 
 	}
 
 	// 创建或复用 Tasker
-	if s.tasker == nil {
-		tasker, err := maa.NewTasker()
+	tasker := s.tasker.Load()
+	if tasker == nil {
+		newTasker, err := maa.NewTasker()
 		if err != nil {
 			log.Error().Err(err).Msg("[MaaService] create tasker failed")
 			return RunTaskResult{Error: fmt.Sprintf("Failed to create tasker: %v", err)}
 		}
-		s.tasker = tasker
-		// 注册事件回调
-		s.registerSinks(tasker)
+		// 尝试原子设置，如果其他 goroutine 已经设置了，使用已有的
+		if s.tasker.CompareAndSwap(nil, newTasker) {
+			tasker = newTasker
+			// 注册事件回调
+			s.registerSinks(tasker)
+		} else {
+			// 其他 goroutine 已创建，销毁我们的并使用已有的
+			newTasker.Destroy()
+			tasker = s.tasker.Load()
+		}
 	}
 
-	if err := s.tasker.BindController(ctrl); err != nil {
+	if err := tasker.BindController(ctrl); err != nil {
 		log.Error().Err(err).Msg("[MaaService] bind controller failed")
 		return RunTaskResult{Error: fmt.Sprintf("Failed to bind controller: %v", err)}
 	}
 
-	if err := s.tasker.BindResource(res); err != nil {
+	if err := tasker.BindResource(res); err != nil {
 		log.Error().Err(err).Msg("[MaaService] bind resource failed")
 		return RunTaskResult{Error: fmt.Sprintf("Failed to bind resource: %v", err)}
 	}
 
-	if !s.tasker.Initialized() {
+	if !tasker.Initialized() {
 		log.Warn().Msg("[MaaService] RunTask: tasker not initialized")
 		return RunTaskResult{Error: "Failed to initialize tasker"}
 	}
@@ -204,9 +206,9 @@ func (s *TaskerService) RunTask(entry string, pipelineOverride json.RawMessage) 
 	log.Info().Str("entry", entry).Msg("[MaaService] posting task...")
 	var job *maa.TaskJob
 	if override != nil {
-		job = s.tasker.PostTask(entry, override)
+		job = tasker.PostTask(entry, override)
 	} else {
-		job = s.tasker.PostTask(entry)
+		job = tasker.PostTask(entry)
 	}
 
 	job.Wait()
@@ -223,16 +225,14 @@ func (s *TaskerService) RunTask(entry string, pipelineOverride json.RawMessage) 
 
 // StopTask 停止当前正在运行的任务。
 func (s *TaskerService) StopTask() bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.tasker == nil {
+	tasker := s.tasker.Load()
+	if tasker == nil {
 		log.Info().Msg("[MaaService] StopTask: no active tasker")
 		return true
 	}
 
 	log.Info().Msg("[MaaService] stopping task...")
-	job := s.tasker.PostStop()
+	job := tasker.PostStop()
 	job.Wait()
 
 	if job.Success() {
@@ -385,14 +385,12 @@ func convertActionDetail(detail *maa.ActionDetail) *ActionDetailResp {
 
 // GetLatestNodeDetail 获取指定 task name 的最新节点详情。
 func (s *TaskerService) GetLatestNodeDetail(name string) (*NodeDetailResponse, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.tasker == nil {
+	tasker := s.tasker.Load()
+	if tasker == nil {
 		return nil, fmt.Errorf("tasker is not initialized")
 	}
 
-	detail, err := s.tasker.GetLatestNode(name)
+	detail, err := tasker.GetLatestNode(name)
 	if err != nil {
 		return nil, fmt.Errorf("get latest node failed: %w", err)
 	}
@@ -415,23 +413,17 @@ func (s *TaskerService) GetLatestNodeDetail(name string) (*NodeDetailResponse, e
 
 // Running 返回 Tasker 是否正在运行任务。
 func (s *TaskerService) Running() bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.tasker == nil {
+	tasker := s.tasker.Load()
+	if tasker == nil {
 		return false
 	}
-	return s.tasker.Running()
+	return tasker.Running()
 }
 
 // Destroy 销毁 Tasker 实例。
 func (s *TaskerService) Destroy() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.tasker != nil {
-		s.tasker.Destroy()
-		s.tasker = nil
+	if old := s.tasker.Swap(nil); old != nil {
+		old.Destroy()
 		log.Info().Msg("[MaaService] tasker destroyed")
 	}
 }
