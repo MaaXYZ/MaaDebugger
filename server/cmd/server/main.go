@@ -4,7 +4,9 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -96,6 +98,8 @@ func main() {
 		}
 	}()
 
+	openBrowser("http://" + addr)
+
 	waitForShutdown(srv)
 }
 
@@ -113,6 +117,21 @@ func waitForShutdown(srv *http.Server) {
 	}
 
 	log.Info().Msg("server stopped")
+}
+
+func openBrowser(url string) {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+	case "darwin":
+		cmd = exec.Command("open", url)
+	default:
+		cmd = exec.Command("xdg-open", url)
+	}
+	if err := cmd.Start(); err != nil {
+		log.Warn().Err(err).Str("url", url).Msg("failed to open browser")
+	}
 }
 
 func getenv(key, fallback string) string {
