@@ -36,7 +36,7 @@ maa-js/*
 maa-py/*
 
 # Config persistence
-*/.maa/*
+**/.maa/*
 
 # Go
 */tmp/*
@@ -51,5 +51,5 @@ maa-py/*
 *.so
 
 # MaaFramework
-*/debug/*
-*/config/*
+**/debug/*
+**/config/*
