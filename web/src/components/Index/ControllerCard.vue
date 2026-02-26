@@ -260,8 +260,8 @@ const inputMethods = [
     { label: 'PostThreadMessage', value: '16' },
     { label: 'SendMessageWithCursorPos', value: '32' },
     { label: 'PostMessageWithCursorPos', value: '64' },
-    { label: 'SendMessageWithWindowPos', value: '128' },
-    { label: 'PostMessageWithWindowPos', value: '256' },
+    { label: 'SendMessageWithCursorPosAndBlockInput', value: '128' },
+    { label: 'PostMessageWithCursorPosAndBlockInput', value: '256' },
 ]
 
 const win32Config = reactive({
