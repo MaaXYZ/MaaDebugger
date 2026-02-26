@@ -124,9 +124,18 @@ import { connectAgent as apiConnect, disconnectAgent as apiDisconnect } from '@/
 import type { AgentInfo } from '@/api/http'
 import { latestAgentUpdate } from '@/api/agentEvents'
 import { useAgentStore, type AgentItem } from '@/stores/agent'
+import { useStatusStore } from '@/stores/status'
 
 const store = useAgentStore()
+const statusStore = useStatusStore()
 const showFullCard = ref(false)
+
+// 任务开始运行时自动收起卡片
+watch(() => statusStore.taskStatus, (newStatus, oldStatus) => {
+    if (oldStatus !== 'running' && newStatus === 'running') {
+        showFullCard.value = false
+    }
+})
 
 const editingNameIndex = ref(-1)
 const editingIdIndex = ref(-1)

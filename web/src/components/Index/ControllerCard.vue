@@ -181,6 +181,13 @@ watch(() => statusStore.controllerStatus, (newStatus, oldStatus) => {
     }
 })
 
+// 任务开始运行时自动收起卡片
+watch(() => statusStore.taskStatus, (newStatus, oldStatus) => {
+    if (oldStatus !== 'running' && newStatus === 'running') {
+        showFullCard.value = false
+    }
+})
+
 interface ControllerItem {
     label: string
     value: string
@@ -383,7 +390,8 @@ async function onConnect() {
             return
         }
 
-        showFullCard.value = false
+        // 连接时不自动收起 方便用户切换连接方式
+        // showFullCard.value = false
         toast.add({
             id: 'ctrl-toast',
             title: 'Controller Connected',

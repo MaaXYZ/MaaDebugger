@@ -127,7 +127,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useResourceStore } from '@/stores/resource'
 import { useStatusStore } from '@/stores/status'
 import { loadResource } from '@/api/http'
@@ -139,6 +139,13 @@ const statusStore = useStatusStore()
 // --- UI State (not persisted) ---
 const showFullCard = ref(true)
 const editingIndex = ref<number | null>(null)
+
+// 任务开始运行时自动收起卡片
+watch(() => statusStore.taskStatus, (newStatus, oldStatus) => {
+    if (oldStatus !== 'running' && newStatus === 'running') {
+        showFullCard.value = false
+    }
+})
 
 // --- Resource Status ---
 const isLoading = computed(() => statusStore.resourceStatus === 'loading')
