@@ -18,6 +18,27 @@ export interface ApiResponse<T = unknown> {
  */
 const BASE_URL = "/api";
 
+const REQUEST_TIMEOUT_MS = 10000;
+
+function isApiResponse<T>(value: unknown): value is ApiResponse<T> {
+  if (!value || typeof value !== "object") return false;
+  const obj = value as Record<string, unknown>;
+  return typeof obj.succeed === "boolean" && typeof obj.msg === "string";
+}
+
+function extractMessage(payload: unknown, fallback: string): string {
+  if (typeof payload === "string" && payload.trim()) {
+    return payload;
+  }
+  if (payload && typeof payload === "object") {
+    const maybeMsg = (payload as Record<string, unknown>).msg;
+    if (typeof maybeMsg === "string" && maybeMsg.trim()) {
+      return maybeMsg;
+    }
+  }
+  return fallback;
+}
+
 /**
  * 通用 HTTP 请求封装
  */
@@ -26,6 +47,25 @@ async function request<T>(
   options: RequestInit = {},
 ): Promise<ApiResponse<T>> {
   const url = `${BASE_URL}${path}`;
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => {
+    timeoutController.abort(
+      new DOMException("Request timeout", "TimeoutError"),
+    );
+  }, REQUEST_TIMEOUT_MS);
+
+  let externalAbortHandler: (() => void) | null = null;
+  if (options.signal) {
+    if (options.signal.aborted) {
+      timeoutController.abort(options.signal.reason);
+    } else {
+      externalAbortHandler = () =>
+        timeoutController.abort(options.signal?.reason);
+      options.signal.addEventListener("abort", externalAbortHandler, {
+        once: true,
+      });
+    }
+  }
 
   try {
     const response = await fetch(url, {
@@ -34,16 +74,78 @@ async function request<T>(
         ...options.headers,
       },
       ...options,
+      signal: timeoutController.signal,
     });
 
-    const data = (await response.json()) as ApiResponse<T>;
-    return data;
+    const contentType = response.headers.get("content-type") ?? "";
+    const isJson = contentType.includes("application/json");
+
+    if (!response.ok) {
+      let payload: unknown = null;
+      if (response.status !== 204) {
+        payload = isJson ? await response.json() : await response.text();
+      }
+      return {
+        succeed: false,
+        msg: extractMessage(
+          payload,
+          `HTTP ${response.status} ${response.statusText}`,
+        ),
+        data: undefined,
+      };
+    }
+
+    if (response.status === 204) {
+      return {
+        succeed: true,
+        msg: "ok",
+        data: undefined,
+      };
+    }
+
+    if (!isJson) {
+      const text = await response.text();
+      return {
+        succeed: false,
+        msg: extractMessage(
+          text,
+          `Unexpected response content-type: ${contentType || "unknown"}`,
+        ),
+        data: undefined,
+      };
+    }
+
+    const payload = (await response.json()) as unknown;
+    if (isApiResponse<T>(payload)) {
+      return payload;
+    }
+
+    return {
+      succeed: true,
+      msg: "ok",
+      data: payload as T,
+    };
   } catch (err) {
+    const isAborted = err instanceof DOMException && err.name === "AbortError";
+    const isTimeout =
+      timeoutController.signal.aborted && !options.signal?.aborted;
+
     return {
       succeed: false,
-      msg: err instanceof Error ? err.message : "Network error",
+      msg: isAborted
+        ? isTimeout
+          ? "Request timeout"
+          : "Request aborted"
+        : err instanceof Error
+          ? err.message
+          : "Network error",
       data: undefined,
     };
+  } finally {
+    clearTimeout(timeoutId);
+    if (options.signal && externalAbortHandler) {
+      options.signal.removeEventListener("abort", externalAbortHandler);
+    }
   }
 }
 
@@ -112,9 +214,7 @@ export interface AgentInfo {
 /**
  * 创建并连接 Agent（每次都重新创建以避免状态残留）
  */
-export async function connectAgent(
-  identifier: string,
-): Promise<ApiResponse> {
+export async function connectAgent(identifier: string): Promise<ApiResponse> {
   return request("/agent/connect", {
     method: "POST",
     body: JSON.stringify({ identifier }),
