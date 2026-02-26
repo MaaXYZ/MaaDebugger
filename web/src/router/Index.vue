@@ -5,11 +5,10 @@
             <ControllerCard />
             <ResourceCard />
             <AgentCard />
-            <TaskCard />
         </div>
-        <!-- 第二列: Screenshot -->
+        <!-- 第二列: Task (includes Screenshot) -->
         <div class="w-full flex flex-col gap-4 order-2 lg:order-0">
-            <ScreenshotCard />
+            <TaskCard />
         </div>
         <!-- 第三列: Task Detail -->
         <div class="w-full flex flex-col gap-4 order-1 lg:order-0">
@@ -23,6 +22,5 @@ import ControllerCard from "@/components/Index/ControllerCard.vue";
 import ResourceCard from "@/components/Index/ResourceCard.vue";
 import AgentCard from "@/components/Index/AgentCard.vue";
 import TaskCard from "@/components/Index/TaskCard.vue";
-import ScreenshotCard from "@/components/Index/ScreenshotCard.vue";
 import TaskDetailCard from "@/components/Index/TaskDetailCard.vue";
 </script>
