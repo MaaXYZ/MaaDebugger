@@ -23,9 +23,13 @@ class WSClient {
   private ws: WebSocket | null = null;
   private handlers: WSEventHandler = {};
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-  private reconnectDelay = 3000;
   private shouldReconnect = true;
   private url: string = "";
+
+  private reconnectAttempt = 0;
+  private readonly reconnectBaseDelayMs = 3000;
+  private readonly reconnectMaxDelayMs = 30000;
+  private readonly reconnectJitterRatio = 0.2;
 
   /**
    * 连接到 WebSocket 服务器
@@ -33,6 +37,7 @@ class WSClient {
   connect(handlers: WSEventHandler = {}): void {
     this.handlers = handlers;
     this.shouldReconnect = true;
+    this.resetReconnectState();
 
     // 根据当前页面 URL 构建 WebSocket URL
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
@@ -46,10 +51,7 @@ class WSClient {
    */
   disconnect(): void {
     this.shouldReconnect = false;
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = null;
-    }
+    this.resetReconnectState();
     if (this.ws) {
       this.ws.close();
       this.ws = null;
@@ -72,6 +74,7 @@ class WSClient {
       this.ws = new WebSocket(this.url);
 
       this.ws.onopen = () => {
+        this.resetReconnectState();
         console.log("[WS] Connected");
         this.handlers.onOpen?.();
       };
@@ -145,17 +148,43 @@ class WSClient {
     }
   }
 
+  private resetReconnectState(): void {
+    this.reconnectAttempt = 0;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+  }
+
+  private computeReconnectDelay(): number {
+    const baseDelay = Math.min(
+      this.reconnectBaseDelayMs * 2 ** this.reconnectAttempt,
+      this.reconnectMaxDelayMs,
+    );
+    const jitterSpan = baseDelay * this.reconnectJitterRatio;
+    const jitter = (Math.random() * 2 - 1) * jitterSpan;
+    return Math.max(0, Math.floor(baseDelay + jitter));
+  }
+
   private scheduleReconnect(): void {
     if (!this.shouldReconnect) return;
 
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
     }
 
+    const attempt = this.reconnectAttempt + 1;
+    const delay = this.computeReconnectDelay();
+    this.reconnectAttempt += 1;
+
     this.reconnectTimer = setTimeout(() => {
-      console.log("[WS] Reconnecting...");
+      this.reconnectTimer = null;
+      console.log(
+        `[WS] Reconnecting (attempt ${attempt}, delay ${delay}ms)...`,
+      );
       this.doConnect();
-    }, this.reconnectDelay);
+    }, delay);
   }
 }
 
