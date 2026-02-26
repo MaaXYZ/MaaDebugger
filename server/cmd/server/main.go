@@ -24,18 +24,27 @@ func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
 
 	// 获取当前工作目录
-	dir, err := os.Getwd()
-	if err != nil {
-		// log.Fatal(err)
-	}
+	userPath := getCwd()
 
 	host := getenv("GO_SERVICE_HOST", "127.0.0.1")
 	port := getenv("GO_SERVICE_PORT", "8011")
 	addr := host + ":" + port
 
-	if err := maa.Init(maa.WithDebugMode(true), maa.WithLibDir(dir+"/bin")); err != nil {
+	if err := maa.Init(maa.WithDebugMode(true), maa.WithLibDir(userPath+"/bin")); err != nil {
 		log.Fatal().Err(err).Msg("maa init failed")
 	}
+
+	if err := maa.ConfigInitOption(userPath, "{}"); err != nil {
+		log.Warn().
+			Str("userPath", userPath).
+			Err(err).
+			Msg("Failed to init toolkit config option")
+	} else {
+		log.Info().
+			Str("userPath", userPath).
+			Msg("Toolkit config option initialized")
+	}
+
 	defer func() {
 		if err := maa.Release(); err != nil {
 			log.Error().Err(err).Msg("maa release failed")
@@ -47,8 +56,10 @@ func main() {
 	ctrlService := maaservice.NewControllerService()
 	resService := maaservice.NewResourceService()
 	taskerService := maaservice.NewTaskerService(ctrlService, resService)
-	cfgStore := configstore.New(dir)
+	agentService := maaservice.NewAgentService(resService)
+	cfgStore := configstore.New(userPath)
 	defer cfgStore.Close()
+	defer agentService.DisconnectAll()
 
 	router := httpapi.NewRouter(httpapi.Dependencies{
 		StatusStore:       statusStore,
@@ -56,6 +67,7 @@ func main() {
 		ControllerService: ctrlService,
 		ResourceService:   resService,
 		TaskerService:     taskerService,
+		AgentService:      agentService,
 		ConfigStore:       cfgStore,
 	})
 
@@ -96,4 +108,11 @@ func getenv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+func getCwd() string {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "."
+	}
+	return cwd
 }

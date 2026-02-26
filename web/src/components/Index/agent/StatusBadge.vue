@@ -25,7 +25,6 @@ const statusLabel = computed(() => {
         case 'connecting': return 'Connecting'
         case 'connected': return 'Connected'
         case 'failed': return 'Failed'
-        case 'timeout': return 'Timeout'
         default: return 'Unknown'
     }
 })
@@ -34,7 +33,6 @@ const badgeColor = computed(() => {
     switch (props.status) {
         case 'connected': return 'success' as const
         case 'failed': return 'error' as const
-        case 'timeout': return 'warning' as const
         case 'connecting': return 'info' as const
         default: return 'neutral' as const
     }
@@ -46,7 +44,6 @@ const dotColorClass = computed(() => {
     switch (props.status) {
         case 'connected': return 'bg-success'
         case 'failed': return 'bg-error'
-        case 'timeout': return 'bg-warning'
         case 'connecting': return 'bg-info'
         default: return 'bg-gray-400 dark:bg-gray-500'
     }

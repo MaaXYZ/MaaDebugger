@@ -100,6 +100,48 @@ export async function disconnectController(): Promise<ApiResponse> {
 }
 
 // ============================================================
+// Agent API
+// ============================================================
+
+export interface AgentInfo {
+  identifier: string;
+  status: string;
+  error?: string;
+}
+
+/**
+ * 创建并连接 Agent（每次都重新创建以避免状态残留）
+ */
+export async function connectAgent(
+  identifier: string,
+): Promise<ApiResponse> {
+  return request("/agent/connect", {
+    method: "POST",
+    body: JSON.stringify({ identifier }),
+  });
+}
+
+/**
+ * 断开 Agent
+ */
+export async function disconnectAgent(
+  identifier: string,
+): Promise<ApiResponse> {
+  return request("/agent/disconnect", {
+    method: "POST",
+    body: JSON.stringify({ identifier }),
+  });
+}
+
+/**
+ * 获取 Agent 列表
+ */
+export async function getAgentList(): Promise<AgentInfo[]> {
+  const result = await request<AgentInfo[]>("/agent/list");
+  return Array.isArray(result.data) ? result.data : [];
+}
+
+// ============================================================
 // Resource API
 // ============================================================
 

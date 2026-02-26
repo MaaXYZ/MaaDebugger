@@ -1,9 +1,11 @@
 import type { StatusSnapshot } from "@/types/api";
 import type { TaskEvent } from "@/components/Index/taskDetail/types";
+import type { AgentInfo } from "@/api/http";
 
 export type WSEventHandler = {
   onStatusUpdate?: (status: StatusSnapshot) => void;
   onTaskEvent?: (event: TaskEvent) => void;
+  onAgentUpdate?: (agents: AgentInfo[]) => void;
   onLog?: (level: string, message: string) => void;
   onOpen?: () => void;
   onClose?: () => void;
@@ -110,6 +112,10 @@ class WSClient {
 
         case "task.event":
           this.handlers.onTaskEvent?.(message.payload as TaskEvent);
+          break;
+
+        case "agent.update":
+          this.handlers.onAgentUpdate?.(message.payload as AgentInfo[]);
           break;
 
         case "log":

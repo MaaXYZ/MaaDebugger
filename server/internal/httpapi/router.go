@@ -26,6 +26,7 @@ type Dependencies struct {
 	ControllerService *maaservice.ControllerService
 	ResourceService   *maaservice.ResourceService
 	TaskerService     *maaservice.TaskerService
+	AgentService      *maaservice.AgentService
 	ConfigStore       *configstore.Store
 }
 
@@ -65,6 +66,9 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.HandleFunc("POST /api/task/stop", r.handleTaskStop)
 	mux.HandleFunc("GET /api/task/nodes", r.handleTaskNodes)
 	mux.HandleFunc("GET /api/task/node/{name}", r.handleTaskNodeDetail)
+	mux.HandleFunc("POST /api/agent/connect", r.handleAgentConnect)
+	mux.HandleFunc("POST /api/agent/disconnect", r.handleAgentDisconnect)
+	mux.HandleFunc("GET /api/agent/list", r.handleAgentList)
 	mux.HandleFunc("GET /ws", r.handleWS)
 
 	// Serve embedded frontend SPA for all non-API routes
@@ -357,6 +361,59 @@ func (r *router) handleControllerDisconnect(w http.ResponseWriter, _ *http.Reque
 	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 	log.Info().Msg("[Controller] disconnected, status → disconnected")
 	response.OK(w, nil)
+}
+
+func (r *router) handleAgentConnect(w http.ResponseWriter, req *http.Request) {
+	var payload struct {
+		Identifier string `json:"identifier"`
+	}
+	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+		response.Fail(w, http.StatusBadRequest, "invalid json body")
+		return
+	}
+	if payload.Identifier == "" {
+		response.Fail(w, http.StatusBadRequest, "identifier is required")
+		return
+	}
+
+	log.Info().Str("identifier", payload.Identifier).Msg("[Agent] connect request")
+
+	result := r.deps.AgentService.Connect(payload.Identifier)
+
+	r.deps.Hub.BroadcastJSON(ws.Message{Type: "agent.update", Payload: r.deps.AgentService.List()})
+
+	if !result.Success {
+		log.Warn().Str("identifier", payload.Identifier).Str("error", result.Error).Msg("[Agent] connect failed")
+		response.Fail(w, http.StatusBadRequest, result.Error)
+		return
+	}
+
+	log.Info().Str("identifier", payload.Identifier).Msg("[Agent] connect succeeded")
+	response.OK(w, nil)
+}
+
+func (r *router) handleAgentDisconnect(w http.ResponseWriter, req *http.Request) {
+	var payload struct {
+		Identifier string `json:"identifier"`
+	}
+	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+		response.Fail(w, http.StatusBadRequest, "invalid json body")
+		return
+	}
+	if payload.Identifier == "" {
+		response.Fail(w, http.StatusBadRequest, "identifier is required")
+		return
+	}
+
+	log.Info().Str("identifier", payload.Identifier).Msg("[Agent] disconnect request")
+	r.deps.AgentService.Disconnect(payload.Identifier)
+
+	r.deps.Hub.BroadcastJSON(ws.Message{Type: "agent.update", Payload: r.deps.AgentService.List()})
+	response.OK(w, nil)
+}
+
+func (r *router) handleAgentList(w http.ResponseWriter, _ *http.Request) {
+	response.OK(w, r.deps.AgentService.List())
 }
 
 func orDefault(val, fallback string) string {

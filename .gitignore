@@ -49,3 +49,7 @@ maa-py/*
 *.exe~
 *.dll
 *.so
+
+# MaaFramework
+*/debug/*
+*/config/*

@@ -5,23 +5,25 @@ import { wsClient } from '@/api/ws'
 import { getStatusSnapshot } from '@/api/http'
 import { useStatusStore } from '@/stores/status'
 import { handleTaskEvent } from '@/stores/launchGraph'
+import { latestAgentUpdate } from '@/api/agentEvents'
 
 const statusStore = useStatusStore()
 
 onMounted(async () => {
-  // 先获取一次当前状态快照
   const snapshot = await getStatusSnapshot()
   if (snapshot) {
     statusStore.updateStatus(snapshot)
   }
 
-  // 启动 WebSocket 连接，后续状态通过 WS 实时更新
   wsClient.connect({
     onStatusUpdate(status) {
       statusStore.updateStatus(status)
     },
     onTaskEvent(event) {
       handleTaskEvent(event)
+    },
+    onAgentUpdate(agents) {
+      latestAgentUpdate.value = agents
     },
   })
 })
