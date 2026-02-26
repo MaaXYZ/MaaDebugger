@@ -20,11 +20,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
+          package-manager: pnpm
 
       - uses: pnpm/action-setup@v4
+        with:
+          version: 10.30
 
       - name: Install & build frontend
         working-directory: web
@@ -85,7 +88,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: server/go.mod
 
