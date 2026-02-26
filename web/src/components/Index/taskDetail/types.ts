@@ -142,6 +142,17 @@ export interface RectResponse {
   h: number;
 }
 
+export interface RecoResultItem {
+  box?: RectResponse;
+  extra?: Record<string, unknown>;
+}
+
+export interface RecoResultsResponse {
+  all: RecoResultItem[];
+  best: RecoResultItem[];
+  filtered: RecoResultItem[];
+}
+
 export interface RecoDetailResponse {
   name: string;
   algorithm: string;
@@ -150,6 +161,8 @@ export interface RecoDetailResponse {
   detail_json?: unknown;
   combined_result?: RecoDetailResponse[];
   draw_images?: string[];
+  raw_image?: string;
+  results?: RecoResultsResponse;
 }
 
 export interface ActionDetailResponse {

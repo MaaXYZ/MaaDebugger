@@ -259,6 +259,19 @@ func (s *TaskerService) GetNodeList() []string {
 	return nodes
 }
 
+// RecoResultItem 是单个识别结果（包含 box 和额外信息）。
+type RecoResultItem struct {
+	Box   *RectResponse `json:"box,omitempty"`
+	Extra interface{}   `json:"extra,omitempty"` // score, text, count 等
+}
+
+// RecoResultsResponse 包含 all/best/filtered 三组结果。
+type RecoResultsResponse struct {
+	All      []*RecoResultItem `json:"all"`
+	Best     []*RecoResultItem `json:"best"`
+	Filtered []*RecoResultItem `json:"filtered"`
+}
+
 // RecoDetailResponse 是返回给前端的识别详情。
 type RecoDetailResponse struct {
 	Name           string                `json:"name"`
@@ -268,6 +281,8 @@ type RecoDetailResponse struct {
 	DetailJSON     interface{}           `json:"detail_json,omitempty"`
 	CombinedResult []*RecoDetailResponse `json:"combined_result,omitempty"`
 	DrawImages     []string              `json:"draw_images,omitempty"`
+	RawImage       string                `json:"raw_image,omitempty"`
+	Results        *RecoResultsResponse  `json:"results,omitempty"`
 }
 
 // RectResponse 矩形区域。
@@ -276,6 +291,106 @@ type RectResponse struct {
 	Y int `json:"y"`
 	W int `json:"w"`
 	H int `json:"h"`
+}
+
+// convertRecognitionResult 将 maa.RecognitionResult 转换为 RecoResultItem。
+func convertRecognitionResult(result *maa.RecognitionResult) *RecoResultItem {
+	if result == nil {
+		return nil
+	}
+
+	item := &RecoResultItem{}
+
+	switch result.Type() {
+	case maa.NodeRecognitionTypeTemplateMatch:
+		if v, ok := result.AsTemplateMatch(); ok {
+			item.Box = &RectResponse{
+				X: v.Box.X(), Y: v.Box.Y(),
+				W: v.Box.Width(), H: v.Box.Height(),
+			}
+			item.Extra = map[string]interface{}{
+				"score": v.Score,
+			}
+		}
+	case maa.NodeRecognitionTypeFeatureMatch:
+		if v, ok := result.AsFeatureMatch(); ok {
+			item.Box = &RectResponse{
+				X: v.Box.X(), Y: v.Box.Y(),
+				W: v.Box.Width(), H: v.Box.Height(),
+			}
+			item.Extra = map[string]interface{}{
+				"count": v.Count,
+			}
+		}
+	case maa.NodeRecognitionTypeColorMatch:
+		if v, ok := result.AsColorMatch(); ok {
+			item.Box = &RectResponse{
+				X: v.Box.X(), Y: v.Box.Y(),
+				W: v.Box.Width(), H: v.Box.Height(),
+			}
+			item.Extra = map[string]interface{}{
+				"count": v.Count,
+			}
+		}
+	case maa.NodeRecognitionTypeOCR:
+		if v, ok := result.AsOCR(); ok {
+			item.Box = &RectResponse{
+				X: v.Box.X(), Y: v.Box.Y(),
+				W: v.Box.Width(), H: v.Box.Height(),
+			}
+			item.Extra = map[string]interface{}{
+				"text":  v.Text,
+				"score": v.Score,
+			}
+		}
+	case maa.NodeRecognitionTypeNeuralNetworkClassify:
+		if v, ok := result.AsNeuralNetworkClassify(); ok {
+			item.Box = &RectResponse{
+				X: v.Box.X(), Y: v.Box.Y(),
+				W: v.Box.Width(), H: v.Box.Height(),
+			}
+			item.Extra = map[string]interface{}{
+				"cls_index": v.ClsIndex,
+				"label":     v.Label,
+				"score":     v.Score,
+			}
+		}
+	case maa.NodeRecognitionTypeNeuralNetworkDetect:
+		if v, ok := result.AsNeuralNetworkDetect(); ok {
+			item.Box = &RectResponse{
+				X: v.Box.X(), Y: v.Box.Y(),
+				W: v.Box.Width(), H: v.Box.Height(),
+			}
+			item.Extra = map[string]interface{}{
+				"cls_index": v.ClsIndex,
+				"label":     v.Label,
+				"score":     v.Score,
+			}
+		}
+	case maa.NodeRecognitionTypeCustom:
+		if v, ok := result.AsCustom(); ok {
+			item.Box = &RectResponse{
+				X: v.Box.X(), Y: v.Box.Y(),
+				W: v.Box.Width(), H: v.Box.Height(),
+			}
+			item.Extra = map[string]interface{}{
+				"detail": v.Detail,
+			}
+		}
+	}
+
+	return item
+}
+
+// convertResultList 将 []*maa.RecognitionResult 转换为 []*RecoResultItem。
+func convertResultList(results []*maa.RecognitionResult) []*RecoResultItem {
+	items := make([]*RecoResultItem, 0, len(results))
+	for _, r := range results {
+		if item := convertRecognitionResult(r); item != nil {
+			items = append(items, item)
+		}
+	}
+	return items
 }
 
 // convertRecoDetail 递归转换 RecognitionDetail 到响应结构。
@@ -333,6 +448,26 @@ func convertRecoDetail(detail *maa.RecognitionDetail) *RecoDetailResponse {
 			}
 			encoder.Close()
 			resp.DrawImages = append(resp.DrawImages, buf.String())
+		}
+	}
+
+	// Raw image → base64 PNG (截图原图)
+	if detail.Raw != nil {
+		var buf strings.Builder
+		buf.WriteString("data:image/png;base64,")
+		encoder := base64.NewEncoder(base64.StdEncoding, &buf)
+		if err := png.Encode(encoder, detail.Raw); err == nil {
+			encoder.Close()
+			resp.RawImage = buf.String()
+		}
+	}
+
+	// Results (all/best/filtered 识别结果的 box 数据)
+	if detail.Results != nil {
+		resp.Results = &RecoResultsResponse{
+			All:      convertResultList(detail.Results.All),
+			Best:     convertResultList(detail.Results.Best),
+			Filtered: convertResultList(detail.Results.Filtered),
 		}
 	}
 

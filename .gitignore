@@ -29,6 +29,8 @@ components.d.ts
 
 # LLM
 plans/*
+.kilocode/*
+.cursor/*
 
 maa-js/*
 maa-py/*

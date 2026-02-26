@@ -41,18 +41,34 @@
                         </div>
                     </div>
 
-                    <!-- Right column: Draw images -->
-                    <div v-if="detail.draw_images && detail.draw_images.length > 0" class="flex flex-col gap-2 min-w-0">
-                        <span class="text-xs text-dimmed font-medium">Draw:</span>
-                        <div class="flex flex-col gap-2">
-                            <div v-for="(img, idx) in detail.draw_images" :key="idx" class="relative group">
-                                <img :src="img"
-                                    class="max-w-full rounded-lg border border-default cursor-pointer hover:opacity-80 transition-opacity"
-                                    @click="openImagePreview(img)" />
-                                <div
-                                    class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <UButton color="neutral" variant="solid" icon="i-lucide-fullscreen" size="xs"
+                    <!-- Right column: Canvas draw (raw image) or fallback draw images -->
+                    <div class="flex flex-col gap-2 min-w-0">
+                        <!-- Custom canvas draw (when raw_image is available) -->
+                        <div v-if="detail.raw_image && detail.results">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-xs text-dimmed font-medium">Recognition Draw:</span>
+                                <UTooltip text="Fullscreen">
+                                    <UButton color="neutral" variant="ghost" icon="i-lucide-fullscreen" size="xs"
+                                        @click="isFullscreen = true" />
+                                </UTooltip>
+                            </div>
+                            <RecognitionDrawCanvas :detail="detail" />
+                        </div>
+
+                        <!-- Original draw images (when raw_image is not available) -->
+                        <div v-else-if="detail.draw_images && detail.draw_images.length > 0"
+                            class="flex flex-col gap-2">
+                            <span class="text-xs text-dimmed font-medium">Draw:</span>
+                            <div class="flex flex-col gap-2">
+                                <div v-for="(img, idx) in detail.draw_images" :key="idx" class="relative group">
+                                    <img :src="img"
+                                        class="max-w-full rounded-lg border border-default cursor-pointer hover:opacity-80 transition-opacity"
                                         @click="openImagePreview(img)" />
+                                    <div
+                                        class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <UButton color="neutral" variant="solid" icon="i-lucide-fullscreen" size="xs"
+                                            @click="openImagePreview(img)" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -65,7 +81,17 @@
         </template>
     </UModal>
 
-    <!-- Fullscreen Image Preview -->
+    <!-- Fullscreen Canvas Draw Modal -->
+    <UModal v-model:open="isFullscreen" title="Recognition Draw" fullscreen>
+        <template #body>
+            <div v-if="detail?.raw_image && detail?.results"
+                class="w-full h-full flex flex-col overflow-hidden bg-muted p-4">
+                <RecognitionDrawCanvas :detail="detail" fullscreen />
+            </div>
+        </template>
+    </UModal>
+
+    <!-- Fullscreen Image Preview (for original draw_images) -->
     <UModal v-model:open="imagePreviewOpen" title="Image Preview" fullscreen>
         <template #body>
             <div class="relative w-full h-full flex items-center justify-center overflow-hidden bg-muted"
@@ -111,6 +137,7 @@ import { ref, computed, watch } from 'vue'
 import { getNodeDetail } from '@/api/http'
 import type { RecoDetailResponse } from './types'
 import RecoDetailItem from './RecoDetailItem.vue'
+import RecognitionDrawCanvas from './RecognitionDrawCanvas.vue'
 
 // --- Constants ---
 const MIN_ZOOM = 0.1
@@ -125,7 +152,10 @@ const open = defineModel<boolean>('open', { default: false })
 const loading = ref(false)
 const detail = ref<RecoDetailResponse | null>(null)
 
-// Image preview state
+// Fullscreen canvas draw
+const isFullscreen = ref(false)
+
+// Image preview state (for original draw_images)
 const imagePreviewOpen = ref(false)
 const previewImageSrc = ref('')
 
