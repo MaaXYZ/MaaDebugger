@@ -56,6 +56,12 @@
                     <img ref="imgRef" :src="imageUrl" alt="Screenshot" draggable="false"
                          class="pointer-events-none w-full h-full object-contain" :style="imageStyle" />
                 </div>
+                <!-- Error placeholder -->
+                <div v-else-if="screenshotError" class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-error">
+                    <UIcon name="i-lucide-circle-x" class="size-12" />
+                    <span class="text-sm font-medium">Screenshot Failed</span>
+                    <span class="text-xs text-dimmed max-w-xs text-center">{{ screenshotError }}</span>
+                </div>
                 <!-- No image placeholder -->
                 <div v-else class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted">
                     <UIcon name="i-lucide-image" class="size-12" />
@@ -98,7 +104,7 @@
                 </UTooltip>
 
                 <!-- Download -->
-                <UTooltip text="Download PNG">
+                <UTooltip text="Download">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-download" size="sm" :disabled="!imageUrl"
                              @click="downloadImage" />
                 </UTooltip>
@@ -137,7 +143,7 @@
                                  @click="resetFullscreenZoom" />
                     </UTooltip>
                     <USeparator orientation="vertical" class="h-5" />
-                    <UTooltip text="Download PNG">
+                    <UTooltip text="Download">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-download" size="sm"
                                  @click="downloadImage" />
                     </UTooltip>
@@ -162,6 +168,7 @@ import {
     screenshotRunning,
     screenshotPaused,
     screenshotFps,
+    screenshotError,
 } from '@/stores/screenshot'
 
 // --- Constants ---
@@ -172,6 +179,8 @@ const ZOOM_STEP = 0.15
 // --- State ---
 const imageData = ref<ArrayBuffer | null>(null)
 const imageUrl = ref<string | null>(null)
+let pendingFrame: ArrayBuffer | null = null
+let rafId = 0
 const aspectMode = ref<'landscape' | 'portrait'>('landscape')
 const zoomLevel = ref(1)
 const isFullscreen = ref(false)
@@ -228,6 +237,7 @@ async function toggleStreaming() {
         await stopScreenshot()
         screenshotRunning.value = false
     } else {
+        screenshotError.value = ''
         await startScreenshot()
         screenshotRunning.value = true
         screenshotPaused.value = false
@@ -252,10 +262,24 @@ async function applyFps() {
     }
 }
 
-// --- Watch incoming frames ---
+// --- Watch incoming frames (throttled to rAF to avoid overloading) ---
+function flushFrame() {
+    rafId = 0
+    if (pendingFrame) {
+        imageData.value = pendingFrame
+        pendingFrame = null
+    }
+}
+
 watch(latestFrame, (frame) => {
-    if (!frame) return
-    imageData.value = frame
+    if (!frame) {
+        imageData.value = null
+        return
+    }
+    pendingFrame = frame
+    if (!rafId) {
+        rafId = requestAnimationFrame(flushFrame)
+    }
 })
 
 // --- Aspect toggle ---
@@ -355,7 +379,7 @@ function downloadImage() {
 
     const blob = new Blob(
         [new Uint8Array(imageData.value)],
-        { type: 'image/png' }
+        { type: 'image/jpeg' }
     )
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -368,7 +392,7 @@ function downloadImage() {
         + String(now.getMinutes()).padStart(2, '0')
         + String(now.getSeconds()).padStart(2, '0')
     a.href = url
-    a.download = `screenshot_${timestamp}.png`
+    a.download = `screenshot_${timestamp}.jpg`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -386,7 +410,7 @@ function updateImageUrl() {
 
     const blob = new Blob(
         [new Uint8Array(imageData.value)],
-        { type: 'image/png' }
+        { type: 'image/jpeg' }
     )
     imageUrl.value = URL.createObjectURL(blob)
 }
@@ -427,6 +451,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+    if (rafId) cancelAnimationFrame(rafId)
     if (imageUrl.value) {
         URL.revokeObjectURL(imageUrl.value)
     }

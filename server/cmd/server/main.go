@@ -61,6 +61,12 @@ func main() {
 	screenshotService.SetOnFrame(func(data []byte) {
 		hub.BroadcastBinary(data)
 	})
+	screenshotService.SetOnError(func(reason string) {
+		hub.BroadcastJSON(ws.Message{
+			Type:    "screenshot.error",
+			Payload: map[string]string{"reason": reason},
+		})
+	})
 	cfgStore := configstore.New(userPath)
 	defer cfgStore.Close()
 	defer agentService.DisconnectAll()

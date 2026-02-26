@@ -7,6 +7,7 @@ export type WSEventHandler = {
   onTaskEvent?: (event: TaskEvent) => void;
   onAgentUpdate?: (agents: AgentInfo[]) => void;
   onScreenshotFrame?: (data: ArrayBuffer) => void;
+  onScreenshotError?: (reason: string) => void;
   onLog?: (level: string, message: string) => void;
   onOpen?: () => void;
   onClose?: () => void;
@@ -123,6 +124,12 @@ class WSClient {
         case "agent.update":
           this.handlers.onAgentUpdate?.(message.payload as AgentInfo[]);
           break;
+
+        case "screenshot.error": {
+          const err = message.payload as { reason: string };
+          this.handlers.onScreenshotError?.(err.reason);
+          break;
+        }
 
         case "log": {
           const log = message.payload as { level: string; message: string };

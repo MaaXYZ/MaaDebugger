@@ -6,9 +6,10 @@ import { getStatusSnapshot, getScreenshotStatus } from '@/api/http'
 import { useStatusStore } from '@/stores/status'
 import { handleTaskEvent } from '@/stores/launchGraph'
 import { latestAgentUpdate } from '@/api/agentEvents'
-import { latestFrame, screenshotRunning, screenshotPaused, screenshotFps } from '@/stores/screenshot'
+import { latestFrame, screenshotRunning, screenshotPaused, screenshotFps, screenshotError } from '@/stores/screenshot'
 
 const statusStore = useStatusStore()
+const toast = useToast()
 
 async function syncScreenshotStatus() {
     const ss = await getScreenshotStatus()
@@ -38,7 +39,20 @@ onMounted(async () => {
             latestAgentUpdate.value = agents
         },
         onScreenshotFrame(data) {
+            screenshotError.value = ''
             latestFrame.value = data
+        },
+        onScreenshotError(reason) {
+            screenshotRunning.value = false
+            screenshotError.value = reason
+            latestFrame.value = null
+            toast.add({
+                id: 'screenshot-error',
+                title: 'Screenshot Stopped',
+                description: reason,
+                icon: 'i-lucide-circle-x',
+                color: 'error',
+            })
         },
     })
 })
