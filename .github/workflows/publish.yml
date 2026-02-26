@@ -96,14 +96,6 @@ jobs:
           name: frontend-dist
           path: server/frontend/dist
 
-      - name: Build Go binary
-        working-directory: server
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: "0"
-        run: go build -trimpath -o ../MaaDebugger${{ matrix.ext }} ./cmd/server
-
       - name: Download MaaFramework
         uses: robinraju/release-downloader@v1
         with:
@@ -113,6 +105,14 @@ jobs:
           fileName: MAA-${{ matrix.maafw_os }}-${{ matrix.maafw_arch }}-*.zip
           out-file-path: maafw_dl
           extract: true
+
+      - name: Build Go binary
+        working-directory: server
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: go build -trimpath -o ../MaaDebugger${{ matrix.ext }} ./cmd/server
 
       - name: Package release
         run: |
