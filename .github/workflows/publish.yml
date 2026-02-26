@@ -1,0 +1,151 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - "rft/nodejs"
+
+  workflow_dispatch:
+    inputs:
+      maafw_version:
+        description: "MaaFramework version (e.g. v5.7.2). Leave empty for latest."
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Install & build frontend
+        working-directory: web
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: server/frontend/dist
+          if-no-files-found: error
+
+  build:
+    needs: build-frontend
+    strategy:
+      matrix:
+        include:
+          - goos: windows
+            goarch: amd64
+            runner: ubuntu-latest
+            maafw_os: win
+            maafw_arch: x86_64
+            ext: .exe
+          - goos: windows
+            goarch: arm64
+            runner: ubuntu-latest
+            maafw_os: win
+            maafw_arch: aarch64
+            ext: .exe
+          - goos: linux
+            goarch: amd64
+            runner: ubuntu-latest
+            maafw_os: linux
+            maafw_arch: x86_64
+            ext: ""
+          - goos: linux
+            goarch: arm64
+            runner: ubuntu-latest
+            maafw_os: linux
+            maafw_arch: aarch64
+            ext: ""
+          - goos: darwin
+            goarch: amd64
+            runner: ubuntu-latest
+            maafw_os: macos
+            maafw_arch: x86_64
+            ext: ""
+          - goos: darwin
+            goarch: arm64
+            runner: ubuntu-latest
+            maafw_os: macos
+            maafw_arch: aarch64
+            ext: ""
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: server/frontend/dist
+
+      - name: Build Go binary
+        working-directory: server
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: go build -trimpath -o ../maa-debugger${{ matrix.ext }} ./cmd/server
+
+      - name: Download MaaFramework
+        uses: robinraju/release-downloader@v1
+        with:
+          repository: MaaXYZ/MaaFramework
+          tag: ${{ github.event.inputs.maafw_version || 'latest' }}
+          fileName: MAA-${{ matrix.maafw_os }}-${{ matrix.maafw_arch }}-*.zip
+          out-file-path: maafw_dl
+          extract: true
+
+      - name: Package release
+        run: |
+          ARTIFACT_NAME="MaaDebugger-${{ matrix.maafw_os }}-${{ matrix.maafw_arch }}"
+          mkdir -p "${ARTIFACT_NAME}/bin"
+
+          cp maa-debugger${{ matrix.ext }} "${ARTIFACT_NAME}/"
+          cp -r maafw_dl/bin/* "${ARTIFACT_NAME}/bin/"
+
+          echo "ARTIFACT_NAME=${ARTIFACT_NAME}" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_NAME }}
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: MaaDebugger-*
+
+      - name: Create zip archives
+        working-directory: artifacts
+        run: |
+          for dir in MaaDebugger-*; do
+            zip -r "${dir}.zip" "${dir}"
+          done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/MaaDebugger-*.zip
+          generate_release_notes: true
