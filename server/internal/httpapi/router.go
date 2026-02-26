@@ -21,13 +21,14 @@ import (
 )
 
 type Dependencies struct {
-	StatusStore       *state.Store
-	Hub               *ws.Hub
-	ControllerService *maaservice.ControllerService
-	ResourceService   *maaservice.ResourceService
-	TaskerService     *maaservice.TaskerService
-	AgentService      *maaservice.AgentService
-	ConfigStore       *configstore.Store
+	StatusStore        *state.Store
+	Hub                *ws.Hub
+	ControllerService  *maaservice.ControllerService
+	ResourceService    *maaservice.ResourceService
+	TaskerService      *maaservice.TaskerService
+	AgentService       *maaservice.AgentService
+	ScreenshotService  *maaservice.ScreenshotService
+	ConfigStore        *configstore.Store
 }
 
 type router struct {
@@ -46,6 +47,11 @@ func NewRouter(deps Dependencies) http.Handler {
 	// 设置事件回调：将 Tasker 事件通过 WS 广播（不在 sink 中渲染）
 	deps.TaskerService.SetEventCallback(func(msg map[string]interface{}) {
 		deps.Hub.BroadcastJSON(ws.Message{Type: "task.event", Payload: msg})
+
+		// On recognition events, notify screenshot service to read from cache
+		if msgStr, _ := msg["msg"].(string); len(msgStr) >= 11 && msgStr[:11] == "Recognition" {
+			deps.ScreenshotService.NotifyRecoUpdate()
+		}
 	})
 
 	mux := http.NewServeMux()
@@ -69,6 +75,12 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.HandleFunc("POST /api/agent/connect", r.handleAgentConnect)
 	mux.HandleFunc("POST /api/agent/disconnect", r.handleAgentDisconnect)
 	mux.HandleFunc("GET /api/agent/list", r.handleAgentList)
+	mux.HandleFunc("POST /api/screenshot/start", r.handleScreenshotStart)
+	mux.HandleFunc("POST /api/screenshot/stop", r.handleScreenshotStop)
+	mux.HandleFunc("POST /api/screenshot/pause", r.handleScreenshotPause)
+	mux.HandleFunc("POST /api/screenshot/resume", r.handleScreenshotResume)
+	mux.HandleFunc("PUT /api/screenshot/fps", r.handleScreenshotSetFPS)
+	mux.HandleFunc("GET /api/screenshot/status", r.handleScreenshotStatus)
 	mux.HandleFunc("GET /ws", r.handleWS)
 
 	// Serve embedded frontend SPA for all non-API routes
@@ -340,6 +352,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 	if result.Success {
 		r.deps.StatusStore.SetController("connected")
 		log.Info().Str("type", ctrlType).Msg("[Controller] connect succeeded, status → connected")
+		r.deps.ScreenshotService.Start()
 	} else {
 		r.deps.StatusStore.SetController("disconnected")
 		log.Warn().Str("type", ctrlType).Str("error", result.Error).Msg("[Controller] connect failed, status → disconnected")
@@ -356,6 +369,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 
 func (r *router) handleControllerDisconnect(w http.ResponseWriter, _ *http.Request) {
 	log.Info().Msg("[Controller] disconnect request")
+	r.deps.ScreenshotService.Stop()
 	r.deps.ControllerService.Disconnect()
 	r.deps.StatusStore.SetController("disconnected")
 	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
@@ -532,6 +546,48 @@ func (r *router) handleTaskNodeDetail(w http.ResponseWriter, req *http.Request) 
 	}
 
 	response.OK(w, detail)
+}
+
+// --- Screenshot handlers ---
+
+func (r *router) handleScreenshotStart(w http.ResponseWriter, _ *http.Request) {
+	r.deps.ScreenshotService.Start()
+	response.OK(w, nil)
+}
+
+func (r *router) handleScreenshotStop(w http.ResponseWriter, _ *http.Request) {
+	r.deps.ScreenshotService.Stop()
+	response.OK(w, nil)
+}
+
+func (r *router) handleScreenshotPause(w http.ResponseWriter, _ *http.Request) {
+	r.deps.ScreenshotService.Pause()
+	response.OK(w, nil)
+}
+
+func (r *router) handleScreenshotResume(w http.ResponseWriter, _ *http.Request) {
+	r.deps.ScreenshotService.Resume()
+	response.OK(w, nil)
+}
+
+func (r *router) handleScreenshotSetFPS(w http.ResponseWriter, req *http.Request) {
+	var payload struct {
+		FPS int32 `json:"fps"`
+	}
+	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+		response.Fail(w, http.StatusBadRequest, "invalid json body")
+		return
+	}
+	r.deps.ScreenshotService.SetFPS(payload.FPS)
+	response.OK(w, map[string]interface{}{"fps": r.deps.ScreenshotService.GetFPS()})
+}
+
+func (r *router) handleScreenshotStatus(w http.ResponseWriter, _ *http.Request) {
+	response.OK(w, map[string]interface{}{
+		"running": r.deps.ScreenshotService.Running(),
+		"paused":  r.deps.ScreenshotService.Paused(),
+		"fps":     r.deps.ScreenshotService.GetFPS(),
+	})
 }
 
 func (r *router) handleWS(w http.ResponseWriter, req *http.Request) {

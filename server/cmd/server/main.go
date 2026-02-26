@@ -57,18 +57,24 @@ func main() {
 	resService := maaservice.NewResourceService()
 	taskerService := maaservice.NewTaskerService(ctrlService, resService)
 	agentService := maaservice.NewAgentService(resService)
+	screenshotService := maaservice.NewScreenshotService(ctrlService)
+	screenshotService.SetOnFrame(func(data []byte) {
+		hub.BroadcastBinary(data)
+	})
 	cfgStore := configstore.New(userPath)
 	defer cfgStore.Close()
 	defer agentService.DisconnectAll()
+	defer screenshotService.Stop()
 
 	router := httpapi.NewRouter(httpapi.Dependencies{
-		StatusStore:       statusStore,
-		Hub:               hub,
-		ControllerService: ctrlService,
-		ResourceService:   resService,
-		TaskerService:     taskerService,
-		AgentService:      agentService,
-		ConfigStore:       cfgStore,
+		StatusStore:        statusStore,
+		Hub:                hub,
+		ControllerService:  ctrlService,
+		ResourceService:    resService,
+		TaskerService:      taskerService,
+		AgentService:       agentService,
+		ScreenshotService:  screenshotService,
+		ConfigStore:        cfgStore,
 	})
 
 	srv := &http.Server{

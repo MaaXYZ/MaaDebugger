@@ -207,6 +207,46 @@ export async function stopTask(): Promise<ApiResponse> {
 }
 
 // ============================================================
+// Screenshot API
+// ============================================================
+
+export interface ScreenshotStatus {
+  running: boolean;
+  paused: boolean;
+  fps: number;
+}
+
+export async function startScreenshot(): Promise<ApiResponse> {
+  return request("/screenshot/start", { method: "POST" });
+}
+
+export async function stopScreenshot(): Promise<ApiResponse> {
+  return request("/screenshot/stop", { method: "POST" });
+}
+
+export async function pauseScreenshot(): Promise<ApiResponse> {
+  return request("/screenshot/pause", { method: "POST" });
+}
+
+export async function resumeScreenshot(): Promise<ApiResponse> {
+  return request("/screenshot/resume", { method: "POST" });
+}
+
+export async function setScreenshotFPS(
+  fps: number,
+): Promise<ApiResponse<{ fps: number }>> {
+  return request("/screenshot/fps", {
+    method: "PUT",
+    body: JSON.stringify({ fps }),
+  });
+}
+
+export async function getScreenshotStatus(): Promise<ScreenshotStatus | null> {
+  const result = await request<ScreenshotStatus>("/screenshot/status");
+  return result.data ?? null;
+}
+
+// ============================================================
 // Info API
 // ============================================================
 

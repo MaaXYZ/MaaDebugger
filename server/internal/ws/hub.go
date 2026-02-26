@@ -51,3 +51,16 @@ func (h *Hub) BroadcastJSON(msg Message) {
 		_ = c.WriteMessage(websocket.TextMessage, buf)
 	}
 }
+
+func (h *Hub) BroadcastBinary(data []byte) {
+	h.mu.RLock()
+	conns := make([]*websocket.Conn, 0, len(h.clients))
+	for c := range h.clients {
+		conns = append(conns, c)
+	}
+	h.mu.RUnlock()
+
+	for _, c := range conns {
+		_ = c.WriteMessage(websocket.BinaryMessage, data)
+	}
+}

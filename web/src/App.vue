@@ -2,28 +2,43 @@
 import { onMounted, onUnmounted } from 'vue'
 import Index from '@/router/Index.vue'
 import { wsClient } from '@/api/ws'
-import { getStatusSnapshot } from '@/api/http'
+import { getStatusSnapshot, getScreenshotStatus } from '@/api/http'
 import { useStatusStore } from '@/stores/status'
 import { handleTaskEvent } from '@/stores/launchGraph'
 import { latestAgentUpdate } from '@/api/agentEvents'
+import { latestFrame, screenshotRunning, screenshotPaused, screenshotFps } from '@/stores/screenshot'
 
 const statusStore = useStatusStore()
+
+async function syncScreenshotStatus() {
+  const ss = await getScreenshotStatus()
+  if (ss) {
+    screenshotRunning.value = ss.running
+    screenshotPaused.value = ss.paused
+    screenshotFps.value = ss.fps
+  }
+}
 
 onMounted(async () => {
   const snapshot = await getStatusSnapshot()
   if (snapshot) {
     statusStore.updateStatus(snapshot)
   }
+  await syncScreenshotStatus()
 
   wsClient.connect({
     onStatusUpdate(status) {
       statusStore.updateStatus(status)
+      syncScreenshotStatus()
     },
     onTaskEvent(event) {
       handleTaskEvent(event)
     },
     onAgentUpdate(agents) {
       latestAgentUpdate.value = agents
+    },
+    onScreenshotFrame(data) {
+      latestFrame.value = data
     },
   })
 })

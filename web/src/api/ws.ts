@@ -6,6 +6,7 @@ export type WSEventHandler = {
   onStatusUpdate?: (status: StatusSnapshot) => void;
   onTaskEvent?: (event: TaskEvent) => void;
   onAgentUpdate?: (agents: AgentInfo[]) => void;
+  onScreenshotFrame?: (data: ArrayBuffer) => void;
   onLog?: (level: string, message: string) => void;
   onOpen?: () => void;
   onClose?: () => void;
@@ -95,9 +96,14 @@ class WSClient {
   }
 
   private handleMessage(event: MessageEvent): void {
-    // 二进制数据（预留给截图帧流）
-    if (event.data instanceof Blob || event.data instanceof ArrayBuffer) {
-      // TODO: Phase 2 截图帧处理
+    if (event.data instanceof Blob) {
+      event.data.arrayBuffer().then((buf) => {
+        this.handlers.onScreenshotFrame?.(buf);
+      });
+      return;
+    }
+    if (event.data instanceof ArrayBuffer) {
+      this.handlers.onScreenshotFrame?.(event.data);
       return;
     }
 

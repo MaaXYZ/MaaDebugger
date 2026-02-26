@@ -4,8 +4,40 @@
             <div class="flex flex-row items-center gap-2 min-h-10">
                 <span class="font-bold">Screenshot</span>
                 <div class="flex-1" />
+
+                <!-- FPS control -->
+                <UPopover>
+                    <UButton color="neutral" variant="ghost" size="sm" class="tabular-nums">
+                        {{ currentFps }} FPS
+                    </UButton>
+                    <template #content>
+                        <div class="p-3 flex flex-col gap-2 w-48">
+                            <span class="text-xs text-muted">Frame Rate</span>
+                            <USlider v-model="fpsSlider" :min="1" :max="60" :step="1" />
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-muted tabular-nums">{{ fpsSlider }} FPS</span>
+                                <UButton size="xs" @click="applyFps">Apply</UButton>
+                            </div>
+                        </div>
+                    </template>
+                </UPopover>
+
+                <!-- Pause/Resume -->
+                <UTooltip :text="isPaused ? 'Resume' : 'Pause'">
+                    <UButton color="neutral" variant="ghost" :icon="isPaused ? 'i-lucide-play' : 'i-lucide-pause'"
+                        size="sm" :disabled="!isStreaming" @click="togglePause" />
+                </UTooltip>
+
+                <!-- Start/Stop streaming -->
+                <UTooltip :text="isStreaming ? 'Stop streaming' : 'Start streaming'">
+                    <UButton :color="isStreaming ? 'error' : 'primary'" variant="ghost"
+                        :icon="isStreaming ? 'i-lucide-video-off' : 'i-lucide-video'" size="sm"
+                        @click="toggleStreaming" />
+                </UTooltip>
+
                 <!-- Aspect ratio toggle -->
-                <UTooltip :text="aspectMode === 'landscape' ? 'Switch to 9:16 portrait' : 'Switch to 16:9 landscape'">
+                <UTooltip
+                    :text="aspectMode === 'landscape' ? 'Switch to 9:16 portrait' : 'Switch to 16:9 landscape'">
                     <UButton color="neutral" variant="ghost" :icon="aspectMode === 'landscape'
                         ? 'i-lucide-monitor'
                         : 'i-lucide-smartphone'" size="sm" @click="toggleAspect" />
@@ -22,7 +54,7 @@
                     :class="{ 'cursor-grabbing': isDragging }" @mousedown="onDragStart" @mousemove="onDragMove"
                     @mouseup="onDragEnd" @mouseleave="onDragEnd">
                     <img ref="imgRef" :src="imageUrl" alt="Screenshot" draggable="false"
-                        class="pointer-events-none max-w-none" :style="imageStyle" />
+                        class="pointer-events-none w-full h-full object-contain" :style="imageStyle" />
                 </div>
                 <!-- No image placeholder -->
                 <div v-else class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted">
@@ -117,6 +149,20 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import {
+    startScreenshot,
+    stopScreenshot,
+    pauseScreenshot,
+    resumeScreenshot,
+    setScreenshotFPS,
+    getScreenshotStatus,
+} from '@/api/http'
+import {
+    latestFrame,
+    screenshotRunning,
+    screenshotPaused,
+    screenshotFps,
+} from '@/stores/screenshot'
 
 // --- Constants ---
 const MIN_ZOOM = 0.1
@@ -124,11 +170,17 @@ const MAX_ZOOM = 5
 const ZOOM_STEP = 0.15
 
 // --- State ---
-const imageData = ref<Uint8Array | ArrayBuffer | null>(null)
+const imageData = ref<ArrayBuffer | null>(null)
 const imageUrl = ref<string | null>(null)
 const aspectMode = ref<'landscape' | 'portrait'>('landscape')
 const zoomLevel = ref(1)
 const isFullscreen = ref(false)
+
+// Streaming state
+const isStreaming = computed(() => screenshotRunning.value)
+const isPaused = computed(() => screenshotPaused.value)
+const currentFps = computed(() => screenshotFps.value)
+const fpsSlider = ref(30)
 
 // Drag state (card view)
 const isDragging = ref(false)
@@ -170,6 +222,42 @@ const fullscreenImageStyle = computed(() => ({
     objectFit: 'contain' as const,
 }))
 
+// --- Streaming controls ---
+async function toggleStreaming() {
+    if (isStreaming.value) {
+        await stopScreenshot()
+        screenshotRunning.value = false
+    } else {
+        await startScreenshot()
+        screenshotRunning.value = true
+        screenshotPaused.value = false
+    }
+}
+
+async function togglePause() {
+    if (isPaused.value) {
+        await resumeScreenshot()
+        screenshotPaused.value = false
+    } else {
+        await pauseScreenshot()
+        screenshotPaused.value = true
+    }
+}
+
+async function applyFps() {
+    const result = await setScreenshotFPS(fpsSlider.value)
+    if (result.succeed && result.data) {
+        screenshotFps.value = result.data.fps
+        fpsSlider.value = result.data.fps
+    }
+}
+
+// --- Watch incoming frames ---
+watch(latestFrame, (frame) => {
+    if (!frame) return
+    imageData.value = frame
+})
+
 // --- Aspect toggle ---
 function toggleAspect() {
     aspectMode.value = aspectMode.value === 'landscape' ? 'portrait' : 'landscape'
@@ -183,7 +271,6 @@ function zoomIn() {
 
 function zoomOut() {
     zoomLevel.value = Math.max(MIN_ZOOM, zoomLevel.value - ZOOM_STEP)
-    // Reset pan if zoomed back to 1 or below
     if (zoomLevel.value <= 1) {
         panOffset.value = { x: 0, y: 0 }
     }
@@ -196,11 +283,8 @@ function resetZoom() {
 
 function onWheel(e: WheelEvent) {
     if (!imageUrl.value) return
-    if (e.deltaY < 0) {
-        zoomIn()
-    } else {
-        zoomOut()
-    }
+    if (e.deltaY < 0) zoomIn()
+    else zoomOut()
 }
 
 // --- Drag (card view) ---
@@ -241,11 +325,8 @@ function resetFullscreenZoom() {
 }
 
 function onFullscreenWheel(e: WheelEvent) {
-    if (e.deltaY < 0) {
-        fullscreenZoomIn()
-    } else {
-        fullscreenZoomOut()
-    }
+    if (e.deltaY < 0) fullscreenZoomIn()
+    else fullscreenZoomOut()
 }
 
 // --- Drag (fullscreen) ---
@@ -273,7 +354,7 @@ function downloadImage() {
     if (!imageData.value) return
 
     const blob = new Blob(
-        [imageData.value instanceof ArrayBuffer ? new Uint8Array(imageData.value as ArrayBuffer) : imageData.value as BlobPart],
+        [new Uint8Array(imageData.value)],
         { type: 'image/png' }
     )
     const url = URL.createObjectURL(blob)
@@ -296,7 +377,6 @@ function downloadImage() {
 
 // --- Image data management ---
 function updateImageUrl() {
-    // Revoke previous URL
     if (imageUrl.value) {
         URL.revokeObjectURL(imageUrl.value)
         imageUrl.value = null
@@ -305,7 +385,7 @@ function updateImageUrl() {
     if (!imageData.value) return
 
     const blob = new Blob(
-        [imageData.value instanceof ArrayBuffer ? new Uint8Array(imageData.value as ArrayBuffer) : imageData.value as BlobPart],
+        [new Uint8Array(imageData.value)],
         { type: 'image/png' }
     )
     imageUrl.value = URL.createObjectURL(blob)
@@ -313,104 +393,14 @@ function updateImageUrl() {
 
 watch(imageData, () => {
     updateImageUrl()
-    resetZoom()
 })
 
-// Reset fullscreen zoom when modal closes
 watch(isFullscreen, (val) => {
-    if (!val) {
-        resetFullscreenZoom()
-    }
+    if (!val) resetFullscreenZoom()
 })
-
-// --- Mock data generation ---
-function generateMockImage(): Uint8Array {
-    const width = aspectMode.value === 'landscape' ? 1080 : 720
-    const height = aspectMode.value === 'landscape' ? 720 : 1080
-
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-    const ctx = canvas.getContext('2d')!
-
-    // Background gradient
-    const gradient = ctx.createLinearGradient(0, 0, width, height)
-    gradient.addColorStop(0, '#667eea')
-    gradient.addColorStop(0.5, '#764ba2')
-    gradient.addColorStop(1, '#f093fb')
-    ctx.fillStyle = gradient
-    ctx.fillRect(0, 0, width, height)
-
-    // Grid lines
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)'
-    ctx.lineWidth = 1
-    const gridSize = 60
-    for (let x = 0; x <= width; x += gridSize) {
-        ctx.beginPath()
-        ctx.moveTo(x, 0)
-        ctx.lineTo(x, height)
-        ctx.stroke()
-    }
-    for (let y = 0; y <= height; y += gridSize) {
-        ctx.beginPath()
-        ctx.moveTo(0, y)
-        ctx.lineTo(width, y)
-        ctx.stroke()
-    }
-
-    // Center text
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
-    ctx.font = 'bold 32px system-ui, sans-serif'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(`Mock Screenshot`, width / 2, height / 2 - 24)
-
-    ctx.font = '20px system-ui, sans-serif'
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'
-    ctx.fillText(`${width} × ${height}`, width / 2, height / 2 + 16)
-
-    // Corner markers
-    const markerSize = 20
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'
-    ctx.lineWidth = 2
-    // Top-left
-    ctx.beginPath()
-    ctx.moveTo(10, 10 + markerSize)
-    ctx.lineTo(10, 10)
-    ctx.lineTo(10 + markerSize, 10)
-    ctx.stroke()
-    // Top-right
-    ctx.beginPath()
-    ctx.moveTo(width - 10 - markerSize, 10)
-    ctx.lineTo(width - 10, 10)
-    ctx.lineTo(width - 10, 10 + markerSize)
-    ctx.stroke()
-    // Bottom-left
-    ctx.beginPath()
-    ctx.moveTo(10, height - 10 - markerSize)
-    ctx.lineTo(10, height - 10)
-    ctx.lineTo(10 + markerSize, height - 10)
-    ctx.stroke()
-    // Bottom-right
-    ctx.beginPath()
-    ctx.moveTo(width - 10 - markerSize, height - 10)
-    ctx.lineTo(width - 10, height - 10)
-    ctx.lineTo(width - 10, height - 10 - markerSize)
-    ctx.stroke()
-
-    // Convert canvas to PNG binary
-    const dataUrl = canvas.toDataURL('image/png')
-    const base64 = dataUrl.split(',')[1] ?? ''
-    const binaryStr = atob(base64)
-    const bytes = new Uint8Array(binaryStr.length)
-    for (let i = 0; i < binaryStr.length; i++) {
-        bytes[i] = binaryStr.charCodeAt(i)
-    }
-    return bytes
-}
 
 // --- Public API ---
-function setImageData(data: Uint8Array | ArrayBuffer | null) {
+function setImageData(data: ArrayBuffer | null) {
     imageData.value = data
 }
 
@@ -426,9 +416,14 @@ defineExpose({
 })
 
 // --- Lifecycle ---
-onMounted(() => {
-    // Load mock data on mount for development preview
-    imageData.value = generateMockImage()
+onMounted(async () => {
+    const status = await getScreenshotStatus()
+    if (status) {
+        screenshotRunning.value = status.running
+        screenshotPaused.value = status.paused
+        screenshotFps.value = status.fps
+        fpsSlider.value = status.fps
+    }
 })
 
 onUnmounted(() => {
