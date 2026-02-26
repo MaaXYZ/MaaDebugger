@@ -2,11 +2,15 @@ package main
 
 import (
 	"context"
+	"flag"
+	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
 	"runtime"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -25,12 +29,16 @@ func main() {
 	zerolog.TimeFieldFormat = time.RFC3339Nano
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
 
-	// 获取当前工作目录
+	var flagPort int
+	flag.IntVar(&flagPort, "port", 0, "server port (default: auto-detect from 8011)")
+	flag.Parse()
+
 	userPath := getCwd()
 
 	host := getenv("GO_SERVICE_HOST", "127.0.0.1")
-	port := getenv("GO_SERVICE_PORT", "8011")
-	addr := host + ":" + port
+
+	port := resolvePort(host, flagPort)
+	addr := host + ":" + strconv.Itoa(port)
 
 	if err := maa.Init(maa.WithDebugMode(true), maa.WithLibDir(userPath+"/bin")); err != nil {
 		log.Fatal().Err(err).Msg("maa init failed")
@@ -132,6 +140,45 @@ func openBrowser(url string) {
 	if err := cmd.Start(); err != nil {
 		log.Warn().Err(err).Str("url", url).Msg("failed to open browser")
 	}
+}
+
+func resolvePort(host string, flagPort int) int {
+	const basePort = 8011
+	const maxAttempts = 100
+
+	if flagPort > 0 {
+		return flagPort
+	}
+
+	if v := os.Getenv("GO_SERVICE_PORT"); v != "" {
+		if p, err := strconv.Atoi(v); err == nil && p > 0 {
+			return p
+		}
+	}
+
+	for i := range maxAttempts {
+		p := basePort + i
+		if isPortAvailable(host, p) {
+			if i > 0 {
+				log.Info().Int("port", p).Msg("default port 8011 occupied, using alternative")
+			}
+			return p
+		}
+	}
+	log.Fatal().
+		Int("from", basePort).
+		Int("to", basePort+maxAttempts-1).
+		Msg("no available port found")
+	return 0
+}
+
+func isPortAvailable(host string, port int) bool {
+	ln, err := net.Listen("tcp", fmt.Sprintf("%s:%d", host, port))
+	if err != nil {
+		return false
+	}
+	ln.Close()
+	return true
 }
 
 func getenv(key, fallback string) string {

@@ -23,7 +23,6 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 22
-          package-manager: pnpm
 
       - uses: pnpm/action-setup@v4
         with:
