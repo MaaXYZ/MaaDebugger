@@ -13,25 +13,76 @@ type Message struct {
 	Payload interface{} `json:"payload"`
 }
 
+const sendBufSize = 256
+
+type envelope struct {
+	msgType int
+	data    []byte
+}
+
+type Client struct {
+	conn *websocket.Conn
+	send chan envelope
+	hub  *Hub
+}
+
+func (c *Client) writePump() {
+	defer c.conn.Close()
+	for env := range c.send {
+		if err := c.conn.WriteMessage(env.msgType, env.data); err != nil {
+			return
+		}
+	}
+}
+
+// SendText enqueues a text message. Drops silently if the buffer is full.
+func (c *Client) SendText(data []byte) {
+	select {
+	case c.send <- envelope{websocket.TextMessage, data}:
+	default:
+	}
+}
+
+// SendJSON marshals msg to JSON and enqueues it as a text message.
+func (c *Client) SendJSON(msg Message) {
+	buf, err := json.Marshal(msg)
+	if err != nil {
+		return
+	}
+	c.SendText(buf)
+}
+
 type Hub struct {
 	mu      sync.RWMutex
-	clients map[*websocket.Conn]struct{}
+	clients map[*Client]struct{}
 }
 
 func NewHub() *Hub {
-	return &Hub{clients: make(map[*websocket.Conn]struct{})}
+	return &Hub{clients: make(map[*Client]struct{})}
 }
 
-func (h *Hub) Add(conn *websocket.Conn) {
+// Register creates a Client for the connection, starts its writePump,
+// and adds it to the hub. The caller should call Remove when done.
+func (h *Hub) Register(conn *websocket.Conn) *Client {
+	c := &Client{
+		conn: conn,
+		send: make(chan envelope, sendBufSize),
+		hub:  h,
+	}
 	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.clients[conn] = struct{}{}
+	h.clients[c] = struct{}{}
+	h.mu.Unlock()
+	go c.writePump()
+	return c
 }
 
-func (h *Hub) Remove(conn *websocket.Conn) {
+func (h *Hub) Remove(c *Client) {
 	h.mu.Lock()
-	defer h.mu.Unlock()
-	delete(h.clients, conn)
+	if _, ok := h.clients[c]; ok {
+		delete(h.clients, c)
+		close(c.send)
+	}
+	h.mu.Unlock()
 }
 
 func (h *Hub) BroadcastJSON(msg Message) {
@@ -40,27 +91,25 @@ func (h *Hub) BroadcastJSON(msg Message) {
 		return
 	}
 
+	env := envelope{websocket.TextMessage, buf}
 	h.mu.RLock()
-	conns := make([]*websocket.Conn, 0, len(h.clients))
 	for c := range h.clients {
-		conns = append(conns, c)
+		select {
+		case c.send <- env:
+		default:
+		}
 	}
 	h.mu.RUnlock()
-
-	for _, c := range conns {
-		_ = c.WriteMessage(websocket.TextMessage, buf)
-	}
 }
 
 func (h *Hub) BroadcastBinary(data []byte) {
+	env := envelope{websocket.BinaryMessage, data}
 	h.mu.RLock()
-	conns := make([]*websocket.Conn, 0, len(h.clients))
 	for c := range h.clients {
-		conns = append(conns, c)
+		select {
+		case c.send <- env:
+		default:
+		}
 	}
 	h.mu.RUnlock()
-
-	for _, c := range conns {
-		_ = c.WriteMessage(websocket.BinaryMessage, data)
-	}
 }

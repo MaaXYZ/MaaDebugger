@@ -596,18 +596,15 @@ func (r *router) handleWS(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	r.deps.Hub.Add(conn)
+	client := r.deps.Hub.Register(conn)
 
-	_ = conn.WriteJSON(ws.Message{
+	client.SendJSON(ws.Message{
 		Type:    "status.update",
 		Payload: r.deps.StatusStore.Get(),
 	})
 
 	go func() {
-		defer func() {
-			r.deps.Hub.Remove(conn)
-			_ = conn.Close()
-		}()
+		defer r.deps.Hub.Remove(client)
 
 		for {
 			_, payload, err := conn.ReadMessage()
@@ -621,7 +618,7 @@ func (r *router) handleWS(w http.ResponseWriter, req *http.Request) {
 			}
 
 			if msg.Type == "status.subscribe" {
-				_ = conn.WriteJSON(ws.Message{
+				client.SendJSON(ws.Message{
 					Type:    "status.update",
 					Payload: r.deps.StatusStore.Get(),
 				})
