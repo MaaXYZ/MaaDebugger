@@ -4,7 +4,7 @@
         <div class="flex flex-row gap-2">
             <UTooltip text="Connect">
                 <UButton color="primary" variant="outline" icon="i-lucide-link" size="xl" :loading="connecting"
-                    :disabled="!config.address || connecting" @click="onConnect" />
+                         :disabled="!config.address || connecting" @click="onConnect" />
             </UTooltip>
 
             <UTooltip text="Disconnect">
@@ -19,7 +19,7 @@
 
         <UFormField name="playcover_uuid" label="UUID (Optional)">
             <UInput v-model="config.uuid" placeholder="Device UUID (optional)" icon="i-lucide-fingerprint"
-                class="w-full" />
+                    class="w-full" />
         </UFormField>
     </div>
 </template>

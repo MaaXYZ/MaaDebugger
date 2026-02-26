@@ -77,27 +77,6 @@ export const useAgentStore = defineStore(
     };
   },
   {
-    persist: {
-      serializer: {
-        serialize: (state) => {
-          const cleaned = {
-            ...state,
-            agents: (state.agents as AgentItem[]).map(({ status, errorMsg, ...rest }) => rest),
-          };
-          return JSON.stringify(cleaned);
-        },
-        deserialize: (value) => {
-          const parsed = JSON.parse(value);
-          if (Array.isArray(parsed.agents)) {
-            parsed.agents = parsed.agents.map((a: Record<string, unknown>) => ({
-              ...a,
-              status: "idle",
-              errorMsg: "",
-            }));
-          }
-          return parsed;
-        },
-      },
-    },
+    persist: true,
   },
 );

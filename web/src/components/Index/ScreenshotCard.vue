@@ -3,7 +3,7 @@
         <template #header>
             <div class="flex flex-row items-center gap-2 min-h-10">
                 <span class="font-bold">Screenshot</span>
-                <div class="flex-1" />
+                <div class="flex-1"></div>
 
                 <!-- FPS control -->
                 <UPopover>
@@ -25,14 +25,14 @@
                 <!-- Pause/Resume -->
                 <UTooltip :text="isPaused ? 'Resume' : 'Pause'">
                     <UButton color="neutral" variant="ghost" :icon="isPaused ? 'i-lucide-play' : 'i-lucide-pause'"
-                        size="sm" :disabled="!isStreaming" @click="togglePause" />
+                             size="sm" :disabled="!isStreaming" @click="togglePause" />
                 </UTooltip>
 
                 <!-- Start/Stop streaming -->
                 <UTooltip :text="isStreaming ? 'Stop streaming' : 'Start streaming'">
                     <UButton :color="isStreaming ? 'error' : 'primary'" variant="ghost"
-                        :icon="isStreaming ? 'i-lucide-video-off' : 'i-lucide-video'" size="sm"
-                        @click="toggleStreaming" />
+                             :icon="isStreaming ? 'i-lucide-video-off' : 'i-lucide-video'" size="sm"
+                             @click="toggleStreaming" />
                 </UTooltip>
 
                 <!-- Aspect ratio toggle -->
@@ -48,13 +48,13 @@
         <template #default>
             <!-- Image display area -->
             <div ref="containerRef" class="relative overflow-hidden rounded-md border border-default bg-muted"
-                :style="containerStyle" @wheel.prevent="onWheel">
+                 :style="containerStyle" @wheel.prevent="onWheel">
                 <!-- Has image -->
                 <div v-if="imageUrl" class="absolute inset-0 flex items-center justify-center cursor-grab select-none"
-                    :class="{ 'cursor-grabbing': isDragging }" @mousedown="onDragStart" @mousemove="onDragMove"
-                    @mouseup="onDragEnd" @mouseleave="onDragEnd">
+                     :class="{ 'cursor-grabbing': isDragging }" @mousedown="onDragStart" @mousemove="onDragMove"
+                     @mouseup="onDragEnd" @mouseleave="onDragEnd">
                     <img ref="imgRef" :src="imageUrl" alt="Screenshot" draggable="false"
-                        class="pointer-events-none w-full h-full object-contain" :style="imageStyle" />
+                         class="pointer-events-none w-full h-full object-contain" :style="imageStyle" />
                 </div>
                 <!-- No image placeholder -->
                 <div v-else class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted">
@@ -70,14 +70,14 @@
                 <div class="flex items-center gap-1">
                     <UTooltip text="Zoom out">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-out" size="sm"
-                            :disabled="!imageUrl || zoomLevel <= MIN_ZOOM" @click="zoomOut" />
+                                 :disabled="!imageUrl || zoomLevel <= MIN_ZOOM" @click="zoomOut" />
                     </UTooltip>
                     <span class="text-xs text-muted min-w-10 text-center tabular-nums">
                         {{ zoomPercentage }}%
                     </span>
                     <UTooltip text="Zoom in">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-in" size="sm"
-                            :disabled="!imageUrl || zoomLevel >= MAX_ZOOM" @click="zoomIn" />
+                                 :disabled="!imageUrl || zoomLevel >= MAX_ZOOM" @click="zoomIn" />
                     </UTooltip>
                 </div>
 
@@ -86,21 +86,21 @@
                 <!-- Fit to container -->
                 <UTooltip text="Fit to view">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-maximize" size="sm" :disabled="!imageUrl"
-                        @click="resetZoom" />
+                             @click="resetZoom" />
                 </UTooltip>
 
-                <div class="flex-1" />
+                <div class="flex-1"></div>
 
                 <!-- Fullscreen -->
                 <UTooltip text="Fullscreen">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-fullscreen" size="sm" :disabled="!imageUrl"
-                        @click="isFullscreen = true" />
+                             @click="isFullscreen = true" />
                 </UTooltip>
 
                 <!-- Download -->
                 <UTooltip text="Download PNG">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-download" size="sm" :disabled="!imageUrl"
-                        @click="downloadImage" />
+                             @click="downloadImage" />
                 </UTooltip>
             </div>
         </template>
@@ -110,36 +110,36 @@
     <UModal v-model:open="isFullscreen" title="Screenshot" fullscreen>
         <template #body>
             <div class="relative w-full h-full flex items-center justify-center overflow-hidden bg-muted"
-                @wheel.prevent="onFullscreenWheel">
+                 @wheel.prevent="onFullscreenWheel">
                 <div class="flex items-center justify-center cursor-grab select-none"
-                    :class="{ 'cursor-grabbing': isFullscreenDragging }" @mousedown="onFullscreenDragStart"
-                    @mousemove="onFullscreenDragMove" @mouseup="onFullscreenDragEnd" @mouseleave="onFullscreenDragEnd">
+                     :class="{ 'cursor-grabbing': isFullscreenDragging }" @mousedown="onFullscreenDragStart"
+                     @mousemove="onFullscreenDragMove" @mouseup="onFullscreenDragEnd" @mouseleave="onFullscreenDragEnd">
                     <img v-if="imageUrl" :src="imageUrl" alt="Screenshot" draggable="false"
-                        class="pointer-events-none max-w-none" :style="fullscreenImageStyle" />
+                         class="pointer-events-none max-w-none" :style="fullscreenImageStyle" />
                 </div>
                 <!-- Fullscreen toolbar -->
                 <div
                     class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-elevated/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-default shadow-lg">
                     <UTooltip text="Zoom out">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-out" size="sm"
-                            :disabled="fullscreenZoom <= MIN_ZOOM" @click="fullscreenZoomOut" />
+                                 :disabled="fullscreenZoom <= MIN_ZOOM" @click="fullscreenZoomOut" />
                     </UTooltip>
                     <span class="text-xs text-muted min-w-10 text-center tabular-nums">
                         {{ fullscreenZoomPercentage }}%
                     </span>
                     <UTooltip text="Zoom in">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-in" size="sm"
-                            :disabled="fullscreenZoom >= MAX_ZOOM" @click="fullscreenZoomIn" />
+                                 :disabled="fullscreenZoom >= MAX_ZOOM" @click="fullscreenZoomIn" />
                     </UTooltip>
                     <USeparator orientation="vertical" class="h-5" />
                     <UTooltip text="Fit to view">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-maximize" size="sm"
-                            @click="resetFullscreenZoom" />
+                                 @click="resetFullscreenZoom" />
                     </UTooltip>
                     <USeparator orientation="vertical" class="h-5" />
                     <UTooltip text="Download PNG">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-download" size="sm"
-                            @click="downloadImage" />
+                                 @click="downloadImage" />
                     </UTooltip>
                 </div>
             </div>

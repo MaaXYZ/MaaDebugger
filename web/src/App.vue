@@ -11,62 +11,62 @@ import { latestFrame, screenshotRunning, screenshotPaused, screenshotFps } from 
 const statusStore = useStatusStore()
 
 async function syncScreenshotStatus() {
-  const ss = await getScreenshotStatus()
-  if (ss) {
-    screenshotRunning.value = ss.running
-    screenshotPaused.value = ss.paused
-    screenshotFps.value = ss.fps
-  }
+    const ss = await getScreenshotStatus()
+    if (ss) {
+        screenshotRunning.value = ss.running
+        screenshotPaused.value = ss.paused
+        screenshotFps.value = ss.fps
+    }
 }
 
 onMounted(async () => {
-  const snapshot = await getStatusSnapshot()
-  if (snapshot) {
-    statusStore.updateStatus(snapshot)
-  }
-  await syncScreenshotStatus()
+    const snapshot = await getStatusSnapshot()
+    if (snapshot) {
+        statusStore.updateStatus(snapshot)
+    }
+    await syncScreenshotStatus()
 
-  wsClient.connect({
-    onStatusUpdate(status) {
-      statusStore.updateStatus(status)
-      syncScreenshotStatus()
-    },
-    onTaskEvent(event) {
-      handleTaskEvent(event)
-    },
-    onAgentUpdate(agents) {
-      latestAgentUpdate.value = agents
-    },
-    onScreenshotFrame(data) {
-      latestFrame.value = data
-    },
-  })
+    wsClient.connect({
+        onStatusUpdate(status) {
+            statusStore.updateStatus(status)
+            syncScreenshotStatus()
+        },
+        onTaskEvent(event) {
+            handleTaskEvent(event)
+        },
+        onAgentUpdate(agents) {
+            latestAgentUpdate.value = agents
+        },
+        onScreenshotFrame(data) {
+            latestFrame.value = data
+        },
+    })
 })
 
 onUnmounted(() => {
-  wsClient.disconnect()
+    wsClient.disconnect()
 })
 </script>
 
 <template>
-  <UApp>
-    <UMain>
-      <UHeader title="MaaDebugger" :ui="{ toggle: 'hidden' }">
-        <template #right>
-          <UColorModeButton />
+    <UApp>
+        <UMain>
+            <UHeader title="MaaDebugger" :ui="{ toggle: 'hidden' }">
+                <template #right>
+                    <UColorModeButton />
 
-          <UTooltip text="Settings">
-            <UButton color="neutral" variant="ghost" to="/settings" icon="i-lucide-settings" aria-label="Settings" />
-          </UTooltip>
+                    <UTooltip text="Settings">
+                        <UButton color="neutral" variant="ghost" to="/settings" icon="i-lucide-settings" aria-label="Settings" />
+                    </UTooltip>
 
-          <UTooltip text="Open on GitHub">
-            <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger" target="_blank"
-              icon="i-simple-icons:github" aria-label="GitHub" />
-          </UTooltip>
-        </template>
-      </UHeader>
-      <Index />
-    </UMain>
-  </UApp>
+                    <UTooltip text="Open on GitHub">
+                        <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger" target="_blank"
+                                 icon="i-simple-icons:github" aria-label="GitHub" />
+                    </UTooltip>
+                </template>
+            </UHeader>
+            <Index />
+        </UMain>
+    </UApp>
 
 </template>

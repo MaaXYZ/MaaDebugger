@@ -12,13 +12,13 @@
                 <!-- Task Entry SelectMenu + Edit Override -->
                 <div class="flex flex-col items-start gap-4">
                     <USelectMenu v-model="selectedEntry" :items="entrySelectItems" placeholder="Select task entry..."
-                        :search-input="{
-                            placeholder: 'Filter...',
-                            icon: 'i-lucide-search'
-                        }" class="flex-1 w-full" size="xl" value-key="value" :disabled="isRunning" arrow />
+                                 :search-input="{
+                                     placeholder: 'Filter...',
+                                     icon: 'i-lucide-search'
+                                 }" class="flex-1 w-full" size="xl" value-key="value" :disabled="isRunning" arrow />
                     <UTooltip text="Edit task override">
                         <UButton color="neutral" variant="outline" icon="i-lucide-file-edit" label="Edit Override"
-                            @click="onEditOverride" />
+                                 @click="onEditOverride" />
                     </UTooltip>
                 </div>
             </div>
@@ -28,13 +28,13 @@
             <div class="flex flex-row gap-2">
                 <!-- Start / Stop Button -->
                 <UButton v-if="!isRunning" color="success" variant="soft" icon="i-lucide-play" label="Start" block
-                    :disabled="!canStart" @click="onStart">
+                         :disabled="!canStart" @click="onStart">
                     <template v-if="startStopKeys.length" #trailing>
                         <UKbd v-for="k in startStopKeys" :key="k" :value="k" />
                     </template>
                 </UButton>
                 <UButton v-else color="error" variant="soft" icon="i-lucide-square" label="Stop" block
-                    :loading="isStopping" :disabled="isStopping" @click="onStop">
+                         :loading="isStopping" :disabled="isStopping" @click="onStop">
                     <template v-if="startStopKeys.length" #trailing>
                         <UKbd v-for="k in startStopKeys" :key="k" :value="k" />
                     </template>

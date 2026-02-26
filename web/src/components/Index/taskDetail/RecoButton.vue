@@ -1,7 +1,7 @@
 <template>
     <UTooltip :text="reco.msg.name">
         <UButton size="sm" :variant="'outline'" :color="btnColor" :icon="btnIcon" :loading="reco.status === 'running'"
-            class="font-medium max-w-48" @click="$emit('requestDetail', reco.msg.name)">
+                 class="font-medium max-w-48" @click="$emit('requestDetail', reco.msg.name)">
             <template #default>
                 <span class="truncate">{{ itemBrief }}</span>
             </template>

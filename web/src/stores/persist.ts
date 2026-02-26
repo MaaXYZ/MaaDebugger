@@ -94,8 +94,9 @@ export const serverPersistPlugin: PiniaPlugin = ({ store, options }) => {
       if (savedState && typeof savedState === "object") {
         store.$patch(savedState as StateTree);
         // 恢复后同步自增 ID，避免 ID 冲突
-        if (typeof (store as any).syncIds === "function") {
-          (store as any).syncIds();
+        const storeWithSync = store as typeof store & { syncIds?: () => void };
+        if (typeof storeWithSync.syncIds === "function") {
+          storeWithSync.syncIds();
         }
       }
       // 加载完成后保存一次完整 state（确保新增字段的默认值也被持久化）

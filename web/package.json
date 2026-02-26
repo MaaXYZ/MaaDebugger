@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.93",
@@ -24,7 +26,10 @@
   "devDependencies": {
     "@types/node": "^25.3.0",
     "@vitejs/plugin-vue": "^6.0.4",
+    "@vue/eslint-config-typescript": "^14.7.0",
     "@vue/tsconfig": "^0.8.1",
+    "eslint": "^10.0.2",
+    "eslint-plugin-vue": "^10.8.0",
     "typescript": "~5.9.3",
     "vite": "^7.3.1",
     "vue-tsc": "^3.2.5"

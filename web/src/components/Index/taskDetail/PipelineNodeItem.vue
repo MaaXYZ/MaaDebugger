@@ -17,7 +17,7 @@
             </div>
             <div class="pl-5 flex flex-col gap-1.5">
                 <NextListItem v-for="(nextList, idx) in node.reco" :key="idx" :next-list="nextList"
-                    @request-detail="$emit('requestDetail', $event)" />
+                              @request-detail="$emit('requestDetail', $event)" />
             </div>
         </div>
 
@@ -29,7 +29,7 @@
             </div>
             <div class="pl-5">
                 <NodeStatusButton :status="node.action.status" :label="node.action.msg.name" size="sm"
-                    @click="$emit('requestActionDetail', node.msg.name)" />
+                                  @click="$emit('requestActionDetail', node.msg.name)" />
             </div>
         </div>
     </div>

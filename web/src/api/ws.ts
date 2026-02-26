@@ -124,12 +124,11 @@ class WSClient {
           this.handlers.onAgentUpdate?.(message.payload as AgentInfo[]);
           break;
 
-        case "log":
-          this.handlers.onLog?.(
-            (message.payload as any).level,
-            (message.payload as any).message,
-          );
+        case "log": {
+          const log = message.payload as { level: string; message: string };
+          this.handlers.onLog?.(log.level, log.message);
           break;
+        }
 
         default:
           console.warn("[WS] Unknown message type:", message.type);

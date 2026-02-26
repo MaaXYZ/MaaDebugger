@@ -8,21 +8,21 @@
                         <UBadge :color="statusColor" variant="subtle" size="sm" class="gap-1.5">
                             <span class="relative flex size-2">
                                 <span v-if="statusStore.controllerStatus === 'connecting'"
-                                    class="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-75" />
-                                <span class="relative inline-flex size-2 rounded-full" :class="dotClass" />
+                                      class="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-75"></span>
+                                <span class="relative inline-flex size-2 rounded-full" :class="dotClass"></span>
                             </span>
                             {{ capitalizedStatus }}
                         </UBadge>
                     </div>
                     <div class="flex flex-row items-center gap-2">
                         <USelect v-model="controllerValue" value-key="value" :items="controllerItems"
-                            :icon="controllerIcon" class="min-w-40" size="xl" arrow />
+                                 :icon="controllerIcon" class="min-w-40" size="xl" arrow />
                         <UButton variant="outline" color="neutral" trailing-icon="i-lucide-chevron-down"
-                            :data-state="showFullCard ? 'open' : 'closed'" @click="showFullCard = !showFullCard" />
+                                 :data-state="showFullCard ? 'open' : 'closed'" @click="showFullCard = !showFullCard" />
                     </div>
                 </div>
                 <div class="grid transition-all duration-200 ease-out"
-                    :class="showFullCard ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'">
+                     :class="showFullCard ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'">
                     <div class="overflow-hidden">
                         <div class="text-sm text-dimmed truncate">
                             {{ summaryText }}
@@ -41,7 +41,7 @@
 
                         <!-- PlayCover -->
                         <PlayCover v-show="controllerValue === 'playcover'" ref="playcoverRef"
-                            @connected="showFullCard = false" />
+                                   @connected="showFullCard = false" />
 
                         <!-- Win32 / Gamepad: 共享 WindowSearch + screencap + 各自独有配置 -->
                         <div v-show="isDesktopType" class="flex flex-col gap-3 h-full">
@@ -49,19 +49,19 @@
                             <div class="flex flex-row gap-2">
                                 <UTooltip text="Search Windows">
                                     <UButton color="success" variant="outline" icon="i-lucide-search" size="xl"
-                                        :loading="windowSearchRef?.searching" @click="windowSearchRef?.onSearch()" />
+                                             :loading="windowSearchRef?.searching" @click="windowSearchRef?.onSearch()" />
                                 </UTooltip>
 
                                 <UTooltip text="Connect">
                                     <UButton color="primary" variant="outline" icon="i-lucide-link" size="xl"
-                                        :loading="controllerStore.connecting"
-                                        :disabled="!windowSearchRef?.selectedHwnd || controllerStore.connecting"
-                                        @click="onConnect" />
+                                             :loading="controllerStore.connecting"
+                                             :disabled="!windowSearchRef?.selectedHwnd || controllerStore.connecting"
+                                             @click="onConnect" />
                                 </UTooltip>
 
                                 <UTooltip text="Disconnect">
                                     <UButton color="error" variant="outline" icon="i-lucide-unlink" size="xl"
-                                        @click="onDisconnect" />
+                                             @click="onDisconnect" />
                                 </UTooltip>
                             </div>
 
@@ -83,7 +83,7 @@
 
                                 <UFormField name="keyboard" label="Keyboard Method">
                                     <USelect v-model="win32Config.keyboard_method" :items="inputMethods"
-                                        class="w-full" />
+                                             class="w-full" />
                                 </UFormField>
                             </template>
 
@@ -91,7 +91,7 @@
                             <template v-if="controllerValue === 'gamepad'">
                                 <UFormField name="gamepad_type" label="Gamepad Type">
                                     <USelect v-model="gamepadConfig.gamepad_type" :items="gamepadTypes"
-                                        class="w-full" />
+                                             class="w-full" />
                                 </UFormField>
                             </template>
                         </div>
@@ -116,6 +116,7 @@ import {
     DEFAULT_GAMEPAD_TYPE,
 } from '@/stores/controller'
 import { connectController, disconnectController } from '@/api/http'
+import type { ConnectControllerRequest } from '@/types/api'
 
 const toast = useToast()
 const statusStore = useStatusStore()
@@ -134,40 +135,40 @@ const hasAttemptedConnection = ref(false)
 
 const capitalizedStatus = computed(() => {
     switch (statusStore.controllerStatus) {
-        case 'connected':
-            return 'Connected'
-        case 'connecting':
-            return 'Connecting'
-        case 'disconnected':
-            return hasAttemptedConnection.value ? 'Disconnected' : 'Idle'
-        default:
-            return capitalize(statusStore.controllerStatus)
+    case 'connected':
+        return 'Connected'
+    case 'connecting':
+        return 'Connecting'
+    case 'disconnected':
+        return hasAttemptedConnection.value ? 'Disconnected' : 'Idle'
+    default:
+        return capitalize(statusStore.controllerStatus)
     }
 })
 
 const statusColor = computed(() => {
     switch (statusStore.controllerStatus) {
-        case 'connected':
-            return 'success' as const
-        case 'connecting':
-            return 'warning' as const
-        case 'disconnected':
-            return hasAttemptedConnection.value ? 'error' as const : 'neutral' as const
-        default:
-            return 'neutral' as const
+    case 'connected':
+        return 'success' as const
+    case 'connecting':
+        return 'warning' as const
+    case 'disconnected':
+        return hasAttemptedConnection.value ? 'error' as const : 'neutral' as const
+    default:
+        return 'neutral' as const
     }
 })
 
 const dotClass = computed(() => {
     switch (statusStore.controllerStatus) {
-        case 'connected':
-            return 'bg-success'
-        case 'connecting':
-            return 'bg-warning'
-        case 'disconnected':
-            return hasAttemptedConnection.value ? 'bg-error' : 'bg-gray-400 dark:bg-gray-500'
-        default:
-            return 'bg-gray-400 dark:bg-gray-500'
+    case 'connected':
+        return 'bg-success'
+    case 'connecting':
+        return 'bg-warning'
+    case 'disconnected':
+        return hasAttemptedConnection.value ? 'bg-error' : 'bg-gray-400 dark:bg-gray-500'
+    default:
+        return 'bg-gray-400 dark:bg-gray-500'
     }
 })
 
@@ -363,21 +364,22 @@ async function onConnect() {
     controllerStore.connecting = true
     try {
         const type = controllerValue.value as 'win32' | 'gamepad'
-        const params: Record<string, unknown> = {
-            type,
-            hwnd,
-        }
+        const params: ConnectControllerRequest = type === 'win32'
+            ? {
+                type,
+                hwnd,
+                win32_screencap_method: desktopScreencap.value,
+                win32_mouse_method: win32Config.mouse_method,
+                win32_keyboard_method: win32Config.keyboard_method,
+            }
+            : {
+                type,
+                hwnd,
+                gamepad_screencap_method: desktopScreencap.value,
+                gamepad_type: gamepadConfig.gamepad_type,
+            }
 
-        if (type === 'win32') {
-            params.win32_screencap_method = desktopScreencap.value
-            params.win32_mouse_method = win32Config.mouse_method
-            params.win32_keyboard_method = win32Config.keyboard_method
-        } else {
-            params.gamepad_screencap_method = desktopScreencap.value
-            params.gamepad_type = gamepadConfig.gamepad_type
-        }
-
-        const result = await connectController(params as any)
+        const result = await connectController(params)
         if (!result.succeed) {
             console.error(`[${type}] Connect failed:`, result.msg)
             toast.add({

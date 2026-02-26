@@ -6,7 +6,7 @@
             </div>
             <div v-else-if="actionDetail">
                 <ActionDrawCanvas v-if="hasCoords && rawImage" :detail="actionDetail"
-                    :raw-image="rawImage" />
+                                  :raw-image="rawImage" />
                 <ActionDetailItem v-else :detail="actionDetail" />
             </div>
             <div v-else class="text-sm text-dimmed p-4 text-center">

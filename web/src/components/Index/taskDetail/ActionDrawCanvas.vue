@@ -7,13 +7,13 @@
 
         <!-- RIGHT PANEL: canvas + toolbar -->
         <div class="action-draw-right">
-            <div ref="containerRef" class="action-draw-canvas-container" :style="containerStyle"
-                @wheel.prevent="onWheel">
+            <div class="action-draw-canvas-container" :style="containerStyle"
+                 @wheel.prevent="onWheel">
                 <div v-if="rawImage" class="absolute inset-0 flex items-center justify-center select-none"
-                    :class="[isDragging ? 'cursor-grabbing' : 'cursor-grab']" @mousedown="onMouseDown"
-                    @mousemove="onMouseMove" @mouseup="onMouseUp" @mouseleave="onMouseLeave">
+                     :class="[isDragging ? 'cursor-grabbing' : 'cursor-grab']" @mousedown="onMouseDown"
+                     @mousemove="onMouseMove" @mouseup="onMouseUp" @mouseleave="onMouseLeave">
                     <div class="relative" :style="canvasWrapperStyle">
-                        <canvas ref="canvasRef" class="pointer-events-none block w-full h-full" />
+                        <canvas ref="canvasRef" class="pointer-events-none block w-full h-full"></canvas>
                     </div>
                 </div>
                 <div v-else class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted">
@@ -27,14 +27,14 @@
                 <div class="flex items-center gap-1">
                     <UTooltip text="Zoom out">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-out" size="xs"
-                            :disabled="zoomLevel <= MIN_ZOOM" @click="zoomOut" />
+                                 :disabled="zoomLevel <= MIN_ZOOM" @click="zoomOut" />
                     </UTooltip>
                     <span class="text-xs text-muted min-w-10 text-center tabular-nums">
                         {{ zoomPercentage }}%
                     </span>
                     <UTooltip text="Zoom in">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-in" size="xs"
-                            :disabled="zoomLevel >= MAX_ZOOM" @click="zoomIn" />
+                                 :disabled="zoomLevel >= MAX_ZOOM" @click="zoomIn" />
                     </UTooltip>
                 </div>
                 <USeparator orientation="vertical" class="h-4" />
@@ -44,7 +44,7 @@
                 <USeparator orientation="vertical" class="h-4" />
                 <UTooltip text="Download drawn image">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-download" size="xs"
-                        @click="downloadCanvas" />
+                             @click="downloadCanvas" />
                 </UTooltip>
             </div>
         </div>
@@ -80,7 +80,6 @@ const props = defineProps<{
 }>()
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
-const containerRef = ref<HTMLDivElement | null>(null)
 const zoomLevel = ref(1)
 const isDragging = ref(false)
 const dragStart = ref({ x: 0, y: 0 })
@@ -263,36 +262,36 @@ function drawCanvas() {
     const pointRadius = baseSize / 50
 
     switch (result.type) {
-        case 'Click':
-            drawPoint(ctx, (result as ClickActionResult).point, ACTION_COLOR, pointRadius, 'Click')
-            break
+    case 'Click':
+        drawPoint(ctx, (result as ClickActionResult).point, ACTION_COLOR, pointRadius, 'Click')
+        break
 
-        case 'LongPress':
-            drawPoint(ctx, (result as LongPressActionResult).point, ACTION_COLOR, pointRadius, `LongPress ${(result as LongPressActionResult).duration}ms`)
-            break
+    case 'LongPress':
+        drawPoint(ctx, (result as LongPressActionResult).point, ACTION_COLOR, pointRadius, `LongPress ${(result as LongPressActionResult).duration}ms`)
+        break
 
-        case 'Swipe':
-            drawSwipePath(ctx, (result as SwipeActionResult).begin, (result as SwipeActionResult).end, ACTION_COLOR, baseSize)
-            break
+    case 'Swipe':
+        drawSwipePath(ctx, (result as SwipeActionResult).begin, (result as SwipeActionResult).end, ACTION_COLOR, baseSize)
+        break
 
-        case 'MultiSwipe': {
-            const swipes = (result as MultiSwipeActionResult).swipes
-            swipes.forEach((swipe, idx) => {
-                const color = SWIPE_COLORS[idx % SWIPE_COLORS.length]!
-                drawSwipePath(ctx, swipe.begin, swipe.end, color, baseSize)
-            })
-            break
-        }
+    case 'MultiSwipe': {
+        const swipes = (result as MultiSwipeActionResult).swipes
+        swipes.forEach((swipe, idx) => {
+            const color = SWIPE_COLORS[idx % SWIPE_COLORS.length]!
+            drawSwipePath(ctx, swipe.begin, swipe.end, color, baseSize)
+        })
+        break
+    }
 
-        case 'TouchDown':
-        case 'TouchMove':
-        case 'TouchUp':
-            drawPoint(ctx, (result as TouchActionResult).point, ACTION_COLOR, pointRadius, result.type)
-            break
+    case 'TouchDown':
+    case 'TouchMove':
+    case 'TouchUp':
+        drawPoint(ctx, (result as TouchActionResult).point, ACTION_COLOR, pointRadius, result.type)
+        break
 
-        case 'Scroll':
-            drawScrollIndicator(ctx, (result as ScrollActionResult).point, (result as ScrollActionResult).dx, (result as ScrollActionResult).dy, ACTION_COLOR, baseSize)
-            break
+    case 'Scroll':
+        drawScrollIndicator(ctx, (result as ScrollActionResult).point, (result as ScrollActionResult).dx, (result as ScrollActionResult).dy, ACTION_COLOR, baseSize)
+        break
     }
 }
 
