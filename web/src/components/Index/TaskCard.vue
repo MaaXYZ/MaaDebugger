@@ -182,6 +182,7 @@ import TaskStatusBadge from './task/TaskStatusBadge.vue'
 import type { TaskStatus } from './task/types'
 import { useShortcutsStore, formatShortcut } from '@/stores/shortcuts'
 import { useStatusStore } from '@/stores/status'
+import { useTaskStore } from '@/stores/task'
 import {
     getTaskNodes, runTask, stopTask,
     startScreenshot, stopScreenshot,
@@ -206,8 +207,12 @@ interface TaskEntry {
 const toast = useToast()
 const shortcutsStore = useShortcutsStore()
 const statusStore = useStatusStore()
+const taskStore = useTaskStore()
 const entries = ref<TaskEntry[]>([])
-const selectedEntry = ref<string>('')
+const selectedEntry = computed({
+    get: () => taskStore.selectedEntry,
+    set: (v: string) => { taskStore.selectedEntry = v },
+})
 const taskStatus = computed<TaskStatus>(() => statusStore.taskStatus)
 
 const entrySelectItems = computed(() =>
@@ -263,7 +268,8 @@ function onEditOverride() {
 async function refreshNodes() {
     const nodes = await getTaskNodes()
     entries.value = nodes.map((n) => ({ label: n, value: n }))
-    if (!selectedEntry.value && entries.value.length > 0) {
+    const stillExists = entries.value.some(e => e.value === selectedEntry.value)
+    if (!stillExists && entries.value.length > 0) {
         selectedEntry.value = entries.value[0]!.value
     }
 }
