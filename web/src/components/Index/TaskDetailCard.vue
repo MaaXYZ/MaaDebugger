@@ -62,10 +62,10 @@
     </UCard>
 
     <!-- Reco Detail Modal -->
-    <RecoDetailModal v-model:open="modalOpen" :node-name="selectedNodeName" />
+    <RecoDetailModal v-model:open="modalOpen" :reco-id="selectedRecoId" />
 
     <!-- Action Detail Modal -->
-    <ActionDetailModal v-model:open="actionModalOpen" :node-name="actionSelectedNodeName" />
+    <ActionDetailModal v-model:open="actionModalOpen" :action-id="selectedActionId" />
 </template>
 
 <script setup lang="ts">
@@ -113,19 +113,19 @@ watch(
 
 // --- Reco Modal ---
 const modalOpen = ref(false)
-const selectedNodeName = ref<string | null>(null)
+const selectedRecoId = ref<number | null>(null)
 
-function onRequestDetail(name: string) {
-    selectedNodeName.value = name
+function onRequestDetail(recoId: number) {
+    selectedRecoId.value = recoId
     modalOpen.value = true
 }
 
 // --- Action Modal ---
 const actionModalOpen = ref(false)
-const actionSelectedNodeName = ref<string | null>(null)
+const selectedActionId = ref<number | null>(null)
 
-function onRequestActionDetail(name: string) {
-    actionSelectedNodeName.value = name
+function onRequestActionDetail(actionId: number) {
+    selectedActionId.value = actionId
     actionModalOpen.value = true
 }
 

@@ -24,7 +24,7 @@ const props = defineProps<{
 }>()
 
 defineEmits<{
-    requestDetail: [name: string]
+    requestDetail: [recoId: number]
 }>()
 
 const pendingItems = computed(() => {

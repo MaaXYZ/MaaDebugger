@@ -101,8 +101,8 @@ func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
 
 	tasker.OnNodeNextListInContext(func(_ *maa.Context, event maa.EventStatus, detail maa.NodeNextListDetail) {
 		suffix := eventStatusToString(event)
-		list := make([]map[string]interface{}, 0, len(detail.NextList))
-		for _, item := range detail.NextList {
+		list := make([]map[string]interface{}, 0, len(detail.List))
+		for _, item := range detail.List {
 			list = append(list, map[string]interface{}{
 				"name":      item.Name,
 				"jump_back": item.JumpBack,
@@ -464,9 +464,15 @@ func convertRecoDetail(detail *maa.RecognitionDetail) *RecoDetailResponse {
 
 	// Results (all/best/filtered 识别结果的 box 数据)
 	if detail.Results != nil {
+		var best []*RecoResultItem
+		if detail.Results.Best != nil {
+			if item := convertRecognitionResult(detail.Results.Best); item != nil {
+				best = []*RecoResultItem{item}
+			}
+		}
 		resp.Results = &RecoResultsResponse{
 			All:      convertResultList(detail.Results.All),
-			Best:     convertResultList(detail.Results.Best),
+			Best:     best,
 			Filtered: convertResultList(detail.Results.Filtered),
 		}
 	}
@@ -612,7 +618,7 @@ func convertActionResult(result *maa.ActionResult) interface{} {
 		return map[string]interface{}{
 			"type":    actionType,
 			"cmd":     v.Cmd,
-			"timeout": v.Timeout,
+			"timeout": v.ShellTimeout,
 			"success": v.Success,
 			"output":  v.Output,
 		}
@@ -677,6 +683,32 @@ func (s *TaskerService) GetLatestNodeDetail(name string) (*NodeDetailResponse, e
 		resp.Action = convertActionDetail(detail.Action)
 	}
 	return resp, nil
+}
+
+// GetRecognitionDetailByID 通过 reco_id 获取识别详情。
+func (s *TaskerService) GetRecognitionDetailByID(recoID int64) (*RecoDetailResponse, error) {
+	tasker := s.tasker.Load()
+	if tasker == nil {
+		return nil, fmt.Errorf("tasker is not initialized")
+	}
+	detail, err := tasker.GetRecognitionDetail(recoID)
+	if err != nil {
+		return nil, fmt.Errorf("get recognition detail failed: %w", err)
+	}
+	return convertRecoDetail(detail), nil
+}
+
+// GetActionDetailByID 通过 action_id 获取动作详情。
+func (s *TaskerService) GetActionDetailByID(actionID int64) (*ActionDetailResp, error) {
+	tasker := s.tasker.Load()
+	if tasker == nil {
+		return nil, fmt.Errorf("tasker is not initialized")
+	}
+	detail, err := tasker.GetActionDetail(actionID)
+	if err != nil {
+		return nil, fmt.Errorf("get action detail failed: %w", err)
+	}
+	return convertActionDetail(detail), nil
 }
 
 // Running 返回 Tasker 是否正在运行任务。

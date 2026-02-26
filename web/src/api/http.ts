@@ -174,6 +174,34 @@ export async function getNodeDetail(
 }
 
 /**
+ * 通过 reco_id 获取识别详情
+ */
+export async function getRecoDetailById(
+  recoId: number,
+): Promise<
+  import("@/components/Index/taskDetail/types").RecoDetailResponse | null
+> {
+  const result = await request<
+    import("@/components/Index/taskDetail/types").RecoDetailResponse
+  >(`/task/reco/${recoId}`);
+  return result.data ?? null;
+}
+
+/**
+ * 通过 action_id 获取动作详情
+ */
+export async function getActionDetailById(
+  actionId: number,
+): Promise<
+  import("@/components/Index/taskDetail/types").ActionDetailResponse | null
+> {
+  const result = await request<
+    import("@/components/Index/taskDetail/types").ActionDetailResponse
+  >(`/task/action/${actionId}`);
+  return result.data ?? null;
+}
+
+/**
  * 获取可运行节点列表
  */
 export async function getTaskNodes(): Promise<string[]> {

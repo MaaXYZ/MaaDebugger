@@ -1,7 +1,7 @@
 <template>
     <UTooltip :text="reco.msg.name">
         <UButton size="sm" :variant="'outline'" :color="btnColor" :icon="btnIcon" :loading="reco.status === 'running'"
-                 class="font-medium max-w-48" @click="$emit('requestDetail', reco.msg.name)">
+                 class="font-medium max-w-48" @click="$emit('requestDetail', reco.msg.reco_id)">
             <template #default>
                 <span class="truncate">{{ itemBrief }}</span>
             </template>
@@ -20,7 +20,7 @@ const props = defineProps<{
 }>()
 
 defineEmits<{
-    requestDetail: [name: string]
+    requestDetail: [recoId: number]
 }>()
 
 const itemBrief = computed(() => {

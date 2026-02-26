@@ -46,7 +46,7 @@
                         </div>
                         <div class="pl-5">
                             <NodeStatusButton :status="node.action.status" :label="node.action.msg.name" size="sm"
-                                              @click="$emit('requestActionDetail', node.msg.name)" />
+                                              @click="$emit('requestActionDetail', node.action!.msg.action_id)" />
                         </div>
                     </div>
                 </div>
@@ -70,8 +70,8 @@ const props = defineProps<{
 }>()
 
 defineEmits<{
-    requestDetail: [name: string]
-    requestActionDetail: [name: string]
+    requestDetail: [recoId: number]
+    requestActionDetail: [actionId: number]
 }>()
 
 const expanded = ref(props.defaultExpanded ?? true)

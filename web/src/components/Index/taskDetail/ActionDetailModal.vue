@@ -5,8 +5,7 @@
                 <UIcon name="i-lucide-loader" class="size-6 animate-spin text-dimmed" />
             </div>
             <div v-else-if="actionDetail">
-                <ActionDrawCanvas v-if="hasCoords && rawImage" :detail="actionDetail"
-                                  :raw-image="rawImage" />
+                <ActionDrawCanvas v-if="hasCoords && rawImage" :detail="actionDetail" :raw-image="rawImage" />
                 <ActionDetailItem v-else :detail="actionDetail" />
             </div>
             <div v-else class="text-sm text-dimmed p-4 text-center">
@@ -18,14 +17,14 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { getNodeDetail } from '@/api/http'
+import { getActionDetailById } from '@/api/http'
 import type { ActionDetailResponse } from './types'
 import { actionHasCoords } from './types'
 import ActionDetailItem from './ActionDetailItem.vue'
 import ActionDrawCanvas from './ActionDrawCanvas.vue'
 
 const props = defineProps<{
-    nodeName: string | null
+    actionId: number | null
 }>()
 
 const open = defineModel<boolean>('open', { default: false })
@@ -35,21 +34,19 @@ const rawImage = ref<string | null>(null)
 
 const hasCoords = computed(() => actionHasCoords(actionDetail.value?.result))
 
-watch([() => props.nodeName, open], async ([name, isOpen]) => {
-    if (!isOpen || !name) {
+watch([() => props.actionId, open], async ([id, isOpen]) => {
+    if (!isOpen || id == null) {
         actionDetail.value = null
         rawImage.value = null
         return
     }
     loading.value = true
     try {
-        const nodeDetail = await getNodeDetail(name)
-        actionDetail.value = nodeDetail?.action ?? null
-        rawImage.value = nodeDetail?.recognition?.raw_image ?? null
+        actionDetail.value = await getActionDetailById(id)
     } catch {
         actionDetail.value = null
-        rawImage.value = null
     } finally {
+        rawImage.value = null
         loading.value = false
     }
 })

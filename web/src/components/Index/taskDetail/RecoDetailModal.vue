@@ -116,7 +116,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { getNodeDetail } from '@/api/http'
+import { getRecoDetailById } from '@/api/http'
 import type { RecoDetailResponse } from './types'
 import RecoDetailItem from './RecoDetailItem.vue'
 import RecognitionDrawCanvas from './RecognitionDrawCanvas.vue'
@@ -127,7 +127,7 @@ const MAX_ZOOM = 5
 const ZOOM_STEP = 0.15
 
 const props = defineProps<{
-    nodeName: string | null
+    recoId: number | null
 }>()
 
 const open = defineModel<boolean>('open', { default: false })
@@ -235,15 +235,14 @@ watch(imagePreviewOpen, (val) => {
     }
 })
 
-watch([() => props.nodeName, open], async ([name, isOpen]) => {
-    if (!isOpen || !name) {
+watch([() => props.recoId, open], async ([id, isOpen]) => {
+    if (!isOpen || id == null) {
         detail.value = null
         return
     }
     loading.value = true
     try {
-        const nodeDetail = await getNodeDetail(name)
-        detail.value = nodeDetail?.recognition ?? null
+        detail.value = await getRecoDetailById(id)
     } catch {
         detail.value = null
     } finally {

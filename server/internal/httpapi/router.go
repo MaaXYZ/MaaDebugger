@@ -72,6 +72,8 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.HandleFunc("POST /api/task/stop", r.handleTaskStop)
 	mux.HandleFunc("GET /api/task/nodes", r.handleTaskNodes)
 	mux.HandleFunc("GET /api/task/node/{name}", r.handleTaskNodeDetail)
+	mux.HandleFunc("GET /api/task/reco/{id}", r.handleTaskRecoDetail)
+	mux.HandleFunc("GET /api/task/action/{id}", r.handleTaskActionDetail)
 	mux.HandleFunc("POST /api/agent/connect", r.handleAgentConnect)
 	mux.HandleFunc("POST /api/agent/disconnect", r.handleAgentDisconnect)
 	mux.HandleFunc("GET /api/agent/list", r.handleAgentList)
@@ -545,6 +547,36 @@ func (r *router) handleTaskNodeDetail(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
+	response.OK(w, detail)
+}
+
+func (r *router) handleTaskRecoDetail(w http.ResponseWriter, req *http.Request) {
+	idStr := req.PathValue("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		response.Fail(w, http.StatusBadRequest, "invalid reco id")
+		return
+	}
+	detail, err := r.deps.TaskerService.GetRecognitionDetailByID(id)
+	if err != nil {
+		response.Fail(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	response.OK(w, detail)
+}
+
+func (r *router) handleTaskActionDetail(w http.ResponseWriter, req *http.Request) {
+	idStr := req.PathValue("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		response.Fail(w, http.StatusBadRequest, "invalid action id")
+		return
+	}
+	detail, err := r.deps.TaskerService.GetActionDetailByID(id)
+	if err != nil {
+		response.Fail(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	response.OK(w, detail)
 }
 
