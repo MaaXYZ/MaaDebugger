@@ -1,14 +1,12 @@
 <template>
-    <UModal v-model:open="open" title="Action Detail" :ui="{ content: 'sm:max-w-[85vw]' }">
+    <UModal v-model:open="open" title="Action Detail" :ui="{ content: 'sm:max-w-[85vw] sm:w-[85vw]' }">
         <template #body>
             <div v-if="loading" class="flex items-center justify-center p-8">
                 <UIcon name="i-lucide-loader" class="size-6 animate-spin text-dimmed" />
             </div>
             <div v-else-if="actionDetail">
-                <!-- Action with coords + raw image: show canvas draw -->
                 <ActionDrawCanvas v-if="hasCoords && rawImage" :detail="actionDetail"
                     :raw-image="rawImage" />
-                <!-- Action without coords: show info only -->
                 <ActionDetailItem v-else :detail="actionDetail" />
             </div>
             <div v-else class="text-sm text-dimmed p-4 text-center">

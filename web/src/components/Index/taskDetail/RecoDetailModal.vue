@@ -1,5 +1,5 @@
 <template>
-    <UModal v-model:open="open" title="Recognition Detail" :ui="{ content: 'sm:max-w-[85vw]' }">
+    <UModal v-model:open="open" title="Recognition Detail" :ui="{ content: 'sm:max-w-[85vw] sm:w-[85vw]' }">
         <template #body>
             <div v-if="loading" class="flex items-center justify-center p-8">
                 <UIcon name="i-lucide-loader" class="size-6 animate-spin text-dimmed" />

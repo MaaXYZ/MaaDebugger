@@ -405,7 +405,7 @@ onMounted(() => {
     display: flex;
     flex-direction: row;
     gap: 12px;
-    min-height: 40vh;
+    min-height: 60vh;
 }
 
 .action-draw-left {
