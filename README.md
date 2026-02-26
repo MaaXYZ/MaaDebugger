@@ -37,9 +37,9 @@ node build.mjs --os darwin         # 交叉编译 macOS
 node build.mjs --skip-frontend     # 跳过前端构建（仅编译 Go）
 ```
 
-构建完成后，启动 `./maa-debugger`（Windows 下为 `maa-debugger.exe`），访问 **<http://127.0.0.1:8011>** 即可使用完整的前端 + 后端功能。
+构建完成后，启动 `./MaaDebugger`（Windows 下为 `MaaDebugger.exe`），访问 **<http://127.0.0.1:8011>** 即可使用完整的前端 + 后端功能。
 > [!NOTE]
-> 需要注意的是 `maa-debugger` 将寻找 `./bin` 下的 MaaFramework 动态库。当前阶段请先手动下载并解压，后续将优化这一问题。
+> 需要注意的是 `MaaDebugger` 将寻找 `./bin` 下的 MaaFramework 动态库。当前阶段请先手动下载并解压，后续将优化这一问题。
 
 ## 技术栈
 

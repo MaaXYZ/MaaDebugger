@@ -70,7 +70,7 @@ const ext =
   (targetOS ?? process.platform) === "win32" || targetOS === "windows"
     ? ".exe"
     : "";
-const outputName = `maa-debugger${ext}`;
+const outputName = `MaaDebugger${ext}`;
 
 const goEnv = {};
 if (targetOS) {

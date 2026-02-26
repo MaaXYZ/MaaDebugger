@@ -103,7 +103,7 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: "0"
-        run: go build -trimpath -o ../maa-debugger${{ matrix.ext }} ./cmd/server
+        run: go build -trimpath -o ../MaaDebugger${{ matrix.ext }} ./cmd/server
 
       - name: Download MaaFramework
         uses: robinraju/release-downloader@v1
@@ -119,7 +119,7 @@ jobs:
           ARTIFACT_NAME="MaaDebugger-${{ matrix.maafw_os }}-${{ matrix.maafw_arch }}"
           mkdir -p "${ARTIFACT_NAME}/bin"
 
-          cp maa-debugger${{ matrix.ext }} "${ARTIFACT_NAME}/"
+          cp MaaDebugger${{ matrix.ext }} "${ARTIFACT_NAME}/"
           cp -r maafw_dl/bin/* "${ARTIFACT_NAME}/bin/"
 
           echo "ARTIFACT_NAME=${ARTIFACT_NAME}" >> "$GITHUB_ENV"
