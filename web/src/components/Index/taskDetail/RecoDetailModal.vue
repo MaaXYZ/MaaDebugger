@@ -19,57 +19,39 @@
                     Box: [{{ detail.box.x }}, {{ detail.box.y }}, {{ detail.box.w }}, {{ detail.box.h }}]
                 </div>
 
-                <!-- Two-column layout: left = JSON/Combined, right = Images -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <!-- Left column: Combined Result + Detail JSON -->
-                    <div class="flex flex-col gap-4 min-w-0">
-                        <!-- Combined Result (And/Or nesting) -->
-                        <div v-if="detail.combined_result && detail.combined_result.length > 0"
-                            class="flex flex-col gap-2">
-                            <span class="text-sm font-medium text-dimmed">Combined ({{ detail.algorithm }}):</span>
-                            <div class="pl-3 border-l-2 border-default flex flex-col gap-2">
-                                <RecoDetailItem v-for="(sub, idx) in detail.combined_result" :key="idx" :detail="sub"
-                                    :depth="1" />
-                            </div>
-                        </div>
-
-                        <!-- Detail JSON -->
-                        <div v-if="detail.detail_json" class="flex flex-col gap-1">
-                            <span class="text-xs text-dimmed font-medium">Detail JSON:</span>
-                            <pre class="text-xs bg-elevated rounded-lg p-3 overflow-auto max-h-[60vh] border border-default font-mono leading-relaxed whitespace-pre-wrap break-words"
-                                v-html="syntaxHighlight(detail.detail_json)"></pre>
-                        </div>
+                <!-- Combined Result (And/Or nesting) -->
+                <div v-if="detail.combined_result && detail.combined_result.length > 0"
+                    class="flex flex-col gap-2">
+                    <span class="text-sm font-medium text-dimmed">Combined ({{ detail.algorithm }}):</span>
+                    <div class="pl-3 border-l-2 border-default flex flex-col gap-2">
+                        <RecoDetailItem v-for="(sub, idx) in detail.combined_result" :key="idx" :detail="sub"
+                            :depth="1" />
                     </div>
+                </div>
 
-                    <!-- Right column: Canvas draw (raw image) or fallback draw images -->
-                    <div class="flex flex-col gap-2 min-w-0">
-                        <!-- Custom canvas draw (when raw_image is available) -->
-                        <div v-if="detail.raw_image && detail.results">
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="text-xs text-dimmed font-medium">Recognition Draw:</span>
-                                <UTooltip text="Fullscreen">
-                                    <UButton color="neutral" variant="ghost" icon="i-lucide-fullscreen" size="xs"
-                                        @click="isFullscreen = true" />
-                                </UTooltip>
-                            </div>
-                            <RecognitionDrawCanvas :detail="detail" />
-                        </div>
-
-                        <!-- Original draw images (when raw_image is not available) -->
-                        <div v-else-if="detail.draw_images && detail.draw_images.length > 0"
-                            class="flex flex-col gap-2">
-                            <span class="text-xs text-dimmed font-medium">Draw:</span>
-                            <div class="flex flex-col gap-2">
-                                <div v-for="(img, idx) in detail.draw_images" :key="idx" class="relative group">
-                                    <img :src="img"
-                                        class="max-w-full rounded-lg border border-default cursor-pointer hover:opacity-80 transition-opacity"
-                                        @click="openImagePreview(img)" />
-                                    <div
-                                        class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <UButton color="neutral" variant="solid" icon="i-lucide-fullscreen" size="xs"
-                                            @click="openImagePreview(img)" />
-                                    </div>
-                                </div>
+                <!-- Canvas draw (raw image) or fallback draw images -->
+                <div v-if="detail.raw_image && detail.results">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs text-dimmed font-medium">Recognition Draw:</span>
+                        <UTooltip text="Fullscreen">
+                            <UButton color="neutral" variant="ghost" icon="i-lucide-fullscreen" size="xs"
+                                @click="isFullscreen = true" />
+                        </UTooltip>
+                    </div>
+                    <RecognitionDrawCanvas :detail="detail" />
+                </div>
+                <div v-else-if="detail.draw_images && detail.draw_images.length > 0"
+                    class="flex flex-col gap-2">
+                    <span class="text-xs text-dimmed font-medium">Draw:</span>
+                    <div class="flex flex-col gap-2">
+                        <div v-for="(img, idx) in detail.draw_images" :key="idx" class="relative group">
+                            <img :src="img"
+                                class="max-w-full rounded-lg border border-default cursor-pointer hover:opacity-80 transition-opacity"
+                                @click="openImagePreview(img)" />
+                            <div
+                                class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <UButton color="neutral" variant="solid" icon="i-lucide-fullscreen" size="xs"
+                                    @click="openImagePreview(img)" />
                             </div>
                         </div>
                     </div>
@@ -252,29 +234,6 @@ watch(imagePreviewOpen, (val) => {
         resetPreviewZoom()
     }
 })
-
-// JSON syntax highlighting
-function syntaxHighlight(json: unknown): string {
-    const str = JSON.stringify(json, null, 2)
-    return str.replace(
-        /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
-        (match) => {
-            let cls = 'color: var(--ui-text-muted)' // number
-            if (/^"/.test(match)) {
-                if (/:$/.test(match)) {
-                    cls = 'color: var(--ui-primary); font-weight: 500' // key
-                } else {
-                    cls = 'color: var(--ui-success)' // string
-                }
-            } else if (/true|false/.test(match)) {
-                cls = 'color: var(--ui-warning)' // boolean
-            } else if (/null/.test(match)) {
-                cls = 'color: var(--ui-error)' // null
-            }
-            return `<span style="${cls}">${match}</span>`
-        }
-    )
-}
 
 watch([() => props.nodeName, open], async ([name, isOpen]) => {
     if (!isOpen || !name) {
