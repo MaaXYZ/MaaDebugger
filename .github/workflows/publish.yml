@@ -109,7 +109,8 @@ jobs:
         uses: robinraju/release-downloader@v1
         with:
           repository: MaaXYZ/MaaFramework
-          tag: ${{ github.event.inputs.maafw_version || 'latest' }}
+          tag: ${{ github.event.inputs.maafw_version || '' }}
+          latest: ${{ !github.event.inputs.maafw_version }}
           fileName: MAA-${{ matrix.maafw_os }}-${{ matrix.maafw_arch }}-*.zip
           out-file-path: maafw_dl
           extract: true
