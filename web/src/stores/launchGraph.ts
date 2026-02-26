@@ -46,6 +46,12 @@ export const launchGraph = ref<LaunchGraph>({
  * 直接修改 ref 的内部状态，由 Vue 进行深度响应
  */
 export function reduceLaunchGraph(graph: LaunchGraph, msg: TaskEvent) {
+  // MaaTaskerPostStop is an internal framework task triggered by PostStop(),
+  // ignore it to avoid polluting the task detail view.
+  if ("entry" in msg && msg.entry === "MaaTaskerPostStop") {
+    return;
+  }
+
   switch (msg.msg) {
     case "Task.Starting":
       graph.childs.push({

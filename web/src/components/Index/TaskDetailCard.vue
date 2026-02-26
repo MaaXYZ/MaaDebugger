@@ -3,7 +3,17 @@
         <template #header>
             <div class="flex flex-row items-center gap-2 min-h-10">
                 <span class="font-bold">Task Detail</span>
-                <UButton v-if="currentTask" size="xs" variant="ghost" color="neutral" icon="i-lucide-trash-2"
+                <div class="flex-1"></div>
+                <template v-if="allTasks.length > 1">
+                    <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-chevron-left"
+                             :disabled="activeIndex <= 0" @click="activeIndex--" />
+                    <span class="text-xs tabular-nums text-dimmed min-w-12 text-center">
+                        {{ activeIndex + 1 }} / {{ allTasks.length }}
+                    </span>
+                    <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-chevron-right"
+                             :disabled="activeIndex >= allTasks.length - 1" @click="activeIndex++" />
+                </template>
+                <UButton v-if="allTasks.length > 0" size="xs" variant="ghost" color="neutral" icon="i-lucide-trash-2"
                          @click="resetGraph" />
             </div>
         </template>
@@ -11,29 +21,34 @@
         <template #default>
             <div class="flex flex-col gap-3">
                 <!-- Empty state -->
-                <div v-if="!currentTask"
+                <div v-if="allTasks.length === 0"
                      class="flex flex-row items-center justify-center rounded-lg border border-dashed border-default p-6 text-dimmed gap-2">
                     <UIcon name="i-lucide-list-checks" class="size-5" />
                     <span class="text-sm">No task running</span>
                 </div>
 
-                <!-- Task active but no pipeline nodes yet -->
-                <template v-else>
+                <template v-else-if="activeTask">
                     <!-- Task status header -->
                     <div class="flex flex-row items-center gap-2 text-sm">
-                        <UBadge
-                            :color="currentTask.status === 'success' ? 'success' : currentTask.status === 'failed' ? 'error' : 'info'"
-                            variant="subtle" class="capitalize">
-                            {{ currentTask.status }}
+                        <UBadge color="neutral" variant="outline" size="sm">
+                            #{{ activeIndex + 1 }}
                         </UBadge>
-                        <span class="text-dimmed">{{ currentTask.msg.entry }}</span>
+                        <UBadge
+                            :color="activeTask.status === 'success' ? 'success' : activeTask.status === 'failed' ? 'error' : 'info'"
+                            variant="subtle" class="capitalize">
+                            {{ activeTask.status }}
+                        </UBadge>
+                        <span class="text-dimmed">{{ activeTask.msg.entry }}</span>
                     </div>
 
                     <!-- Pipeline nodes -->
-                    <div v-if="currentTask.childs.length > 0" ref="scrollContainerRef"
+                    <div v-if="activeTask.childs.length > 0" ref="scrollContainerRef"
                          class="node-list max-h-[60vh] overflow-y-auto pr-1">
                         <div class="flex flex-col gap-2">
-                            <PipelineNodeItem v-for="(node, idx) in currentTask.childs" :key="idx" :node="node"
+                            <PipelineNodeItem v-for="(node, idx) in activeTask.childs"
+                                              :key="`${node.msg.name}-${node.msg.node_id}`"
+                                              :node="node"
+                                              :default-expanded="idx === activeTask.childs.length - 1"
                                               @request-detail="onRequestDetail"
                                               @request-action-detail="onRequestActionDetail" />
                         </div>
@@ -62,14 +77,31 @@ import ActionDetailModal from './taskDetail/ActionDetailModal.vue'
 
 const scrollContainerRef = ref<HTMLElement | null>(null)
 
-const currentTask = computed(() => {
-    const graph = launchGraph.value
-    return graph.childs.length > 0 ? graph.childs[graph.childs.length - 1] : null
+const allTasks = computed(() => launchGraph.value.childs)
+const activeIndex = ref(0)
+const followLatest = ref(true)
+
+const activeTask = computed(() => {
+    if (allTasks.value.length === 0) return null
+    const idx = Math.min(activeIndex.value, allTasks.value.length - 1)
+    return allTasks.value[idx] ?? null
 })
 
-// Auto-scroll on new nodes
+// When a new task arrives, auto-switch to it (unless user manually navigated away)
+watch(() => allTasks.value.length, (newLen, oldLen) => {
+    if (newLen > (oldLen ?? 0) && followLatest.value) {
+        activeIndex.value = newLen - 1
+    }
+})
+
+// Track whether user is on the latest task
+watch(activeIndex, (idx) => {
+    followLatest.value = idx === allTasks.value.length - 1
+})
+
+// Auto-scroll when new nodes appear in the active task
 watch(
-    () => currentTask.value?.childs.length,
+    () => activeTask.value?.childs.length,
     () => {
         nextTick(() => {
             if (scrollContainerRef.value) {
@@ -99,6 +131,8 @@ function onRequestActionDetail(name: string) {
 
 function resetGraph() {
     resetLaunchGraph()
+    activeIndex.value = 0
+    followLatest.value = true
 }
 </script>
 
