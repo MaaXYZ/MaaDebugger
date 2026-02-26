@@ -34,7 +34,8 @@
                         class="node-list max-h-[60vh] overflow-y-auto pr-1">
                         <div class="flex flex-col gap-2">
                             <PipelineNodeItem v-for="(node, idx) in currentTask.childs" :key="idx" :node="node"
-                                @request-detail="onRequestDetail" />
+                                @request-detail="onRequestDetail"
+                                @request-action-detail="onRequestActionDetail" />
                         </div>
                     </div>
                     <div v-else class="text-xs text-dimmed italic pl-2">
@@ -47,6 +48,9 @@
 
     <!-- Reco Detail Modal -->
     <RecoDetailModal v-model:open="modalOpen" :node-name="selectedNodeName" />
+
+    <!-- Action Detail Modal -->
+    <ActionDetailModal v-model:open="actionModalOpen" :node-name="actionSelectedNodeName" />
 </template>
 
 <script setup lang="ts">
@@ -54,6 +58,7 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { launchGraph, resetLaunchGraph } from '@/stores/launchGraph'
 import PipelineNodeItem from './taskDetail/PipelineNodeItem.vue'
 import RecoDetailModal from './taskDetail/RecoDetailModal.vue'
+import ActionDetailModal from './taskDetail/ActionDetailModal.vue'
 
 const scrollContainerRef = ref<HTMLElement | null>(null)
 
@@ -74,13 +79,22 @@ watch(
     },
 )
 
-// --- Modal ---
+// --- Reco Modal ---
 const modalOpen = ref(false)
 const selectedNodeName = ref<string | null>(null)
 
 function onRequestDetail(name: string) {
     selectedNodeName.value = name
     modalOpen.value = true
+}
+
+// --- Action Modal ---
+const actionModalOpen = ref(false)
+const actionSelectedNodeName = ref<string | null>(null)
+
+function onRequestActionDetail(name: string) {
+    actionSelectedNodeName.value = name
+    actionModalOpen.value = true
 }
 
 function resetGraph() {

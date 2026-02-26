@@ -110,8 +110,7 @@
             <div ref="containerRef" class="reco-canvas-container" :style="containerStyle" @wheel.prevent="onWheel">
                 <div v-if="rawImage" class="absolute inset-0 flex items-center justify-center select-none"
                     :class="[isDragging ? 'cursor-grabbing' : (hitTestCursor ? 'cursor-pointer' : 'cursor-grab')]"
-                    @mousedown="onMouseDown" @mousemove="onMouseMove"
-                    @mouseup="onMouseUp" @mouseleave="onMouseLeave"
+                    @mousedown="onMouseDown" @mousemove="onMouseMove" @mouseup="onMouseUp" @mouseleave="onMouseLeave"
                     @click="onCanvasClick">
                     <div class="relative" :style="canvasWrapperStyle">
                         <canvas ref="canvasRef" class="pointer-events-none block w-full h-full" />
@@ -417,36 +416,39 @@ function mouseToImageCoords(e: MouseEvent): { ix: number, iy: number } | null {
     }
 }
 
-// Hit test: find the smallest-area box containing the point (handles overlaps)
-// Also checks label rects stored from last draw
-function hitTest(ix: number, iy: number): number {
-    let bestIdx = -1
-    let bestArea = Infinity
+// Distance from point to the nearest edge of a rect (0 if on the edge)
+function edgeDist(ix: number, iy: number, x: number, y: number, w: number, h: number): number {
+    const dl = Math.abs(ix - x)
+    const dr = Math.abs(ix - (x + w))
+    const dt = Math.abs(iy - y)
+    const db = Math.abs(iy - (y + h))
+    return Math.min(dl, dr, dt, db)
+}
 
+// Hit test: prioritize label rects first, then the box whose edge is closest
+function hitTest(ix: number, iy: number): number {
+    // Label rects have highest priority (always unambiguous)
+    for (const lr of lastLabelRects) {
+        if (ix >= lr.x && ix <= lr.x + lr.w && iy >= lr.y && iy <= lr.y + lr.h) {
+            return lr.resultIdx
+        }
+    }
+
+    // Collect all boxes that contain the point
+    const hits: { idx: number, dist: number }[] = []
     const items = activeResults.value
     items.forEach((item, idx) => {
         if (!item.box) return
         const { x, y, w, h } = item.box
         if (ix >= x && ix <= x + w && iy >= y && iy <= y + h) {
-            const area = w * h
-            if (area < bestArea) {
-                bestArea = area
-                bestIdx = idx
-            }
+            hits.push({ idx, dist: edgeDist(ix, iy, x, y, w, h) })
         }
     })
 
-    // Also check drawn label rects
-    if (bestIdx < 0) {
-        for (const lr of lastLabelRects) {
-            if (ix >= lr.x && ix <= lr.x + lr.w && iy >= lr.y && iy <= lr.y + lr.h) {
-                bestIdx = lr.resultIdx
-                break
-            }
-        }
-    }
-
-    return bestIdx
+    if (hits.length === 0) return -1
+    // Pick the one whose edge is closest — allows selecting both inner and outer boxes
+    hits.sort((a, b) => a.dist - b.dist)
+    return hits[0]!.idx
 }
 
 const hitTestCursor = computed(() => hoveredIndex.value >= 0)

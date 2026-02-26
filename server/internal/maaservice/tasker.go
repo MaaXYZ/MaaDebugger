@@ -482,6 +482,12 @@ type NodeDetailResponse struct {
 	RunCompleted bool                `json:"run_completed"`
 }
 
+// PointResponse 坐标点。
+type PointResponse struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
 // ActionDetailResp 返回给前端的 action 详情。
 type ActionDetailResp struct {
 	Name       string        `json:"name"`
@@ -489,6 +495,132 @@ type ActionDetailResp struct {
 	Box        *RectResponse `json:"box,omitempty"`
 	Success    bool          `json:"success"`
 	DetailJSON interface{}   `json:"detail_json,omitempty"`
+	Result     interface{}   `json:"result,omitempty"`
+}
+
+func convertPoint(p maa.Point) PointResponse {
+	return PointResponse{X: p.X(), Y: p.Y()}
+}
+
+func convertPointSlice(pts []maa.Point) []PointResponse {
+	out := make([]PointResponse, len(pts))
+	for i, p := range pts {
+		out[i] = convertPoint(p)
+	}
+	return out
+}
+
+// convertActionResult 将 ActionResult 转换为可 JSON 序列化的 map。
+func convertActionResult(result *maa.ActionResult) interface{} {
+	if result == nil {
+		return nil
+	}
+
+	actionType := string(result.Type())
+
+	if v, ok := result.AsClick(); ok {
+		return map[string]interface{}{
+			"type":     actionType,
+			"point":    convertPoint(v.Point),
+			"contact":  v.Contact,
+			"pressure": v.Pressure,
+		}
+	}
+	if v, ok := result.AsLongPress(); ok {
+		return map[string]interface{}{
+			"type":     actionType,
+			"point":    convertPoint(v.Point),
+			"duration": v.Duration,
+			"contact":  v.Contact,
+			"pressure": v.Pressure,
+		}
+	}
+	if v, ok := result.AsSwipe(); ok {
+		return map[string]interface{}{
+			"type":       actionType,
+			"begin":      convertPoint(v.Begin),
+			"end":        convertPointSlice(v.End),
+			"end_hold":   v.EndHold,
+			"duration":   v.Duration,
+			"only_hover": v.OnlyHover,
+			"starting":   v.Starting,
+			"contact":    v.Contact,
+			"pressure":   v.Pressure,
+		}
+	}
+	if v, ok := result.AsMultiSwipe(); ok {
+		swipes := make([]interface{}, len(v.Swipes))
+		for i, s := range v.Swipes {
+			swipes[i] = map[string]interface{}{
+				"begin":      convertPoint(s.Begin),
+				"end":        convertPointSlice(s.End),
+				"end_hold":   s.EndHold,
+				"duration":   s.Duration,
+				"only_hover": s.OnlyHover,
+				"starting":   s.Starting,
+				"contact":    s.Contact,
+				"pressure":   s.Pressure,
+			}
+		}
+		return map[string]interface{}{
+			"type":   actionType,
+			"swipes": swipes,
+		}
+	}
+	if v, ok := result.AsTouch(); ok {
+		return map[string]interface{}{
+			"type":     actionType,
+			"point":    convertPoint(v.Point),
+			"contact":  v.Contact,
+			"pressure": v.Pressure,
+		}
+	}
+	if v, ok := result.AsScroll(); ok {
+		return map[string]interface{}{
+			"type":  actionType,
+			"point": convertPoint(v.Point),
+			"dx":    v.Dx,
+			"dy":    v.Dy,
+		}
+	}
+	if v, ok := result.AsClickKey(); ok {
+		return map[string]interface{}{
+			"type":    actionType,
+			"keycode": v.Keycode,
+		}
+	}
+	if v, ok := result.AsLongPressKey(); ok {
+		return map[string]interface{}{
+			"type":     actionType,
+			"keycode":  v.Keycode,
+			"duration": v.Duration,
+		}
+	}
+	if v, ok := result.AsInputText(); ok {
+		return map[string]interface{}{
+			"type": actionType,
+			"text": v.Text,
+		}
+	}
+	if v, ok := result.AsApp(); ok {
+		return map[string]interface{}{
+			"type":    actionType,
+			"package": v.Package,
+		}
+	}
+	if v, ok := result.AsShell(); ok {
+		return map[string]interface{}{
+			"type":    actionType,
+			"cmd":     v.Cmd,
+			"timeout": v.Timeout,
+			"success": v.Success,
+			"output":  v.Output,
+		}
+	}
+
+	return map[string]interface{}{
+		"type": actionType,
+	}
 }
 
 // convertActionDetail 转换 ActionDetail 到响应结构。
@@ -515,6 +647,7 @@ func convertActionDetail(detail *maa.ActionDetail) *ActionDetailResp {
 			resp.DetailJSON = detail.DetailJson
 		}
 	}
+	resp.Result = convertActionResult(detail.Result)
 	return resp
 }
 

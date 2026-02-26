@@ -165,12 +165,144 @@ export interface RecoDetailResponse {
   results?: RecoResultsResponse;
 }
 
+export interface PointResponse {
+  x: number;
+  y: number;
+}
+
+export interface ClickActionResult {
+  type: "Click";
+  point: PointResponse;
+  contact: number;
+  pressure: number;
+}
+
+export interface LongPressActionResult {
+  type: "LongPress";
+  point: PointResponse;
+  duration: number;
+  contact: number;
+  pressure: number;
+}
+
+export interface SwipeActionResult {
+  type: "Swipe";
+  begin: PointResponse;
+  end: PointResponse[];
+  end_hold: number[];
+  duration: number[];
+  only_hover: boolean;
+  starting: number;
+  contact: number;
+  pressure: number;
+}
+
+export interface MultiSwipeActionResult {
+  type: "MultiSwipe";
+  swipes: Omit<SwipeActionResult, "type">[];
+}
+
+export interface TouchActionResult {
+  type: "TouchDown" | "TouchMove" | "TouchUp";
+  point: PointResponse;
+  contact: number;
+  pressure: number;
+}
+
+export interface ScrollActionResult {
+  type: "Scroll";
+  point: PointResponse;
+  dx: number;
+  dy: number;
+}
+
+export interface ClickKeyActionResult {
+  type: "ClickKey" | "KeyDown" | "KeyUp";
+  keycode: number[];
+}
+
+export interface LongPressKeyActionResult {
+  type: "LongPressKey";
+  keycode: number[];
+  duration: number;
+}
+
+export interface InputTextActionResult {
+  type: "InputText";
+  text: string;
+}
+
+export interface AppActionResult {
+  type: "StartApp" | "StopApp";
+  package: string;
+}
+
+export interface ShellActionResult {
+  type: "Shell" | "Command";
+  cmd: string;
+  timeout: number;
+  success: boolean;
+  output: string;
+}
+
+export interface GenericActionResult {
+  type: "DoNothing" | "StopTask" | "Custom" | string;
+}
+
+export type ActionResult =
+  | ClickActionResult
+  | LongPressActionResult
+  | SwipeActionResult
+  | MultiSwipeActionResult
+  | TouchActionResult
+  | ScrollActionResult
+  | ClickKeyActionResult
+  | LongPressKeyActionResult
+  | InputTextActionResult
+  | AppActionResult
+  | ShellActionResult
+  | GenericActionResult;
+
+export type ActionTypeWithCoords =
+  | "Click"
+  | "LongPress"
+  | "Swipe"
+  | "MultiSwipe"
+  | "TouchDown"
+  | "TouchMove"
+  | "TouchUp"
+  | "Scroll";
+
+export function actionHasCoords(
+  result: ActionResult | undefined,
+): result is
+  | ClickActionResult
+  | LongPressActionResult
+  | SwipeActionResult
+  | MultiSwipeActionResult
+  | TouchActionResult
+  | ScrollActionResult {
+  if (!result) return false;
+  const types: string[] = [
+    "Click",
+    "LongPress",
+    "Swipe",
+    "MultiSwipe",
+    "TouchDown",
+    "TouchMove",
+    "TouchUp",
+    "Scroll",
+  ];
+  return types.includes(result.type);
+}
+
 export interface ActionDetailResponse {
   name: string;
   action: string;
   box?: RectResponse;
   success: boolean;
   detail_json?: unknown;
+  result?: ActionResult;
 }
 
 export interface NodeDetailResponse {

@@ -29,7 +29,7 @@
             </div>
             <div class="pl-5">
                 <NodeStatusButton :status="node.action.status" :label="node.action.msg.name" size="sm"
-                    @click="$emit('requestDetail', node.msg.name)" />
+                    @click="$emit('requestActionDetail', node.msg.name)" />
             </div>
         </div>
     </div>
@@ -47,5 +47,6 @@ defineProps<{
 
 defineEmits<{
     requestDetail: [name: string]
+    requestActionDetail: [name: string]
 }>()
 </script>
