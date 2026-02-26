@@ -51,13 +51,11 @@
                 <div class="flex flex-row items-center gap-2">
                     <div class="flex-1 min-w-0">
                         <USelectMenu v-model="selectedEntry" v-model:search-term="entrySearchTerm"
-                            :items="entrySelectItems" ignore-filter
-                            placeholder="Select task entry..." :search-input="{
+                            :items="entrySelectItems" ignore-filter placeholder="Select task entry..." :search-input="{
                                 placeholder: 'Filter...',
                                 icon: 'i-lucide-search'
-                            }"
-                            :ui="{ base: 'w-full', content: 'w-auto min-w-(--reka-combobox-trigger-width)' }"
-                            class="w-full" size="xl" value-key="value" :disabled="isRunning" arrow />
+                            }" :ui="{ base: 'w-full', content: 'w-auto min-w-(--reka-combobox-trigger-width)' }"
+                            virtualize class="w-full" size="xl" value-key="value" :disabled="isRunning" arrow />
                     </div>
                     <UTooltip text="Edit task override">
                         <UButton color="neutral" variant="outline" icon="i-lucide-file-edit" size="xl"
