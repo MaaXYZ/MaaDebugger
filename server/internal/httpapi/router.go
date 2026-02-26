@@ -491,6 +491,14 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// 用户主动停止任务后 RunTask 也会返回失败，此时状态已被 handleTaskStop 设为 stopped，
+	// 不应覆盖为 failed，也不需要向前端报错。
+	if r.deps.StatusStore.GetTask() == "stopped" {
+		log.Info().Str("entry", payload.Entry).Msg("[Task] run ended after user stop, keeping stopped status")
+		response.OK(w, nil)
+		return
+	}
+
 	r.deps.StatusStore.SetTask("failed")
 	log.Warn().Str("entry", payload.Entry).Str("error", result.Error).Msg("[Task] run failed, status → failed")
 	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
@@ -499,13 +507,10 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 
 func (r *router) handleTaskStop(w http.ResponseWriter, _ *http.Request) {
 	log.Info().Msg("[Task] stop request")
-	if r.deps.TaskerService.StopTask() {
-		r.deps.StatusStore.SetTask("stopped")
-		r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
-		response.OK(w, nil)
-	} else {
-		// TODO:
-	}
+	r.deps.StatusStore.SetTask("stopped")
+	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
+	r.deps.TaskerService.StopTask()
+	response.OK(w, nil)
 }
 
 func (r *router) handleTaskNodes(w http.ResponseWriter, _ *http.Request) {

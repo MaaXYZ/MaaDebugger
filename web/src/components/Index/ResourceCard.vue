@@ -6,7 +6,14 @@
                 <div class="flex flex-row items-center justify-between gap-4">
                     <div class="flex items-center gap-2">
                         <span class="font-bold">Resource</span>
-                        <UBadge :color="statusColor" :label="statusLabel" variant="subtle" size="sm" />
+                        <UBadge :color="statusColor" variant="subtle" size="sm" class="gap-1.5">
+                            <span class="relative flex size-2">
+                                <span v-if="statusStore.resourceStatus === 'loading'"
+                                    class="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-75" />
+                                <span class="relative inline-flex size-2 rounded-full" :class="dotClass" />
+                            </span>
+                            {{ statusLabel }}
+                        </UBadge>
                     </div>
                     <div class="flex flex-row items-center gap-2">
                         <USelect v-model="resourceStore.activeProfileId" :items="resourceStore.profileSelectItems"
@@ -170,6 +177,20 @@ const statusColor = computed(() => {
     }
 })
 
+const dotClass = computed(() => {
+    switch (statusStore.resourceStatus) {
+        case 'loaded':
+            return 'bg-success'
+        case 'loading':
+            return 'bg-warning'
+        case 'failed':
+            return 'bg-error'
+        case 'unloaded':
+        default:
+            return 'bg-gray-400 dark:bg-gray-500'
+    }
+})
+
 // --- Enabled Paths ---
 const enabledPaths = computed(() => resourceStore.getEnabledPaths())
 
@@ -183,6 +204,7 @@ async function onLoadResource() {
         if (!result.succeed) {
             console.error('[Resource] Load failed:', result.msg)
             toast.add({
+                id: 'res-toast',
                 title: 'Resource Load Failed',
                 description: result.msg || 'Unknown error',
                 icon: 'i-lucide-circle-x',
@@ -191,6 +213,7 @@ async function onLoadResource() {
         } else {
             showFullCard.value = false
             toast.add({
+                id: 'res-toast',
                 title: 'Resource Loaded',
                 icon: 'i-lucide-check-circle',
                 color: 'success',

@@ -5,7 +5,14 @@
                 <div class="flex flex-row items-center justify-between gap-4">
                     <div class="flex items-center gap-2">
                         <span class="font-bold">Controller</span>
-                        <UBadge :color="statusColor" :label="capitalizedStatus" variant="subtle" size="sm" />
+                        <UBadge :color="statusColor" variant="subtle" size="sm" class="gap-1.5">
+                            <span class="relative flex size-2">
+                                <span v-if="statusStore.controllerStatus === 'connecting'"
+                                    class="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-75" />
+                                <span class="relative inline-flex size-2 rounded-full" :class="dotClass" />
+                            </span>
+                            {{ capitalizedStatus }}
+                        </UBadge>
                     </div>
                     <div class="flex flex-row items-center gap-2">
                         <USelect v-model="controllerValue" value-key="value" :items="controllerItems"
@@ -148,6 +155,19 @@ const statusColor = computed(() => {
             return hasAttemptedConnection.value ? 'error' as const : 'neutral' as const
         default:
             return 'neutral' as const
+    }
+})
+
+const dotClass = computed(() => {
+    switch (statusStore.controllerStatus) {
+        case 'connected':
+            return 'bg-success'
+        case 'connecting':
+            return 'bg-warning'
+        case 'disconnected':
+            return hasAttemptedConnection.value ? 'bg-error' : 'bg-gray-400 dark:bg-gray-500'
+        default:
+            return 'bg-gray-400 dark:bg-gray-500'
     }
 })
 
@@ -354,6 +374,7 @@ async function onConnect() {
         if (!result.succeed) {
             console.error(`[${type}] Connect failed:`, result.msg)
             toast.add({
+                id: 'ctrl-toast',
                 title: 'Controller Connect Failed',
                 description: result.msg || 'Unknown error',
                 icon: 'i-lucide-circle-x',
@@ -364,6 +385,7 @@ async function onConnect() {
 
         showFullCard.value = false
         toast.add({
+            id: 'ctrl-toast',
             title: 'Controller Connected',
             icon: 'i-lucide-check-circle',
             color: 'success',
@@ -389,6 +411,7 @@ async function onDisconnect() {
         const result = await disconnectController()
         if (result && !result.succeed) {
             toast.add({
+                id: 'ctrl-toast',
                 title: 'Controller Disconnect Failed',
                 description: result.msg,
                 icon: 'i-lucide-circle-x',
@@ -396,6 +419,7 @@ async function onDisconnect() {
             })
         } else {
             toast.add({
+                id: 'ctrl-toast',
                 title: 'Controller Disconnected',
                 icon: 'i-lucide-unlink',
                 color: 'warning',

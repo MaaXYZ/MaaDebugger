@@ -108,6 +108,7 @@ async function onStart() {
     const result = await runTask(selectedEntry.value, {})
     if (!result.succeed) {
         toast.add({
+            id: 'task-toast',
             title: 'Task Run Failed',
             description: result.msg,
             icon: 'i-lucide-circle-x',
@@ -115,6 +116,7 @@ async function onStart() {
         })
     } else {
         toast.add({
+            id: 'task-toast',
             title: 'Task Started',
             icon: 'i-lucide-play',
             color: 'success',
@@ -129,6 +131,7 @@ async function onStop() {
         const result = await stopTask()
         if (!result.succeed) {
             toast.add({
+                id: 'task-toast',
                 title: 'Task Stop Failed',
                 description: result.msg,
                 icon: 'i-lucide-circle-x',
@@ -136,6 +139,7 @@ async function onStop() {
             })
         } else {
             toast.add({
+                id: 'task-toast',
                 title: 'Task Stop Requested',
                 icon: 'i-lucide-circle-stop',
                 color: 'warning',

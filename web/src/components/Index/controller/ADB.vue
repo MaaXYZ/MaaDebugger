@@ -118,6 +118,7 @@ async function onDetect() {
         // Warn user when no devices are found
         if (deviceItems.value.length === 0) {
             toast.add({
+                id: 'ctrl-toast',
                 title: 'No ADB devices found',
                 description: 'Make sure your device is connected and ADB is running.',
                 icon: 'i-lucide-triangle-alert',
@@ -170,6 +171,7 @@ async function doConnect(params: ConnectControllerRequest): Promise<boolean> {
         if (!result.succeed) {
             console.error('[ADB] Connect failed:', result.msg)
             toast.add({
+                id: 'ctrl-toast',
                 title: 'Controller Connect Failed',
                 description: result.msg || 'Unknown error',
                 icon: 'i-lucide-circle-x',
@@ -179,6 +181,7 @@ async function doConnect(params: ConnectControllerRequest): Promise<boolean> {
         }
 
         toast.add({
+            id: 'ctrl-toast',
             title: 'Controller Connected',
             icon: 'i-lucide-check-circle',
             color: 'success',
@@ -231,6 +234,7 @@ async function onDisconnect() {
         const result = await disconnectController()
         if (result && !result.succeed) {
             toast.add({
+                id: 'ctrl-toast',
                 title: 'Controller Disconnect Failed',
                 description: result.msg,
                 icon: 'i-lucide-circle-x',
@@ -238,6 +242,7 @@ async function onDisconnect() {
             })
         } else {
             toast.add({
+                id: 'ctrl-toast',
                 title: 'Controller Disconnected',
                 icon: 'i-lucide-unlink',
                 color: 'warning',

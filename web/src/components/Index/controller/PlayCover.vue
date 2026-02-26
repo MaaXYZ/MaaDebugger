@@ -85,6 +85,7 @@ async function onConnect() {
         if (!result.succeed) {
             console.error('[PlayCover] Connect failed:', result.msg)
             toast.add({
+                id: 'ctrl-toast',
                 title: 'Controller Connect Failed',
                 description: result.msg || 'Unknown error',
                 icon: 'i-lucide-circle-x',
@@ -94,6 +95,7 @@ async function onConnect() {
         }
 
         toast.add({
+            id: 'ctrl-toast',
             title: 'Controller Connected',
             icon: 'i-lucide-check-circle',
             color: 'success',
@@ -121,6 +123,7 @@ async function onDisconnect() {
         const result = await disconnectController()
         if (result && !result.succeed) {
             toast.add({
+                id: 'ctrl-toast',
                 title: 'Controller Disconnect Failed',
                 description: result.msg,
                 icon: 'i-lucide-circle-x',
@@ -128,6 +131,7 @@ async function onDisconnect() {
             })
         } else {
             toast.add({
+                id: 'ctrl-toast',
                 title: 'Controller Disconnected',
                 icon: 'i-lucide-unlink',
                 color: 'warning',

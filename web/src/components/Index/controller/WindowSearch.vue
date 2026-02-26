@@ -97,6 +97,7 @@ async function onSearch() {
         // Warn user when no windows are found
         if (windowItems.value.length === 0) {
             toast.add({
+                id: 'ctrl-toast',
                 title: 'No windows found',
                 description: 'Try adjusting your class name or window regex filters.',
                 icon: 'i-lucide-triangle-alert',

@@ -44,6 +44,12 @@ func (s *Store) SetResource(v string) {
 	s.snapshot.Resource = v
 }
 
+func (s *Store) GetTask() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.snapshot.Task
+}
+
 func (s *Store) SetTask(v string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
