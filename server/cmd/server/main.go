@@ -35,7 +35,7 @@ func main() {
 
 	userPath := getCwd()
 
-	host := getenv("GO_SERVICE_HOST", "127.0.0.1")
+	host := getenv("GO_SERVICE_HOST", "localhost")
 
 	port := resolvePort(host, flagPort)
 	addr := host + ":" + strconv.Itoa(port)
@@ -83,14 +83,14 @@ func main() {
 	defer screenshotService.Stop()
 
 	router := httpapi.NewRouter(httpapi.Dependencies{
-		StatusStore:        statusStore,
-		Hub:                hub,
-		ControllerService:  ctrlService,
-		ResourceService:    resService,
-		TaskerService:      taskerService,
-		AgentService:       agentService,
-		ScreenshotService:  screenshotService,
-		ConfigStore:        cfgStore,
+		StatusStore:       statusStore,
+		Hub:               hub,
+		ControllerService: ctrlService,
+		ResourceService:   resService,
+		TaskerService:     taskerService,
+		AgentService:      agentService,
+		ScreenshotService: screenshotService,
+		ConfigStore:       cfgStore,
 	})
 
 	srv := &http.Server{

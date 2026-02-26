@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"image/png"
+	"sort"
 	"strings"
 	"sync/atomic"
 
@@ -256,6 +257,7 @@ func (s *TaskerService) GetNodeList() []string {
 		return []string{}
 	}
 
+	sort.Strings(nodes)
 	return nodes
 }
 
