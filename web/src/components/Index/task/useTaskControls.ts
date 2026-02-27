@@ -38,6 +38,7 @@ export function useTaskControls(toast: ToastApi) {
   const entries = ref<TaskEntry[]>([]);
   const entrySearchTerm = ref("");
   const isStopping = ref(false);
+  const overrideEditorOpen = ref(false);
 
   const selectedEntry = computed({
     get: () => taskStore.selectedEntry,
@@ -187,7 +188,7 @@ export function useTaskControls(toast: ToastApi) {
   }
 
   function onEditOverride() {
-    // TODO: Open editor for task override
+    overrideEditorOpen.value = true;
   }
 
   async function refreshNodes() {
@@ -237,6 +238,8 @@ export function useTaskControls(toast: ToastApi) {
     canStart,
     isStopping,
     startStopKeys,
+    overrideEditorOpen,
+    taskStore,
     onStart,
     onStop,
     onEditOverride,

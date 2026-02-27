@@ -179,6 +179,13 @@
             </div>
         </template>
     </UModal>
+
+    <!-- Override editor modal -->
+    <JsonEditorModal v-model:open="overrideEditorOpen" v-model="taskStore.overrideJson" title="Pipeline Override"
+        description="Edit pipeline override (JSONC with schema validation)" :schema="pipelineSchema" :external-schemas="{
+            './custom.action.schema.json': customActionSchema,
+            './custom.recognition.schema.json': customRecognitionSchema,
+        }" />
 </template>
 
 <script setup lang="ts">
@@ -187,6 +194,10 @@ import TaskStatusBadge from './task/TaskStatusBadge.vue'
 import { useTaskControls } from './task/useTaskControls'
 import { useScreenshotStream } from './task/useScreenshotStream'
 import { MAX_ZOOM, MIN_ZOOM, usePanZoom } from './task/usePanZoom'
+import { JsonEditorModal } from '@/components/MonacoEditor'
+import pipelineSchema from '@/schema/pipeline.schema.json'
+import customActionSchema from '@/schema/custom.action.schema.json'
+import customRecognitionSchema from '@/schema/custom.recognition.schema.json'
 
 const toast = useToast()
 
@@ -201,6 +212,8 @@ const {
     canStart,
     isStopping,
     startStopKeys,
+    overrideEditorOpen,
+    taskStore,
     onStart,
     onStop,
     onEditOverride,

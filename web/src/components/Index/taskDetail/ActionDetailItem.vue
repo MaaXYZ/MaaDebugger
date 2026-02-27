@@ -104,8 +104,8 @@
         <!-- detail_json fallback -->
         <div v-if="detail.detail_json" class="flex flex-col gap-0.5">
             <span class="text-xs text-dimmed font-medium">Detail JSON:</span>
-            <pre class="text-xs bg-muted rounded p-2 overflow-x-auto max-h-40 whitespace-pre-wrap break-all">{{
-                formatJson(detail.detail_json) }}</pre>
+            <MonacoEditor :model-value="formatJson(detail.detail_json)" language="json" :read-only="true"
+                :min-height="60" :max-height="300" />
         </div>
     </div>
 </template>
@@ -127,6 +127,7 @@ import type {
     ShellActionResult,
 } from './types'
 import InfoRow from './ActionInfoRow.vue'
+import { MonacoEditor } from '@/components/MonacoEditor'
 
 defineProps<{
     detail: ActionDetailResponse

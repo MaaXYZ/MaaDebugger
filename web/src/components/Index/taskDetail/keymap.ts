@@ -5,7 +5,7 @@ export default function getKey(value: number, controller_type: string): string {
   if (controller_type === "adb") {
     return adb.get(value) ?? "";
   }
-  return "";
+  return "Unknown";
 }
 
 const win32: Map<number, string> = new Map([
