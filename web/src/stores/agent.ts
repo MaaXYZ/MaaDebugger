@@ -63,6 +63,13 @@ export const useAgentStore = defineStore(
       }
     }
 
+    /**
+     * 持久化恢复后的钩子：重置瞬态运行时字段
+     */
+    function onRestore() {
+      resetRuntimeState();
+    }
+
     return {
       agents,
       connectedCount,
@@ -74,6 +81,7 @@ export const useAgentStore = defineStore(
       getByIdentifier,
       getConnectedAgents,
       resetRuntimeState,
+      onRestore,
     };
   },
   {

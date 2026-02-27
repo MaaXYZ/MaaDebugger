@@ -122,9 +122,9 @@ export const useResourceStore = defineStore(
     }
 
     /**
-     * 确保恢复持久化数据后 nextId/nextProfileId 不会冲突
+     * 持久化恢复后的钩子：确保 nextId/nextProfileId 不会冲突
      */
-    function syncIds() {
+    function onRestore() {
       const maxPathId = profiles.value.reduce((max, p) => {
         return p.paths.reduce((m, path) => Math.max(m, path.id), max);
       }, 0);
@@ -150,7 +150,7 @@ export const useResourceStore = defineStore(
       renameProfile,
       getEnabledPaths,
       setPaths,
-      syncIds,
+      onRestore,
     };
   },
   { persist: true },

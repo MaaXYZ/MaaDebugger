@@ -37,6 +37,15 @@ declare module "pinia" {
      */
     persistExclude?: string[];
   }
+
+  export interface PiniaCustomProperties {
+    /**
+     * 持久化数据恢复后的回调钩子。
+     * 在 store 中定义此方法，插件会在 $patch 恢复数据后自动调用。
+     * 可用于：重置瞬态字段、同步自增 ID 等。
+     */
+    onRestore?: () => void;
+  }
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -93,10 +102,9 @@ export const serverPersistPlugin: PiniaPlugin = ({ store, options }) => {
     .then((savedState) => {
       if (savedState && typeof savedState === "object") {
         store.$patch(savedState as StateTree);
-        // 恢复后同步自增 ID，避免 ID 冲突
-        const storeWithSync = store as typeof store & { syncIds?: () => void };
-        if (typeof storeWithSync.syncIds === "function") {
-          storeWithSync.syncIds();
+        // 恢复后调用 onRestore 钩子（如有），供各 store 处理恢复后清理
+        if (typeof store.onRestore === "function") {
+          store.onRestore();
         }
       }
       // 加载完成后保存一次完整 state（确保新增字段的默认值也被持久化）
