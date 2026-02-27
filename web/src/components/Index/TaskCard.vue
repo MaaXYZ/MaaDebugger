@@ -54,8 +54,8 @@
                             :items="entrySelectItems" ignore-filter placeholder="Select task entry..." :search-input="{
                                 placeholder: 'Filter...',
                                 icon: 'i-lucide-search'
-                            }" :ui="{ base: 'w-full', content: '!w-auto min-w-[45vw]' }" class="w-full" size="xl"
-                            value-key="value" :disabled="isRunning" arrow />
+                            }" :ui="{ base: 'w-full', content: '!w-auto min-w-(--entry-content-min-w) max-w-[80vw]' }"
+                            class="w-full" size="xl" value-key="value" :disabled="isRunning" arrow />
                     </div>
                     <UTooltip text="Edit task override">
                         <UButton color="neutral" variant="outline" icon="i-lucide-file-edit" size="xl"
@@ -178,7 +178,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch } from 'vue'
+import { onMounted, onUnmounted, watch, watchEffect } from 'vue'
 import TaskStatusBadge from './task/TaskStatusBadge.vue'
 import { useTaskControls } from './task/useTaskControls'
 import { useScreenshotStream } from './task/useScreenshotStream'
@@ -192,6 +192,7 @@ const {
     taskStatus,
     entrySearchTerm,
     entrySelectItems,
+    entryContentMinWidth,
     isRunning,
     canStart,
     isStopping,
@@ -248,6 +249,11 @@ const {
     onFullscreenDragEnd,
     handleFullscreenChange,
 } = usePanZoom()
+
+// Sync entry content min-width CSS variable to :root for portal-rendered dropdown
+watchEffect(() => {
+    document.documentElement.style.setProperty('--entry-content-min-w', entryContentMinWidth.value)
+})
 
 function onImageWheel(e: WheelEvent) {
     onWheel(e, !!imageUrl.value)

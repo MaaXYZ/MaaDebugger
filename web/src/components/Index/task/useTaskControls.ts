@@ -79,6 +79,57 @@ export function useTaskControls(toast: ToastApi) {
     return [...startsWith, ...endsWith, ...contains, ...fuzzy];
   });
 
+  // CJK character range test
+  const cjkRegex =
+    /[\u2E80-\u2FFF\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\u3100-\u312F\u3200-\u32FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFFEF]/;
+
+  /**
+   * Compute a CSS min-width value for the dropdown content based on the longest
+   * visible label (after filtering). CJK characters use `em` (≈ full-width),
+   * ASCII characters use `ch` (≈ half-width).
+   *
+   * Performance: only iterates the filtered list once to find the longest item,
+   * then scans that single string — negligible cost even with thousands of entries.
+   */
+  const entryContentMinWidth = computed(() => {
+    const items = entrySelectItems.value;
+    if (items.length === 0) return "0px";
+
+    // Find the longest label and count its CJK/ASCII chars in one pass
+    let longestWidth = 0;
+    let bestCjk = 0;
+    let bestAscii = 0;
+    for (const item of items) {
+      let w = 0;
+      let cjk = 0;
+      let ascii = 0;
+      for (const ch of item.label) {
+        if (cjkRegex.test(ch)) {
+          w += 2;
+          cjk++;
+        } else {
+          w += 1;
+          ascii++;
+        }
+      }
+      if (w > longestWidth) {
+        longestWidth = w;
+        bestCjk = cjk;
+        bestAscii = ascii;
+      }
+    }
+
+    // Add padding: ~3ch for scrollbar + internal padding
+    const padding = 3;
+
+    // Build calc() expression: CJK chars as em, ASCII chars as ch
+    const parts: string[] = [];
+    if (bestCjk > 0) parts.push(`${bestCjk}em`);
+    parts.push(`${bestAscii + padding}ch`);
+
+    return `calc(${parts.join(" + ")})`;
+  });
+
   watch(
     () => statusStore.resourceStatus,
     (newStatus, oldStatus) => {
@@ -181,6 +232,7 @@ export function useTaskControls(toast: ToastApi) {
     taskStatus,
     entrySearchTerm,
     entrySelectItems,
+    entryContentMinWidth,
     isRunning,
     canStart,
     isStopping,
