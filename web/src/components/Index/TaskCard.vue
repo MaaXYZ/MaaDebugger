@@ -50,12 +50,16 @@
                 <!-- Task controls -->
                 <div class="flex flex-row items-center gap-2">
                     <div class="flex-1 min-w-0">
-                        <USelectMenu v-model="selectedEntry" v-model:search-term="entrySearchTerm" virtualize
-                            :items="entrySelectItems" ignore-filter placeholder="Select task entry..." :search-input="{
-                                placeholder: 'Filter...',
-                                icon: 'i-lucide-search'
-                            }" :ui="{ base: 'w-full', content: '!w-auto min-w-(--entry-content-min-w) max-w-[80vw]' }"
-                            class="w-full" size="xl" value-key="value" :disabled="isRunning" arrow />
+                        <UTooltip :text="selectedEntry">
+                            <USelectMenu v-model="selectedEntry" v-model:search-term="entrySearchTerm" virtualize
+                                :items="entrySelectItems" ignore-filter placeholder="Select task entry..."
+                                :search-input="{
+                                    placeholder: 'Filter...',
+                                    icon: 'i-lucide-search'
+                                }"
+                                :ui="{ base: 'w-full', content: '!w-auto min-w-(--entry-content-min-w) max-w-[80vw]' }"
+                                class="w-full" size="xl" value-key="value" :disabled="isRunning" arrow />
+                        </UTooltip>
                     </div>
                     <UTooltip text="Edit task override">
                         <UButton color="neutral" variant="outline" icon="i-lucide-file-edit" size="xl"
