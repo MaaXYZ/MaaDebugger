@@ -7,6 +7,7 @@ import (
 	"image/png"
 	"sort"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	maa "github.com/MaaXYZ/maa-framework-go/v4"
@@ -24,6 +25,9 @@ type TaskerService struct {
 	// onEvent 广播回调，由 router 设置，用于将事件通过 WS 广播。
 	// 不在 sink 中渲染/处理，只做消息转发。
 	onEvent atomic.Pointer[func(msg map[string]interface{})]
+
+	// actionScreenshots 缓存 action 开始前的截图（action_id → base64 PNG data URI）。
+	actionScreenshots sync.Map
 }
 
 // NewTaskerService 创建一个新的 TaskerService。
@@ -127,6 +131,11 @@ func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
 	})
 
 	tasker.OnNodeActionInContext(func(_ *maa.Context, event maa.EventStatus, detail maa.NodeActionDetail) {
+		// 在 action 开始前截图并缓存
+		if event == maa.EventStatusStarting {
+			s.captureActionScreenshot(detail.ActionID)
+		}
+
 		suffix := eventStatusToString(event)
 		s.emitEvent(map[string]interface{}{
 			"msg":       fmt.Sprintf("Action.%s", suffix),
@@ -504,6 +513,7 @@ type ActionDetailResp struct {
 	Success    bool          `json:"success"`
 	DetailJSON interface{}   `json:"detail_json,omitempty"`
 	Result     interface{}   `json:"result,omitempty"`
+	RawImage   string        `json:"raw_image,omitempty"`
 }
 
 func convertPoint(p maa.Point) PointResponse {
@@ -700,6 +710,43 @@ func (s *TaskerService) GetRecognitionDetailByID(recoID int64) (*RecoDetailRespo
 	return convertRecoDetail(detail), nil
 }
 
+// captureActionScreenshot 在 action 开始前截图并缓存。
+func (s *TaskerService) captureActionScreenshot(actionID uint64) {
+	ctrl := s.controllerSvc.Controller()
+	if ctrl == nil {
+		return
+	}
+	job := ctrl.PostScreencap()
+	job.Wait()
+	if !job.Success() {
+		log.Warn().Uint64("action_id", actionID).Msg("[MaaService] action screenshot: PostScreencap failed")
+		return
+	}
+	img, err := ctrl.CacheImage()
+	if err != nil || img == nil {
+		log.Warn().Err(err).Uint64("action_id", actionID).Msg("[MaaService] action screenshot: CacheImage failed")
+		return
+	}
+	var buf strings.Builder
+	buf.WriteString("data:image/png;base64,")
+	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
+	if err := png.Encode(encoder, img); err != nil {
+		log.Warn().Err(err).Uint64("action_id", actionID).Msg("[MaaService] action screenshot: PNG encode failed")
+		return
+	}
+	encoder.Close()
+	s.actionScreenshots.Store(actionID, buf.String())
+	log.Debug().Uint64("action_id", actionID).Msg("[MaaService] action screenshot captured")
+}
+
+// ClearActionScreenshots 清除所有缓存的 action 截图。
+func (s *TaskerService) ClearActionScreenshots() {
+	s.actionScreenshots.Range(func(key, _ any) bool {
+		s.actionScreenshots.Delete(key)
+		return true
+	})
+}
+
 // GetActionDetailByID 通过 action_id 获取动作详情。
 func (s *TaskerService) GetActionDetailByID(actionID int64) (*ActionDetailResp, error) {
 	tasker := s.tasker.Load()
@@ -710,7 +757,14 @@ func (s *TaskerService) GetActionDetailByID(actionID int64) (*ActionDetailResp, 
 	if err != nil {
 		return nil, fmt.Errorf("get action detail failed: %w", err)
 	}
-	return convertActionDetail(detail), nil
+	resp := convertActionDetail(detail)
+
+	// 从缓存中获取 action 开始前的截图
+	if cached, ok := s.actionScreenshots.Load(actionID); ok {
+		resp.RawImage = cached.(string)
+	}
+
+	return resp, nil
 }
 
 // Running 返回 Tasker 是否正在运行任务。

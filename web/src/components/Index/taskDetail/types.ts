@@ -303,6 +303,7 @@ export interface ActionDetailResponse {
   success: boolean;
   detail_json?: unknown;
   result?: ActionResult;
+  raw_image?: string;
 }
 
 export interface NodeDetailResponse {

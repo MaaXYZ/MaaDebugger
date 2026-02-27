@@ -42,11 +42,13 @@ watch([() => props.actionId, open], async ([id, isOpen]) => {
     }
     loading.value = true
     try {
-        actionDetail.value = await getActionDetailById(id)
+        const detail = await getActionDetailById(id)
+        actionDetail.value = detail
+        rawImage.value = detail?.raw_image ?? null
     } catch {
         actionDetail.value = null
-    } finally {
         rawImage.value = null
+    } finally {
         loading.value = false
     }
 })
