@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"syscall"
@@ -18,6 +18,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
+	"github.com/MaaXYZ/MaaDebugger/internal/cliargs"
 	"github.com/MaaXYZ/MaaDebugger/internal/configstore"
 	"github.com/MaaXYZ/MaaDebugger/internal/httpapi"
 	"github.com/MaaXYZ/MaaDebugger/internal/maaservice"
@@ -29,29 +30,60 @@ func main() {
 	zerolog.TimeFieldFormat = time.RFC3339Nano
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
 
-	var flagPort int
-	flag.IntVar(&flagPort, "port", 0, "server port (default: auto-detect from 8011)")
-	flag.Parse()
+	parser := cliargs.New("MaaDebugger", "The Offical Github repo: https://github.com/MaaXYZ/MaaDebugger")
+	parser.AddInt("port", "p", "server port (default: auto-detect from 8011)", 0, false)
+	parser.AddString("host", "H", "service host", "", false)
+	parser.AddString("fw-path", "b", "path to maa framework binary", "", false)
 
-	userPath := getCwd()
+	parsed, err := parser.Parse(os.Args[1:])
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(os.Stderr)
+		fmt.Fprintln(os.Stderr, parser.Help())
+		os.Exit(2)
+	}
+	if parsed.HelpRequested {
+		fmt.Println(parser.Help())
+		return
+	}
+
+	exePath, err := os.Executable()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Fail to eun `os.Executable`.")
+	}
+
+	filepath.Dir(exePath)
+	root := filepath.Join(exePath, "bin")
+
+	fwBinaryPath := getenv("MAAFW_BINARY_PATH", root)
+	if v, ok := parsed.String("fw-path"); ok && v != "" {
+		fwBinaryPath = v
+	}
 
 	host := getenv("GO_SERVICE_HOST", "localhost")
+	if v, ok := parsed.String("host"); ok && v != "" {
+		host = v
+	}
 
-	port := resolvePort(host, flagPort)
+	portArg := 0
+	if v, ok := parsed.Int("port"); ok {
+		portArg = v
+	}
+	port := resolvePort(host, portArg)
 	addr := host + ":" + strconv.Itoa(port)
 
-	if err := maa.Init(maa.WithDebugMode(true), maa.WithLibDir(userPath+"/bin")); err != nil {
+	if err := maa.Init(maa.WithDebugMode(true), maa.WithLibDir(fwBinaryPath+"/bin")); err != nil {
 		log.Fatal().Err(err).Msg("maa init failed")
 	}
 
-	if err := maa.ConfigInitOption(userPath, "{}"); err != nil {
+	if err := maa.ConfigInitOption(root, "{}"); err != nil {
 		log.Warn().
-			Str("userPath", userPath).
+			Str("userPath", root).
 			Err(err).
 			Msg("Failed to init toolkit config option")
 	} else {
 		log.Info().
-			Str("userPath", userPath).
+			Str("userPath", root).
 			Msg("Toolkit config option initialized")
 	}
 
@@ -77,7 +109,7 @@ func main() {
 			Payload: map[string]string{"reason": reason},
 		})
 	})
-	cfgStore := configstore.New(userPath)
+	cfgStore := configstore.New(root)
 	defer cfgStore.Close()
 	defer agentService.DisconnectAll()
 	defer screenshotService.Stop()
