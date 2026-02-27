@@ -18,7 +18,7 @@ jobs:
   build-frontend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: actions/setup-node@v6
         with:
@@ -28,13 +28,10 @@ jobs:
         with:
           version: 10.30
 
-      - name: Install & build frontend
-        working-directory: web
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm run build
+      - name: Build frontend
+        run: node build.mjs --skip-go
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: frontend-dist
           path: server/frontend/dist
@@ -87,6 +84,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
       - uses: actions/setup-go@v6
         with:
           go-version-file: server/go.mod
@@ -107,12 +108,7 @@ jobs:
           extract: true
 
       - name: Build Go binary
-        working-directory: server
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: "0"
-        run: go build -trimpath -o ../MaaDebugger${{ matrix.ext }} ./cmd/server
+        run: node build.mjs --skip-frontend --os ${{ matrix.goos }} --arch ${{ matrix.goarch }}
 
       - name: Package release
         run: |

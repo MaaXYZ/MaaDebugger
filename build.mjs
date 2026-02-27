@@ -4,11 +4,14 @@
  * Build script: compile Vue frontend → embed into Go binary
  *
  * Usage:
- *   node scripts/build.mjs              # build for current OS
- *   node scripts/build.mjs --os linux   # cross-compile for linux
- *   node scripts/build.mjs --os windows # cross-compile for windows
- *   node scripts/build.mjs --os darwin  # cross-compile for macOS
- *   node scripts/build.mjs --skip-frontend  # skip frontend build
+ *   node build.mjs                          # build for current OS/arch
+ *   node build.mjs --os linux               # cross-compile for linux
+ *   node build.mjs --os windows             # cross-compile for windows
+ *   node build.mjs --os darwin              # cross-compile for macOS
+ *   node build.mjs --arch arm64             # cross-compile for arm64
+ *   node build.mjs --os linux --arch arm64  # cross-compile for linux/arm64
+ *   node build.mjs --skip-frontend          # skip frontend build
+ *   node build.mjs --skip-go               # skip Go build (frontend only)
  */
 
 import { execSync } from "node:child_process";
@@ -24,8 +27,11 @@ const GO_DIR = path.join(ROOT, "server");
 // Parse args
 const args = process.argv.slice(2);
 const skipFrontend = args.includes("--skip-frontend");
+const skipGo = args.includes("--skip-go");
 const osIndex = args.indexOf("--os");
 const targetOS = osIndex !== -1 ? args[osIndex + 1] : undefined;
+const archIndex = args.indexOf("--arch");
+const targetArch = archIndex !== -1 ? args[archIndex + 1] : undefined;
 
 function run(cmd, cwd, env) {
   console.log(`\n> ${cmd}`);
@@ -42,13 +48,16 @@ function step(n, total, msg) {
   );
 }
 
-const totalSteps = skipFrontend ? 1 : 3;
+const buildFrontend = !skipFrontend;
+const buildGo = !skipGo;
+
+const totalSteps = (buildFrontend ? 2 : 0) + (buildGo ? 1 : 0);
 let currentStep = 0;
 
 // ── Step 1: Install frontend dependencies ──
-if (!skipFrontend) {
+if (buildFrontend) {
   step(++currentStep, totalSteps, "Installing frontend dependencies...");
-  run("pnpm install", WEB_DIR);
+  run("pnpm install --frozen-lockfile", WEB_DIR);
 
   // ── Step 2: Build frontend ──
   step(++currentStep, totalSteps, "Building frontend (vite build)...");
@@ -64,29 +73,46 @@ if (!skipFrontend) {
 }
 
 // ── Step 3: Build Go binary ──
-step(++currentStep, totalSteps, "Building Go binary...");
+if (buildGo) {
+  step(++currentStep, totalSteps, "Building Go binary...");
 
-const ext =
-  (targetOS ?? process.platform) === "win32" || targetOS === "windows"
-    ? ".exe"
-    : "";
-const outputName = `MaaDebugger${ext}`;
-
-const goEnv = {};
-if (targetOS) {
   const goosMap = { windows: "windows", linux: "linux", darwin: "darwin" };
-  goEnv.GOOS = goosMap[targetOS] || targetOS;
-  goEnv.GOARCH = "amd64";
-  console.log(
-    `  Cross-compiling for GOOS=${goEnv.GOOS} GOARCH=${goEnv.GOARCH}`,
+  const resolvedOS = targetOS
+    ? goosMap[targetOS] || targetOS
+    : process.platform === "win32"
+      ? "windows"
+      : process.platform;
+
+  const ext = resolvedOS === "windows" ? ".exe" : "";
+  const outputName = `MaaDebugger${ext}`;
+
+  const goEnv = {
+    CGO_ENABLED: "0",
+  };
+
+  if (targetOS) {
+    goEnv.GOOS = goosMap[targetOS] || targetOS;
+  }
+  if (targetArch) {
+    goEnv.GOARCH = targetArch;
+  }
+
+  if (targetOS || targetArch) {
+    console.log(
+      `  Cross-compiling for GOOS=${goEnv.GOOS || "(current)"} GOARCH=${goEnv.GOARCH || "(current)"}`,
+    );
+  }
+
+  run(
+    `go build -trimpath -o ${path.join(ROOT, outputName)} ./cmd/server`,
+    GO_DIR,
+    goEnv,
   );
-}
 
-run(`go build -o ${path.join(ROOT, outputName)} ./cmd/server`, GO_DIR, goEnv);
-
-console.log(`
+  console.log(`
 ========================================
   ✅ Build complete!
   Binary: ./${outputName}
 ========================================
 `);
+}
