@@ -63,6 +63,7 @@ class MaaFW:
     tasker: Optional[Tasker]
     agent: Optional[AgentClient]
     agent_identifier: Optional[str]
+    agent_connected: bool
     context_event_sink: Optional[ContextEventSink]
     resource_event_sink: Optional[ResourceEventSink]
     tasker_event_sink: Optional[TaskerEventSink]
@@ -76,6 +77,7 @@ class MaaFW:
         self.tasker = None
         self.agent = None
         self.agent_identifier = None
+        self.agent_connected = False
         self.context_event_sink = None
         self.resource_event_sink = None
         self.tasker_event_sink = None
@@ -232,7 +234,8 @@ class MaaFW:
         if not self.agent:
             return False, "AgentClient is not created."
 
-        if self.agent.connect():
+        self.agent_connected = self.agent.connect()
+        if self.agent_connected:
             return True, None
         else:
             return False, "Failed to connect AgentClient."

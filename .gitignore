@@ -173,3 +173,12 @@ debug
 uv.lock
 
 test.py
+
+# rft/nodejs
+web/*
+.cursor/*
+.maa/*
+bin/*
+server/*
+plans/*
+*.exe
