@@ -14,7 +14,7 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, "../server/frontend/dist"),
     emptyOutDir: true,
-    chunkSizeWarningLimit: 2048,
+    chunkSizeWarningLimit: 10240,
   },
   server: {
     proxy: {
