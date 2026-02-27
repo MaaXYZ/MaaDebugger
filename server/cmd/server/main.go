@@ -34,6 +34,7 @@ func main() {
 	parser.AddInt("port", "p", "server port (default: auto-detect from 8011)", 0, false)
 	parser.AddString("host", "H", "service host", "", false)
 	parser.AddString("fw-path", "b", "path to maa framework binary", "", false)
+	parser.AddBool("dev", "D", "Enable Dev Mode.", false)
 
 	parsed, err := parser.Parse(os.Args[1:])
 	if err != nil {
@@ -47,13 +48,19 @@ func main() {
 		return
 	}
 
+	devMode, _ := parsed.Bool("dev")
+
 	exePath, err := os.Executable()
 	if err != nil {
-		log.Fatal().Err(err).Msg("Fail to eun `os.Executable`.")
+		log.Fatal().Err(err).Msg("Fail to run `os.Executable`.")
 	}
 
-	filepath.Dir(exePath)
+	exePath = filepath.Dir(exePath)
 	root := filepath.Join(exePath, "bin")
+	if devMode {
+		root = filepath.Dir(getCwd())
+		root = filepath.Join(root, "bin")
+	}
 
 	fwBinaryPath := getenv("MAAFW_BINARY_PATH", root)
 	if v, ok := parsed.String("fw-path"); ok && v != "" {
@@ -72,7 +79,7 @@ func main() {
 	port := resolvePort(host, portArg)
 	addr := host + ":" + strconv.Itoa(port)
 
-	if err := maa.Init(maa.WithDebugMode(true), maa.WithLibDir(fwBinaryPath+"/bin")); err != nil {
+	if err := maa.Init(maa.WithDebugMode(true), maa.WithLibDir(fwBinaryPath)); err != nil {
 		log.Fatal().Err(err).Msg("maa init failed")
 	}
 
@@ -140,7 +147,9 @@ func main() {
 		}
 	}()
 
-	openBrowser("http://" + addr)
+	if !devMode {
+		openBrowser("http://" + addr)
+	}
 
 	waitForShutdown(srv)
 }

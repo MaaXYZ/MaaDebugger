@@ -4,6 +4,7 @@ tmp_dir = "tmp"
 [build]
 entrypoint = "./tmp/main.exe"
 cmd = "go build -o ./tmp/main.exe ./cmd/server"
+args_bin = ["--dev"]
 include_ext = ["go"]
 exclude_dir = ["tmp", "vendor", ".git"]
 exclude_regex = ["_test.go"]
