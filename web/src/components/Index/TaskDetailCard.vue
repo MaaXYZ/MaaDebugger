@@ -69,6 +69,7 @@ import { launchGraph, resetLaunchGraph } from '@/stores/launchGraph'
 import PipelineNodeItem from './taskDetail/PipelineNodeItem.vue'
 import RecoDetailModal from './taskDetail/RecoDetailModal.vue'
 import ActionDetailModal from './taskDetail/ActionDetailModal.vue'
+import { clearCache } from '@/api/http'
 
 const scrollContainerRef = ref<HTMLElement | null>(null)
 
@@ -124,10 +125,11 @@ function onRequestActionDetail(actionId: number) {
     actionModalOpen.value = true
 }
 
-function resetGraph() {
+async function resetGraph() {
     resetLaunchGraph()
     activeIndex.value = 0
     followLatest.value = true
+    await clearCache()
 }
 </script>
 

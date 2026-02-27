@@ -333,6 +333,13 @@ export async function stopTask(): Promise<ApiResponse> {
     method: "POST",
   });
 }
+// ============================================================
+// Clear API
+// ============================================================
+
+export async function clearCache(): Promise<ApiResponse> {
+  return request("/clear/cache", { method: "POST" });
+}
 
 // ============================================================
 // Screenshot API

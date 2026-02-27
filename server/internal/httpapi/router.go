@@ -83,6 +83,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.HandleFunc("POST /api/screenshot/resume", r.handleScreenshotResume)
 	mux.HandleFunc("PUT /api/screenshot/fps", r.handleScreenshotSetFPS)
 	mux.HandleFunc("GET /api/screenshot/status", r.handleScreenshotStatus)
+	mux.HandleFunc("POST /api/clear/cache", r.handleClearCache)
 	mux.HandleFunc("GET /ws", r.handleWS)
 
 	// Serve embedded frontend SPA for all non-API routes
@@ -578,6 +579,13 @@ func (r *router) handleTaskActionDetail(w http.ResponseWriter, req *http.Request
 		return
 	}
 	response.OK(w, detail)
+}
+
+// --- Clear ---
+func (r *router) handleClearCache(w http.ResponseWriter, req *http.Request) {
+	r.deps.TaskerService.ClearActionScreenshots()
+	r.deps.TaskerService.ClearCache()
+	response.OK(w, nil)
 }
 
 // --- Screenshot handlers ---

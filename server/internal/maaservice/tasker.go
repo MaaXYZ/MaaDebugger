@@ -747,6 +747,11 @@ func (s *TaskerService) ClearActionScreenshots() {
 	})
 }
 
+// ClearTaskerCahce 清除 Tasker 缓存
+func (s *TaskerService) ClearCache() {
+	s.tasker.Load().ClearCache()
+}
+
 // GetActionDetailByID 通过 action_id 获取动作详情。
 func (s *TaskerService) GetActionDetailByID(actionID int64) (*ActionDetailResp, error) {
 	tasker := s.tasker.Load()
