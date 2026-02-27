@@ -109,7 +109,9 @@ func main() {
 			Payload: map[string]string{"reason": reason},
 		})
 	})
-	cfgStore := configstore.New(root)
+
+	// the config file saved to {CWD}/.maa/dbg.json
+	cfgStore := configstore.New(getCwd())
 	defer cfgStore.Close()
 	defer agentService.DisconnectAll()
 	defer screenshotService.Stop()

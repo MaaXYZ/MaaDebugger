@@ -6,6 +6,7 @@ package configstore
 
 import (
 	"encoding/json"
+	"maps"
 	"os"
 	"path/filepath"
 	"sync"
@@ -22,7 +23,7 @@ const (
 // Store 是线程安全的、带本地文件持久化的 KV 配置存储。
 type Store struct {
 	mu       sync.RWMutex
-	data     map[string]interface{}
+	data     map[string]any
 	filePath string
 
 	// 防抖写入
@@ -36,7 +37,7 @@ func New(baseDir string) *Store {
 	fp := filepath.Join(baseDir, dirName, fileName)
 
 	s := &Store{
-		data:     make(map[string]interface{}),
+		data:     make(map[string]any),
 		filePath: fp,
 		saveCh:   make(chan struct{}, 1),
 		done:     make(chan struct{}),
@@ -51,7 +52,7 @@ func New(baseDir string) *Store {
 }
 
 // Get 返回 key 对应的值，不存在则返回 nil, false。
-func (s *Store) Get(key string) (interface{}, bool) {
+func (s *Store) Get(key string) (any, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	v, ok := s.data[key]
@@ -63,15 +64,13 @@ func (s *Store) GetAll() map[string]interface{} {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	dup := make(map[string]interface{}, len(s.data))
-	for k, v := range s.data {
-		dup[k] = v
-	}
+	dup := make(map[string]any, len(s.data))
+	maps.Copy(dup, s.data)
 	return dup
 }
 
 // Set 设置单个 key 的值，并触发异步持久化。
-func (s *Store) Set(key string, value interface{}) {
+func (s *Store) Set(key string, value any) {
 	s.mu.Lock()
 	s.data[key] = value
 	s.mu.Unlock()
@@ -80,11 +79,9 @@ func (s *Store) Set(key string, value interface{}) {
 }
 
 // Merge 批量合并多个 key-value，并触发异步持久化。
-func (s *Store) Merge(entries map[string]interface{}) {
+func (s *Store) Merge(entries map[string]any) {
 	s.mu.Lock()
-	for k, v := range entries {
-		s.data[k] = v
-	}
+	maps.Copy(s.data, entries)
 	s.mu.Unlock()
 
 	s.scheduleSave()
