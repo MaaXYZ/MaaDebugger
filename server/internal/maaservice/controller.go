@@ -14,7 +14,8 @@ import (
 
 // ControllerService 管理 MaaFW Controller 实例的生命周期。
 type ControllerService struct {
-	controller atomic.Pointer[maa.Controller]
+	controller     atomic.Pointer[maa.Controller]
+	controllerType string
 }
 
 // NewControllerService 创建一个新的 ControllerService。
@@ -32,6 +33,8 @@ type ConnectAdbResult struct {
 func (s *ControllerService) ConnectAdb(
 	adbPath, address, screencapMethod, inputMethod, config string,
 ) ConnectAdbResult {
+	s.controllerType = "adb"
+
 	log.Info().
 		Str("adb_path", adbPath).
 		Str("address", address).
@@ -99,6 +102,8 @@ func (s *ControllerService) ConnectAdb(
 func (s *ControllerService) ConnectWin32(
 	hwndStr, screencapMethod, mouseMethod, keyboardMethod string,
 ) ConnectAdbResult {
+	s.controllerType = "win32"
+
 	log.Info().
 		Str("hwnd", hwndStr).
 		Str("screencap_method", screencapMethod).
@@ -177,6 +182,8 @@ func (s *ControllerService) ConnectWin32(
 func (s *ControllerService) ConnectGamepad(
 	hwndStr, screencapMethod, gamepadTypeStr string,
 ) ConnectAdbResult {
+	s.controllerType = "gamepad"
+
 	log.Info().
 		Str("hwnd", hwndStr).
 		Str("screencap_method", screencapMethod).
@@ -236,21 +243,12 @@ func (s *ControllerService) ConnectGamepad(
 	return ConnectAdbResult{Success: true}
 }
 
-// Disconnect 断开当前 Controller 连接。
-func (s *ControllerService) Disconnect() {
-	if old := s.controller.Swap(nil); old != nil {
-		log.Info().Msg("[MaaService] disconnecting controller...")
-		old.Destroy()
-		log.Info().Msg("[MaaService] controller disconnected")
-	} else {
-		log.Info().Msg("[MaaService] disconnect called but no active controller")
-	}
-}
-
 // ConnectPlayCover 连接 PlayCover 控制器。
 func (s *ControllerService) ConnectPlayCover(
 	address, uuid string,
 ) ConnectAdbResult {
+	s.controllerType = "playcover"
+
 	log.Info().
 		Str("address", address).
 		Str("uuid", uuid).
@@ -290,6 +288,17 @@ func (s *ControllerService) ConnectPlayCover(
 	return ConnectAdbResult{Success: true}
 }
 
+// Disconnect 断开当前 Controller 连接。
+func (s *ControllerService) Disconnect() {
+	if old := s.controller.Swap(nil); old != nil {
+		log.Info().Msg("[MaaService] disconnecting controller...")
+		old.Destroy()
+		log.Info().Msg("[MaaService] controller disconnected")
+	} else {
+		log.Info().Msg("[MaaService] disconnect called but no active controller")
+	}
+}
+
 // Connected 返回当前是否已连接。
 func (s *ControllerService) Connected() bool {
 	ctrl := s.controller.Load()
@@ -302,6 +311,11 @@ func (s *ControllerService) Connected() bool {
 // Controller 返回当前的 Controller 实例（可能为 nil）。
 func (s *ControllerService) Controller() *maa.Controller {
 	return s.controller.Load()
+}
+
+// ControllerType 返回当前 Controller 的类型（如 "adb"、"win32"、"gamepad"、"playcover"）。
+func (s *ControllerService) ControllerType() string {
+	return s.controllerType
 }
 
 // parseHwnd 将 hwnd 字符串解析为 unsafe.Pointer。

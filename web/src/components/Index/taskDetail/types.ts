@@ -304,6 +304,7 @@ export interface ActionDetailResponse {
   detail_json?: unknown;
   result?: ActionResult;
   raw_image?: string;
+  controller_type?: string;
 }
 
 export interface NodeDetailResponse {

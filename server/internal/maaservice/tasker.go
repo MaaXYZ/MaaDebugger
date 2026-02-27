@@ -507,13 +507,14 @@ type PointResponse struct {
 
 // ActionDetailResp 返回给前端的 action 详情。
 type ActionDetailResp struct {
-	Name       string        `json:"name"`
-	Action     string        `json:"action"`
-	Box        *RectResponse `json:"box,omitempty"`
-	Success    bool          `json:"success"`
-	DetailJSON any           `json:"detail_json,omitempty"`
-	Result     any           `json:"result,omitempty"`
-	RawImage   string        `json:"raw_image,omitempty"`
+	Name           string        `json:"name"`
+	Action         string        `json:"action"`
+	Box            *RectResponse `json:"box,omitempty"`
+	Success        bool          `json:"success"`
+	DetailJSON     any           `json:"detail_json,omitempty"`
+	Result         any           `json:"result,omitempty"`
+	RawImage       string        `json:"raw_image,omitempty"`
+	ControllerType string        `json:"controller_type"`
 }
 
 func convertPoint(p maa.Point) PointResponse {
@@ -642,14 +643,15 @@ func convertActionResult(result *maa.ActionResult) any {
 }
 
 // convertActionDetail 转换 ActionDetail 到响应结构。
-func convertActionDetail(detail *maa.ActionDetail) *ActionDetailResp {
+func convertActionDetail(detail *maa.ActionDetail, controllerType string) *ActionDetailResp {
 	if detail == nil {
 		return nil
 	}
 	resp := &ActionDetailResp{
-		Name:    detail.Name,
-		Action:  detail.Action,
-		Success: detail.Success,
+		Name:           detail.Name,
+		Action:         detail.Action,
+		Success:        detail.Success,
+		ControllerType: controllerType,
 	}
 	resp.Box = &RectResponse{
 		X: detail.Box.X(),
@@ -692,7 +694,7 @@ func (s *TaskerService) GetLatestNodeDetail(name string) (*NodeDetailResponse, e
 		resp.Recognition = convertRecoDetail(detail.Recognition)
 	}
 	if detail.Action != nil {
-		resp.Action = convertActionDetail(detail.Action)
+		resp.Action = convertActionDetail(detail.Action, s.controllerSvc.ControllerType())
 	}
 	return resp, nil
 }
@@ -762,7 +764,7 @@ func (s *TaskerService) GetActionDetailByID(actionID int64) (*ActionDetailResp, 
 	if err != nil {
 		return nil, fmt.Errorf("get action detail failed: %w", err)
 	}
-	resp := convertActionDetail(detail)
+	resp := convertActionDetail(detail, s.controllerSvc.ControllerType())
 
 	// 从缓存中获取 action 开始前的截图
 	if cached, ok := s.actionScreenshots.Load(actionID); ok {
