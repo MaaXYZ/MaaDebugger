@@ -7,9 +7,9 @@ import (
 
 // Envelope is the unified HTTP response payload.
 type Envelope struct {
-	Succeed bool        `json:"succeed"`
-	Msg     string      `json:"msg"`
-	Data    interface{} `json:"data"`
+	Succeed bool   `json:"succeed"`
+	Msg     string `json:"msg"`
+	Data    any    `json:"data"`
 }
 
 func JSON(w http.ResponseWriter, status int, payload Envelope) {
@@ -18,7 +18,7 @@ func JSON(w http.ResponseWriter, status int, payload Envelope) {
 	_ = json.NewEncoder(w).Encode(payload)
 }
 
-func OK(w http.ResponseWriter, data interface{}) {
+func OK(w http.ResponseWriter, data any) {
 	JSON(w, http.StatusOK, Envelope{
 		Succeed: true,
 		Msg:     "ok",

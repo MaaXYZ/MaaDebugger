@@ -24,7 +24,7 @@ type TaskerService struct {
 
 	// onEvent 广播回调，由 router 设置，用于将事件通过 WS 广播。
 	// 不在 sink 中渲染/处理，只做消息转发。
-	onEvent atomic.Pointer[func(msg map[string]interface{})]
+	onEvent atomic.Pointer[func(msg map[string]any)]
 
 	// actionScreenshots 缓存 action 开始前的截图（action_id → base64 PNG data URI）。
 	actionScreenshots sync.Map
@@ -39,11 +39,11 @@ func NewTaskerService(ctrlSvc *ControllerService, resSvc *ResourceService) *Task
 }
 
 // SetEventCallback 设置事件广播回调。
-func (s *TaskerService) SetEventCallback(fn func(msg map[string]interface{})) {
+func (s *TaskerService) SetEventCallback(fn func(msg map[string]any)) {
 	s.onEvent.Store(&fn)
 }
 
-func (s *TaskerService) emitEvent(msg map[string]interface{}) {
+func (s *TaskerService) emitEvent(msg map[string]any) {
 	log.Info().Interface("event", msg).Msg("[MaaService] emitEvent")
 	if fn := s.onEvent.Load(); fn != nil {
 		(*fn)(msg)
@@ -69,7 +69,7 @@ func eventStatusToString(status maa.EventStatus) string {
 func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
 	tasker.OnTaskerTask(func(event maa.EventStatus, detail maa.TaskerTaskDetail) {
 		suffix := eventStatusToString(event)
-		s.emitEvent(map[string]interface{}{
+		s.emitEvent(map[string]any{
 			"msg":     fmt.Sprintf("Task.%s", suffix),
 			"task_id": detail.TaskID,
 			"entry":   detail.Entry,
@@ -79,7 +79,7 @@ func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
 
 	tasker.OnNodePipelineNodeInContext(func(_ *maa.Context, event maa.EventStatus, detail maa.NodePipelineNodeDetail) {
 		suffix := eventStatusToString(event)
-		s.emitEvent(map[string]interface{}{
+		s.emitEvent(map[string]any{
 			"msg":     fmt.Sprintf("PipelineNode.%s", suffix),
 			"name":    detail.Name,
 			"node_id": detail.NodeID,
@@ -88,7 +88,7 @@ func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
 
 	tasker.OnNodeRecognitionNodeInContext(func(_ *maa.Context, event maa.EventStatus, detail maa.NodeRecognitionNodeDetail) {
 		suffix := eventStatusToString(event)
-		s.emitEvent(map[string]interface{}{
+		s.emitEvent(map[string]any{
 			"msg":     fmt.Sprintf("RecognitionNode.%s", suffix),
 			"name":    detail.Name,
 			"node_id": detail.NodeID,
@@ -97,7 +97,7 @@ func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
 
 	tasker.OnNodeActionNodeInContext(func(_ *maa.Context, event maa.EventStatus, detail maa.NodeActionNodeDetail) {
 		suffix := eventStatusToString(event)
-		s.emitEvent(map[string]interface{}{
+		s.emitEvent(map[string]any{
 			"msg":     fmt.Sprintf("ActionNode.%s", suffix),
 			"name":    detail.Name,
 			"node_id": detail.NodeID,
@@ -106,15 +106,15 @@ func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
 
 	tasker.OnNodeNextListInContext(func(_ *maa.Context, event maa.EventStatus, detail maa.NodeNextListDetail) {
 		suffix := eventStatusToString(event)
-		list := make([]map[string]interface{}, 0, len(detail.List))
+		list := make([]map[string]any, 0, len(detail.List))
 		for _, item := range detail.List {
-			list = append(list, map[string]interface{}{
+			list = append(list, map[string]any{
 				"name":      item.Name,
 				"jump_back": item.JumpBack,
 				"anchor":    item.Anchor,
 			})
 		}
-		s.emitEvent(map[string]interface{}{
+		s.emitEvent(map[string]any{
 			"msg":  fmt.Sprintf("NextList.%s", suffix),
 			"name": detail.Name,
 			"list": list,
@@ -123,7 +123,7 @@ func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
 
 	tasker.OnNodeRecognitionInContext(func(_ *maa.Context, event maa.EventStatus, detail maa.NodeRecognitionDetail) {
 		suffix := eventStatusToString(event)
-		s.emitEvent(map[string]interface{}{
+		s.emitEvent(map[string]any{
 			"msg":     fmt.Sprintf("Recognition.%s", suffix),
 			"name":    detail.Name,
 			"reco_id": detail.RecognitionID,
@@ -137,7 +137,7 @@ func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
 		}
 
 		suffix := eventStatusToString(event)
-		s.emitEvent(map[string]interface{}{
+		s.emitEvent(map[string]any{
 			"msg":       fmt.Sprintf("Action.%s", suffix),
 			"name":      detail.Name,
 			"action_id": detail.ActionID,
@@ -205,7 +205,7 @@ func (s *TaskerService) RunTask(entry string, pipelineOverride json.RawMessage) 
 	}
 
 	// 解析 pipeline override
-	var override interface{}
+	var override any
 	if len(pipelineOverride) > 0 {
 		if err := json.Unmarshal(pipelineOverride, &override); err != nil {
 			log.Warn().Err(err).Msg("[MaaService] invalid pipeline override JSON")
@@ -273,7 +273,7 @@ func (s *TaskerService) GetNodeList() []string {
 // RecoResultItem 是单个识别结果（包含 box 和额外信息）。
 type RecoResultItem struct {
 	Box   *RectResponse `json:"box,omitempty"`
-	Extra interface{}   `json:"extra,omitempty"` // score, text, count 等
+	Extra any           `json:"extra,omitempty"` // score, text, count 等
 }
 
 // RecoResultsResponse 包含 all/best/filtered 三组结果。
@@ -289,7 +289,7 @@ type RecoDetailResponse struct {
 	Algorithm      string                `json:"algorithm"`
 	Hit            bool                  `json:"hit"`
 	Box            *RectResponse         `json:"box,omitempty"`
-	DetailJSON     interface{}           `json:"detail_json,omitempty"`
+	DetailJSON     any                   `json:"detail_json,omitempty"`
 	CombinedResult []*RecoDetailResponse `json:"combined_result,omitempty"`
 	DrawImages     []string              `json:"draw_images,omitempty"`
 	RawImage       string                `json:"raw_image,omitempty"`
@@ -319,7 +319,7 @@ func convertRecognitionResult(result *maa.RecognitionResult) *RecoResultItem {
 				X: v.Box.X(), Y: v.Box.Y(),
 				W: v.Box.Width(), H: v.Box.Height(),
 			}
-			item.Extra = map[string]interface{}{
+			item.Extra = map[string]any{
 				"score": v.Score,
 			}
 		}
@@ -329,7 +329,7 @@ func convertRecognitionResult(result *maa.RecognitionResult) *RecoResultItem {
 				X: v.Box.X(), Y: v.Box.Y(),
 				W: v.Box.Width(), H: v.Box.Height(),
 			}
-			item.Extra = map[string]interface{}{
+			item.Extra = map[string]any{
 				"count": v.Count,
 			}
 		}
@@ -339,7 +339,7 @@ func convertRecognitionResult(result *maa.RecognitionResult) *RecoResultItem {
 				X: v.Box.X(), Y: v.Box.Y(),
 				W: v.Box.Width(), H: v.Box.Height(),
 			}
-			item.Extra = map[string]interface{}{
+			item.Extra = map[string]any{
 				"count": v.Count,
 			}
 		}
@@ -349,7 +349,7 @@ func convertRecognitionResult(result *maa.RecognitionResult) *RecoResultItem {
 				X: v.Box.X(), Y: v.Box.Y(),
 				W: v.Box.Width(), H: v.Box.Height(),
 			}
-			item.Extra = map[string]interface{}{
+			item.Extra = map[string]any{
 				"text":  v.Text,
 				"score": v.Score,
 			}
@@ -360,7 +360,7 @@ func convertRecognitionResult(result *maa.RecognitionResult) *RecoResultItem {
 				X: v.Box.X(), Y: v.Box.Y(),
 				W: v.Box.Width(), H: v.Box.Height(),
 			}
-			item.Extra = map[string]interface{}{
+			item.Extra = map[string]any{
 				"cls_index": v.ClsIndex,
 				"label":     v.Label,
 				"score":     v.Score,
@@ -372,7 +372,7 @@ func convertRecognitionResult(result *maa.RecognitionResult) *RecoResultItem {
 				X: v.Box.X(), Y: v.Box.Y(),
 				W: v.Box.Width(), H: v.Box.Height(),
 			}
-			item.Extra = map[string]interface{}{
+			item.Extra = map[string]any{
 				"cls_index": v.ClsIndex,
 				"label":     v.Label,
 				"score":     v.Score,
@@ -384,7 +384,7 @@ func convertRecognitionResult(result *maa.RecognitionResult) *RecoResultItem {
 				X: v.Box.X(), Y: v.Box.Y(),
 				W: v.Box.Width(), H: v.Box.Height(),
 			}
-			item.Extra = map[string]interface{}{
+			item.Extra = map[string]any{
 				"detail": v.Detail,
 			}
 		}
@@ -428,7 +428,7 @@ func convertRecoDetail(detail *maa.RecognitionDetail) *RecoDetailResponse {
 
 	// DetailJSON
 	if detail.DetailJson != "" {
-		var parsed interface{}
+		var parsed any
 		if err := json.Unmarshal([]byte(detail.DetailJson), &parsed); err == nil {
 			resp.DetailJSON = parsed
 		} else {
@@ -511,8 +511,8 @@ type ActionDetailResp struct {
 	Action     string        `json:"action"`
 	Box        *RectResponse `json:"box,omitempty"`
 	Success    bool          `json:"success"`
-	DetailJSON interface{}   `json:"detail_json,omitempty"`
-	Result     interface{}   `json:"result,omitempty"`
+	DetailJSON any           `json:"detail_json,omitempty"`
+	Result     any           `json:"result,omitempty"`
 	RawImage   string        `json:"raw_image,omitempty"`
 }
 
@@ -529,7 +529,7 @@ func convertPointSlice(pts []maa.Point) []PointResponse {
 }
 
 // convertActionResult 将 ActionResult 转换为可 JSON 序列化的 map。
-func convertActionResult(result *maa.ActionResult) interface{} {
+func convertActionResult(result *maa.ActionResult) any {
 	if result == nil {
 		return nil
 	}
@@ -537,7 +537,7 @@ func convertActionResult(result *maa.ActionResult) interface{} {
 	actionType := string(result.Type())
 
 	if v, ok := result.AsClick(); ok {
-		return map[string]interface{}{
+		return map[string]any{
 			"type":     actionType,
 			"point":    convertPoint(v.Point),
 			"contact":  v.Contact,
@@ -545,7 +545,7 @@ func convertActionResult(result *maa.ActionResult) interface{} {
 		}
 	}
 	if v, ok := result.AsLongPress(); ok {
-		return map[string]interface{}{
+		return map[string]any{
 			"type":     actionType,
 			"point":    convertPoint(v.Point),
 			"duration": v.Duration,
@@ -554,7 +554,7 @@ func convertActionResult(result *maa.ActionResult) interface{} {
 		}
 	}
 	if v, ok := result.AsSwipe(); ok {
-		return map[string]interface{}{
+		return map[string]any{
 			"type":       actionType,
 			"begin":      convertPoint(v.Begin),
 			"end":        convertPointSlice(v.End),
@@ -567,9 +567,9 @@ func convertActionResult(result *maa.ActionResult) interface{} {
 		}
 	}
 	if v, ok := result.AsMultiSwipe(); ok {
-		swipes := make([]interface{}, len(v.Swipes))
+		swipes := make([]any, len(v.Swipes))
 		for i, s := range v.Swipes {
-			swipes[i] = map[string]interface{}{
+			swipes[i] = map[string]any{
 				"begin":      convertPoint(s.Begin),
 				"end":        convertPointSlice(s.End),
 				"end_hold":   s.EndHold,
@@ -580,13 +580,13 @@ func convertActionResult(result *maa.ActionResult) interface{} {
 				"pressure":   s.Pressure,
 			}
 		}
-		return map[string]interface{}{
+		return map[string]any{
 			"type":   actionType,
 			"swipes": swipes,
 		}
 	}
 	if v, ok := result.AsTouch(); ok {
-		return map[string]interface{}{
+		return map[string]any{
 			"type":     actionType,
 			"point":    convertPoint(v.Point),
 			"contact":  v.Contact,
@@ -594,7 +594,7 @@ func convertActionResult(result *maa.ActionResult) interface{} {
 		}
 	}
 	if v, ok := result.AsScroll(); ok {
-		return map[string]interface{}{
+		return map[string]any{
 			"type":  actionType,
 			"point": convertPoint(v.Point),
 			"dx":    v.Dx,
@@ -602,32 +602,32 @@ func convertActionResult(result *maa.ActionResult) interface{} {
 		}
 	}
 	if v, ok := result.AsClickKey(); ok {
-		return map[string]interface{}{
+		return map[string]any{
 			"type":    actionType,
 			"keycode": v.Keycode,
 		}
 	}
 	if v, ok := result.AsLongPressKey(); ok {
-		return map[string]interface{}{
+		return map[string]any{
 			"type":     actionType,
 			"keycode":  v.Keycode,
 			"duration": v.Duration,
 		}
 	}
 	if v, ok := result.AsInputText(); ok {
-		return map[string]interface{}{
+		return map[string]any{
 			"type": actionType,
 			"text": v.Text,
 		}
 	}
 	if v, ok := result.AsApp(); ok {
-		return map[string]interface{}{
+		return map[string]any{
 			"type":    actionType,
 			"package": v.Package,
 		}
 	}
 	if v, ok := result.AsShell(); ok {
-		return map[string]interface{}{
+		return map[string]any{
 			"type":    actionType,
 			"cmd":     v.Cmd,
 			"timeout": v.ShellTimeout,
@@ -636,7 +636,7 @@ func convertActionResult(result *maa.ActionResult) interface{} {
 		}
 	}
 
-	return map[string]interface{}{
+	return map[string]any{
 		"type": actionType,
 	}
 }
@@ -658,7 +658,7 @@ func convertActionDetail(detail *maa.ActionDetail) *ActionDetailResp {
 		H: detail.Box.Height(),
 	}
 	if detail.DetailJson != "" {
-		var parsed interface{}
+		var parsed any
 		if err := json.Unmarshal([]byte(detail.DetailJson), &parsed); err == nil {
 			resp.DetailJSON = parsed
 		} else {

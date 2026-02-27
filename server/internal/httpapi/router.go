@@ -21,14 +21,14 @@ import (
 )
 
 type Dependencies struct {
-	StatusStore        *state.Store
-	Hub                *ws.Hub
-	ControllerService  *maaservice.ControllerService
-	ResourceService    *maaservice.ResourceService
-	TaskerService      *maaservice.TaskerService
-	AgentService       *maaservice.AgentService
-	ScreenshotService  *maaservice.ScreenshotService
-	ConfigStore        *configstore.Store
+	StatusStore       *state.Store
+	Hub               *ws.Hub
+	ControllerService *maaservice.ControllerService
+	ResourceService   *maaservice.ResourceService
+	TaskerService     *maaservice.TaskerService
+	AgentService      *maaservice.AgentService
+	ScreenshotService *maaservice.ScreenshotService
+	ConfigStore       *configstore.Store
 }
 
 type router struct {
@@ -45,7 +45,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	}
 
 	// 设置事件回调：将 Tasker 事件通过 WS 广播（不在 sink 中渲染）
-	deps.TaskerService.SetEventCallback(func(msg map[string]interface{}) {
+	deps.TaskerService.SetEventCallback(func(msg map[string]any) {
 		deps.Hub.BroadcastJSON(ws.Message{Type: "task.event", Payload: msg})
 
 		// On recognition events, notify screenshot service to read from cache
@@ -117,7 +117,7 @@ func (r *router) handleConfigGet(w http.ResponseWriter, req *http.Request) {
 
 func (r *router) handleConfigSet(w http.ResponseWriter, req *http.Request) {
 	key := req.PathValue("key")
-	var payload interface{}
+	var payload any
 	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
 		response.Fail(w, http.StatusBadRequest, "invalid json body")
 		return
@@ -128,7 +128,7 @@ func (r *router) handleConfigSet(w http.ResponseWriter, req *http.Request) {
 }
 
 func (r *router) handleConfigMerge(w http.ResponseWriter, req *http.Request) {
-	var payload map[string]interface{}
+	var payload map[string]any
 	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
 		response.Fail(w, http.StatusBadRequest, "invalid json body")
 		return
@@ -229,7 +229,7 @@ func (r *router) handleDetectDesktop(w http.ResponseWriter, req *http.Request) {
 }
 
 func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Request) {
-	var payload map[string]interface{}
+	var payload map[string]any
 	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
 		log.Warn().Err(err).Msg("[Controller] connect: invalid json body")
 		response.Fail(w, http.StatusBadRequest, "invalid json body")
@@ -366,7 +366,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	response.OK(w, map[string]interface{}{"type": ctrlType})
+	response.OK(w, map[string]any{"type": ctrlType})
 }
 
 func (r *router) handleControllerDisconnect(w http.ResponseWriter, _ *http.Request) {
@@ -611,11 +611,11 @@ func (r *router) handleScreenshotSetFPS(w http.ResponseWriter, req *http.Request
 		return
 	}
 	r.deps.ScreenshotService.SetFPS(payload.FPS)
-	response.OK(w, map[string]interface{}{"fps": r.deps.ScreenshotService.GetFPS()})
+	response.OK(w, map[string]any{"fps": r.deps.ScreenshotService.GetFPS()})
 }
 
 func (r *router) handleScreenshotStatus(w http.ResponseWriter, _ *http.Request) {
-	response.OK(w, map[string]interface{}{
+	response.OK(w, map[string]any{
 		"running": r.deps.ScreenshotService.Running(),
 		"paused":  r.deps.ScreenshotService.Paused(),
 		"fps":     r.deps.ScreenshotService.GetFPS(),

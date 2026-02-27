@@ -8,9 +8,9 @@ import (
 )
 
 type Message struct {
-	Type    string      `json:"type"`
-	ID      string      `json:"id,omitempty"`
-	Payload interface{} `json:"payload"`
+	Type    string `json:"type"`
+	ID      string `json:"id,omitempty"`
+	Payload any    `json:"payload"`
 }
 
 const sendBufSize = 256

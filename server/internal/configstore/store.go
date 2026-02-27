@@ -1,6 +1,6 @@
 // Package configstore 提供基于本地 JSON 文件的持久化配置存储。
 //
-// 数据保存在 cwd/.maa/dbg.json 中，结构为 map[string]interface{}，
+// 数据保存在 cwd/.maa/dbg.json 中，结构为 map[string]any，
 // 与前端 Pinia serverPersistPlugin 的 config API 对应。
 package configstore
 
@@ -60,7 +60,7 @@ func (s *Store) Get(key string) (any, bool) {
 }
 
 // GetAll 返回所有配置数据的浅拷贝。
-func (s *Store) GetAll() map[string]interface{} {
+func (s *Store) GetAll() map[string]any {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -111,7 +111,7 @@ func (s *Store) loadFromDisk() {
 		return
 	}
 
-	var loaded map[string]interface{}
+	var loaded map[string]any
 	if err := json.Unmarshal(raw, &loaded); err != nil {
 		log.Error().Err(err).Str("path", s.filePath).Msg("[ConfigStore] failed to parse config file")
 		return
