@@ -8,7 +8,7 @@
                         <UBadge :color="statusColor" variant="subtle" size="sm" class="gap-1.5">
                             <span class="relative flex size-2">
                                 <span v-if="statusStore.controllerStatus === 'connecting'"
-                                      class="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-75"></span>
+                                    class="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-75"></span>
                                 <span class="relative inline-flex size-2 rounded-full" :class="dotClass"></span>
                             </span>
                             {{ capitalizedStatus }}
@@ -16,13 +16,13 @@
                     </div>
                     <div class="flex flex-row items-center gap-2">
                         <USelect v-model="controllerValue" value-key="value" :items="controllerItems"
-                                 :icon="controllerIcon" class="min-w-40" size="xl" arrow />
+                            :icon="controllerIcon" class="min-w-40" size="xl" arrow />
                         <UButton variant="outline" color="neutral" trailing-icon="i-lucide-chevron-down"
-                                 :data-state="showFullCard ? 'open' : 'closed'" @click="showFullCard = !showFullCard" />
+                            :data-state="showFullCard ? 'open' : 'closed'" @click="showFullCard = !showFullCard" />
                     </div>
                 </div>
                 <div class="grid transition-all duration-200 ease-out"
-                     :class="showFullCard ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'">
+                    :class="showFullCard ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'">
                     <div class="overflow-hidden">
                         <div class="text-sm text-dimmed truncate">
                             {{ summaryText }}
@@ -41,7 +41,7 @@
 
                         <!-- PlayCover -->
                         <PlayCover v-show="controllerValue === 'playcover'" ref="playcoverRef"
-                                   @connected="showFullCard = false" />
+                            @connected="showFullCard = false" />
 
                         <!-- Win32 / Gamepad: 共享 WindowSearch + screencap + 各自独有配置 -->
                         <div v-show="isDesktopType" class="flex flex-col gap-3 h-full">
@@ -49,19 +49,19 @@
                             <div class="flex flex-row gap-2">
                                 <UTooltip text="Search Windows">
                                     <UButton color="success" variant="outline" icon="i-lucide-search" size="xl"
-                                             :loading="windowSearchRef?.searching" @click="windowSearchRef?.onSearch()" />
+                                        :loading="windowSearchRef?.searching" @click="windowSearchRef?.onSearch()" />
                                 </UTooltip>
 
                                 <UTooltip text="Connect">
                                     <UButton color="primary" variant="outline" icon="i-lucide-link" size="xl"
-                                             :loading="controllerStore.connecting"
-                                             :disabled="!windowSearchRef?.selectedHwnd || controllerStore.connecting"
-                                             @click="onConnect" />
+                                        :loading="controllerStore.connecting"
+                                        :disabled="!windowSearchRef?.selectedHwnd || controllerStore.connecting"
+                                        @click="onConnect" />
                                 </UTooltip>
 
                                 <UTooltip text="Disconnect">
                                     <UButton color="error" variant="outline" icon="i-lucide-unlink" size="xl"
-                                             @click="onDisconnect" />
+                                        @click="onDisconnect" />
                                 </UTooltip>
                             </div>
 
@@ -83,7 +83,7 @@
 
                                 <UFormField name="keyboard" label="Keyboard Method">
                                     <USelect v-model="win32Config.keyboard_method" :items="inputMethods"
-                                             class="w-full" />
+                                        class="w-full" />
                                 </UFormField>
                             </template>
 
@@ -91,7 +91,7 @@
                             <template v-if="controllerValue === 'gamepad'">
                                 <UFormField name="gamepad_type" label="Gamepad Type">
                                     <USelect v-model="gamepadConfig.gamepad_type" :items="gamepadTypes"
-                                             class="w-full" />
+                                        class="w-full" />
                                 </UFormField>
                             </template>
                         </div>
@@ -103,7 +103,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, reactive, watch } from 'vue'
+import { computed, ref, reactive, watch, onMounted } from 'vue'
 import ADB from './controller/ADB.vue'
 import PlayCover from './controller/PlayCover.vue'
 import WindowSearch from './controller/WindowSearch.vue'
@@ -115,8 +115,8 @@ import {
     DEFAULT_WIN32_KEYBOARD,
     DEFAULT_GAMEPAD_TYPE,
 } from '@/stores/controller'
-import { connectController, disconnectController } from '@/api/http'
-import type { ConnectControllerRequest } from '@/types/api'
+import { connectController, disconnectController, getControllerMethod } from '@/api/http'
+import { type MethodItems, type ConnectControllerRequest } from '@/types/api'
 
 const toast = useToast()
 const statusStore = useStatusStore()
@@ -135,40 +135,40 @@ const hasAttemptedConnection = ref(false)
 
 const capitalizedStatus = computed(() => {
     switch (statusStore.controllerStatus) {
-    case 'connected':
-        return 'Connected'
-    case 'connecting':
-        return 'Connecting'
-    case 'disconnected':
-        return hasAttemptedConnection.value ? 'Disconnected' : 'Idle'
-    default:
-        return capitalize(statusStore.controllerStatus)
+        case 'connected':
+            return 'Connected'
+        case 'connecting':
+            return 'Connecting'
+        case 'disconnected':
+            return hasAttemptedConnection.value ? 'Disconnected' : 'Idle'
+        default:
+            return capitalize(statusStore.controllerStatus)
     }
 })
 
 const statusColor = computed(() => {
     switch (statusStore.controllerStatus) {
-    case 'connected':
-        return 'success' as const
-    case 'connecting':
-        return 'warning' as const
-    case 'disconnected':
-        return hasAttemptedConnection.value ? 'error' as const : 'neutral' as const
-    default:
-        return 'neutral' as const
+        case 'connected':
+            return 'success' as const
+        case 'connecting':
+            return 'warning' as const
+        case 'disconnected':
+            return hasAttemptedConnection.value ? 'error' as const : 'neutral' as const
+        default:
+            return 'neutral' as const
     }
 })
 
 const dotClass = computed(() => {
     switch (statusStore.controllerStatus) {
-    case 'connected':
-        return 'bg-success'
-    case 'connecting':
-        return 'bg-warning'
-    case 'disconnected':
-        return hasAttemptedConnection.value ? 'bg-error' : 'bg-gray-400 dark:bg-gray-500'
-    default:
-        return 'bg-gray-400 dark:bg-gray-500'
+        case 'connected':
+            return 'bg-success'
+        case 'connecting':
+            return 'bg-warning'
+        case 'disconnected':
+            return hasAttemptedConnection.value ? 'bg-error' : 'bg-gray-400 dark:bg-gray-500'
+        default:
+            return 'bg-gray-400 dark:bg-gray-500'
     }
 })
 
@@ -234,16 +234,6 @@ const controllerLabel = computed<string>(
 )
 
 // --- 桌面共享配置 ---
-
-const screencapMethods = [
-    { label: 'GDI', value: '1' },
-    { label: 'FramePool', value: '2' },
-    { label: 'DXGI_DesktopDup', value: '4' },
-    { label: 'DXGI_DesktopDup_Window', value: '8' },
-    { label: 'PrintWindow', value: '16' },
-    { label: 'ScreenDC', value: '32' },
-]
-
 const desktopScreencap = ref(DEFAULT_DESKTOP_SCREENCAP)
 
 // 从 store 恢复截图方法
@@ -258,20 +248,30 @@ watch(desktopScreencap, (v) => {
     controllerStore.desktopScreencapMethod = v
 })
 
-// --- Win32 独有配置 ---
+// 从后端获取 Methods
+const screencapMethods = ref<MethodItems[]>([])
+const inputMethods = ref<MethodItems[]>([])
+const gamepadTypes = ref<MethodItems[]>([])
+onMounted(async () => {
+    try {
+        const [screencapResp, inputResp, gamepadResp] = await Promise.all([
+            getControllerMethod('window_screencap'),
+            getControllerMethod('win32_input'),
+            getControllerMethod('gamepad_type'),
+        ])
+        screencapMethods.value = screencapResp.data ?? []
+        inputMethods.value = inputResp.data ?? []
+        gamepadTypes.value = gamepadResp.data ?? []
+    } catch (err) {
+        console.error('[ADB] Load controller methods failed:', err)
+        screencapMethods.value = []
+        inputMethods.value = []
+        gamepadTypes.value = []
+    }
+})
 
-const inputMethods = [
-    { label: 'Seize', value: '1' },
-    { label: 'SendMessage', value: '2' },
-    { label: 'PostMessage', value: '4' },
-    { label: 'LegacyEvent', value: '8' },
-    { label: 'PostThreadMessage', value: '16' },
-    { label: 'SendMessageWithCursorPos', value: '32' },
-    { label: 'PostMessageWithCursorPos', value: '64' },
-    { label: 'SendMessageWithCursorPosAndBlockInput', value: '128' },
-    { label: 'PostMessageWithCursorPosAndBlockInput', value: '256' },
-]
 
+// --- Win独有配置 ---
 const win32Config = reactive({
     mouse_method: DEFAULT_WIN32_MOUSE,
     keyboard_method: DEFAULT_WIN32_KEYBOARD,
@@ -295,12 +295,6 @@ watch(
 )
 
 // --- Gamepad 独有配置 ---
-
-const gamepadTypes = [
-    { label: 'Xbox 360', value: '0' },
-    { label: 'DualShock 4', value: '1' },
-]
-
 const gamepadConfig = reactive({
     gamepad_type: DEFAULT_GAMEPAD_TYPE,
 })

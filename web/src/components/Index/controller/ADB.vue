@@ -51,9 +51,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed } from 'vue'
-import { detectAdbDevices, connectController, disconnectController } from '@/api/http'
-import type { AdbDeviceInfo, ConnectControllerRequest } from '@/types/api'
+import { ref, reactive, watch, computed, onMounted } from 'vue'
+import { detectAdbDevices, connectController, disconnectController, getControllerMethod } from '@/api/http'
+import type { AdbDeviceInfo, ConnectControllerRequest, MethodItems } from '@/types/api'
 import { useControllerStore, DEFAULT_SCREENCAP_METHOD, DEFAULT_INPUT_METHOD } from '@/stores/controller'
 import { JsonEditorModal } from '@/components/MonacoEditor'
 
@@ -62,9 +62,6 @@ const emit = defineEmits<{
 }>()
 
 const toast = useToast()
-
-/** maa-node All（Uint64 字符串） */
-const ALL_METHODS = '18446744073709551615'
 
 // --- Device Select ---
 interface DeviceItem {
@@ -258,28 +255,23 @@ async function onDisconnect() {
 }
 
 // --- ADB Configuration (inline) ---
+const screencapMethods = ref<MethodItems[]>([])
+const inputMethods = ref<MethodItems[]>([])
 
-// 与 maa-node AdbScreencapMethod / AdbInputMethod 常量保持一致
-const screencapMethods = [
-    { label: 'Default', value: DEFAULT_SCREENCAP_METHOD },
-    { label: 'All', value: ALL_METHODS },
-    { label: 'EncodeToFileAndPull', value: '1' },
-    { label: 'Encode', value: '2' },
-    { label: 'RawWithGzip', value: '4' },
-    { label: 'RawByNetcat', value: '8' },
-    { label: 'MinicapDirect', value: '16' },
-    { label: 'MinicapStream', value: '32' },
-    { label: 'EmulatorExtras', value: '64' },
-]
-
-const inputMethods = [
-    { label: 'Default', value: DEFAULT_INPUT_METHOD },
-    { label: 'All', value: ALL_METHODS },
-    { label: 'AdbShell', value: '1' },
-    { label: 'MinitouchAndAdbKey', value: '2' },
-    { label: 'Maatouch', value: '4' },
-    { label: 'EmulatorExtras', value: '8' },
-]
+onMounted(async () => {
+    try {
+        const [screencapResp, inputResp] = await Promise.all([
+            getControllerMethod('adb_screencap'),
+            getControllerMethod('adb_input'),
+        ])
+        screencapMethods.value = screencapResp.data ?? []
+        inputMethods.value = inputResp.data ?? []
+    } catch (err) {
+        console.error('[ADB] Load controller methods failed:', err)
+        screencapMethods.value = []
+        inputMethods.value = []
+    }
+})
 
 // 编辑状态
 const config = reactive({

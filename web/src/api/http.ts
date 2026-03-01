@@ -3,6 +3,7 @@ import type {
   Win32WindowInfo,
   ConnectControllerRequest,
   StatusSnapshot,
+  MethodItems,
 } from "@/types/api";
 
 export interface ApiResponse<T = unknown> {
@@ -339,6 +340,21 @@ export async function stopTask(): Promise<ApiResponse> {
 
 export async function clearCache(): Promise<ApiResponse> {
   return request("/clear/cache", { method: "POST" });
+}
+
+type ControllerMethodType =
+  | "adb_screencap"
+  | "adb_input"
+  | "window_screencap"
+  | "win32_input"
+  | "gamepad_type";
+
+export async function getControllerMethod(
+  methodType: ControllerMethodType,
+): Promise<ApiResponse<MethodItems[]>> {
+  return request(`/controller/methods?method_type=${methodType}`, {
+    method: "GET",
+  });
 }
 
 // ============================================================

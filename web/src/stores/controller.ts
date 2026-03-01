@@ -1,9 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
-/** maa-node AdbScreencapMethod.Default（Uint64 字符串） */
 export const DEFAULT_SCREENCAP_METHOD = "18446744073709551559";
-/** maa-node AdbInputMethod.Default（Uint64 字符串） */
 export const DEFAULT_INPUT_METHOD = "18446744073709551607";
 
 /** Win32/Gamepad 共享默认截图方法 */

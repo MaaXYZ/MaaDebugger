@@ -12,10 +12,20 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+type ControllerType string
+
+const (
+	ADB       ControllerType = "adb"
+	Win32     ControllerType = "win32"
+	Gamepad   ControllerType = "gamepad"
+	PlayCover ControllerType = "playcover"
+	Custom    ControllerType = "custom"
+)
+
 // ControllerService 管理 MaaFW Controller 实例的生命周期。
 type ControllerService struct {
 	controller     atomic.Pointer[maa.Controller]
-	controllerType string
+	controllerType ControllerType
 }
 
 // NewControllerService 创建一个新的 ControllerService。
@@ -33,7 +43,7 @@ type ConnectAdbResult struct {
 func (s *ControllerService) ConnectAdb(
 	adbPath, address, screencapMethod, inputMethod, config string,
 ) ConnectAdbResult {
-	s.controllerType = "adb"
+	s.controllerType = ADB
 
 	log.Info().
 		Str("adb_path", adbPath).
@@ -102,7 +112,7 @@ func (s *ControllerService) ConnectAdb(
 func (s *ControllerService) ConnectWin32(
 	hwndStr, screencapMethod, mouseMethod, keyboardMethod string,
 ) ConnectAdbResult {
-	s.controllerType = "win32"
+	s.controllerType = Win32
 
 	log.Info().
 		Str("hwnd", hwndStr).
@@ -182,7 +192,7 @@ func (s *ControllerService) ConnectWin32(
 func (s *ControllerService) ConnectGamepad(
 	hwndStr, screencapMethod, gamepadTypeStr string,
 ) ConnectAdbResult {
-	s.controllerType = "gamepad"
+	s.controllerType = Gamepad
 
 	log.Info().
 		Str("hwnd", hwndStr).
@@ -247,7 +257,7 @@ func (s *ControllerService) ConnectGamepad(
 func (s *ControllerService) ConnectPlayCover(
 	address, uuid string,
 ) ConnectAdbResult {
-	s.controllerType = "playcover"
+	s.controllerType = PlayCover
 
 	log.Info().
 		Str("address", address).
@@ -314,8 +324,25 @@ func (s *ControllerService) Controller() *maa.Controller {
 }
 
 // ControllerType 返回当前 Controller 的类型（如 "adb"、"win32"、"gamepad"、"playcover"）。
-func (s *ControllerService) ControllerType() string {
+func (s *ControllerService) ControllerType() ControllerType {
 	return s.controllerType
+}
+
+func (s *ControllerService) ControllerMethod(method MethodType) []ControllerMethod {
+	switch method {
+	case ADBScreencap:
+		return adbScreencapMethods
+	case ADBInput:
+		return adbInputMethods
+	case WindowScreencap:
+		return windowScreencapMethods
+	case Win32Input:
+		return win32InputMethods
+	case GamepadInput:
+		return gamepadInputMethods
+	}
+
+	return []ControllerMethod{}
 }
 
 // parseHwnd 将 hwnd 字符串解析为 unsafe.Pointer。

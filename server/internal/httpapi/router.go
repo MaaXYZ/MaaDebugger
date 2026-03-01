@@ -67,6 +67,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.HandleFunc("GET /api/controller/detect/desktop", r.handleDetectDesktop)
 	mux.HandleFunc("POST /api/controller/connect", r.handleControllerConnect)
 	mux.HandleFunc("POST /api/controller/disconnect", r.handleControllerDisconnect)
+	mux.HandleFunc("GET /api/controller/methods", r.handleGetControllerMethods)
 	mux.HandleFunc("POST /api/resource/load", r.handleResourceLoad)
 	mux.HandleFunc("POST /api/task/run", r.handleTaskRun)
 	mux.HandleFunc("POST /api/task/stop", r.handleTaskStop)
@@ -586,6 +587,13 @@ func (r *router) handleClearCache(w http.ResponseWriter, req *http.Request) {
 	r.deps.TaskerService.ClearActionScreenshots()
 	r.deps.TaskerService.ClearCache()
 	response.OK(w, nil)
+}
+
+func (r *router) handleGetControllerMethods(w http.ResponseWriter, req *http.Request) {
+	methodType := req.URL.Query().Get("method_type")
+
+	methods := r.deps.ControllerService.ControllerMethod(maaservice.MethodType(methodType))
+	response.OK(w, methods)
 }
 
 // --- Screenshot handlers ---

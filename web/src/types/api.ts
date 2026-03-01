@@ -10,6 +10,15 @@
  */
 
 /**
+ * Controller Methods Info
+ * @see server/internal/maaservice/controller_methods.go
+ */
+export interface MethodItems {
+  label: string;
+  value: string;
+}
+
+/**
  * ADB 设备信息
  * @see server/internal/httpapi/router.go — adbDeviceInfo
  */

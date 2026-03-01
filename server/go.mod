@@ -3,7 +3,7 @@ module github.com/MaaXYZ/MaaDebugger
 go 1.26.0
 
 require (
-	github.com/MaaXYZ/maa-framework-go/v4 v4.0.0-beta.8
+	github.com/MaaXYZ/maa-framework-go/v4 v4.0.0-beta.9
 	github.com/gorilla/websocket v1.5.3
 	github.com/rs/zerolog v1.34.0
 )

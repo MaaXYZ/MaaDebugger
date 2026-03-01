@@ -313,7 +313,7 @@ func convertRecognitionResult(result *maa.RecognitionResult) *RecoResultItem {
 	item := &RecoResultItem{}
 
 	switch result.Type() {
-	case maa.NodeRecognitionTypeTemplateMatch:
+	case maa.RecognitionTypeTemplateMatch:
 		if v, ok := result.AsTemplateMatch(); ok {
 			item.Box = &RectResponse{
 				X: v.Box.X(), Y: v.Box.Y(),
@@ -323,7 +323,7 @@ func convertRecognitionResult(result *maa.RecognitionResult) *RecoResultItem {
 				"score": v.Score,
 			}
 		}
-	case maa.NodeRecognitionTypeFeatureMatch:
+	case maa.RecognitionTypeFeatureMatch:
 		if v, ok := result.AsFeatureMatch(); ok {
 			item.Box = &RectResponse{
 				X: v.Box.X(), Y: v.Box.Y(),
@@ -333,7 +333,7 @@ func convertRecognitionResult(result *maa.RecognitionResult) *RecoResultItem {
 				"count": v.Count,
 			}
 		}
-	case maa.NodeRecognitionTypeColorMatch:
+	case maa.RecognitionTypeColorMatch:
 		if v, ok := result.AsColorMatch(); ok {
 			item.Box = &RectResponse{
 				X: v.Box.X(), Y: v.Box.Y(),
@@ -343,7 +343,7 @@ func convertRecognitionResult(result *maa.RecognitionResult) *RecoResultItem {
 				"count": v.Count,
 			}
 		}
-	case maa.NodeRecognitionTypeOCR:
+	case maa.RecognitionTypeOCR:
 		if v, ok := result.AsOCR(); ok {
 			item.Box = &RectResponse{
 				X: v.Box.X(), Y: v.Box.Y(),
@@ -354,7 +354,7 @@ func convertRecognitionResult(result *maa.RecognitionResult) *RecoResultItem {
 				"score": v.Score,
 			}
 		}
-	case maa.NodeRecognitionTypeNeuralNetworkClassify:
+	case maa.RecognitionTypeNeuralNetworkClassify:
 		if v, ok := result.AsNeuralNetworkClassify(); ok {
 			item.Box = &RectResponse{
 				X: v.Box.X(), Y: v.Box.Y(),
@@ -366,7 +366,7 @@ func convertRecognitionResult(result *maa.RecognitionResult) *RecoResultItem {
 				"score":     v.Score,
 			}
 		}
-	case maa.NodeRecognitionTypeNeuralNetworkDetect:
+	case maa.RecognitionTypeNeuralNetworkDetect:
 		if v, ok := result.AsNeuralNetworkDetect(); ok {
 			item.Box = &RectResponse{
 				X: v.Box.X(), Y: v.Box.Y(),
@@ -378,7 +378,7 @@ func convertRecognitionResult(result *maa.RecognitionResult) *RecoResultItem {
 				"score":     v.Score,
 			}
 		}
-	case maa.NodeRecognitionTypeCustom:
+	case maa.RecognitionTypeCustom:
 		if v, ok := result.AsCustom(); ok {
 			item.Box = &RectResponse{
 				X: v.Box.X(), Y: v.Box.Y(),
@@ -507,14 +507,14 @@ type PointResponse struct {
 
 // ActionDetailResp 返回给前端的 action 详情。
 type ActionDetailResp struct {
-	Name           string        `json:"name"`
-	Action         string        `json:"action"`
-	Box            *RectResponse `json:"box,omitempty"`
-	Success        bool          `json:"success"`
-	DetailJSON     any           `json:"detail_json,omitempty"`
-	Result         any           `json:"result,omitempty"`
-	RawImage       string        `json:"raw_image,omitempty"`
-	ControllerType string        `json:"controller_type"`
+	Name           string         `json:"name"`
+	Action         string         `json:"action"`
+	Box            *RectResponse  `json:"box,omitempty"`
+	Success        bool           `json:"success"`
+	DetailJSON     any            `json:"detail_json,omitempty"`
+	Result         any            `json:"result,omitempty"`
+	RawImage       string         `json:"raw_image,omitempty"`
+	ControllerType ControllerType `json:"controller_type"`
 }
 
 func convertPoint(p maa.Point) PointResponse {
@@ -643,7 +643,7 @@ func convertActionResult(result *maa.ActionResult) any {
 }
 
 // convertActionDetail 转换 ActionDetail 到响应结构。
-func convertActionDetail(detail *maa.ActionDetail, controllerType string) *ActionDetailResp {
+func convertActionDetail(detail *maa.ActionDetail, controllerType ControllerType) *ActionDetailResp {
 	if detail == nil {
 		return nil
 	}
