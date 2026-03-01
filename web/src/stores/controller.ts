@@ -13,6 +13,7 @@ export const DEFAULT_WIN32_KEYBOARD = "1"; // Seize
 
 /** Gamepad 默认类型 */
 export const DEFAULT_GAMEPAD_TYPE = "0"; // Xbox 360
+export const DEFAULT_GAMEPAD_ICON = "i-simple-icons:xbox";
 
 /**
  * Controller Store — 持久化 ADB / Win32 / Gamepad 连接配置

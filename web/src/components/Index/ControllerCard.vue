@@ -91,7 +91,7 @@
                             <template v-if="controllerValue === 'gamepad'">
                                 <UFormField name="gamepad_type" label="Gamepad Type">
                                     <USelect v-model="gamepadConfig.gamepad_type" :items="gamepadTypes"
-                                        :icon="gamepadConfig.icon" class="w-full" />
+                                        :icon="gamepadConfig.gamepad_icon" class="w-full" />
                                 </UFormField>
                             </template>
                         </div>
@@ -114,6 +114,7 @@ import {
     DEFAULT_WIN32_MOUSE,
     DEFAULT_WIN32_KEYBOARD,
     DEFAULT_GAMEPAD_TYPE,
+    DEFAULT_GAMEPAD_ICON,
 } from '@/stores/controller'
 import { connectController, disconnectController, getControllerMethod } from '@/api/http'
 import { type MethodItems, type ConnectControllerRequest } from '@/types/api'
@@ -297,14 +298,23 @@ watch(
 // --- Gamepad 独有配置 ---
 const gamepadConfig = reactive({
     gamepad_type: DEFAULT_GAMEPAD_TYPE,
-    icon: '',
+    gamepad_icon: DEFAULT_GAMEPAD_ICON
 })
 
 watch(
     () => controllerStore.gamepadType,
     (gamepadType) => {
         gamepadConfig.gamepad_type = gamepadType ?? DEFAULT_GAMEPAD_TYPE
-        gamepadConfig.icon = gamepadTypes.value.find(m => m.value === gamepadType)?.icon ?? ''
+        switch (gamepadType) {
+            case "0":
+                gamepadConfig.gamepad_icon = "i-simple-icons:xbox"
+                break
+            case "1":
+                gamepadConfig.gamepad_icon = "i-simple-icons:playstation"
+                break
+            default:
+                gamepadConfig.gamepad_icon = ""
+        }
     },
     { immediate: true },
 )
