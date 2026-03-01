@@ -54,7 +54,7 @@
 import { ref, reactive, watch, computed, onMounted } from 'vue'
 import { detectAdbDevices, connectController, disconnectController, getControllerMethod } from '@/api/http'
 import type { AdbDeviceInfo, ConnectControllerRequest, MethodItems } from '@/types/api'
-import { useControllerStore, DEFAULT_SCREENCAP_METHOD, DEFAULT_INPUT_METHOD } from '@/stores/controller'
+import { useControllerStore, DEFAULT_ADB_SCREENCAP, DEFAULT_ADB_INPUT } from '@/stores/controller'
 import { JsonEditorModal } from '@/components/MonacoEditor'
 
 const emit = defineEmits<{
@@ -195,8 +195,8 @@ async function doConnect(params: ConnectControllerRequest): Promise<boolean> {
         controllerStore.updateAdbConfig({
             adb_path: params.adb_path ?? '',
             adb_address: params.adb_address ?? '',
-            screencap_method: params.adb_screencap_method ?? DEFAULT_SCREENCAP_METHOD,
-            input_method: params.adb_input_method ?? DEFAULT_INPUT_METHOD,
+            screencap_method: params.adb_screencap_method ?? DEFAULT_ADB_SCREENCAP,
+            input_method: params.adb_input_method ?? DEFAULT_ADB_INPUT,
             adb_config: params.adb_config,
         })
         return true
@@ -277,8 +277,8 @@ onMounted(async () => {
 const config = reactive({
     adb_path: '',
     adb_address: '',
-    screencap_method: DEFAULT_SCREENCAP_METHOD,
-    input_method: DEFAULT_INPUT_METHOD,
+    screencap_method: DEFAULT_ADB_SCREENCAP,
+    input_method: DEFAULT_ADB_INPUT,
 })
 
 // 持久化异步恢复后，同步到本地 UI 状态
@@ -292,8 +292,8 @@ watch(
     ([adbPath, adbAddress, screencapMethod, inputMethod]) => {
         config.adb_path = adbPath ?? ''
         config.adb_address = adbAddress ?? ''
-        config.screencap_method = screencapMethod ?? DEFAULT_SCREENCAP_METHOD
-        config.input_method = inputMethod ?? DEFAULT_INPUT_METHOD
+        config.screencap_method = screencapMethod ?? DEFAULT_ADB_SCREENCAP
+        config.input_method = inputMethod ?? DEFAULT_ADB_INPUT
     },
     { immediate: true },
 )

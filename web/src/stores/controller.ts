@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
-export const DEFAULT_SCREENCAP_METHOD = "18446744073709551559";
-export const DEFAULT_INPUT_METHOD = "18446744073709551607";
+export const DEFAULT_ADB_SCREENCAP = "18446744073709551559";
+export const DEFAULT_ADB_INPUT = "18446744073709551607";
 
 /** Win32/Gamepad 共享默认截图方法 */
 export const DEFAULT_DESKTOP_SCREENCAP = "1"; // GDI
@@ -34,8 +34,8 @@ export const useControllerStore = defineStore(
     // --- ADB 配置 ---
     const adbPath = ref("");
     const adbAddress = ref("");
-    const screencapMethod = ref(DEFAULT_SCREENCAP_METHOD);
-    const inputMethod = ref(DEFAULT_INPUT_METHOD);
+    const screencapMethod = ref(DEFAULT_ADB_SCREENCAP);
+    const inputMethod = ref(DEFAULT_ADB_INPUT);
     const adbConfig = ref("");
     const selectedAdbDevice = ref("");
 
