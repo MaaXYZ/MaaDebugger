@@ -62,6 +62,8 @@ Traditional Python installation method.
 ---
 
 ### Specify Port
+
+MaaDebugger uses port **8011** by default. You can specify a port to run MaaDebugger on by using the `--port [port]` option. For example, to run MaaDebugger on port **8080**:
 The `--port` parameter is supported across all methods. For example, to run on port **8080**:
 
 ```bash
