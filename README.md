@@ -21,29 +21,56 @@
 - Python >= 3.9,<= 3.13
 - nicegui >= 2.21,< 3.0
 
-## 安装
+## 快速开始
 
-```bash
-python -m pip install MaaDebugger
-```
+### 使用 uv 
+提供更快的安装速度与环境隔离。
 
-## 更新
+- **安装为全局工具**:
+  ```bash
+  uv tool install MaaDebugger
+  MaaDebugger
+  ```
+- **临时运行 (免安装)**:
+  ```bash
+  uvx MaaDebugger
+  ```
+- **更新**:
+  ```bash
+  uv tool upgrade MaaDebugger
+  ```
 
-```bash
-python -m pip install MaaDebugger MaaFW --upgrade
-```
+---
 
-## 使用
+### 使用 Python (pip)
+传统的 Python 安装方式。
 
-```bash
-python -m MaaDebugger
-```
+- **安装**:
+  ```bash
+  python -m pip install MaaDebugger
+  ```
+- **运行**:
+  ```bash
+  python -m MaaDebugger
+  ```
+- **更新**:
+  ```bash
+  python -m pip install MaaDebugger MaaFW --upgrade
+  ```
+
+---
 
 ### 指定端口
-
-MaaDebugger 默认使用端口 **8011**。你可以通过使用 --port [port] 选项来指定 MaaDebugger 运行的端口。例如，要在端口 **8080** 上运行 MaaDebugger：
+无论使用哪种方式，均支持 `--port` 参数。例如在端口 **8080** 上运行：
 
 ```bash
+# uv 
+MaaDebugger --port 8080
+
+# uvx (免安装)
+uvx MaaDebugger --port 8080
+
+# python
 python -m MaaDebugger --port 8080
 ```
 

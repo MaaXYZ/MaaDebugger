@@ -22,29 +22,56 @@ s
 - Python >= 3.9, <= 3.13
 - nicegui >= 2.21,< 3.0
 
-## Installation
+## Quick Start
+
+### Using uv
+Provides faster installation speed and environment isolation.
+
+- **Install as a global tool**:
+  ```bash
+  uv tool install MaaDebugger
+  MaaDebugger
+  ```
+- **Run temporarily (No installation required)**:
+  ```bash
+  uvx MaaDebugger
+  ```
+- **Update**:
+  ```bash
+  uv tool upgrade MaaDebugger
+  ```
+
+---
+
+### Using Python (pip)
+Traditional Python installation method.
+
+- **Install**:
+  ```bash
+  python -m pip install MaaDebugger
+  ```
+- **Run**:
+  ```bash
+  python -m MaaDebugger
+  ```
+- **Update**:
+  ```bash
+  python -m pip install MaaDebugger MaaFW --upgrade
+  ```
+
+---
+
+### Specify Port
+The `--port` parameter is supported across all methods. For example, to run on port **8080**:
 
 ```bash
-python -m pip install MaaDebugger
-```
+# uv
+MaaDebugger --port 8080
 
-## Update
+# uvx (No installation required)
+uvx MaaDebugger --port 8080
 
-```bash
-python -m pip install MaaDebugger MaaFW --upgrade
-```
-
-## Usage
-
-```bash
-python -m MaaDebugger
-```
-
-### Specifying a Port
-
-MaaDebugger uses port **8011** by default. You can specify a port to run MaaDebugger on by using the `--port [port]` option. For example, to run MaaDebugger on port **8080**:
-
-```bash
+# python
 python -m MaaDebugger --port 8080
 ```
 
