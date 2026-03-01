@@ -91,7 +91,7 @@
                             <template v-if="controllerValue === 'gamepad'">
                                 <UFormField name="gamepad_type" label="Gamepad Type">
                                     <USelect v-model="gamepadConfig.gamepad_type" :items="gamepadTypes"
-                                        class="w-full" />
+                                        :icon="gamepadConfig.icon" class="w-full" />
                                 </UFormField>
                             </template>
                         </div>
@@ -297,12 +297,14 @@ watch(
 // --- Gamepad 独有配置 ---
 const gamepadConfig = reactive({
     gamepad_type: DEFAULT_GAMEPAD_TYPE,
+    icon: '',
 })
 
 watch(
     () => controllerStore.gamepadType,
     (gamepadType) => {
         gamepadConfig.gamepad_type = gamepadType ?? DEFAULT_GAMEPAD_TYPE
+        gamepadConfig.icon = gamepadTypes.value.find(m => m.value === gamepadType)?.icon ?? ''
     },
     { immediate: true },
 )

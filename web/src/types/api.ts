@@ -16,6 +16,7 @@
 export interface MethodItems {
   label: string;
   value: string;
+  icon?: string;
 }
 
 /**

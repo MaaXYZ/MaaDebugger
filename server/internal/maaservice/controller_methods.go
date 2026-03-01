@@ -21,6 +21,7 @@ const (
 type ControllerMethod struct {
 	Label string `json:"label"`
 	Value string `json:"value"`
+	Icon  string `json:"icon"`
 }
 
 func toUint64String(v uint64) string {
@@ -70,6 +71,6 @@ var win32InputMethods = []ControllerMethod{
 }
 
 var gamepadInputMethods = []ControllerMethod{
-	{Label: "Xbox 360", Value: toUint64String(uint64(maa.GamepadTypeXbox360))},
-	{Label: "DualShock 4", Value: toUint64String(uint64(maa.GamepadTypeDualShock4))},
+	{Label: "Xbox 360", Value: toUint64String(uint64(maa.GamepadTypeXbox360)), Icon: "i-simple-icons:xbox"},
+	{Label: "DualShock 4", Value: toUint64String(uint64(maa.GamepadTypeDualShock4)), Icon: "i-simple-icons:playstation"},
 }
