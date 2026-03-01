@@ -49,6 +49,16 @@ class MaaDebugger:
         ui.timer(2, update_checker.main, once=True)  # Check update
         app.on_exception(on_exception)
 
+        ui.notification(
+            "The MaaDebugger is deprecated! Please see https://github.com/MaaXYZ/MaaDebugger/issues/163 to learn more.",
+            timeout=None,
+            position="bottom-right",
+            type="warning",
+            # on_dismiss=lambda: ui.navigate.to(
+            #    "https://github.com/MaaXYZ/MaaDebugger/issues/163"
+            # ),
+        )
+
         ui.run(
             title=APP_TITLE,
             storage_secret="maadbg",
