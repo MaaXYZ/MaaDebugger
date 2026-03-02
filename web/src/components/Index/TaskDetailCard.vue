@@ -6,15 +6,19 @@
                 <div class="flex-1"></div>
                 <template v-if="allTasks.length > 1">
                     <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-chevron-left"
-                             :disabled="activeIndex <= 0" @click="activeIndex--" />
+                        :disabled="activeIndex <= 0" @click="activeIndex--" />
                     <span class="text-xs tabular-nums text-dimmed min-w-12 text-center">
                         {{ activeIndex + 1 }} / {{ allTasks.length }}
                     </span>
                     <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-chevron-right"
-                             :disabled="activeIndex >= allTasks.length - 1" @click="activeIndex++" />
+                        :disabled="activeIndex >= allTasks.length - 1" @click="activeIndex++" />
                 </template>
+                <UTooltip v-if="showOpenAsPage" text="Open as page">
+                    <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-arrow-up-right" to="/TaskDetail"
+                        aria-label="Open Task Detail as page" />
+                </UTooltip>
                 <UButton v-if="allTasks.length > 0" size="xs" variant="ghost" color="neutral" icon="i-lucide-trash-2"
-                         @click="resetGraph" />
+                    @click="resetGraph" />
             </div>
         </template>
 
@@ -22,30 +26,32 @@
             <div class="flex flex-col gap-3">
                 <!-- Empty state -->
                 <UEmpty v-if="allTasks.length === 0" icon="i-material-symbols:checklist-rounded"
-                        title="No Task Details" />
+                    title="No Task Details" />
 
                 <template v-else-if="activeTask">
                     <!-- Task status header -->
-                    <div class="flex flex-row items-center gap-2 text-sm">
-                        <UBadge color="neutral" variant="outline" size="sm">
+                    <div class="flex flex-row items-center gap-2 text-sm min-w-0">
+                        <UBadge color="neutral" variant="outline" size="sm" class="shrink-0">
                             #{{ activeIndex + 1 }}
                         </UBadge>
                         <UBadge
                             :color="activeTask.status === 'success' ? 'success' : activeTask.status === 'failed' ? 'error' : 'info'"
-                            variant="subtle" class="capitalize">
+                            variant="subtle" class="capitalize shrink-0">
                             {{ activeTask.status }}
                         </UBadge>
-                        <span class="text-dimmed">{{ activeTask.msg.entry }}</span>
+                        <UTooltip :text="activeTask.msg.entry">
+                            <span class="text-dimmed min-w-0 flex-1 truncate block">{{ activeTask.msg.entry }}</span>
+                        </UTooltip>
                     </div>
 
                     <!-- Pipeline nodes -->
                     <div v-if="activeTask.childs.length > 0" ref="scrollContainerRef"
-                         class="node-list max-h-[60vh] overflow-y-auto pr-1">
+                        class="node-list max-h-[60vh] overflow-y-auto pr-1">
                         <div class="flex flex-col gap-2">
                             <PipelineNodeItem v-for="(node, idx) in activeTask.childs"
-                                              :key="`${node.msg.name}-${node.msg.node_id}`" :node="node"
-                                              :default-expanded="idx === activeTask.childs.length - 1"
-                                              @request-detail="onRequestDetail" @request-action-detail="onRequestActionDetail" />
+                                :key="`${node.msg.name}-${node.msg.node_id}`" :node="node"
+                                :default-expanded="idx === activeTask.childs.length - 1"
+                                @request-detail="onRequestDetail" @request-action-detail="onRequestActionDetail" />
                         </div>
                     </div>
                     <div v-else class="text-xs text-dimmed italic pl-2">
@@ -65,17 +71,22 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import { launchGraph, resetLaunchGraph } from '@/stores/launchGraph'
+import { taskDetailActiveIndex, taskDetailFollowLatest } from '@/stores/taskDetail'
 import PipelineNodeItem from './taskDetail/PipelineNodeItem.vue'
 import RecoDetailModal from './taskDetail/RecoDetailModal.vue'
 import ActionDetailModal from './taskDetail/ActionDetailModal.vue'
 import { clearCache } from '@/api/http'
 
+const route = useRoute()
+const showOpenAsPage = computed(() => route.path !== '/TaskDetail')
+
 const scrollContainerRef = ref<HTMLElement | null>(null)
 
 const allTasks = computed(() => launchGraph.value.childs)
-const activeIndex = ref(0)
-const followLatest = ref(true)
+const activeIndex = taskDetailActiveIndex
+const followLatest = taskDetailFollowLatest
 
 const activeTask = computed(() => {
     if (allTasks.value.length === 0) return null

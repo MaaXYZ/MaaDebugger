@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
-import Index from '@/router/Index.vue'
 import { wsClient } from '@/api/ws'
 import { getStatusSnapshot, getScreenshotStatus } from '@/api/http'
 import { useStatusStore } from '@/stores/status'
@@ -111,7 +110,7 @@ onUnmounted(() => {
                     </UTooltip>
                 </template>
             </UHeader>
-            <Index />
+            <RouterView />
         </UMain>
     </UApp>
 

@@ -9,6 +9,14 @@ import "./style.css";
 const router = createRouter({
   routes: [
     {
+      path: "/",
+      component: () => import("./router/Index.vue"),
+    },
+    {
+      path: "/TaskDetail",
+      component: () => import("./router/TaskDetailPage.vue"),
+    },
+    {
       path: "/settings",
       component: () => import("./router/SettingsPage.vue"),
     },

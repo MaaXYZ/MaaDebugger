@@ -1,12 +1,15 @@
 <template>
-    <UTooltip :text="reco.msg.name">
-        <UButton size="sm" :variant="'outline'" :color="btnColor" :icon="btnIcon" :loading="reco.status === 'running'"
-                 class="font-medium max-w-48" @click="$emit('requestDetail', reco.msg.reco_id)">
-            <template #default>
-                <span class="truncate">{{ itemBrief }}</span>
-            </template>
-        </UButton>
-    </UTooltip>
+    <div class="w-full">
+        <UTooltip :text="reco.msg.name">
+            <UButton size="sm" :variant="'outline'" :color="btnColor" :icon="btnIcon"
+                :loading="reco.status === 'running'" class="font-medium justify-start"
+                @click="$emit('requestDetail', reco.msg.reco_id)">
+                <template #default>
+                    <span class="truncate block w-full text-left">{{ itemBrief }}</span>
+                </template>
+            </UButton>
+        </UTooltip>
+    </div>
 </template>
 
 <script setup lang="ts">
