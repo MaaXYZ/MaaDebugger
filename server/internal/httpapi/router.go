@@ -284,6 +284,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		result = r.deps.ControllerService.ConnectAdb(
 			adbPath, adbAddress, screencapMethod, inputMethod, adbConfig,
 		)
+		r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
 
 	case "win32":
 		hwnd := getString("hwnd")
@@ -308,6 +309,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		result = r.deps.ControllerService.ConnectWin32(
 			hwnd, screencapMethod, mouseMethod, keyboardMethod,
 		)
+		r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
 
 	case "gamepad":
 		hwnd := getString("hwnd")
@@ -330,6 +332,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		result = r.deps.ControllerService.ConnectGamepad(
 			hwnd, screencapMethod, gamepadType,
 		)
+		r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
 
 	case "playcover":
 		address := getString("playcover_address")
@@ -348,6 +351,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 			Msg("[Controller] connecting PlayCover")
 
 		result = r.deps.ControllerService.ConnectPlayCover(address, uuid)
+		r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
 
 	default:
 		log.Warn().Str("type", ctrlType).Msg("[Controller] unsupported controller type")
@@ -355,6 +359,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 		response.Fail(w, http.StatusBadRequest, fmt.Sprintf("unsupported controller type: %s", ctrlType))
 		return
+
 	}
 
 	// 记录连接结果
