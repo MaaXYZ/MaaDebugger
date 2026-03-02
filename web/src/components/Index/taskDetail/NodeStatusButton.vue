@@ -2,7 +2,10 @@
     <UTooltip :text="tooltipText">
         <UButton :color="btnColor" :variant="btnVariant" :icon="btnIcon" :size="size" class="font-medium max-w-48">
             <template #default>
-                <span class="truncate">{{ label }}</span>
+                <span class="flex items-center gap-1 min-w-0">
+                    <span class="truncate">{{ label }}</span>
+                    <span v-if="actionId !== undefined" class="text-[11px] text-dimmed shrink-0">#{{ actionId }}</span>
+                </span>
             </template>
         </UButton>
     </UTooltip>
@@ -16,9 +19,10 @@ const props = withDefaults(defineProps<{
     status: NodeStatus
     label: string
     size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+    actionId?: number
 }>(), {
     size: 'sm',
-    badgeText: undefined
+    actionId: undefined
 })
 
 const tooltipText = computed(() => {

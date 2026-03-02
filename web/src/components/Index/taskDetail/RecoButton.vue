@@ -5,7 +5,10 @@
                 :loading="reco.status === 'running'" class="font-medium w-full min-w-0 justify-start"
                 @click="$emit('requestDetail', reco.msg.reco_id)">
                 <template #default>
-                    <span class="truncate block w-full min-w-0 text-left">{{ itemBrief }}</span>
+                    <span class="flex items-center gap-1 w-full min-w-0 text-left">
+                        <span class="truncate block min-w-0">{{ itemBrief }}</span>
+                        <span class="text-[11px] text-dimmed shrink-0">#{{ reco.msg.reco_id }}</span>
+                    </span>
                 </template>
             </UButton>
         </UTooltip>
