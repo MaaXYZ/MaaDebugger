@@ -31,17 +31,28 @@ const DEFAULT_PORT = 8011
 const LOG_ROTATE_MAX_BYTES int64 = 10 * 1024 * 1024
 
 type selectiveLevelWriter struct {
-	file   zerolog.LevelWriter
-	stdout zerolog.LevelWriter
+	file      zerolog.LevelWriter
+	stdout    zerolog.LevelWriter
+	stdoutMin zerolog.Level
 }
 
 func (w selectiveLevelWriter) Write(p []byte) (int, error) {
-	return w.file.Write(p)
+	if w.file != nil {
+		return w.file.Write(p)
+	}
+	if w.stdout != nil {
+		return w.stdout.Write(p)
+	}
+	return len(p), nil
 }
 
 func (w selectiveLevelWriter) WriteLevel(level zerolog.Level, p []byte) (int, error) {
-	n, err := w.file.WriteLevel(level, p)
-	if level >= zerolog.ErrorLevel {
+	n := len(p)
+	var err error
+	if w.file != nil {
+		n, err = w.file.WriteLevel(level, p)
+	}
+	if w.stdout != nil && level >= w.stdoutMin {
 		if _, stdoutErr := w.stdout.WriteLevel(level, p); stdoutErr != nil && err == nil {
 			err = stdoutErr
 		}
@@ -51,22 +62,14 @@ func (w selectiveLevelWriter) WriteLevel(level zerolog.Level, p []byte) (int, er
 
 func main() {
 	zerolog.TimeFieldFormat = time.RFC3339Nano
-	logFile, err := initLogFile(filepath.Join(getCwd(), ".maa", "go.log"))
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "failed to initialize log file:", err)
-		os.Exit(1)
-	}
-	defer logFile.Close()
-
-	consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
-	multiWriter := zerolog.MultiLevelWriter(consoleWriter, logFile)
-	log.Logger = zerolog.New(multiWriter).With().Timestamp().Logger()
 
 	parser := cliargs.New("MaaDebugger", "The Offical Github repo: https://github.com/MaaXYZ/MaaDebugger")
 	parser.AddInt("port", "p", "server port (default: auto-detect from 8011)", 0, false)
 	parser.AddString("host", "H", "service host", "", false)
 	parser.AddString("lib-path", "b", "path to maa framework binary", "", false)
 	parser.AddBool("dev", "D", "Enable Dev Mode.", false)
+	parser.AddBool("debug", "d", "Enable file logging to .maa/go.log", false)
+	parser.AddBool("log-stdout", "S", "Enable stdout logging for all levels", false)
 
 	parsed, err := parser.Parse(os.Args[1:])
 	if err != nil {
@@ -75,6 +78,32 @@ func main() {
 		fmt.Fprintln(os.Stderr, parser.Help())
 		os.Exit(2)
 	}
+	debugToFile, _ := parsed.Bool("debug")
+	logStdoutAll, _ := parsed.Bool("log-stdout")
+
+	var fileWriter zerolog.LevelWriter
+	var logFile *os.File
+	if debugToFile {
+		logFile, err = initLogFile(filepath.Join(getCwd(), ".maa", "go.log"))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "failed to initialize log file:", err)
+			os.Exit(1)
+		}
+		defer logFile.Close()
+		fileWriter = zerolog.MultiLevelWriter(logFile)
+	}
+
+	stdoutMinLevel := zerolog.ErrorLevel
+	if logStdoutAll {
+		stdoutMinLevel = zerolog.TraceLevel
+	}
+	errorConsoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+	splitWriter := selectiveLevelWriter{
+		file:      fileWriter,
+		stdout:    zerolog.MultiLevelWriter(errorConsoleWriter),
+		stdoutMin: stdoutMinLevel,
+	}
+	log.Logger = zerolog.New(splitWriter).With().Timestamp().Logger()
 	if parsed.HelpRequested {
 		fmt.Println(parser.Help())
 		return

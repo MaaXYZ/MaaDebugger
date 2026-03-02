@@ -1,11 +1,14 @@
 package httpapi
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"runtime/debug"
 	"strconv"
+	"strings"
 	"time"
 
 	maa "github.com/MaaXYZ/maa-framework-go/v4"
@@ -708,14 +711,44 @@ func logging(next http.Handler) http.Handler {
 			return
 		}
 
-		rw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
+		var requestBody string
+		if isAPIPath(req.URL.Path) && req.Body != nil {
+			body, err := io.ReadAll(req.Body)
+			if err == nil {
+				requestBody = normalizeLogBody(body)
+				req.Body = io.NopCloser(bytes.NewReader(body))
+			} else {
+				requestBody = fmt.Sprintf("[read body failed: %v]", err)
+			}
+		}
+
+		recvEvt := log.Info().
+			Str("method", req.Method).
+			Str("path", req.URL.Path)
+		if req.URL.RawQuery != "" {
+			recvEvt = recvEvt.Str("query", truncateLogField(req.URL.RawQuery, 4096))
+		}
+		if requestBody != "" {
+			recvEvt = recvEvt.Str("request_body", truncateLogField(requestBody, 4096))
+		}
+		recvEvt.Msg("http request received")
+
+		rw := &statusWriter{
+			ResponseWriter: w,
+			status:         http.StatusOK,
+			captureBody:    isAPIPath(req.URL.Path),
+		}
 		next.ServeHTTP(rw, req)
-		log.Info().
+
+		respEvt := log.Info().
 			Str("method", req.Method).
 			Str("path", req.URL.Path).
 			Int("status", rw.status).
-			Dur("latency", time.Since(start)).
-			Msg("http request")
+			Dur("latency", time.Since(start))
+		if rw.captureBody && rw.body.Len() > 0 {
+			respEvt = respEvt.Str("response_body", truncateLogField(normalizeLogBody(rw.body.Bytes()), 4096))
+		}
+		respEvt.Msg("http request completed")
 	})
 }
 
@@ -734,7 +767,9 @@ func cors(next http.Handler) http.Handler {
 
 type statusWriter struct {
 	http.ResponseWriter
-	status int
+	status      int
+	captureBody bool
+	body        bytes.Buffer
 }
 
 func (w *statusWriter) WriteHeader(code int) {
@@ -746,7 +781,37 @@ func (w *statusWriter) Write(b []byte) (int, error) {
 	if w.status == 0 {
 		w.status = http.StatusOK
 	}
+	if w.captureBody && len(b) > 0 {
+		_, _ = w.body.Write(b)
+	}
 	return w.ResponseWriter.Write(b)
+}
+
+func isAPIPath(path string) bool {
+	return strings.HasPrefix(path, "/api/")
+}
+
+func normalizeLogBody(body []byte) string {
+	trimmed := bytes.TrimSpace(body)
+	if len(trimmed) == 0 {
+		return ""
+	}
+
+	if json.Valid(trimmed) {
+		var compacted bytes.Buffer
+		if err := json.Compact(&compacted, trimmed); err == nil {
+			return compacted.String()
+		}
+	}
+
+	return string(trimmed)
+}
+
+func truncateLogField(v string, max int) string {
+	if len(v) <= max {
+		return v
+	}
+	return v[:max] + "...(truncated)"
 }
 
 func parsePort(v string, fallback int) int {
