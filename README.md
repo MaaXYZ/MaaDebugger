@@ -34,6 +34,8 @@ MaaDebugger
 ### 自行下载
 
 我们也提供了 [Github Release](https://github.com/MaaXYZ/MaaDebugger/releases) 下载渠道，下载解压后即可使用。
+>[!WARNING]
+在早期开发阶段，我们**不会**提供 Release，而是仅在 [Actions](https://github.com/MaaXYZ/MaaDebugger/actions/workflows/publish.yml) 上传产物，请自行前往下载。
 
 ## 开发模式
 
