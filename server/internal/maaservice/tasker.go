@@ -130,10 +130,13 @@ func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
 		})
 	})
 
-	tasker.OnNodeActionInContext(func(_ *maa.Context, event maa.EventStatus, detail maa.NodeActionDetail) {
+	tasker.OnNodeActionInContext(func(ctx *maa.Context, event maa.EventStatus, detail maa.NodeActionDetail) {
 		// 在 action 开始前截图并缓存（仅对有坐标的 action 类型）
 		if event == maa.EventStatusStarting {
-			if s.actionNeedsScreenshot(detail.Name) {
+			node, err := ctx.GetNode(detail.Name)
+			if err != nil {
+				log.Error().Err(err).Msg("[MaaService] get node failed")
+			} else if s.actionNeedsScreenshot(node) {
 				s.captureActionScreenshot(detail.ActionID)
 			}
 		}
@@ -716,17 +719,7 @@ func (s *TaskerService) GetRecognitionDetailByID(recoID int64) (*RecoDetailRespo
 
 // actionNeedsScreenshot 根据节点名从 Resource 获取 action 类型，
 // 判断该 action 是否需要截图（有坐标的 action 需要截图）。
-func (s *TaskerService) actionNeedsScreenshot(nodeName string) bool {
-	res := s.resourceSvc.Resource()
-	if res == nil {
-		// 无法获取 resource，保险起见截图
-		return true
-	}
-	node, err := res.GetNode(nodeName)
-	if err != nil || node == nil || node.Action == nil {
-		// 无法获取节点信息，保险起见截图
-		return true
-	}
+func (s *TaskerService) actionNeedsScreenshot(node *maa.Node) bool {
 	switch node.Action.Type {
 	case maa.ActionTypeDoNothing,
 		maa.ActionTypeClickKey,
