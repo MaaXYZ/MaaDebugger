@@ -1,30 +1,44 @@
-import { ref, computed } from "vue";
+import { computed } from "vue";
 import { useResourceStore } from "@/stores/resource";
 import { loadResource } from "@/api/http";
 
-const toast = useToast();
-const resourceStore = useResourceStore();
-// --- UI State (not persisted) ---
-const showFullCard = ref(true);
-const enabledPaths = computed(() => resourceStore.getEnabledPaths());
+export function useResourceControl() {
+  const toast = useToast();
+  const resourceStore = useResourceStore();
+  const enabledPaths = computed(() => resourceStore.getEnabledPaths());
 
-export default async function onLoadResource() {
-  const paths = enabledPaths.value;
-  if (paths.length === 0) return;
+  async function tryLoadResource(): Promise<{
+    success: boolean;
+    msg?: string;
+  }> {
+    const paths = enabledPaths.value;
+    if (paths.length === 0) return { success: false, msg: "No enabled paths" };
 
-  try {
-    const result = await loadResource(paths);
-    if (!result.succeed) {
-      console.error("[Resource] Load failed:", result.msg);
+    try {
+      const result = await loadResource(paths);
+      if (!result.succeed) {
+        console.error("[Resource] Load failed:", result.msg);
+        return { success: false, msg: result.msg };
+      }
+      return { success: true };
+    } catch (err) {
+      console.error("[Resource] Load failed:", err);
+      return { success: false, msg: String(err) };
+    }
+  }
+
+  async function onLoadResource() {
+    const { success, msg } = await tryLoadResource();
+    if (!success) {
+      console.error("[Resource] Load failed:", msg);
       toast.add({
         id: "res-toast",
         title: "Resource Load Failed",
-        description: result.msg || "Unknown error",
+        description: msg || "Unknown error",
         icon: "i-lucide-circle-x",
         color: "error",
       });
     } else {
-      showFullCard.value = false;
       toast.add({
         id: "res-toast",
         title: "Resource Loaded",
@@ -32,7 +46,11 @@ export default async function onLoadResource() {
         color: "success",
       });
     }
-  } catch (err) {
-    console.error("[Resource] Load failed:", err);
   }
+
+  return {
+    enabledPaths,
+    tryLoadResource,
+    onLoadResource,
+  };
 }

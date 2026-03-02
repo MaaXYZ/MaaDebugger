@@ -6,6 +6,7 @@ import type {
   TaskStatus,
   AgentStatus,
 } from "@/types/api";
+import { defineStore } from "pinia";
 
 /**
  * 全局 MaaFW 状态 Store
