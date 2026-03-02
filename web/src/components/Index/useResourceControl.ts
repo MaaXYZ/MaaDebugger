@@ -2,7 +2,7 @@ import { computed } from "vue";
 import { useResourceStore } from "@/stores/resource";
 import { loadResource } from "@/api/http";
 
-export function useResourceControl() {
+export default function useResourceControl() {
   const toast = useToast();
   const resourceStore = useResourceStore();
   const enabledPaths = computed(() => resourceStore.getEnabledPaths());

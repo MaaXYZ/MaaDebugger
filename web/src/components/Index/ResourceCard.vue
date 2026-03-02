@@ -130,7 +130,7 @@
 import { ref, computed, watch } from 'vue'
 import { useResourceStore } from '@/stores/resource'
 import { useStatusStore } from '@/stores/status'
-import { useResourceControl } from './useResourceControl'
+import useResourceControl from './useResourceControl'
 
 const resourceStore = useResourceStore()
 const statusStore = useStatusStore()

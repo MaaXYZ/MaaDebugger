@@ -5,6 +5,7 @@ import type { ConnectionStatus } from "@/components/Index/agent/types";
 export interface AgentItem {
   identifier: string;
   name: string;
+  enabled: boolean;
   status: ConnectionStatus;
   errorMsg: string;
 }
@@ -13,6 +14,7 @@ export const useAgentStore = defineStore(
   "agent",
   () => {
     const agents = ref<AgentItem[]>([]);
+    const cardExpanded = ref(false);
 
     const connectedCount = computed(
       () => agents.value.filter((a) => a.status === "connected").length,
@@ -28,6 +30,7 @@ export const useAgentStore = defineStore(
       const item: AgentItem = {
         identifier: "",
         name: "",
+        enabled: true,
         status: "idle",
         errorMsg: "",
       };
@@ -56,8 +59,17 @@ export const useAgentStore = defineStore(
         .map((a) => ({ identifier: a.identifier, name: a.name }));
     }
 
+    function getEnabledAgents() {
+      return agents.value.filter((a) => a.enabled);
+    }
+
     function resetRuntimeState() {
+      cardExpanded.value = false;
+
       for (const agent of agents.value) {
+        if (typeof agent.enabled !== "boolean") {
+          agent.enabled = true;
+        }
         agent.status = "idle";
         agent.errorMsg = "";
       }
@@ -72,6 +84,7 @@ export const useAgentStore = defineStore(
 
     return {
       agents,
+      cardExpanded,
       connectedCount,
       hasConnecting,
       hasError,
@@ -80,6 +93,7 @@ export const useAgentStore = defineStore(
       removeByIndex,
       getByIdentifier,
       getConnectedAgents,
+      getEnabledAgents,
       resetRuntimeState,
       onRestore,
     };

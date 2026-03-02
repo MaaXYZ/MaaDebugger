@@ -42,10 +42,15 @@
                             </div>
 
                             <div v-for="(agent, index) in store.agents" :key="index"
-                                class="group flex flex-col gap-2 rounded-lg border border-default p-3 transition-colors hover:bg-elevated">
+                                class="group flex flex-col gap-2 rounded-lg border border-default p-3 transition-colors hover:bg-elevated"
+                                :class="{ 'opacity-60': !agent.enabled }">
 
-                                <!-- Row 1: Name + Status + Actions -->
+                                <!-- Row 1: Enable + Name + Status + Actions -->
                                 <div class="flex flex-row items-center gap-2">
+                                    <UTooltip :text="agent.enabled ? 'Disable agent' : 'Enable agent'">
+                                        <UCheckbox v-model="agent.enabled" />
+                                    </UTooltip>
+
                                     <UIcon name="i-lucide-tag" class="size-4 shrink-0 text-dimmed" />
 
                                     <UInput v-if="editingNameIndex === index" v-model="agent.name"
@@ -128,7 +133,12 @@ import { useStatusStore } from '@/stores/status'
 
 const store = useAgentStore()
 const statusStore = useStatusStore()
-const showFullCard = ref(false)
+const showFullCard = computed({
+    get: () => store.cardExpanded,
+    set: (value: boolean) => {
+        store.cardExpanded = value
+    }
+})
 const { doConnect, doDisconnect } = useAgentControl()
 
 // 任务开始运行时自动收起卡片

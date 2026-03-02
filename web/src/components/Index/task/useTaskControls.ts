@@ -3,7 +3,10 @@ import { getTaskNodes, runTask, stopTask } from "@/api/http";
 import { useShortcutsStore, formatShortcut } from "@/stores/shortcuts";
 import { useStatusStore } from "@/stores/status";
 import { useTaskStore } from "@/stores/task";
+import { useAgentStore } from "@/stores/agent";
 import type { TaskStatus } from "./types";
+import useAgentControl from "../useAgentControl";
+import useResourceControl from "../useResourceControl";
 
 interface TaskEntry {
   label: string;
@@ -30,10 +33,14 @@ function fuzzyMatch(text: string, query: string): boolean {
   return true;
 }
 
-export function useTaskControls(toast: ToastApi) {
+export default function useTaskControls(toast: ToastApi) {
   const shortcutsStore = useShortcutsStore();
   const statusStore = useStatusStore();
   const taskStore = useTaskStore();
+  const agentStore = useAgentStore();
+
+  const { connectAgents } = useAgentControl();
+  const { tryLoadResource } = useResourceControl();
 
   const entries = ref<TaskEntry[]>([]);
   const entrySearchTerm = ref("");
@@ -53,6 +60,7 @@ export function useTaskControls(toast: ToastApi) {
     () =>
       statusStore.controllerStatus === "connected" &&
       statusStore.resourceStatus === "loaded" &&
+      !agentStore.hasConnecting &&
       !!selectedEntry.value,
   );
   const startStopKeys = computed(() =>
@@ -142,6 +150,36 @@ export function useTaskControls(toast: ToastApi) {
 
   async function onStart() {
     if (!canStart.value) return;
+
+    if (agentStore.hasConnecting) {
+      toast.add({
+        id: "task-toast",
+        title: "Agent Connecting",
+        description: "Please wait for agent connection to finish",
+        icon: "i-lucide-loader",
+        color: "warning",
+      });
+      return;
+    }
+
+    // 重新加载资源
+    const loadResult = await tryLoadResource();
+    if (!loadResult.success) {
+      toast.add({
+        id: "task-toast",
+        title: "Resource Load Failed",
+        description: loadResult.msg,
+        icon: "i-lucide-circle-x",
+        color: "error",
+      });
+      return;
+    }
+
+    // 重新连接 Agent
+    const connectResult = await connectAgents();
+    if (!connectResult.success) {
+      return;
+    }
 
     // 运行任务
     const result = await runTask(selectedEntry.value, {});
