@@ -45,7 +45,7 @@ maa-py/*
 **/dist/*
 
 # bin
-bin/*
+**/bin/*
 *.exe
 *.exe~
 *.dll

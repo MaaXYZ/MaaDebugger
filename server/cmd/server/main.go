@@ -28,10 +28,39 @@ import (
 
 const DEFAULT_HOST = "localhost"
 const DEFAULT_PORT = 8011
+const LOG_ROTATE_MAX_BYTES int64 = 10 * 1024 * 1024
+
+type selectiveLevelWriter struct {
+	file   zerolog.LevelWriter
+	stdout zerolog.LevelWriter
+}
+
+func (w selectiveLevelWriter) Write(p []byte) (int, error) {
+	return w.file.Write(p)
+}
+
+func (w selectiveLevelWriter) WriteLevel(level zerolog.Level, p []byte) (int, error) {
+	n, err := w.file.WriteLevel(level, p)
+	if level >= zerolog.ErrorLevel {
+		if _, stdoutErr := w.stdout.WriteLevel(level, p); stdoutErr != nil && err == nil {
+			err = stdoutErr
+		}
+	}
+	return n, err
+}
 
 func main() {
 	zerolog.TimeFieldFormat = time.RFC3339Nano
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
+	logFile, err := initLogFile(filepath.Join(getCwd(), ".maa", "go.log"))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "failed to initialize log file:", err)
+		os.Exit(1)
+	}
+	defer logFile.Close()
+
+	consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+	multiWriter := zerolog.MultiLevelWriter(consoleWriter, logFile)
+	log.Logger = zerolog.New(multiWriter).With().Timestamp().Logger()
 
 	parser := cliargs.New("MaaDebugger", "The Offical Github repo: https://github.com/MaaXYZ/MaaDebugger")
 	parser.AddInt("port", "p", "server port (default: auto-detect from 8011)", 0, false)
@@ -181,6 +210,46 @@ func loadMaaFramework(devMode bool, argPath string, channel string, channelPath 
 			Str("userPath", root).
 			Msg("Toolkit config option initialized")
 	}
+}
+
+func initLogFile(logPath string) (*os.File, error) {
+	logDir := filepath.Dir(logPath)
+	if err := os.MkdirAll(logDir, 0o755); err != nil {
+		return nil, fmt.Errorf("create log dir: %w", err)
+	}
+
+	if err := rotateLogFile(logPath, LOG_ROTATE_MAX_BYTES); err != nil {
+		return nil, err
+	}
+
+	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		return nil, fmt.Errorf("open log file: %w", err)
+	}
+	return f, nil
+}
+
+func rotateLogFile(logPath string, maxBytes int64) error {
+	info, err := os.Stat(logPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("stat log file: %w", err)
+	}
+
+	if info.Size() <= maxBytes {
+		return nil
+	}
+
+	bakPath := logPath + ".bak"
+	if err := os.Remove(bakPath); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("remove old bak log: %w", err)
+	}
+	if err := os.Rename(logPath, bakPath); err != nil {
+		return fmt.Errorf("rotate log file: %w", err)
+	}
+	return nil
 }
 
 func waitForShutdown(srv *http.Server) {
