@@ -13,13 +13,13 @@
             <!-- FocusCard 占位符 -->
             <UCard>
                 <template #header>
-                    <h3 class="text-sm font-semibold">FocusCard</h3>
+                    <h3 class="text-sm font-semibold">Focus</h3>
                 </template>
-                <p class="text-sm text-muted">FocusCard placeholder</p>
+                <p class="text-sm text-muted">Focus placeholder</p>
             </UCard>
         </div>
         <!-- 第三列: Task Detail -->
-        <div class="w-full flex flex-col gap-4 order-1 lg:order-0">
+        <div class="w-full min-h-screen flex flex-col gap-4 order-1 lg:order-0">
             <TaskDetailCard />
         </div>
     </div>
