@@ -4,6 +4,19 @@ on:
   push:
     branches:
       - "rft/nodejs"
+    paths:
+      # Github
+      - ".github/workflows/**"
+      # web
+      - "*.js"
+      - "*.mjs"
+      - "*.ts"
+      - "*.vue"
+      - "package.json"
+      # server
+      - "*.go"
+      - "go.mod"
+      - "go.sum"
 
   workflow_dispatch:
     inputs:
