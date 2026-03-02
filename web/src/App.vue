@@ -94,7 +94,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <UApp>
+    <UApp :toaster="{ position: 'bottom-right', duration: 3000 }">
         <UMain>
             <UHeader title="MaaDebugger" :ui="{ toggle: 'hidden' }">
                 <template #right>
@@ -102,12 +102,12 @@ onUnmounted(() => {
 
                     <UTooltip text="Settings">
                         <UButton color="neutral" variant="ghost" to="/settings" icon="i-lucide-settings"
-                                 aria-label="Settings" />
+                            aria-label="Settings" />
                     </UTooltip>
 
                     <UTooltip text="Open on GitHub">
                         <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
-                                 target="_blank" icon="i-simple-icons:github" aria-label="GitHub" />
+                            target="_blank" icon="i-simple-icons:github" aria-label="GitHub" />
                     </UTooltip>
                 </template>
             </UHeader>
