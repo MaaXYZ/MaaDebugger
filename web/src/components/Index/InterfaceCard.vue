@@ -24,9 +24,10 @@
             <UCollapsible v-model:open="showFullCard" :unmount-on-hide="false">
                 <template #content>
                     <div class="p-4 sm:p-6 min-h-36 flex flex-col gap-3">
-                        <UFormField name="interfacePath" label="File Path">
-                            <UInput v-model="interfacePath" class="w-full" placeholder="Enter interface file path..."
-                                icon="i-lucide-file-json" size="xl" />
+                        <UFormField name="interfacePath" label="File Path" :error="pathError || undefined">
+                            <UInput v-model="interfacePath" class="w-full"
+                                placeholder="Enter interface.json file path..." icon="i-lucide-file-json" size="xl"
+                                :color="pathError ? 'error' : 'neutral'" @blur="onPathBlur" />
                         </UFormField>
 
                         <div class="flex flex-row items-center justify-end">
@@ -44,6 +45,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { checkPathExists } from '@/api/http'
 import { useStatusStore } from '@/stores/status'
 
 const toast = useToast()
@@ -52,8 +54,9 @@ const statusStore = useStatusStore()
 const showFullCard = ref(true)
 const interfacePath = ref('')
 const loading = ref(false)
+const pathError = ref('')
 
-const canLoad = computed(() => interfacePath.value.trim().length > 0 && !loading.value)
+const canLoad = computed(() => interfacePath.value.trim().length > 0 && !loading.value && !pathError.value)
 const summaryText = computed(() => interfacePath.value.trim() || 'No interface loaded')
 
 // 任务开始运行时自动收起卡片
@@ -63,8 +66,49 @@ watch(() => statusStore.taskStatus, (newStatus, oldStatus) => {
     }
 })
 
+watch(interfacePath, () => {
+    if (pathError.value) {
+        pathError.value = ''
+    }
+})
+
+async function validatePath(): Promise<boolean> {
+    const trimmed = interfacePath.value.trim()
+    if (!trimmed) {
+        pathError.value = ''
+        return false
+    }
+
+    const result = await checkPathExists(trimmed, 'file')
+    const exists = Boolean(result.succeed && result.data?.exists)
+
+    if (!exists) {
+        pathError.value = result.succeed ? 'File does not exist' : (result.msg || 'Path validation failed')
+        return false
+    }
+
+    pathError.value = ''
+    return true
+}
+
+async function onPathBlur() {
+    await validatePath()
+}
+
 async function onLoad() {
     if (!canLoad.value) return
+
+    const valid = await validatePath()
+    if (!valid) {
+        toast.add({
+            id: 'interface-path-toast',
+            title: 'Invalid interface path',
+            description: 'Please provide an existing file path',
+            icon: 'i-lucide-circle-x',
+            color: 'error',
+        })
+        return
+    }
 
     loading.value = true
     try {

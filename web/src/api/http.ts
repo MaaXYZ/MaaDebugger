@@ -247,6 +247,19 @@ export async function getAgentList(): Promise<AgentInfo[]> {
 // ============================================================
 
 /**
+ * 校验路径是否存在
+ */
+export async function checkPathExists(
+  path: string,
+  pathType?: "file" | "dir",
+): Promise<ApiResponse<{ exists: boolean }>> {
+  return request<{ exists: boolean }>("/path/exists", {
+    method: "POST",
+    body: JSON.stringify({ path, type: pathType }),
+  });
+}
+
+/**
  * 加载资源
  */
 export async function loadResource(paths: string[]): Promise<ApiResponse> {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -71,6 +72,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.HandleFunc("POST /api/controller/connect", r.handleControllerConnect)
 	mux.HandleFunc("POST /api/controller/disconnect", r.handleControllerDisconnect)
 	mux.HandleFunc("GET /api/controller/methods", r.handleGetControllerMethods)
+	mux.HandleFunc("POST /api/path/exists", r.handlePathExists)
 	mux.HandleFunc("POST /api/resource/load", r.handleResourceLoad)
 	mux.HandleFunc("POST /api/task/run", r.handleTaskRun)
 	mux.HandleFunc("POST /api/task/stop", r.handleTaskStop)
@@ -442,6 +444,53 @@ func orDefault(val, fallback string) string {
 		return fallback
 	}
 	return val
+}
+
+func (r *router) handlePathExists(w http.ResponseWriter, req *http.Request) {
+	var payload struct {
+		Path string `json:"path"`
+		Type string `json:"type"`
+	}
+	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+		response.Fail(w, http.StatusBadRequest, "invalid json body")
+		return
+	}
+
+	path := strings.TrimSpace(payload.Path)
+	if path == "" {
+		response.Fail(w, http.StatusBadRequest, "path is required")
+		return
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			response.OK(w, map[string]bool{"exists": false})
+			return
+		}
+		response.Fail(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	switch payload.Type {
+	case "file":
+		if info.IsDir() {
+			response.OK(w, map[string]bool{"exists": false})
+			return
+		}
+	case "dir":
+		if !info.IsDir() {
+			response.OK(w, map[string]bool{"exists": false})
+			return
+		}
+	case "", "any":
+		// no type restriction
+	default:
+		response.Fail(w, http.StatusBadRequest, "invalid type, must be file or dir")
+		return
+	}
+
+	response.OK(w, map[string]bool{"exists": true})
 }
 
 func (r *router) handleResourceLoad(w http.ResponseWriter, req *http.Request) {

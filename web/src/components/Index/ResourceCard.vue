@@ -50,46 +50,54 @@
                             </div>
 
                             <div v-for="(item, index) in resourceStore.activePaths" :key="item.id"
-                                class="group flex flex-row items-center gap-2 rounded-lg border border-default p-2 transition-colors hover:bg-elevated"
+                                class="group flex flex-col gap-1 rounded-lg border border-default p-2 transition-colors hover:bg-elevated"
                                 :class="{ 'opacity-50': !item.enabled }"
                                 :draggable="resourceStore.activePaths.length > 1" @dragstart="onDragStart(index)"
                                 @dragover.prevent="onDragOver(index)" @dragend="onDragEnd">
 
-                                <!-- Enable/Disable Checkbox -->
-                                <UCheckbox v-model="item.enabled" />
+                                <div class="flex flex-row items-center gap-2">
+                                    <!-- Enable/Disable Checkbox -->
+                                    <UCheckbox v-model="item.enabled" />
 
-                                <!-- Drag Handle -->
-                                <div v-if="resourceStore.activePaths.length > 1"
-                                    class="cursor-grab text-dimmed hover:text-default active:cursor-grabbing">
-                                    <UIcon name="i-lucide-grip-vertical" class="size-5" />
+                                    <!-- Drag Handle -->
+                                    <div v-if="resourceStore.activePaths.length > 1"
+                                        class="cursor-grab text-dimmed hover:text-default active:cursor-grabbing">
+                                        <UIcon name="i-lucide-grip-vertical" class="size-5" />
+                                    </div>
+
+                                    <!-- Path Input -->
+                                    <UInput v-if="editingIndex === index" v-model="item.path"
+                                        placeholder="/path/to/resource" class="flex-1" size="md" autofocus
+                                        :color="pathErrors[item.id] ? 'error' : 'neutral'"
+                                        @keydown.enter="onFinishEdit(index)" @blur="onFinishEdit(index)" />
+
+                                    <!-- Path Display -->
+                                    <UTooltip v-else :text="item.path" :disabled="!item.path">
+                                        <div class="flex-1 flex items-center gap-2 min-w-0 cursor-pointer"
+                                            @click="onEdit(index)">
+                                            <span class="truncate text-md"
+                                                :class="item.path ? '' : 'text-dimmed italic'">
+                                                {{ item.path || 'Click to edit path...' }}
+                                            </span>
+                                        </div>
+                                    </UTooltip>
+
+                                    <!-- Action Buttons -->
+                                    <div
+                                        class="flex flex-row gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <UTooltip text="Edit">
+                                            <UButton color="neutral" variant="ghost" icon="i-lucide-square-pen"
+                                                size="xs" @click="onEdit(index)" />
+                                        </UTooltip>
+                                        <UTooltip text="Remove">
+                                            <UButton color="error" variant="ghost" icon="i-lucide-trash-2" size="xs"
+                                                @click="onRemovePath(index, item.id)" />
+                                        </UTooltip>
+                                    </div>
                                 </div>
 
-                                <!-- Path Input -->
-                                <UInput v-if="editingIndex === index" v-model="item.path"
-                                    placeholder="/path/to/resource" class="flex-1" size="md" autofocus
-                                    @keydown.enter="onFinishEdit(index)" @blur="onFinishEdit(index)" />
-
-                                <!-- Path Display -->
-                                <UTooltip v-else :text="item.path" :disabled="!item.path">
-                                    <div class="flex-1 flex items-center gap-2 min-w-0 cursor-pointer"
-                                        @click="onEdit(index)">
-                                        <span class="truncate text-md" :class="item.path ? '' : 'text-dimmed italic'">
-                                            {{ item.path || 'Click to edit path...' }}
-                                        </span>
-                                    </div>
-                                </UTooltip>
-
-                                <!-- Action Buttons -->
-                                <div
-                                    class="flex flex-row gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <UTooltip text="Edit">
-                                        <UButton color="neutral" variant="ghost" icon="i-lucide-square-pen" size="xs"
-                                            @click="onEdit(index)" />
-                                    </UTooltip>
-                                    <UTooltip text="Remove">
-                                        <UButton color="error" variant="ghost" icon="i-lucide-trash-2" size="xs"
-                                            @click="resourceStore.removePath(index)" />
-                                    </UTooltip>
+                                <div v-if="pathErrors[item.id]" class="pl-6 text-xs text-error truncate">
+                                    {{ pathErrors[item.id] }}
                                 </div>
                             </div>
                         </div>
@@ -128,17 +136,20 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { checkPathExists } from '@/api/http'
 import { useResourceStore } from '@/stores/resource'
 import { useStatusStore } from '@/stores/status'
 import useResourceControl from './useResourceControl'
 
+const toast = useToast()
 const resourceStore = useResourceStore()
 const statusStore = useStatusStore()
-const { enabledPaths, onLoadResource } = useResourceControl()
+const { enabledPaths, onLoadResource: triggerLoadResource } = useResourceControl()
 
 // --- UI State (not persisted) ---
 const showFullCard = ref(true)
 const editingIndex = ref<number | null>(null)
+const pathErrors = ref<Record<number, string>>({})
 
 // 任务开始运行时自动收起卡片
 watch(() => statusStore.taskStatus, (newStatus, oldStatus) => {
@@ -242,13 +253,78 @@ function onEdit(index: number) {
     editingIndex.value = index
 }
 
-function onFinishEdit(index: number) {
+function clearPathError(pathId: number) {
+    if (!pathErrors.value[pathId]) return
+    const { [pathId]: _removed, ...rest } = pathErrors.value
+    pathErrors.value = rest
+}
+
+async function validatePath(path: string, pathId: number): Promise<boolean> {
+    const trimmed = path.trim()
+    if (!trimmed) {
+        clearPathError(pathId)
+        return false
+    }
+
+    const result = await checkPathExists(trimmed, 'dir')
+    const exists = Boolean(result.succeed && result.data?.exists)
+
+    if (!exists) {
+        pathErrors.value = {
+            ...pathErrors.value,
+            [pathId]: result.succeed ? 'File does not exist!' : (result.msg || 'Path validation failed'),
+        }
+        return false
+    }
+
+    clearPathError(pathId)
+    return true
+}
+
+async function onFinishEdit(index: number) {
     editingIndex.value = null
+
     // Remove empty paths automatically
     const item = resourceStore.activePaths[index]
     if (item && !item.path.trim()) {
+        clearPathError(item.id)
         resourceStore.removePath(index)
+        return
     }
+
+    if (item) {
+        await validatePath(item.path, item.id)
+    }
+}
+
+function onRemovePath(index: number, pathId: number) {
+    clearPathError(pathId)
+    resourceStore.removePath(index)
+}
+
+async function onLoadResource() {
+    const validationList = await Promise.all(
+        resourceStore.activePaths
+            .filter((item) => item.enabled)
+            .map(async (item) => ({
+                id: item.id,
+                ok: await validatePath(item.path, item.id),
+            })),
+    )
+
+    const hasInvalidPath = validationList.some((item) => !item.ok)
+    if (hasInvalidPath) {
+        toast.add({
+            id: 'res-path-toast',
+            title: 'Invalid Resource Path',
+            description: 'Please fix invalid paths before loading resource!',
+            icon: 'i-lucide-circle-x',
+            color: 'error',
+        })
+        return
+    }
+
+    await triggerLoadResource()
 }
 
 // --- Rename Modal ---
