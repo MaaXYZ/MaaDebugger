@@ -46,11 +46,11 @@ pnpm dev        # 启动前端 (http://localhost:5173)
 一键构建前端并嵌入到 Go 二进制文件中，最终产物为单个可执行文件：
 
 ```bash
-node build.js                     # 构建当前平台
-node build.js --os linux          # 交叉编译 Linux
-node build.js --os windows        # 交叉编译 Windows
-node build js --os darwin         # 交叉编译 macOS
-node build.js --skip-frontend     # 跳过前端构建（仅编译 Go）
+node build.mjs                     # 构建当前平台
+node build.mjs --os linux          # 交叉编译 Linux
+node build.mjs --os windows        # 交叉编译 Windows
+node build.mjs --os darwin         # 交叉编译 macOS
+node build.mjs --skip-frontend     # 跳过前端构建（仅编译 Go）
 ```
 
 构建完成后，启动 `./MaaDebugger`（Windows 下为 `MaaDebugger.exe`），程序会自动选择可用端口（默认从 8011 开始）并打开浏览器。也可通过 `--port` 指定端口：

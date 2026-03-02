@@ -4,14 +4,14 @@
  * Build script: compile Vue frontend → embed into Go binary
  *
  * Usage:
- *   node build.js                          # build for current OS/arch
- *   node build.js --os linux               # cross-compile for linux
- *   node build.js --os windows             # cross-compile for windows
- *   node build.js --os darwin              # cross-compile for macOS
- *   node build.js --arch arm64             # cross-compile for arm64
- *   node build.js --os linux --arch arm64  # cross-compile for linux/arm64
- *   node build.js --skip-frontend          # skip frontend build
- *   node build.js --skip-go               # skip Go build (frontend only)
+ *   node build.mjs                          # build for current OS/arch
+ *   node build.mjs --os linux               # cross-compile for linux
+ *   node build.mjs --os windows             # cross-compile for windows
+ *   node build.mjs --os darwin              # cross-compile for macOS
+ *   node build.mjs --arch arm64             # cross-compile for arm64
+ *   node build.mjs --os linux --arch arm64  # cross-compile for linux/arm64
+ *   node build.mjs --skip-frontend          # skip frontend build
+ *   node build.mjs --skip-go               # skip Go build (frontend only)
  */
 
 import { execSync } from "node:child_process";
