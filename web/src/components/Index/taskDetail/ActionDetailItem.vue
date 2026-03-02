@@ -32,13 +32,13 @@
                 <InfoRow label="Begin" :value="formatPoint((detail.result as SwipeActionResult).begin)" />
                 <InfoRow label="End" :value="(detail.result as SwipeActionResult).end.map(formatPoint).join(' → ')" />
                 <InfoRow label="Duration"
-                    :value="(detail.result as SwipeActionResult).duration.map(d => `${d}ms`).join(', ')" />
+                         :value="(detail.result as SwipeActionResult).duration.map(d => `${d}ms`).join(', ')" />
             </template>
 
             <!-- MultiSwipe -->
             <template v-else-if="detail.result.type === 'MultiSwipe'">
                 <div v-for="(swipe, idx) in (detail.result as MultiSwipeActionResult).swipes" :key="idx"
-                    class="flex flex-col gap-1 rounded border border-default p-2">
+                     class="flex flex-col gap-1 rounded border border-default p-2">
                     <span class="text-xs text-dimmed font-medium">Swipe #{{ idx }}</span>
                     <InfoRow label="Begin" :value="formatPoint(swipe.begin)" />
                     <InfoRow label="End" :value="swipe.end.map(formatPoint).join(' → ')" />
@@ -56,21 +56,21 @@
             <template v-else-if="detail.result.type === 'Scroll'">
                 <InfoRow label="Point" :value="formatPoint((detail.result as ScrollActionResult).point)" />
                 <InfoRow label="Delta"
-                    :value="`dx: ${(detail.result as ScrollActionResult).dx}, dy: ${(detail.result as ScrollActionResult).dy}`" />
+                         :value="`dx: ${(detail.result as ScrollActionResult).dx}, dy: ${(detail.result as ScrollActionResult).dy}`" />
             </template>
 
             <!-- ClickKey / KeyDown / KeyUp -->
             <template v-else-if="['ClickKey', 'KeyDown', 'KeyUp'].includes(detail.result.type)">
                 <InfoRow label="Keycode" :value="(detail.result as ClickKeyActionResult).keycode.join(', ')"
-                    :controller_type="detail.controller_type" />
+                         :controller-type="detail.controller_type" />
             </template>
 
             <!-- LongPressKey -->
             <template v-else-if="detail.result.type === 'LongPressKey'">
                 <InfoRow label="Keycode" :value="(detail.result as LongPressKeyActionResult).keycode.join(', ')"
-                    :controller_type="detail.controller_type" />
+                         :controller-type="detail.controller_type" />
                 <InfoRow label="Duration" :value="`${(detail.result as LongPressKeyActionResult).duration}ms`"
-                    :controller_type="detail.controller_type" />
+                         :controller-type="detail.controller_type" />
             </template>
 
             <!-- InputText -->
@@ -105,7 +105,7 @@
         <div v-if="detail.detail_json" class="flex flex-col gap-0.5">
             <span class="text-xs text-dimmed font-medium">Detail JSON:</span>
             <MonacoEditor :model-value="formatJson(detail.detail_json)" language="json" :read-only="true"
-                :min-height="60" :max-height="300" />
+                          :min-height="60" :max-height="300" />
         </div>
     </div>
 </template>

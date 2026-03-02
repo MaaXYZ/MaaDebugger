@@ -1,4 +1,3 @@
-import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import type {
   StatusSnapshot,
@@ -25,9 +24,7 @@ export const useStatusStore = defineStore("status", () => {
   const controllerStatus = computed<ControllerStatus>(
     () => status.value.controller,
   );
-  const resourceStatus = computed<ResourceStatus>(
-    () => status.value.resource,
-  );
+  const resourceStatus = computed<ResourceStatus>(() => status.value.resource);
   const taskStatus = computed<TaskStatus>(() => status.value.task);
   const agentStatus = computed<AgentStatus>(() => status.value.agent);
 

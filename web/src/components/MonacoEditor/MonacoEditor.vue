@@ -2,8 +2,8 @@
     <div class="monaco-editor-wrapper relative">
         <div ref="containerRef" class="monaco-editor-container" :style="containerStyle"></div>
         <UButton :icon="copied ? 'i-lucide-check' : 'i-lucide-copy'" size="xs" variant="ghost"
-            :color="copied ? 'success' : 'neutral'" class="absolute top-1 right-1 z-10 opacity-60 hover:opacity-100"
-            @click="copyContent" />
+                 :color="copied ? 'success' : 'neutral'" class="absolute top-1 right-1 z-10 opacity-60 hover:opacity-100"
+                 @click="copyContent" />
     </div>
 </template>
 
@@ -49,6 +49,7 @@ const emit = defineEmits<{
 
 const containerRef = ref<HTMLDivElement>()
 let editorInstance: MonacoEditor.IStandaloneCodeEditor | null = null
+let darkModeObserver: MutationObserver | null = null
 
 const copied = ref(false)
 let copyTimer: ReturnType<typeof setTimeout> | null = null
@@ -144,16 +145,13 @@ onMounted(() => {
 
     // Watch for dark mode changes (only in 'auto' theme mode)
     if (props.theme === 'auto') {
-        const observer = new MutationObserver(() => {
+        darkModeObserver = new MutationObserver(() => {
             monaco.editor.setTheme(resolveTheme())
         })
-        observer.observe(document.documentElement, {
+        darkModeObserver.observe(document.documentElement, {
             attributes: true,
             attributeFilter: ['class'],
         })
-
-            // Store observer for cleanup
-            ; (containerRef.value as any).__monacoObserver = observer
     }
 })
 
@@ -205,10 +203,8 @@ watch(
 
 onBeforeUnmount(() => {
     if (copyTimer) clearTimeout(copyTimer)
-    if (containerRef.value) {
-        const observer = (containerRef.value as any).__monacoObserver as MutationObserver | undefined
-        observer?.disconnect()
-    }
+    darkModeObserver?.disconnect()
+    darkModeObserver = null
     editorInstance?.dispose()
     editorInstance = null
 })

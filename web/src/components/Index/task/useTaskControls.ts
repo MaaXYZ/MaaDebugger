@@ -142,6 +142,8 @@ export function useTaskControls(toast: ToastApi) {
 
   async function onStart() {
     if (!canStart.value) return;
+
+    // 运行任务
     const result = await runTask(selectedEntry.value, {});
     if (!result.succeed) {
       toast.add({
