@@ -1,11 +1,12 @@
 <template>
-    <div class="w-full min-w-0">
+    <div class="max-w-full min-w-0">
         <UTooltip :text="reco.msg.name">
             <UButton size="sm" :variant="'outline'" :color="btnColor" :icon="btnIcon"
-                :loading="reco.status === 'running'" class="font-medium w-full min-w-0 justify-start"
+                :loading="reco.status === 'running'"
+                class="font-medium max-w-full min-w-0 justify-start overflow-hidden"
                 @click="$emit('requestDetail', reco.msg.reco_id)">
                 <template #default>
-                    <span class="flex items-center gap-1 w-full min-w-0 text-left">
+                    <span class="flex items-center gap-1 max-w-full min-w-0 text-left overflow-hidden">
                         <span class="truncate block min-w-0">{{ itemBrief }}</span>
                         <span class="text-[11px] text-dimmed shrink-0">#{{ reco.msg.reco_id }}</span>
                     </span>

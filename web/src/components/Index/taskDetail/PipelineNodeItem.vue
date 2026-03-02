@@ -8,7 +8,7 @@
             <UIcon name="i-lucide-workflow" class="size-4 shrink-0 text-dimmed" />
             <div class="min-w-0 flex-1">
                 <span class="text-sm font-medium truncate block w-full" :title="node.msg.name">{{ node.msg.name
-                    }}</span>
+                }}</span>
             </div>
             <StatusIcon :status="node.status" class="shrink-0" />
             <span v-if="!expanded && node.reco.length > 0" class="text-xs text-dimmed tabular-nums ml-auto shrink-0">
@@ -45,7 +45,8 @@
                             <span class="text-xs text-dimmed">Action</span>
                         </div>
                         <div class="pl-5">
-                            <NodeStatusButton :status="node.action.status" :label="node.action.msg.name" size="sm"
+                            <NodeStatusButton :status="node.action.status" :label="node.action.msg.name"
+                                :action-id="node.action.msg.action_id" size="sm"
                                 @click="$emit('requestActionDetail', node.action!.msg.action_id)" />
                         </div>
                     </div>
