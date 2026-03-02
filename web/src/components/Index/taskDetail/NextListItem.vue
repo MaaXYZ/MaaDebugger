@@ -1,5 +1,5 @@
 <template>
-    <div class="flex flex-row flex-wrap gap-1.5">
+    <div class="flex flex-col gap-1.5 w-full min-w-0">
         <!-- Already resolved reco scopes -->
         <template v-for="(reco, idx) in nextList.childs" :key="`reco-${idx}`">
             <RecoButton :reco="reco" :info="nextList.msg.list?.[idx]" use-warning
