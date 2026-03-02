@@ -3,6 +3,7 @@
 const { spawn } = require("node:child_process");
 const { existsSync } = require("node:fs");
 const path = require("node:path");
+const { exit } = require("node:process");
 
 // 获取可执行文件路径
 const rootDir = path.resolve(__dirname);
@@ -18,8 +19,7 @@ if (!existsSync(exePath)) {
 }
 
 // 获取 MaaFramework 动态库路径
-nodePath = require.resolve("@maaxyz/maa-node");
-nodePath = path.dirname(path.dirname(path.dirname(nodePath)));
+nodePath = path.resolve(require.resolve("@maaxyz/maa-node"), "../../../");
 const channelPath = path.join(
   nodePath,
   `maa-node-${process.platform}-${process.arch}`,
