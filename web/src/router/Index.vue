@@ -10,6 +10,13 @@
         <!-- 第二列: Task (includes Screenshot) -->
         <div class="w-full flex flex-col gap-4 order-2 lg:order-0">
             <TaskCard />
+            <!-- FocusCard 占位符 -->
+            <UCard>
+                <template #header>
+                    <h3 class="text-sm font-semibold">FocusCard</h3>
+                </template>
+                <p class="text-sm text-muted">FocusCard placeholder</p>
+            </UCard>
         </div>
         <!-- 第三列: Task Detail -->
         <div class="w-full flex flex-col gap-4 order-1 lg:order-0">

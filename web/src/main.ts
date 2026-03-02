@@ -13,6 +13,10 @@ const router = createRouter({
       component: () => import("./router/Index.vue"),
     },
     {
+      path: "/running",
+      component: () => import("./router/Running.vue"),
+    },
+    {
       path: "/TaskDetail",
       component: () => import("./router/TaskDetailPage.vue"),
     },
