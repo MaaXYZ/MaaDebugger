@@ -1,15 +1,18 @@
 <template>
-    <div class="flex flex-col gap-1.5 w-full min-w-0">
+    <div class="inline-flex max-w-full flex-wrap items-start gap-1.5 align-top min-w-0 w-fit">
         <!-- Already resolved reco scopes -->
         <template v-for="(reco, idx) in nextList.childs" :key="`reco-${idx}`">
             <RecoButton :reco="reco" :info="nextList.msg.list?.[idx]" use-warning
-                        @request-detail="$emit('requestDetail', $event)" />
+                @request-detail="$emit('requestDetail', $event)" />
         </template>
         <!-- Pending (not yet started) items -->
         <template v-for="(item, idx) in pendingItems" :key="`wait-${idx}`">
-            <UButton size="sm" variant="outline" color="neutral" disabled>
-                {{ formatItemLabel(item) }}
-            </UButton>
+            <UTooltip :text="formatItemLabel(item)">
+                <UButton size="sm" variant="outline" color="neutral" disabled
+                    class="max-w-full min-w-0 overflow-hidden">
+                    <span class="truncate block min-w-0">{{ formatItemLabel(item) }}</span>
+                </UButton>
+            </UTooltip>
         </template>
     </div>
 </template>

@@ -26,13 +26,8 @@
                             <span class="text-xs text-dimmed">Reco</span>
                             <span class="text-xs text-dimmed tabular-nums">({{ node.reco.length }})</span>
                         </div>
-                        <div class="pl-5 flex flex-col gap-1.5">
-                            <UButton v-if="hasHiddenRounds" size="xs" variant="ghost" color="neutral" class="self-start"
-                                @click.stop="showAllRounds = !showAllRounds">
-                                {{ showAllRounds ? 'Collapse' : `Show ${hiddenCount} older round${hiddenCount > 1 ? 's'
-                                    : ''}...` }}
-                            </UButton>
-                            <template v-for="(nextList, idx) in visibleReco" :key="recoOffset + idx">
+                        <div class="pl-5 flex flex-wrap items-center gap-1.5">
+                            <template v-for="(nextList, idx) in node.reco" :key="idx">
                                 <NextListItem :next-list="nextList" @request-detail="$emit('requestDetail', $event)" />
                             </template>
                         </div>
@@ -57,13 +52,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import type { PipelineNodeScope } from './types'
 import StatusIcon from './StatusIcon.vue'
 import NextListItem from './NextListItem.vue'
 import NodeStatusButton from './NodeStatusButton.vue'
-
-const VISIBLE_ROUNDS = 5
 
 const props = defineProps<{
     node: PipelineNodeScope
@@ -76,19 +69,4 @@ defineEmits<{
 }>()
 
 const expanded = ref(props.defaultExpanded ?? true)
-const showAllRounds = ref(false)
-
-const hiddenCount = computed(() => Math.max(0, props.node.reco.length - VISIBLE_ROUNDS))
-const hasHiddenRounds = computed(() => hiddenCount.value > 0)
-
-const recoOffset = computed(() =>
-    showAllRounds.value || !hasHiddenRounds.value ? 0 : hiddenCount.value
-)
-
-const visibleReco = computed(() => {
-    if (showAllRounds.value || !hasHiddenRounds.value) {
-        return props.node.reco
-    }
-    return props.node.reco.slice(-VISIBLE_ROUNDS)
-})
 </script>
