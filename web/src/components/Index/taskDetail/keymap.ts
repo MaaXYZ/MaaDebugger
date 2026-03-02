@@ -1,11 +1,13 @@
 export default function getKey(value: number, controller_type: string): string {
-  if (controller_type === "win32") {
-    return win32.get(value) ?? "";
+  switch (controller_type) {
+    case "win32":
+      return win32.get(value) ?? "";
+    case "adb":
+      return adb.get(value) ?? "";
+    case "gamepad":
+      return gamepad.get(value) ?? "";
   }
-  if (controller_type === "adb") {
-    return adb.get(value) ?? "";
-  }
-  return "Unknown";
+  return "NULL";
 }
 
 const win32: Map<number, string> = new Map([
@@ -430,4 +432,27 @@ const adb: Map<number, string> = new Map([
   [285, "Thumbs Up"], // KEYCODE_THUMBS_UP
   [286, "Thumbs Down"], // KEYCODE_THUMBS_DOWN
   [287, "Profile Switch"], // KEYCODE_PROFILE_SWITCH
+]);
+
+const gamepad: Map<number, string> = new Map([
+  // Xbox 360 buttons (XUSB)
+  [0x1000, "A / Cross"],
+  [0x2000, "B / Circle"],
+  [0x4000, "X / Square"],
+  [0x8000, "Y / Triangle"],
+  [0x0100, "LB / L1"],
+  [0x0200, "RB / R1"],
+  [0x0040, "Left Thumb / L3"],
+  [0x0080, "Right Thumb / R3"],
+  [0x0010, "Start / Options"],
+  [0x0020, "Back / Share"],
+  [0x0400, "Guide"],
+  [0x0001, "DPad Up"],
+  [0x0002, "DPad Down"],
+  [0x0004, "DPad Left"],
+  [0x0008, "DPad Right"],
+
+  // DualShock 4 special buttons
+  [0x10000, "PS"],
+  [0x20000, "Touchpad"],
 ]);
