@@ -29,7 +29,7 @@ jobs:
           version: 10.30
 
       - name: Build frontend
-        run: node build.mjs --skip-go
+        run: node build.js --skip-go
 
       - uses: actions/upload-artifact@v5
         with:
@@ -108,7 +108,7 @@ jobs:
           extract: true
 
       - name: Build Go binary
-        run: node build.mjs --skip-frontend --os ${{ matrix.goos }} --arch ${{ matrix.goarch }}
+        run: node build.js --skip-frontend --os ${{ matrix.goos }} --arch ${{ matrix.goarch }}
 
       - name: Package release
         run: |
