@@ -142,6 +142,292 @@ const win32: Map<number, string> = new Map([
 ]);
 
 const adb: Map<number, string> = new Map([
-  [0, "ACTION_DOWN"],
-  [1, "ACTION_UP"],
+  [0, "Unknown"], // KEYCODE_UNKNOWN
+  [1, "Soft Left"], // KEYCODE_SOFT_LEFT
+  [2, "Soft Right"], // KEYCODE_SOFT_RIGHT
+  [3, "Home"], // KEYCODE_HOME
+  [4, "Back"], // KEYCODE_BACK
+  [5, "Call"], // KEYCODE_CALL
+  [6, "End Call"], // KEYCODE_ENDCALL
+  [7, "0"], // KEYCODE_0
+  [8, "1"], // KEYCODE_1
+  [9, "2"], // KEYCODE_2
+  [10, "3"], // KEYCODE_3
+  [11, "4"], // KEYCODE_4
+  [12, "5"], // KEYCODE_5
+  [13, "6"], // KEYCODE_6
+  [14, "7"], // KEYCODE_7
+  [15, "8"], // KEYCODE_8
+  [16, "9"], // KEYCODE_9
+  [17, "*"], // KEYCODE_STAR
+  [18, "#"], // KEYCODE_POUND
+  [19, "↑"], // KEYCODE_DPAD_UP
+  [20, "↓"], // KEYCODE_DPAD_DOWN
+  [21, "←"], // KEYCODE_DPAD_LEFT
+  [22, "→"], // KEYCODE_DPAD_RIGHT
+  [23, "DPad Center"], // KEYCODE_DPAD_CENTER
+  [24, "Volume Up"], // KEYCODE_VOLUME_UP
+  [25, "Volume Down"], // KEYCODE_VOLUME_DOWN
+  [26, "Power"], // KEYCODE_POWER
+  [27, "Camera"], // KEYCODE_CAMERA
+  [28, "Clear"], // KEYCODE_CLEAR
+  [29, "A"], // KEYCODE_A
+  [30, "B"], // KEYCODE_B
+  [31, "C"], // KEYCODE_C
+  [32, "D"], // KEYCODE_D
+  [33, "E"], // KEYCODE_E
+  [34, "F"], // KEYCODE_F
+  [35, "G"], // KEYCODE_G
+  [36, "H"], // KEYCODE_H
+  [37, "I"], // KEYCODE_I
+  [38, "J"], // KEYCODE_J
+  [39, "K"], // KEYCODE_K
+  [40, "L"], // KEYCODE_L
+  [41, "M"], // KEYCODE_M
+  [42, "N"], // KEYCODE_N
+  [43, "O"], // KEYCODE_O
+  [44, "P"], // KEYCODE_P
+  [45, "Q"], // KEYCODE_Q
+  [46, "R"], // KEYCODE_R
+  [47, "S"], // KEYCODE_S
+  [48, "T"], // KEYCODE_T
+  [49, "U"], // KEYCODE_U
+  [50, "V"], // KEYCODE_V
+  [51, "W"], // KEYCODE_W
+  [52, "X"], // KEYCODE_X
+  [53, "Y"], // KEYCODE_Y
+  [54, "Z"], // KEYCODE_Z
+  [55, ","], // KEYCODE_COMMA
+  [56, "."], // KEYCODE_PERIOD
+  [57, "Left Alt"], // KEYCODE_ALT_LEFT
+  [58, "Right Alt"], // KEYCODE_ALT_RIGHT
+  [59, "Left Shift"], // KEYCODE_SHIFT_LEFT
+  [60, "Right Shift"], // KEYCODE_SHIFT_RIGHT
+  [61, "Tab"], // KEYCODE_TAB
+  [62, "Space"], // KEYCODE_SPACE
+  [63, "Sym"], // KEYCODE_SYM
+  [64, "Explorer"], // KEYCODE_EXPLORER
+  [65, "Envelope"], // KEYCODE_ENVELOPE
+  [66, "Enter"], // KEYCODE_ENTER
+  [67, "Backspace"], // KEYCODE_DEL
+  [68, "`"], // KEYCODE_GRAVE
+  [69, "-"], // KEYCODE_MINUS
+  [70, "="], // KEYCODE_EQUALS
+  [71, "["], // KEYCODE_LEFT_BRACKET
+  [72, "]"], // KEYCODE_RIGHT_BRACKET
+  [73, "\\"], // KEYCODE_BACKSLASH
+  [74, ";"], // KEYCODE_SEMICOLON
+  [75, "'"], // KEYCODE_APOSTROPHE
+  [76, "/"], // KEYCODE_SLASH
+  [77, "@"], // KEYCODE_AT
+  [78, "Num"], // KEYCODE_NUM
+  [79, "Headset Hook"], // KEYCODE_HEADSETHOOK
+  [80, "Focus"], // KEYCODE_FOCUS
+  [81, "+"], // KEYCODE_PLUS
+  [82, "Menu"], // KEYCODE_MENU
+  [83, "Notification"], // KEYCODE_NOTIFICATION
+  [84, "Search"], // KEYCODE_SEARCH
+  [85, "Media Play/Pause"], // KEYCODE_MEDIA_PLAY_PAUSE
+  [86, "Media Stop"], // KEYCODE_MEDIA_STOP
+  [87, "Media Next"], // KEYCODE_MEDIA_NEXT
+  [88, "Media Previous"], // KEYCODE_MEDIA_PREVIOUS
+  [89, "Media Rewind"], // KEYCODE_MEDIA_REWIND
+  [90, "Media Fast Forward"], // KEYCODE_MEDIA_FAST_FORWARD
+  [91, "Mute"], // KEYCODE_MUTE
+  [92, "Page Up"], // KEYCODE_PAGE_UP
+  [93, "Page Down"], // KEYCODE_PAGE_DOWN
+  [94, "PictSymbols"], // KEYCODE_PICTSYMBOLS
+  [95, "Switch Charset"], // KEYCODE_SWITCH_CHARSET
+  [96, "Button A"], // KEYCODE_BUTTON_A
+  [97, "Button B"], // KEYCODE_BUTTON_B
+  [98, "Button C"], // KEYCODE_BUTTON_C
+  [99, "Button X"], // KEYCODE_BUTTON_X
+  [100, "Button Y"], // KEYCODE_BUTTON_Y
+  [101, "Button Z"], // KEYCODE_BUTTON_Z
+  [102, "Button L1"], // KEYCODE_BUTTON_L1
+  [103, "Button R1"], // KEYCODE_BUTTON_R1
+  [104, "Button L2"], // KEYCODE_BUTTON_L2
+  [105, "Button R2"], // KEYCODE_BUTTON_R2
+  [106, "Button Thumb L"], // KEYCODE_BUTTON_THUMBL
+  [107, "Button Thumb R"], // KEYCODE_BUTTON_THUMBR
+  [108, "Button Start"], // KEYCODE_BUTTON_START
+  [109, "Button Select"], // KEYCODE_BUTTON_SELECT
+  [110, "Button Mode"], // KEYCODE_BUTTON_MODE
+  [111, "Esc"], // KEYCODE_ESCAPE
+  [112, "Left Ctrl"], // KEYCODE_CTRL_LEFT
+  [113, "Right Ctrl"], // KEYCODE_CTRL_RIGHT
+  [114, "Caps Lock"], // KEYCODE_CAPS_LOCK
+  [115, "Scroll Lock"], // KEYCODE_SCROLL_LOCK
+  [116, "Left Meta"], // KEYCODE_META_LEFT
+  [117, "Right Meta"], // KEYCODE_META_RIGHT
+  [118, "Function"], // KEYCODE_FUNCTION
+  [119, "SysRq"], // KEYCODE_SYSRQ
+  [120, "Break"], // KEYCODE_BREAK
+  [121, "Move Home"], // KEYCODE_MOVE_HOME
+  [122, "Move End"], // KEYCODE_MOVE_END
+  [123, "Insert"], // KEYCODE_INSERT
+  [124, "Forward"], // KEYCODE_FORWARD
+  [125, "Media Play"], // KEYCODE_MEDIA_PLAY
+  [126, "Media Pause"], // KEYCODE_MEDIA_PAUSE
+  [127, "Media Close"], // KEYCODE_MEDIA_CLOSE
+  [128, "Media Eject"], // KEYCODE_MEDIA_EJECT
+  [129, "Media Record"], // KEYCODE_MEDIA_RECORD
+  [130, "F1"], // KEYCODE_F1
+  [131, "F2"], // KEYCODE_F2
+  [132, "F3"], // KEYCODE_F3
+  [133, "F4"], // KEYCODE_F4
+  [134, "F5"], // KEYCODE_F5
+  [135, "F6"], // KEYCODE_F6
+  [136, "F7"], // KEYCODE_F7
+  [137, "F8"], // KEYCODE_F8
+  [138, "F9"], // KEYCODE_F9
+  [139, "F10"], // KEYCODE_F10
+  [140, "F11"], // KEYCODE_F11
+  [141, "F12"], // KEYCODE_F12
+  [142, "Num Lock"], // KEYCODE_NUM_LOCK
+  [143, "Numpad 0"], // KEYCODE_NUMPAD_0
+  [144, "Numpad 1"], // KEYCODE_NUMPAD_1
+  [145, "Numpad 2"], // KEYCODE_NUMPAD_2
+  [146, "Numpad 3"], // KEYCODE_NUMPAD_3
+  [147, "Numpad 4"], // KEYCODE_NUMPAD_4
+  [148, "Numpad 5"], // KEYCODE_NUMPAD_5
+  [149, "Numpad 6"], // KEYCODE_NUMPAD_6
+  [150, "Numpad 7"], // KEYCODE_NUMPAD_7
+  [151, "Numpad 8"], // KEYCODE_NUMPAD_8
+  [152, "Numpad 9"], // KEYCODE_NUMPAD_9
+  [153, "Numpad /"], // KEYCODE_NUMPAD_DIVIDE
+  [154, "Numpad *"], // KEYCODE_NUMPAD_MULTIPLY
+  [155, "Numpad -"], // KEYCODE_NUMPAD_SUBTRACT
+  [156, "Numpad +"], // KEYCODE_NUMPAD_ADD
+  [157, "Numpad ."], // KEYCODE_NUMPAD_DOT
+  [158, "Numpad ,"], // KEYCODE_NUMPAD_COMMA
+  [159, "Numpad Enter"], // KEYCODE_NUMPAD_ENTER
+  [160, "Numpad ="], // KEYCODE_NUMPAD_EQUALS
+  [161, "Numpad ("], // KEYCODE_NUMPAD_LEFT_PAREN
+  [162, "Numpad )"], // KEYCODE_NUMPAD_RIGHT_PAREN
+  [163, "Volume Mute"], // KEYCODE_VOLUME_MUTE
+  [164, "Info"], // KEYCODE_INFO
+  [165, "Channel Up"], // KEYCODE_CHANNEL_UP
+  [166, "Channel Down"], // KEYCODE_CHANNEL_DOWN
+  [167, "Zoom In"], // KEYCODE_ZOOM_IN
+  [168, "Zoom Out"], // KEYCODE_ZOOM_OUT
+  [169, "TV"], // KEYCODE_TV
+  [170, "Window"], // KEYCODE_WINDOW
+  [171, "Guide"], // KEYCODE_GUIDE
+  [172, "DVR"], // KEYCODE_DVR
+  [173, "Bookmark"], // KEYCODE_BOOKMARK
+  [174, "Captions"], // KEYCODE_CAPTIONS
+  [175, "Settings"], // KEYCODE_SETTINGS
+  [176, "TV Power"], // KEYCODE_TV_POWER
+  [177, "TV Input"], // KEYCODE_TV_INPUT
+  [178, "STB Power"], // KEYCODE_STB_POWER
+  [179, "STB Input"], // KEYCODE_STB_INPUT
+  [180, "AVR Power"], // KEYCODE_AVR_POWER
+  [181, "AVR Input"], // KEYCODE_AVR_INPUT
+  [182, "Program Red"], // KEYCODE_PROG_RED
+  [183, "Program Green"], // KEYCODE_PROG_GREEN
+  [184, "Program Yellow"], // KEYCODE_PROG_YELLOW
+  [185, "Program Blue"], // KEYCODE_PROG_BLUE
+  [186, "App Switch"], // KEYCODE_APP_SWITCH
+  [187, "Button 1"], // KEYCODE_BUTTON_1
+  [188, "Button 2"], // KEYCODE_BUTTON_2
+  [189, "Button 3"], // KEYCODE_BUTTON_3
+  [190, "Button 4"], // KEYCODE_BUTTON_4
+  [191, "Button 5"], // KEYCODE_BUTTON_5
+  [192, "Button 6"], // KEYCODE_BUTTON_6
+  [193, "Button 7"], // KEYCODE_BUTTON_7
+  [194, "Button 8"], // KEYCODE_BUTTON_8
+  [195, "Button 9"], // KEYCODE_BUTTON_9
+  [196, "Button 10"], // KEYCODE_BUTTON_10
+  [197, "Button 11"], // KEYCODE_BUTTON_11
+  [198, "Button 12"], // KEYCODE_BUTTON_12
+  [199, "Button 13"], // KEYCODE_BUTTON_13
+  [200, "Button 14"], // KEYCODE_BUTTON_14
+  [201, "Button 15"], // KEYCODE_BUTTON_15
+  [202, "Button 16"], // KEYCODE_BUTTON_16
+  [203, "Language Switch"], // KEYCODE_LANGUAGE_SWITCH
+  [204, "Manner Mode"], // KEYCODE_MANNER_MODE
+  [205, "3D Mode"], // KEYCODE_3D_MODE
+  [206, "Contacts"], // KEYCODE_CONTACTS
+  [207, "Calendar"], // KEYCODE_CALENDAR
+  [208, "Music"], // KEYCODE_MUSIC
+  [209, "Calculator"], // KEYCODE_CALCULATOR
+  [210, "Zenkaku/Hankaku"], // KEYCODE_ZENKAKU_HANKAKU
+  [211, "Eisu"], // KEYCODE_EISU
+  [212, "Muhenkan"], // KEYCODE_MUHENKAN
+  [213, "Henkan"], // KEYCODE_HENKAN
+  [214, "Katakana/Hiragana"], // KEYCODE_KATAKANA_HIRAGANA
+  [215, "Yen"], // KEYCODE_YEN
+  [216, "Ro"], // KEYCODE_RO
+  [217, "Kana"], // KEYCODE_KANA
+  [218, "Assist"], // KEYCODE_ASSIST
+  [219, "Brightness Down"], // KEYCODE_BRIGHTNESS_DOWN
+  [220, "Brightness Up"], // KEYCODE_BRIGHTNESS_UP
+  [221, "Media Audio Track"], // KEYCODE_MEDIA_AUDIO_TRACK
+  [222, "Sleep"], // KEYCODE_SLEEP
+  [223, "Wakeup"], // KEYCODE_WAKEUP
+  [224, "Pairing"], // KEYCODE_PAIRING
+  [225, "Media Top Menu"], // KEYCODE_MEDIA_TOP_MENU
+  [226, "11"], // KEYCODE_11
+  [227, "12"], // KEYCODE_12
+  [228, "Last Channel"], // KEYCODE_LAST_CHANNEL
+  [229, "TV Data Service"], // KEYCODE_TV_DATA_SERVICE
+  [230, "Voice Assist"], // KEYCODE_VOICE_ASSIST
+  [231, "TV Radio Service"], // KEYCODE_TV_RADIO_SERVICE
+  [232, "TV Teletext"], // KEYCODE_TV_TELETEXT
+  [233, "TV Number Entry"], // KEYCODE_TV_NUMBER_ENTRY
+  [234, "TV Terrestrial Analog"], // KEYCODE_TV_TERRESTRIAL_ANALOG
+  [235, "TV Terrestrial Digital"], // KEYCODE_TV_TERRESTRIAL_DIGITAL
+  [236, "TV Satellite"], // KEYCODE_TV_SATELLITE
+  [237, "TV Satellite BS"], // KEYCODE_TV_SATELLITE_BS
+  [238, "TV Satellite CS"], // KEYCODE_TV_SATELLITE_CS
+  [239, "TV Satellite Service"], // KEYCODE_TV_SATELLITE_SERVICE
+  [240, "TV Network"], // KEYCODE_TV_NETWORK
+  [241, "TV Antenna/Cable"], // KEYCODE_TV_ANTENNA_CABLE
+  [242, "TV HDMI 1"], // KEYCODE_TV_INPUT_HDMI_1
+  [243, "TV HDMI 2"], // KEYCODE_TV_INPUT_HDMI_2
+  [244, "TV HDMI 3"], // KEYCODE_TV_INPUT_HDMI_3
+  [245, "TV HDMI 4"], // KEYCODE_TV_INPUT_HDMI_4
+  [246, "TV Composite 1"], // KEYCODE_TV_INPUT_COMPOSITE_1
+  [247, "TV Composite 2"], // KEYCODE_TV_INPUT_COMPOSITE_2
+  [248, "TV Component 1"], // KEYCODE_TV_INPUT_COMPONENT_1
+  [249, "TV Component 2"], // KEYCODE_TV_INPUT_COMPONENT_2
+  [250, "TV VGA 1"], // KEYCODE_TV_INPUT_VGA_1
+  [251, "Audio Description"], // KEYCODE_TV_AUDIO_DESCRIPTION
+  [252, "Audio Description Mix Up"], // KEYCODE_TV_AUDIO_DESCRIPTION_MIX_UP
+  [253, "Audio Description Mix Down"], // KEYCODE_TV_AUDIO_DESCRIPTION_MIX_DOWN
+  [254, "Zoom Mode"], // KEYCODE_TV_ZOOM_MODE
+  [255, "Contents Menu"], // KEYCODE_TV_CONTENTS_MENU
+  [256, "Media Context Menu"], // KEYCODE_TV_MEDIA_CONTEXT_MENU
+  [257, "Timer Programming"], // KEYCODE_TV_TIMER_PROGRAMMING
+  [258, "Help"], // KEYCODE_HELP
+  [259, "Navigate Previous"], // KEYCODE_NAVIGATE_PREVIOUS
+  [260, "Navigate Next"], // KEYCODE_NAVIGATE_NEXT
+  [261, "Navigate In"], // KEYCODE_NAVIGATE_IN
+  [262, "Navigate Out"], // KEYCODE_NAVIGATE_OUT
+  [263, "Stem Primary"], // KEYCODE_STEM_PRIMARY
+  [264, "Stem 1"], // KEYCODE_STEM_1
+  [265, "Stem 2"], // KEYCODE_STEM_2
+  [266, "Stem 3"], // KEYCODE_STEM_3
+  [267, "DPad Up Left"], // KEYCODE_DPAD_UP_LEFT
+  [268, "DPad Down Left"], // KEYCODE_DPAD_DOWN_LEFT
+  [269, "DPad Up Right"], // KEYCODE_DPAD_UP_RIGHT
+  [270, "DPad Down Right"], // KEYCODE_DPAD_DOWN_RIGHT
+  [271, "Media Skip Forward"], // KEYCODE_MEDIA_SKIP_FORWARD
+  [272, "Media Skip Backward"], // KEYCODE_MEDIA_SKIP_BACKWARD
+  [273, "Media Step Forward"], // KEYCODE_MEDIA_STEP_FORWARD
+  [274, "Media Step Backward"], // KEYCODE_MEDIA_STEP_BACKWARD
+  [275, "Soft Sleep"], // KEYCODE_SOFT_SLEEP
+  [276, "Cut"], // KEYCODE_CUT
+  [277, "Copy"], // KEYCODE_COPY
+  [278, "Paste"], // KEYCODE_PASTE
+  [279, "System Navigation Up"], // KEYCODE_SYSTEM_NAVIGATION_UP
+  [280, "System Navigation Down"], // KEYCODE_SYSTEM_NAVIGATION_DOWN
+  [281, "System Navigation Left"], // KEYCODE_SYSTEM_NAVIGATION_LEFT
+  [282, "System Navigation Right"], // KEYCODE_SYSTEM_NAVIGATION_RIGHT
+  [283, "All Apps"], // KEYCODE_ALL_APPS
+  [284, "Refresh"], // KEYCODE_REFRESH
+  [285, "Thumbs Up"], // KEYCODE_THUMBS_UP
+  [286, "Thumbs Down"], // KEYCODE_THUMBS_DOWN
+  [287, "Profile Switch"], // KEYCODE_PROFILE_SWITCH
 ]);
