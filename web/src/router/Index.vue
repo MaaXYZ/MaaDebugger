@@ -1,7 +1,8 @@
 <template>
     <div class="flex flex-col lg:grid lg:grid-cols-3 items-start w-full gap-4 p-4 lg:p-6">
-        <!-- 第一列: Controller / Resource / Agent -->
+        <!-- 第一列: Interface / Controller / Resource / Agent -->
         <div class="w-full flex flex-col gap-4 order-4 lg:order-0">
+            <InterfaceCard />
             <ControllerCard />
             <ResourceCard />
             <AgentCard />
@@ -18,6 +19,7 @@
 </template>
 
 <script setup lang="ts">
+import InterfaceCard from "@/components/Index/InterfaceCard.vue";
 import ControllerCard from "@/components/Index/ControllerCard.vue";
 import ResourceCard from "@/components/Index/ResourceCard.vue";
 import AgentCard from "@/components/Index/AgentCard.vue";
