@@ -123,6 +123,10 @@ func main() {
 	defer agentService.DisconnectAll()
 	defer screenshotService.Stop()
 
+	// Set the release channel
+	channel := getenv("MAADBG_CHANNEL", "github")
+	cfgStore.Set("channel", channel) // npm pypi github
+
 	router := httpapi.NewRouter(httpapi.Dependencies{
 		StatusStore:       statusStore,
 		Hub:               hub,
