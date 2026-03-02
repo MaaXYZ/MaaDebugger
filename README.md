@@ -1,10 +1,14 @@
 # MaaDebugger
 
+由 MaaXYZ 团队开发与维护的 MaaFramework 调试器，拥有现代的 WebUI 和即时的任务反馈。
+
 Official desktop debugger for MaaFramework, featuring a web-based UI and real-time task inspection.
 
-## 使用 npm
+## 安装方式
 
-MaaDebugger 以 `maa-debugger` 的名称发布于 [npm](https://www.npmjs.com) 。你可以使用 npm 或其他包管理器安装、管理与使用。这里仅介绍 npm 用法。
+### 使用 npm (Node.js)
+
+MaaDebugger 以 `maa-debugger` 的名称发布于 [npm](https://www.npmjs.com) 。你可以使用 npm 或其他包管理器(如 pnpm)安装、管理与使用。这里仅介绍 npm 用法。
 
 ```bash
 # 全局安装
@@ -19,6 +23,17 @@ MaaDebugger 支持命令行参数，你可以通过 `--help` / `-H` 命令来获
 ```bash
 npx maa-debugger --help
 ```
+
+### 使用 pip (Python)
+
+MaaDebugger
+将以 `MaaDebugger` 的名称发布于 [PyPI](https://pypi.org/project/MaaDebugger) 。你可以使用 pip 或其他包管理器(如 uv)安装、管理与使用。
+>[!WARNING]
+在早期开发阶段，我们**不会**发布至 PyPI，请自行使用其他渠道。
+
+### 自行下载
+
+我们也提供了 [Github Release](https://github.com/MaaXYZ/MaaDebugger/releases) 下载渠道，下载解压后即可使用。
 
 ## 开发模式
 
