@@ -131,9 +131,11 @@ func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
 	})
 
 	tasker.OnNodeActionInContext(func(_ *maa.Context, event maa.EventStatus, detail maa.NodeActionDetail) {
-		// 在 action 开始前截图并缓存
+		// 在 action 开始前截图并缓存（仅对有坐标的 action 类型）
 		if event == maa.EventStatusStarting {
-			s.captureActionScreenshot(detail.ActionID)
+			if s.actionNeedsScreenshot(detail.Name) {
+				s.captureActionScreenshot(detail.ActionID)
+			}
 		}
 
 		suffix := eventStatusToString(event)
@@ -712,6 +714,37 @@ func (s *TaskerService) GetRecognitionDetailByID(recoID int64) (*RecoDetailRespo
 	return convertRecoDetail(detail), nil
 }
 
+// actionNeedsScreenshot 根据节点名从 Resource 获取 action 类型，
+// 判断该 action 是否需要截图（有坐标的 action 需要截图）。
+func (s *TaskerService) actionNeedsScreenshot(nodeName string) bool {
+	res := s.resourceSvc.Resource()
+	if res == nil {
+		// 无法获取 resource，保险起见截图
+		return true
+	}
+	node, err := res.GetNode(nodeName)
+	if err != nil || node == nil || node.Action == nil {
+		// 无法获取节点信息，保险起见截图
+		return true
+	}
+	switch node.Action.Type {
+	case maa.ActionTypeDoNothing,
+		maa.ActionTypeClickKey,
+		maa.ActionTypeLongPressKey,
+		maa.ActionTypeKeyDown,
+		maa.ActionTypeKeyUp,
+		maa.ActionTypeInputText,
+		maa.ActionTypeStartApp,
+		maa.ActionTypeStopApp,
+		maa.ActionTypeStopTask,
+		maa.ActionTypeCommand,
+		maa.ActionTypeShell:
+		return false
+	default:
+		return true
+	}
+}
+
 // captureActionScreenshot 在 action 开始前截图并缓存。
 func (s *TaskerService) captureActionScreenshot(actionID uint64) {
 	ctrl := s.controllerSvc.Controller()
@@ -766,8 +799,8 @@ func (s *TaskerService) GetActionDetailByID(actionID int64) (*ActionDetailResp, 
 	}
 	resp := convertActionDetail(detail, s.controllerSvc.ControllerType())
 
-	// 从缓存中获取 action 开始前的截图
-	if cached, ok := s.actionScreenshots.Load(actionID); ok {
+	// 从缓存中获取 action 开始前的截图（注意：captureActionScreenshot 以 uint64 存储，这里需要转换）
+	if cached, ok := s.actionScreenshots.Load(uint64(actionID)); ok {
 		resp.RawImage = cached.(string)
 	}
 

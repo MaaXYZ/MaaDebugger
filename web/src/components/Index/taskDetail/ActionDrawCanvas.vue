@@ -7,11 +7,10 @@
 
         <!-- RIGHT PANEL: canvas + toolbar -->
         <div class="action-draw-right">
-            <div class="action-draw-canvas-container" :style="containerStyle"
-                 @wheel.prevent="onWheel">
+            <div class="action-draw-canvas-container" :style="containerStyle" @wheel.prevent="onWheel">
                 <div v-if="rawImage" class="absolute inset-0 flex items-center justify-center select-none"
-                     :class="[isDragging ? 'cursor-grabbing' : 'cursor-grab']" @mousedown="onMouseDown"
-                     @mousemove="onMouseMove" @mouseup="onMouseUp" @mouseleave="onMouseLeave">
+                    :class="[isDragging ? 'cursor-grabbing' : 'cursor-grab']" @mousedown="onMouseDown"
+                    @mousemove="onMouseMove" @mouseup="onMouseUp" @mouseleave="onMouseLeave">
                     <div class="relative" :style="canvasWrapperStyle">
                         <canvas ref="canvasRef" class="pointer-events-none block w-full h-full"></canvas>
                     </div>
@@ -27,14 +26,14 @@
                 <div class="flex items-center gap-1">
                     <UTooltip text="Zoom out">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-out" size="xs"
-                                 :disabled="zoomLevel <= MIN_ZOOM" @click="zoomOut" />
+                            :disabled="zoomLevel <= MIN_ZOOM" @click="zoomOut" />
                     </UTooltip>
                     <span class="text-xs text-muted min-w-10 text-center tabular-nums">
                         {{ zoomPercentage }}%
                     </span>
                     <UTooltip text="Zoom in">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-in" size="xs"
-                                 :disabled="zoomLevel >= MAX_ZOOM" @click="zoomIn" />
+                            :disabled="zoomLevel >= MAX_ZOOM" @click="zoomIn" />
                     </UTooltip>
                 </div>
                 <USeparator orientation="vertical" class="h-4" />
@@ -44,7 +43,7 @@
                 <USeparator orientation="vertical" class="h-4" />
                 <UTooltip text="Download drawn image">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-download" size="xs"
-                             @click="downloadCanvas" />
+                        @click="downloadCanvas" />
                 </UTooltip>
             </div>
         </div>
@@ -142,18 +141,47 @@ function drawPoint(ctx: CanvasRenderingContext2D, p: PointResponse, color: strin
     ctx.stroke()
 
     if (label) {
+        const cw = ctx.canvas.width
+        const ch = ctx.canvas.height
         const fontSize = Math.max(12, radius * 1.2)
         ctx.font = `bold ${fontSize}px system-ui, sans-serif`
-        const metrics = ctx.measureText(label)
+
+        // Append coordinate info to label
+        const fullLabel = `${label} (${p.x}, ${p.y})`
+        const metrics = ctx.measureText(fullLabel)
         const pad = fontSize * 0.3
-        const lx = p.x + radius + 4
-        const ly = p.y - fontSize / 2
+        const labelW = metrics.width + pad * 2
+        const labelH = fontSize + pad * 2
+        const gap = radius + 4
+
+        // Decide label placement: prefer right, fallback left
+        let lx: number
+        if (p.x + gap + labelW <= cw) {
+            lx = p.x + gap
+        } else if (p.x - gap - labelW >= 0) {
+            lx = p.x - gap - labelW
+        } else {
+            lx = Math.max(0, Math.min(cw - labelW, p.x - labelW / 2))
+        }
+
+        // Decide label placement: prefer vertically centered, then below, then above
+        let ly: number
+        const centerY = p.y - labelH / 2
+        if (centerY >= 0 && centerY + labelH <= ch) {
+            ly = centerY
+        } else if (p.y + gap + labelH <= ch) {
+            ly = p.y + gap
+        } else if (p.y - gap - labelH >= 0) {
+            ly = p.y - gap - labelH
+        } else {
+            ly = Math.max(0, Math.min(ch - labelH, 0))
+        }
 
         ctx.fillStyle = color + 'DD'
-        ctx.fillRect(lx, ly - pad, metrics.width + pad * 2, fontSize + pad * 2)
+        ctx.fillRect(lx, ly, labelW, labelH)
         ctx.fillStyle = '#ffffff'
         ctx.textBaseline = 'top'
-        ctx.fillText(label, lx + pad, ly)
+        ctx.fillText(fullLabel, lx + pad, ly + pad)
     }
 }
 
@@ -210,16 +238,29 @@ function drawScrollIndicator(ctx: CanvasRenderingContext2D, p: PointResponse, dx
     if (arrowDx !== 0 || arrowDy !== 0) {
         drawArrow(ctx, p, target, color, Math.max(2, baseSize / 200))
 
+        const cw = ctx.canvas.width
+        const ch = ctx.canvas.height
         const fontSize = Math.max(12, baseSize / 50)
         ctx.font = `bold ${fontSize}px system-ui, sans-serif`
         const label = `Scroll (${dx}, ${dy})`
         const metrics = ctx.measureText(label)
         const pad = fontSize * 0.3
-        const lx = p.x + radius + 4
-        const ly = p.y + radius + 4
+        const labelW = metrics.width + pad * 2
+        const labelH = fontSize + pad * 2
+
+        let lx = p.x + radius + 4
+        let ly = p.y + radius + 4
+
+        // Clamp horizontally
+        if (lx + labelW > cw) lx = p.x - radius - 4 - labelW
+        if (lx < 0) lx = 0
+
+        // Clamp vertically
+        if (ly + labelH > ch) ly = p.y - radius - 4 - labelH
+        if (ly < 0) ly = 0
 
         ctx.fillStyle = color + 'DD'
-        ctx.fillRect(lx, ly, metrics.width + pad * 2, fontSize + pad * 2)
+        ctx.fillRect(lx, ly, labelW, labelH)
         ctx.fillStyle = '#ffffff'
         ctx.textBaseline = 'top'
         ctx.fillText(label, lx + pad, ly + pad * 0.5)
@@ -262,36 +303,36 @@ function drawCanvas() {
     const pointRadius = baseSize / 50
 
     switch (result.type) {
-    case 'Click':
-        drawPoint(ctx, (result as ClickActionResult).point, ACTION_COLOR, pointRadius, 'Click')
-        break
+        case 'Click':
+            drawPoint(ctx, (result as ClickActionResult).point, ACTION_COLOR, pointRadius, 'Click')
+            break
 
-    case 'LongPress':
-        drawPoint(ctx, (result as LongPressActionResult).point, ACTION_COLOR, pointRadius, `LongPress ${(result as LongPressActionResult).duration}ms`)
-        break
+        case 'LongPress':
+            drawPoint(ctx, (result as LongPressActionResult).point, ACTION_COLOR, pointRadius, `LongPress ${(result as LongPressActionResult).duration}ms`)
+            break
 
-    case 'Swipe':
-        drawSwipePath(ctx, (result as SwipeActionResult).begin, (result as SwipeActionResult).end, ACTION_COLOR, baseSize)
-        break
+        case 'Swipe':
+            drawSwipePath(ctx, (result as SwipeActionResult).begin, (result as SwipeActionResult).end, ACTION_COLOR, baseSize)
+            break
 
-    case 'MultiSwipe': {
-        const swipes = (result as MultiSwipeActionResult).swipes
-        swipes.forEach((swipe, idx) => {
-            const color = SWIPE_COLORS[idx % SWIPE_COLORS.length]!
-            drawSwipePath(ctx, swipe.begin, swipe.end, color, baseSize)
-        })
-        break
-    }
+        case 'MultiSwipe': {
+            const swipes = (result as MultiSwipeActionResult).swipes
+            swipes.forEach((swipe, idx) => {
+                const color = SWIPE_COLORS[idx % SWIPE_COLORS.length]!
+                drawSwipePath(ctx, swipe.begin, swipe.end, color, baseSize)
+            })
+            break
+        }
 
-    case 'TouchDown':
-    case 'TouchMove':
-    case 'TouchUp':
-        drawPoint(ctx, (result as TouchActionResult).point, ACTION_COLOR, pointRadius, result.type)
-        break
+        case 'TouchDown':
+        case 'TouchMove':
+        case 'TouchUp':
+            drawPoint(ctx, (result as TouchActionResult).point, ACTION_COLOR, pointRadius, result.type)
+            break
 
-    case 'Scroll':
-        drawScrollIndicator(ctx, (result as ScrollActionResult).point, (result as ScrollActionResult).dx, (result as ScrollActionResult).dy, ACTION_COLOR, baseSize)
-        break
+        case 'Scroll':
+            drawScrollIndicator(ctx, (result as ScrollActionResult).point, (result as ScrollActionResult).dx, (result as ScrollActionResult).dy, ACTION_COLOR, baseSize)
+            break
     }
 }
 
