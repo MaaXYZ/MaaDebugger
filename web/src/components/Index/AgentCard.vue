@@ -73,7 +73,7 @@
                                             <UButton :color="agent.status === 'connected' ? 'error' : 'success'"
                                                 variant="soft" :icon="getAgentButtonIcon(agent)"
                                                 :loading="agent.status === 'connecting'"
-                                                :disabled="isAgentBusy(agent) || (!agent.identifier.trim() && agent.status !== 'connected')"
+                                                :disabled="!agent.enabled || isAgentBusy(agent) || (!agent.identifier.trim() && agent.status !== 'connected')"
                                                 size="xs" @click="onToggleConnection(agent)" />
                                         </UTooltip>
 
