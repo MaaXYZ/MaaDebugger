@@ -2,38 +2,40 @@
 
 Official desktop debugger for MaaFramework, featuring a web-based UI and real-time task inspection.
 
-## 使用 pnpm
+## 使用 npm
 
-After publishing to npm, users can install and run it with:
+MaaDebugger 以 `maa-debugger` 的名称发布于 [npm](https://www.npmjs.com) 。你可以使用 npm 或其他包管理器安装、管理与使用。这里仅介绍 npm 用法。
 
 ```bash
-pnpm i -g maa-debugger
+# 全局安装
+npm i -g maa-debugger
 maa-debugger
+# 非全局安装
+npx maa-debugger
 ```
 
-CLI arguments are passed through to the executable, for example:
+MaaDebugger 支持命令行参数，你可以通过 `--help` / `-H` 命令来获取帮助。
 
 ```bash
-maa-debugger --port 8080
+npx maa-debugger --help
 ```
 
 ## 开发模式
 
-需要同时启动**后端**和**前端**两个终端：
+在开发阶段需要同时启动**后端**和**前端**两个终端：
 
 ### Terminal 1: 后端 (Go Service)
 
 ```bash
 cd server
-go run ./cmd/server              # 启动后端，自动选择可用端口（默认从 8011 开始）
-go run ./cmd/server --port 9090  # 指定端口
+air # 支持热重载
 ```
 
 ### Terminal 2: 前端 (Web)
 
 ```bash
 cd web
-pnpm install    # 首次需要安装依赖
+pnpm i   # 首次需要安装依赖
 pnpm dev        # 启动前端 (http://localhost:5173)
 ```
 
@@ -53,14 +55,14 @@ node build.mjs --os darwin         # 交叉编译 macOS
 node build.mjs --skip-frontend     # 跳过前端构建（仅编译 Go）
 ```
 
-构建完成后，启动 `./MaaDebugger`（Windows 下为 `MaaDebugger.exe`），程序会自动选择可用端口（默认从 8011 开始）并打开浏览器。也可通过 `--port` 指定端口：
-
-```bash
-./MaaDebugger --port 9090
-```
+构建完成后，启动 `./MaaDebugger`（Windows 下为 `MaaDebugger.exe`），程序会自动选择可用端口（默认从 8011 开始）并打开浏览器。
 
 > [!NOTE]
-> 需要注意的是 `MaaDebugger` 将寻找 `./bin` 下的 MaaFramework 动态库。当前阶段请先手动下载并解压，后续将优化这一问题。
+> 需要注意的是 `MaaDebugger` 将寻找 `./bin` 下的 MaaFramework 动态库。
+
+## 环境变量
+
+TODO
 
 ## 技术栈
 
