@@ -1,0 +1,38 @@
+{
+  "name": "maa-debugger",
+  "version": "0.0.0",
+  "description": "Official desktop debugger for MaaFramework, with integrated web UI and real-time task inspection.",
+  "bin": {
+    "maa-debugger": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "MaaDebugger.exe",
+    "MaaDebugger",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@maaxyz/maa-node": "5.8.0-beta.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MaaXYZ/MaaDebugger"
+  },
+  "keywords": [
+    "maaframework",
+    "maa",
+    "debugger",
+    "automation",
+    "desktop"
+  ],
+  "author": "MaaXYZ",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MaaXYZ/MaaDebugger/issues"
+  },
+  "homepage": "https://github.com/MaaXYZ/MaaDebugger"
+}

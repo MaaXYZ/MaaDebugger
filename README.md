@@ -1,6 +1,21 @@
 # MaaDebugger
 
-MaaFramework 的可视化调试工具。
+Official desktop debugger for MaaFramework, featuring a web-based UI and real-time task inspection.
+
+## 使用 pnpm
+
+After publishing to npm, users can install and run it with:
+
+```bash
+pnpm i -g maa-debugger
+maa-debugger
+```
+
+CLI arguments are passed through to the executable, for example:
+
+```bash
+maa-debugger --port 8080
+```
 
 ## 开发模式
 
@@ -43,6 +58,7 @@ node build.mjs --skip-frontend     # 跳过前端构建（仅编译 Go）
 ```bash
 ./MaaDebugger --port 9090
 ```
+
 > [!NOTE]
 > 需要注意的是 `MaaDebugger` 将寻找 `./bin` 下的 MaaFramework 动态库。当前阶段请先手动下载并解压，后续将优化这一问题。
 

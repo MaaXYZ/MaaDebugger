@@ -26,6 +26,9 @@ import (
 	"github.com/MaaXYZ/MaaDebugger/internal/ws"
 )
 
+const DEFAULT_HOST = "localhost"
+const DEFAULT_PORT = 8011
+
 func main() {
 	zerolog.TimeFieldFormat = time.RFC3339Nano
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
@@ -33,7 +36,7 @@ func main() {
 	parser := cliargs.New("MaaDebugger", "The Offical Github repo: https://github.com/MaaXYZ/MaaDebugger")
 	parser.AddInt("port", "p", "server port (default: auto-detect from 8011)", 0, false)
 	parser.AddString("host", "H", "service host", "", false)
-	parser.AddString("fw-path", "b", "path to maa framework binary", "", false)
+	parser.AddString("lib-path", "b", "path to maa framework binary", "", false)
 	parser.AddBool("dev", "D", "Enable Dev Mode.", false)
 
 	parsed, err := parser.Parse(os.Args[1:])
@@ -47,58 +50,6 @@ func main() {
 		fmt.Println(parser.Help())
 		return
 	}
-
-	devMode, _ := parsed.Bool("dev")
-
-	exePath, err := os.Executable()
-	if err != nil {
-		log.Fatal().Err(err).Msg("Fail to run `os.Executable`.")
-	}
-
-	exePath = filepath.Dir(exePath)
-	root := filepath.Join(exePath, "bin")
-	if devMode {
-		root = filepath.Dir(getCwd())
-		root = filepath.Join(root, "bin")
-	}
-
-	fwBinaryPath := getenv("MAAFW_BINARY_PATH", root)
-	if v, ok := parsed.String("fw-path"); ok && v != "" {
-		fwBinaryPath = v
-	}
-
-	host := getenv("GO_SERVICE_HOST", "localhost")
-	if v, ok := parsed.String("host"); ok && v != "" {
-		host = v
-	}
-
-	portArg := 0
-	if v, ok := parsed.Int("port"); ok {
-		portArg = v
-	}
-	port := resolvePort(host, portArg)
-	addr := host + ":" + strconv.Itoa(port)
-
-	if err := maa.Init(maa.WithDebugMode(true), maa.WithLibDir(fwBinaryPath)); err != nil {
-		log.Fatal().Err(err).Msg("maa init failed")
-	}
-
-	if err := maa.ConfigInitOption(root, "{}"); err != nil {
-		log.Warn().
-			Str("userPath", root).
-			Err(err).
-			Msg("Failed to init toolkit config option")
-	} else {
-		log.Info().
-			Str("userPath", root).
-			Msg("Toolkit config option initialized")
-	}
-
-	defer func() {
-		if err := maa.Release(); err != nil {
-			log.Error().Err(err).Msg("maa release failed")
-		}
-	}()
 
 	statusStore := state.NewStore()
 	hub := ws.NewHub()
@@ -123,9 +74,22 @@ func main() {
 	defer agentService.DisconnectAll()
 	defer screenshotService.Stop()
 
-	// Set the release channel
-	channel := getenv("MAADBG_CHANNEL", "github")
-	cfgStore.Set("channel", channel) // npm pypi github
+	// Get args
+	devMode, _ := parsed.Bool("dev")
+	argPath, _ := parsed.String("lib-path")
+
+	// Set the release channel and channel path
+	channel := getenv("MAADBG_CHANNEL", "github") // npm | pypi | github
+	channelPath := getenv("MAADBG_CHANNEL_PATH", "")
+	cfgStore.Merge(map[string]any{"channel": channel, "channel_path": channelPath})
+
+	// Load Maa
+	loadMaaFramework(devMode, argPath, channel, channelPath)
+	defer func() {
+		if err := maa.Release(); err != nil {
+			log.Error().Err(err).Msg("maa release failed")
+		}
+	}()
 
 	router := httpapi.NewRouter(httpapi.Dependencies{
 		StatusStore:       statusStore,
@@ -137,6 +101,21 @@ func main() {
 		ScreenshotService: screenshotService,
 		ConfigStore:       cfgStore,
 	})
+
+	// Arg > env > DEFAULT
+	host := getenv("MAADBG_HOST", DEFAULT_HOST)
+	if v, ok := parsed.String("host"); ok && v != "" {
+		host = v
+	}
+	portArg, err := strconv.Atoi(getenv("MAADBG_PORT", strconv.Itoa(DEFAULT_PORT)))
+	if err != nil {
+		portArg = DEFAULT_PORT
+	}
+	if v, ok := parsed.Int("port"); ok {
+		portArg = v
+	}
+	port := resolvePort(host, portArg)
+	addr := host + ":" + strconv.Itoa(port)
 
 	srv := &http.Server{
 		Addr:              addr,
@@ -156,6 +135,52 @@ func main() {
 	}
 
 	waitForShutdown(srv)
+}
+
+// Load Maa Lib
+func loadMaaFramework(devMode bool, argPath string, channel string, channelPath string) {
+	exePath, err := os.Executable()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Fail to run `os.Executable`.")
+	}
+
+	exePath = filepath.Dir(exePath)
+	root := filepath.Join(exePath, "bin")
+	if devMode {
+		root = filepath.Dir(getCwd())
+		root = filepath.Join(root, "bin")
+	}
+
+	// argPath > envPath > channelPath
+	libPath := ""
+	if channel != "" && channelPath != "" {
+		libPath = channelPath
+	}
+	if envPath := getenv("MAAFW_BINARY_PATH", ""); envPath != "" {
+		libPath = envPath
+	}
+	if argPath != "" {
+		libPath = argPath
+	}
+	if libPath == "" {
+		libPath = root
+	}
+
+	// Load Maa
+	if err := maa.Init(maa.WithDebugMode(true), maa.WithLibDir(libPath)); err != nil {
+		log.Fatal().Err(err).Msg("maa init failed")
+		os.Exit(1)
+	}
+	if err := maa.ConfigInitOption(root, "{}"); err != nil {
+		log.Warn().
+			Str("userPath", root).
+			Err(err).
+			Msg("Failed to init toolkit config option")
+	} else {
+		log.Info().
+			Str("userPath", root).
+			Msg("Toolkit config option initialized")
+	}
 }
 
 func waitForShutdown(srv *http.Server) {
@@ -195,12 +220,6 @@ func resolvePort(host string, flagPort int) int {
 
 	if flagPort > 0 {
 		return flagPort
-	}
-
-	if v := os.Getenv("GO_SERVICE_PORT"); v != "" {
-		if p, err := strconv.Atoi(v); err == nil && p > 0 {
-			return p
-		}
 	}
 
 	for i := range maxAttempts {
