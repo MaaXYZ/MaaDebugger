@@ -46,7 +46,7 @@
 
                     <!-- Pipeline nodes -->
                     <div v-if="activeTask.childs.length > 0" ref="scrollContainerRef"
-                        class="node-list max-h-[60vh] overflow-y-auto pr-1">
+                        class="node-list max-h-screen overflow-y-auto pr-1">
                         <div class="flex flex-col gap-2">
                             <PipelineNodeItem v-for="(node, idx) in activeTask.childs"
                                 :key="`${node.msg.name}-${node.msg.node_id}`" :node="node"
