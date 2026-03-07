@@ -85,7 +85,7 @@ if (buildGo) {
 
   const version = process.env.VERSION || "dev";
   const commitSHA = process.env.COMMIT_SHA || "";
-  const buildTime = new Date().toISOString() || "";
+  const buildTime = process.env.BUILD_TIME || `${Date.now()}`;
   const ldPath = "github.com/MaaXYZ/MaaDebugger/internal/buildinfo";
   const ldFlags = `-s -w -X ${ldPath}.Version=${version} -X ${ldPath}.CommitSHA=${commitSHA} -X ${ldPath}.BuildTime=${buildTime}`;
 
