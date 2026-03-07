@@ -5,21 +5,29 @@
         </template>
 
         <template #default>
-            <div class="flex flex-col gap-3">
-                <div class="flex items-center gap-1">
-                    <span>MaaDebugger Version: 0.0.1</span>
-                    <UTooltip text="Open on GitHub">
-                        <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
-                            target="_blank" icon="i-simple-icons:github" aria-label="open-in-GitHub" />
-                    </UTooltip>
-                    <UTooltip text="Open on npm">
-                        <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
-                            target="_blank" icon="i-simple-icons:npm" aria-label="open-in-npm" />
-                    </UTooltip>
-                    <UTooltip text="Open on PyPI">
-                        <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
-                            target="_blank" icon="i-simple-icons:pypi" aria-label="open-in-pypi" />
-                    </UTooltip>
+            <div class="flex flex-col gap-4">
+                <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-1">
+                        <span>MaaDebugger Version: {{ maaDebuggerVersion }}</span>
+                        <UTooltip text="Open on GitHub">
+                            <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
+                                target="_blank" icon="i-simple-icons:github" aria-label="open-in-GitHub" />
+                        </UTooltip>
+                        <UTooltip text="Open on npm">
+                            <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
+                                target="_blank" icon="i-simple-icons:npm" aria-label="open-in-npm" />
+                        </UTooltip>
+                        <UTooltip text="Open on PyPI">
+                            <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
+                                target="_blank" icon="i-simple-icons:pypi" aria-label="open-in-pypi" />
+                        </UTooltip>
+                    </div>
+                    <span>Build Time: {{ buildTime }}</span>
+
+                    <ULink :to="`https://github.com/MaaXYZ/MaaDebugger/commit/${commitSHA}`" target="_blank"
+                        v-if="commitSHA != 'dev'">
+                        <span>Commit SHA: {{ commitSHA }}</span>
+                    </ULink>
                 </div>
                 <div class="flex items-center gap-1">
                     <span>MaaFramework Version: {{ maaVersion }}</span>
@@ -49,13 +57,16 @@
 
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue';
-import { getMaaFrameworkVersion, getChannel } from '@/api/http';
+import { getMaaFrameworkVersion, getChannel, getMaaDebuggerInfos } from '@/api/http';
 
 const GITHUB = "github"
 const NPM = "npm"
 const PYPI = "pypi"
 
 const maaVersion = ref("")
+const maaDebuggerVersion = ref("")
+const commitSHA = ref("")
+const buildTime = ref("")
 const currentChannel = ref("")
 const currentChannelLabel = ref("")
 
@@ -63,6 +74,11 @@ const currentChannelLabel = ref("")
 
 onMounted(async () => {
     maaVersion.value = await getMaaFrameworkVersion()
+
+    const dbgInfos = await getMaaDebuggerInfos()
+    maaDebuggerVersion.value = dbgInfos.version ?? "dev"
+    commitSHA.value = dbgInfos.commit_sha ?? ""
+    buildTime.value = dbgInfos.build_time ?? ""
 
     const channel = await getChannel()
     switch (channel) {

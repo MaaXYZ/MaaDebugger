@@ -18,6 +18,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
+	"github.com/MaaXYZ/MaaDebugger/internal/buildinfo"
 	"github.com/MaaXYZ/MaaDebugger/internal/cliargs"
 	"github.com/MaaXYZ/MaaDebugger/internal/configstore"
 	"github.com/MaaXYZ/MaaDebugger/internal/httpapi"
@@ -190,6 +191,9 @@ func main() {
 		openBrowser("http://" + addr)
 	}
 
+	fmt.Printf("MaaDebugger Version: %s\n\n", buildinfo.Version)
+	fmt.Printf("MaaDebugger is available on %s\n", "http://"+addr)
+
 	waitForShutdown(srv)
 }
 
@@ -309,6 +313,7 @@ func openBrowser(url string) {
 	if err := cmd.Start(); err != nil {
 		log.Warn().Err(err).Str("url", url).Msg("failed to open browser")
 	}
+
 }
 
 func resolvePort(host string, flagPort int) int {

@@ -415,6 +415,14 @@ export async function getScreenshotStatus(): Promise<ScreenshotStatus | null> {
 // ============================================================
 
 /**
+ * 获取 MaaDebugger 版本
+ */
+export async function getMaaDebuggerInfos(): Promise<Record<string, string>> {
+  const result = await request<Record<string, string>>("/info/all");
+  return result.data ?? {};
+}
+
+/**
  * 获取 MaaFW 版本
  */
 export async function getMaaFrameworkVersion(): Promise<string> {

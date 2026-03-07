@@ -17,6 +17,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/MaaXYZ/MaaDebugger/frontend"
+	"github.com/MaaXYZ/MaaDebugger/internal/buildinfo"
 	"github.com/MaaXYZ/MaaDebugger/internal/configstore"
 	"github.com/MaaXYZ/MaaDebugger/internal/maaservice"
 	"github.com/MaaXYZ/MaaDebugger/internal/response"
@@ -61,6 +62,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux := http.NewServeMux()
 
 	// API routes
+	mux.HandleFunc("GET /api/info/all", r.handleMaaDebuggerInfo)
 	mux.HandleFunc("GET /api/info/status", r.handleInfoStatus)
 	mux.HandleFunc("GET /api/fw/version", r.handleMaaFrameworkVersion)
 	mux.HandleFunc("GET /api/channel", r.handleChannel)
@@ -98,6 +100,13 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.Handle("/", frontendHandler)
 
 	return recoverer(logging(cors(mux)))
+}
+func (r *router) handleMaaDebuggerInfo(w http.ResponseWriter, _ *http.Request) {
+	response.OK(w, map[string]string{
+		"version":    buildinfo.Version,
+		"commit_sha": buildinfo.CommitSHA,
+		"build_time": buildinfo.BuildTime,
+	})
 }
 
 func (r *router) handleMaaFrameworkVersion(w http.ResponseWriter, _ *http.Request) {

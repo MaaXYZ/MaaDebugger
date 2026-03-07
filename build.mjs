@@ -54,8 +54,8 @@ const buildGo = !skipGo;
 const totalSteps = (buildFrontend ? 2 : 0) + (buildGo ? 1 : 0);
 let currentStep = 0;
 
-// ── Step 1: Install frontend dependencies ──
 if (buildFrontend) {
+  // ── Step 1: Install frontend dependencies ──
   step(++currentStep, totalSteps, "Installing frontend dependencies...");
   run("pnpm install --frozen-lockfile", WEB_DIR);
 
@@ -83,6 +83,12 @@ if (buildGo) {
       ? "windows"
       : process.platform;
 
+  const version = process.env.VERSION || "dev";
+  const commitSHA = process.env.COMMIT_SHA || "";
+  const buildTime = new Date().toISOString() || "";
+  const ldPath = "github.com/MaaXYZ/MaaDebugger/internal/buildinfo";
+  const ldFlags = `-s -w -X ${ldPath}.Version=${version} -X ${ldPath}.CommitSHA=${commitSHA} -X ${ldPath}.BuildTime=${buildTime}`;
+
   const ext = resolvedOS === "windows" ? ".exe" : "";
   const outputName = `MaaDebugger${ext}`;
 
@@ -104,7 +110,7 @@ if (buildGo) {
   }
 
   run(
-    `go build -trimpath -o ${path.join(ROOT, outputName)} ./cmd/server`,
+    `go build -trimpath -ldflags "${ldFlags}" -o ${path.join(ROOT, outputName)} ./cmd/server`,
     GO_DIR,
     goEnv,
   );
