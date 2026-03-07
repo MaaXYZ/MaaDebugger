@@ -61,8 +61,8 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux := http.NewServeMux()
 
 	// API routes
-	mux.HandleFunc("GET /api/info/version", r.handleInfoVersion)
 	mux.HandleFunc("GET /api/info/status", r.handleInfoStatus)
+	mux.HandleFunc("GET /api/fw/version", r.handleMaaFrameworkVersion)
 	mux.HandleFunc("GET /api/config", r.handleConfigAll)
 	mux.HandleFunc("GET /api/config/{key}", r.handleConfigGet)
 	mux.HandleFunc("PUT /api/config/{key}", r.handleConfigSet)
@@ -99,8 +99,8 @@ func NewRouter(deps Dependencies) http.Handler {
 	return recoverer(logging(cors(mux)))
 }
 
-func (r *router) handleInfoVersion(w http.ResponseWriter, _ *http.Request) {
-	response.OK(w, "unknown")
+func (r *router) handleMaaFrameworkVersion(w http.ResponseWriter, _ *http.Request) {
+	response.OK(w, maa.Version())
 }
 
 func (r *router) handleInfoStatus(w http.ResponseWriter, _ *http.Request) {

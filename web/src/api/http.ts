@@ -417,8 +417,8 @@ export async function getScreenshotStatus(): Promise<ScreenshotStatus | null> {
 /**
  * 获取 MaaFW 版本
  */
-export async function getVersion(): Promise<string> {
-  const result = await request<string>("/info/version");
+export async function getMaaFrameworkVersion(): Promise<string> {
+  const result = await request<string>("/fw/version");
   return result.data ?? "unknown";
 }
 
