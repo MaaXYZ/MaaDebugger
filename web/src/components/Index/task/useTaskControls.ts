@@ -192,14 +192,6 @@ export default function useTaskControls(toast: ToastApi) {
         icon: "i-lucide-circle-x",
         color: "error",
       });
-    } else {
-      toast.add({
-        id: "task-toast",
-        title: "Task Started",
-        description: "Task is running in background",
-        icon: "i-lucide-play",
-        color: "success",
-      });
     }
   }
 

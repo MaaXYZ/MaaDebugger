@@ -66,15 +66,15 @@ onMounted(async () => {
             }
             if (result.success) {
                 toast.add({
-                    id: 'task-completed',
+                    id: 'task-toast',
                     title: 'Task Completed',
-                    description: result.entry ? `Task "${result.entry}" finished successfully` : 'Task finished successfully',
+                    description: result.entry ? `"${result.entry}" finished successfully` : 'Task finished successfully',
                     icon: 'i-lucide-circle-check',
                     color: 'success',
                 })
             } else {
                 toast.add({
-                    id: 'task-completed',
+                    id: 'task-toast',
                     title: 'Task Failed',
                     description: result.error || 'Unknown error',
                     icon: 'i-lucide-circle-x',
