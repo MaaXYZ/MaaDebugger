@@ -12,6 +12,10 @@
                     </UBadge>
                     <UBadge color="info" variant="subtle">{{ detail.algorithm }}</UBadge>
                     <span class="text-sm font-medium">{{ detail.name }}</span>
+                    <UButton color="neutral" variant="ghost" size="xs" icon="i-lucide-file-json"
+                        @click="nodeDataOpen = true">
+                        NodeData
+                    </UButton>
                 </div>
 
                 <!-- Box -->
@@ -20,12 +24,11 @@
                 </div>
 
                 <!-- Combined Result (And/Or nesting) -->
-                <div v-if="detail.combined_result && detail.combined_result.length > 0"
-                     class="flex flex-col gap-2">
+                <div v-if="detail.combined_result && detail.combined_result.length > 0" class="flex flex-col gap-2">
                     <span class="text-sm font-medium text-dimmed">Combined ({{ detail.algorithm }}):</span>
                     <div class="pl-3 border-l-2 border-default flex flex-col gap-2">
                         <RecoDetailItem v-for="(sub, idx) in detail.combined_result" :key="idx" :detail="sub"
-                                        :depth="1" />
+                            :depth="1" />
                     </div>
                 </div>
 
@@ -35,23 +38,21 @@
                         <span class="text-xs text-dimmed font-medium">Recognition Draw:</span>
                         <UTooltip text="Fullscreen">
                             <UButton color="neutral" variant="ghost" icon="i-lucide-fullscreen" size="xs"
-                                     @click="isFullscreen = true" />
+                                @click="isFullscreen = true" />
                         </UTooltip>
                     </div>
                     <RecognitionDrawCanvas :detail="detail" />
                 </div>
-                <div v-else-if="detail.draw_images && detail.draw_images.length > 0"
-                     class="flex flex-col gap-2">
+                <div v-else-if="detail.draw_images && detail.draw_images.length > 0" class="flex flex-col gap-2">
                     <span class="text-xs text-dimmed font-medium">Draw:</span>
                     <div class="flex flex-col gap-2">
                         <div v-for="(img, idx) in detail.draw_images" :key="idx" class="relative group">
                             <img :src="img"
-                                 class="max-w-full rounded-lg border border-default cursor-pointer hover:opacity-80 transition-opacity"
-                                 @click="openImagePreview(img)" />
-                            <div
-                                class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                class="max-w-full rounded-lg border border-default cursor-pointer hover:opacity-80 transition-opacity"
+                                @click="openImagePreview(img)" />
+                            <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <UButton color="neutral" variant="solid" icon="i-lucide-fullscreen" size="xs"
-                                         @click="openImagePreview(img)" />
+                                    @click="openImagePreview(img)" />
                             </div>
                         </div>
                     </div>
@@ -67,7 +68,7 @@
     <UModal v-model:open="isFullscreen" title="Recognition Draw" fullscreen>
         <template #body>
             <div v-if="detail?.raw_image && detail?.results"
-                 class="w-full h-full flex flex-col overflow-hidden bg-muted p-4">
+                class="w-full h-full flex flex-col overflow-hidden bg-muted p-4">
                 <RecognitionDrawCanvas :detail="detail" fullscreen />
             </div>
         </template>
@@ -77,41 +78,42 @@
     <UModal v-model:open="imagePreviewOpen" title="Image Preview" fullscreen>
         <template #body>
             <div class="relative w-full h-full flex items-center justify-center overflow-hidden bg-muted"
-                 @wheel.prevent="onPreviewWheel">
+                @wheel.prevent="onPreviewWheel">
                 <div class="flex items-center justify-center cursor-grab select-none"
-                     :class="{ 'cursor-grabbing': isPreviewDragging }" @mousedown="onPreviewDragStart"
-                     @mousemove="onPreviewDragMove" @mouseup="onPreviewDragEnd" @mouseleave="onPreviewDragEnd">
+                    :class="{ 'cursor-grabbing': isPreviewDragging }" @mousedown="onPreviewDragStart"
+                    @mousemove="onPreviewDragMove" @mouseup="onPreviewDragEnd" @mouseleave="onPreviewDragEnd">
                     <img v-if="previewImageSrc" :src="previewImageSrc" alt="Preview" draggable="false"
-                         class="pointer-events-none max-w-none" :style="previewImageStyle" />
+                        class="pointer-events-none max-w-none" :style="previewImageStyle" />
                 </div>
                 <!-- Fullscreen toolbar -->
                 <div
                     class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-elevated/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-default shadow-lg">
                     <UTooltip text="Zoom out">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-out" size="sm"
-                                 :disabled="previewZoom <= MIN_ZOOM" @click="previewZoomOut" />
+                            :disabled="previewZoom <= MIN_ZOOM" @click="previewZoomOut" />
                     </UTooltip>
                     <span class="text-xs text-muted min-w-10 text-center tabular-nums">
                         {{ previewZoomPercentage }}%
                     </span>
                     <UTooltip text="Zoom in">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-in" size="sm"
-                                 :disabled="previewZoom >= MAX_ZOOM" @click="previewZoomIn" />
+                            :disabled="previewZoom >= MAX_ZOOM" @click="previewZoomIn" />
                     </UTooltip>
                     <USeparator orientation="vertical" class="h-5" />
                     <UTooltip text="Fit to view">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-maximize" size="sm"
-                                 @click="resetPreviewZoom" />
+                            @click="resetPreviewZoom" />
                     </UTooltip>
                     <USeparator orientation="vertical" class="h-5" />
                     <UTooltip text="Download">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-download" size="sm"
-                                 @click="downloadPreviewImage" />
+                            @click="downloadPreviewImage" />
                     </UTooltip>
                 </div>
             </div>
         </template>
     </UModal>
+    <NodeDataModal v-model:open="nodeDataOpen" :node-name="detail?.name ?? null" />
 </template>
 
 <script setup lang="ts">
@@ -120,6 +122,7 @@ import { getRecoDetailById } from '@/api/http'
 import type { RecoDetailResponse } from './types'
 import RecoDetailItem from './RecoDetailItem.vue'
 import RecognitionDrawCanvas from './RecognitionDrawCanvas.vue'
+import NodeDataModal from './NodeDataModal.vue'
 
 // --- Constants ---
 const MIN_ZOOM = 0.1
@@ -133,6 +136,7 @@ const props = defineProps<{
 const open = defineModel<boolean>('open', { default: false })
 const loading = ref(false)
 const detail = ref<RecoDetailResponse | null>(null)
+const nodeDataOpen = ref(false)
 
 // Fullscreen canvas draw
 const isFullscreen = ref(false)
@@ -232,6 +236,12 @@ function downloadPreviewImage() {
 watch(imagePreviewOpen, (val) => {
     if (!val) {
         resetPreviewZoom()
+    }
+})
+
+watch(open, (isOpen) => {
+    if (!isOpen) {
+        nodeDataOpen.value = false
     }
 })
 

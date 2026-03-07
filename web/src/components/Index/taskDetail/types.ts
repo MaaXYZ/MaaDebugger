@@ -308,6 +308,11 @@ export interface ActionDetailResponse {
   controller_type?: string;
 }
 
+export interface NodeDataResponse {
+  name: string;
+  node_json: string;
+}
+
 export interface NodeDetailResponse {
   name: string;
   recognition?: RecoDetailResponse;

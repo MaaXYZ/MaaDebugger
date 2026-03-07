@@ -504,6 +504,12 @@ type NodeDetailResponse struct {
 	RunCompleted bool                `json:"run_completed"`
 }
 
+// NodeDataResponse 返回节点原始定义 JSON。
+type NodeDataResponse struct {
+	Name     string `json:"name"`
+	NodeJSON string `json:"node_json"`
+}
+
 // PointResponse 坐标点。
 type PointResponse struct {
 	X int `json:"x"`
@@ -715,6 +721,24 @@ func (s *TaskerService) GetRecognitionDetailByID(recoID int64) (*RecoDetailRespo
 		return nil, fmt.Errorf("get recognition detail failed: %w", err)
 	}
 	return convertRecoDetail(detail), nil
+}
+
+// GetNodeData 获取运行时节点原始定义 JSON。
+func (s *TaskerService) GetNodeData(name string) (*NodeDataResponse, error) {
+	res := s.resourceSvc.Resource()
+	if res == nil {
+		return nil, fmt.Errorf("resource is not loaded")
+	}
+
+	nodeJSON, err := res.GetNodeJSON(name)
+	if err != nil {
+		return nil, fmt.Errorf("get node data failed: %w", err)
+	}
+
+	return &NodeDataResponse{
+		Name:     name,
+		NodeJSON: nodeJSON,
+	}, nil
 }
 
 // actionNeedsScreenshot 根据节点名从 Resource 获取 action 类型，

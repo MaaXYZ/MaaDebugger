@@ -4,7 +4,13 @@
             <div v-if="loading" class="flex items-center justify-center p-8">
                 <UIcon name="i-lucide-loader" class="size-6 animate-spin text-dimmed" />
             </div>
-            <div v-else-if="actionDetail">
+            <div v-else-if="actionDetail" class="flex flex-col gap-3">
+                <div class="flex items-center justify-end">
+                    <UButton color="neutral" variant="ghost" size="xs" icon="i-lucide-file-json"
+                        @click="nodeDataOpen = true">
+                        NodeData
+                    </UButton>
+                </div>
                 <ActionDrawCanvas v-if="hasCoords && rawImage" :detail="actionDetail" :raw-image="rawImage" />
                 <ActionDetailItem v-else :detail="actionDetail" />
             </div>
@@ -13,6 +19,7 @@
             </div>
         </template>
     </UModal>
+    <NodeDataModal v-model:open="nodeDataOpen" :node-name="actionDetail?.name ?? null" />
 </template>
 
 <script setup lang="ts">
@@ -22,6 +29,7 @@ import type { ActionDetailResponse } from './types'
 import { actionHasCoords } from './types'
 import ActionDetailItem from './ActionDetailItem.vue'
 import ActionDrawCanvas from './ActionDrawCanvas.vue'
+import NodeDataModal from './NodeDataModal.vue'
 
 const props = defineProps<{
     actionId: number | null
@@ -31,8 +39,15 @@ const open = defineModel<boolean>('open', { default: false })
 const loading = ref(false)
 const actionDetail = ref<ActionDetailResponse | null>(null)
 const rawImage = ref<string | null>(null)
+const nodeDataOpen = ref(false)
 
 const hasCoords = computed(() => actionHasCoords(actionDetail.value?.result))
+
+watch(open, (isOpen) => {
+    if (!isOpen) {
+        nodeDataOpen.value = false
+    }
+})
 
 watch([() => props.actionId, open], async ([id, isOpen]) => {
     if (!isOpen || id == null) {

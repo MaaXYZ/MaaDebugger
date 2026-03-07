@@ -83,6 +83,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.HandleFunc("POST /api/task/stop", r.handleTaskStop)
 	mux.HandleFunc("GET /api/task/nodes", r.handleTaskNodes)
 	mux.HandleFunc("GET /api/task/node/{name}", r.handleTaskNodeDetail)
+	mux.HandleFunc("GET /api/task/node-data/{name}", r.handleTaskNodeData)
 	mux.HandleFunc("GET /api/task/reco/{id}", r.handleTaskRecoDetail)
 	mux.HandleFunc("GET /api/task/action/{id}", r.handleTaskActionDetail)
 	mux.HandleFunc("POST /api/agent/connect", r.handleAgentConnect)
@@ -654,6 +655,22 @@ func (r *router) handleTaskNodeDetail(w http.ResponseWriter, req *http.Request) 
 	}
 
 	detail, err := r.deps.TaskerService.GetLatestNodeDetail(name)
+	if err != nil {
+		response.Fail(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.OK(w, detail)
+}
+
+func (r *router) handleTaskNodeData(w http.ResponseWriter, req *http.Request) {
+	name := req.PathValue("name")
+	if name == "" {
+		response.Fail(w, http.StatusBadRequest, "name is required")
+		return
+	}
+
+	detail, err := r.deps.TaskerService.GetNodeData(name)
 	if err != nil {
 		response.Fail(w, http.StatusBadRequest, err.Error())
 		return

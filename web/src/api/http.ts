@@ -6,6 +6,8 @@ import type {
   MethodItems,
 } from "@/types/api";
 
+import type { NodeDataResponse } from "@/components/Index/taskDetail/types";
+
 export interface ApiResponse<T = unknown> {
   succeed: boolean;
   msg: string;
@@ -284,6 +286,18 @@ export async function getNodeDetail(
   const result = await request<
     import("@/components/Index/taskDetail/types").NodeDetailResponse
   >(`/task/node/${encodeURIComponent(name)}`);
+  return result.data ?? null;
+}
+
+/**
+ * 获取运行时节点原始定义
+ */
+export async function getNodeData(
+  name: string,
+): Promise<NodeDataResponse | null> {
+  const result = await request<
+    import("@/components/Index/taskDetail/types").NodeDataResponse
+  >(`/task/node-data/${encodeURIComponent(name)}`);
   return result.data ?? null;
 }
 
