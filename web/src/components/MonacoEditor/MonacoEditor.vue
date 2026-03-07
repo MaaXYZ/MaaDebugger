@@ -11,7 +11,7 @@
 import { ref, onMounted, onBeforeUnmount, watch, computed, type CSSProperties } from 'vue'
 import { ensureMonacoReady, monaco } from './setup'
 import { useEditorSettingsStore } from '@/stores/editorSettings'
-import type { editor as MonacoEditor } from 'monaco-editor'
+import type { editor as MonacoEditor, IDisposable } from 'monaco-editor'
 
 export interface MonacoEditorProps {
     /** The text content to display/edit */
@@ -53,6 +53,7 @@ const containerRef = ref<HTMLDivElement>()
 const ready = ref(false)
 let editorInstance: MonacoEditor.IStandaloneCodeEditor | null = null
 let darkModeObserver: MutationObserver | null = null
+let suggestTriggerListener: IDisposable | null = null
 let mounted = true
 
 const copied = ref(false)
@@ -61,6 +62,34 @@ let readyResolve: ((editor: MonacoEditor.IStandaloneCodeEditor) => void) | null 
 const readyPromise = new Promise<MonacoEditor.IStandaloneCodeEditor>((resolve) => {
     readyResolve = resolve
 })
+
+function shouldTriggerSuggestForEmptyJsonString(editor: MonacoEditor.IStandaloneCodeEditor): boolean {
+    const model = editor.getModel()
+    const position = editor.getPosition()
+    if (!model || !position || model.getLanguageId() !== 'json') {
+        return false
+    }
+
+    const lineContent = model.getLineContent(position.lineNumber)
+    const zeroBasedColumn = position.column - 1
+    const previousChar = lineContent[zeroBasedColumn - 1] ?? ''
+    const nextChar = lineContent[zeroBasedColumn] ?? ''
+
+    return previousChar === '"' && nextChar === '"'
+}
+
+function triggerSuggestForEmptyJsonString(editor: MonacoEditor.IStandaloneCodeEditor) {
+    suggestTriggerListener?.dispose()
+    suggestTriggerListener = editor.onDidChangeCursorPosition(() => {
+        if (!shouldTriggerSuggestForEmptyJsonString(editor)) {
+            return
+        }
+
+        queueMicrotask(() => {
+            editor.trigger('json-empty-string', 'editor.action.triggerSuggest', {})
+        })
+    })
+}
 
 async function copyContent() {
     const value = editorInstance?.getValue() ?? props.modelValue
@@ -128,6 +157,13 @@ onMounted(async () => {
         tabSize: 2,
         wordWrap: 'on',
         folding: true,
+        quickSuggestions: {
+            other: true,
+            comments: false,
+            strings: true,
+        },
+        suggestOnTriggerCharacters: true,
+        acceptSuggestionOnCommitCharacter: true,
         renderLineHighlight: props.readOnly ? 'none' : 'line',
         overviewRulerLanes: 0,
         hideCursorInOverviewRuler: true,
@@ -147,6 +183,8 @@ onMounted(async () => {
     ready.value = true
     readyResolve?.(editorInstance)
     readyResolve = null
+
+    triggerSuggestForEmptyJsonString(editorInstance)
 
     // Auto-resize based on content
     editorInstance.onDidContentSizeChange(() => {
@@ -234,6 +272,8 @@ onBeforeUnmount(() => {
     if (copyTimer) clearTimeout(copyTimer)
     darkModeObserver?.disconnect()
     darkModeObserver = null
+    suggestTriggerListener?.dispose()
+    suggestTriggerListener = null
     editorInstance?.dispose()
     editorInstance = null
     ready.value = false
