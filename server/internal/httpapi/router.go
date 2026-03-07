@@ -63,6 +63,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	// API routes
 	mux.HandleFunc("GET /api/info/status", r.handleInfoStatus)
 	mux.HandleFunc("GET /api/fw/version", r.handleMaaFrameworkVersion)
+	mux.HandleFunc("GET /api/channel", r.handleChannel)
 	mux.HandleFunc("GET /api/config", r.handleConfigAll)
 	mux.HandleFunc("GET /api/config/{key}", r.handleConfigGet)
 	mux.HandleFunc("PUT /api/config/{key}", r.handleConfigSet)
@@ -101,6 +102,10 @@ func NewRouter(deps Dependencies) http.Handler {
 
 func (r *router) handleMaaFrameworkVersion(w http.ResponseWriter, _ *http.Request) {
 	response.OK(w, maa.Version())
+}
+
+func (r *router) handleChannel(w http.ResponseWriter, _ *http.Request) {
+	response.OK(w, os.Getenv("MAADBG_CHANNEL"))
 }
 
 func (r *router) handleInfoStatus(w http.ResponseWriter, _ *http.Request) {

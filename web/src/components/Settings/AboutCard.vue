@@ -21,12 +21,24 @@
                             target="_blank" icon="i-simple-icons:pypi" aria-label="open-in-pypi" />
                     </UTooltip>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1">
                     <span>MaaFramework Version: {{ maaVersion }}</span>
                     <UTooltip text="Open on GitHub">
                         <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaFramework"
                             target="_blank" icon="i-simple-icons:github" aria-label="open-in-GitHub" />
                     </UTooltip>
+                </div>
+                <div class="flex items-center gap-1">
+                    <span>Channel: {{ currentChannelLabel }}</span>
+                    <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaFramework/releases"
+                        target="_blank" icon="i-simple-icons:github" aria-label="open-in-GitHub"
+                        v-if="currentChannel == GITHUB" />
+                    <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaFramework/releases"
+                        target="_blank" icon="i-simple-icons:npm" aria-label="open-in-GitHub"
+                        v-else-if="currentChannel == NPM" />
+                    <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaFramework/releases"
+                        target="_blank" icon="i-simple-icons:pypi" aria-label="open-in-GitHub"
+                        v-else-if="currentChannel == PYPI" />
                 </div>
 
                 <UButton label="Check for Updates" block />
@@ -37,11 +49,38 @@
 
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue';
-import { getMaaFrameworkVersion } from '@/api/http';
+import { getMaaFrameworkVersion, getChannel } from '@/api/http';
+
+const GITHUB = "github"
+const NPM = "npm"
+const PYPI = "pypi"
 
 const maaVersion = ref("")
+const currentChannel = ref("")
+const currentChannelLabel = ref("")
+
+
 
 onMounted(async () => {
     maaVersion.value = await getMaaFrameworkVersion()
+
+    const channel = await getChannel()
+    switch (channel) {
+        case GITHUB:
+            currentChannel.value = GITHUB
+            currentChannelLabel.value = "Github"
+            break
+        case NPM:
+            currentChannel.value = NPM
+            currentChannelLabel.value = "npm"
+            break
+        case PYPI:
+            currentChannel.value = PYPI
+            currentChannelLabel.value = "PyPI"
+            break
+        default:
+            currentChannel.value = GITHUB
+            currentChannelLabel.value = "Github"
+    }
 })
 </script>

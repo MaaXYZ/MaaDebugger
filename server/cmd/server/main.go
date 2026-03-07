@@ -138,7 +138,6 @@ func main() {
 	// Set the release channel and channel path
 	channel := getenv("MAADBG_CHANNEL", "github") // npm | pypi | github TODO: const enum
 	channelPath := getenv("MAADBG_CHANNEL_PATH", "")
-	cfgStore.Merge(map[string]any{"channel": channel, "channel_path": channelPath})
 
 	// Load Maa
 	loadMaaFramework(devMode, argPath, channel, channelPath)

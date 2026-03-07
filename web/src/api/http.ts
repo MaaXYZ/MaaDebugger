@@ -421,6 +421,13 @@ export async function getMaaFrameworkVersion(): Promise<string> {
   const result = await request<string>("/fw/version");
   return result.data ?? "unknown";
 }
+/**
+ * 获取当前频道
+ */
+export async function getChannel(): Promise<string> {
+  const result = await request<string>("/channel");
+  return result.data ?? "github";
+}
 
 /**
  * 获取当前状态
