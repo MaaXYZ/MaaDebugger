@@ -2,7 +2,7 @@
     <UModal v-model:open="open" :title="title" :description="description" :ui="{ content: 'sm:max-w-5xl' }">
         <template #body>
             <MonacoEditor ref="editorRef" v-model="draft" :language="language" :read-only="false" :min-height="420"
-                :max-height="720" />
+                          :max-height="720" />
         </template>
         <template #footer>
             <div class="flex justify-end gap-2 w-full">

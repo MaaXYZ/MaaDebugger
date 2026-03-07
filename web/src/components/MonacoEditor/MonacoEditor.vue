@@ -2,8 +2,8 @@
     <div class="monaco-editor-wrapper relative">
         <div ref="containerRef" class="monaco-editor-container" :style="containerStyle"></div>
         <UButton :icon="copied ? 'i-lucide-check' : 'i-lucide-copy'" size="xs" variant="ghost"
-            :color="copied ? 'success' : 'neutral'" class="absolute top-1 right-1 z-10 opacity-60 hover:opacity-100"
-            @click="copyContent" />
+                 :color="copied ? 'success' : 'neutral'" class="absolute top-1 right-1 z-10 opacity-60 hover:opacity-100"
+                 @click="copyContent" />
     </div>
 </template>
 
