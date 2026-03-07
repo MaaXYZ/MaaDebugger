@@ -19,7 +19,7 @@ if (!existsSync(exePath)) {
 }
 
 // 获取 MaaFramework 动态库路径
-nodePath = path.resolve(require.resolve("@maaxyz/maa-node"), "../../../");
+const nodePath = path.resolve(require.resolve("@maaxyz/maa-node"), "../../../");
 const channelPath = path.join(
   nodePath,
   `maa-node-${process.platform}-${process.arch}`,
