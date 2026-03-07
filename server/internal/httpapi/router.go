@@ -921,14 +921,47 @@ func normalizeLogBody(body []byte) string {
 		return ""
 	}
 
-	if json.Valid(trimmed) {
+	sanitized := sanitizeLogBody(trimmed)
+	if json.Valid(sanitized) {
 		var compacted bytes.Buffer
-		if err := json.Compact(&compacted, trimmed); err == nil {
+		if err := json.Compact(&compacted, sanitized); err == nil {
 			return compacted.String()
 		}
 	}
 
-	return string(trimmed)
+	return string(sanitized)
+}
+
+func sanitizeLogBody(body []byte) []byte {
+	var payload any
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return body
+	}
+
+	sanitizeLogValue(payload)
+
+	sanitized, err := json.Marshal(payload)
+	if err != nil {
+		return body
+	}
+	return sanitized
+}
+
+func sanitizeLogValue(v any) {
+	switch value := v.(type) {
+	case map[string]any:
+		for key, item := range value {
+			if strings.EqualFold(key, "raw_image") {
+				value[key] = "[skipped]"
+				continue
+			}
+			sanitizeLogValue(item)
+		}
+	case []any:
+		for _, item := range value {
+			sanitizeLogValue(item)
+		}
+	}
 }
 
 func truncateLogField(v string, max int) string {
