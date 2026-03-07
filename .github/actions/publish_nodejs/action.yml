@@ -38,14 +38,6 @@ runs:
           with:
               node-version: "24"
         - uses: JS-DevTools/npm-publish@v4
-          id: nodejs
-          with:
-              package: ${{ inputs.path }}/maa-debugger
-              tag: ${{ inputs.tag }}
-              token: ${{ inputs.token }}
-              access: ${{ inputs.access }}
-              dry-run: ${{ inputs.dry-run }}
-        - uses: JS-DevTools/npm-publish@v4
           with:
               package: ${{ inputs.path }}/maa-debugger-win32-x64
               tag: ${{ inputs.tag }}
@@ -83,6 +75,14 @@ runs:
         - uses: JS-DevTools/npm-publish@v4
           with:
               package: ${{ inputs.path }}/maa-debugger-darwin-arm64
+              tag: ${{ inputs.tag }}
+              token: ${{ inputs.token }}
+              access: ${{ inputs.access }}
+              dry-run: ${{ inputs.dry-run }}
+        - uses: JS-DevTools/npm-publish@v4
+          id: nodejs
+          with:
+              package: ${{ inputs.path }}/maa-debugger
               tag: ${{ inputs.tag }}
               token: ${{ inputs.token }}
               access: ${{ inputs.access }}
