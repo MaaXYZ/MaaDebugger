@@ -1,5 +1,5 @@
 {
-  "name": "maa-debugger",
+  "name": "@weinibuliu/maa-debugger",
   "version": "0.0.0",
   "description": "Official desktop debugger for MaaFramework, with integrated web UI and real-time task inspection.",
   "bin": {
@@ -16,9 +16,20 @@
   "dependencies": {
     "@maaxyz/maa-node": "5.8.0-beta.1"
   },
+  "optionalDependencies": {
+    "@weinibuliu/maa-debugger-win32-x64": "0.0.0",
+    "@weinibuliu/maa-debugger-win32-arm64": "0.0.0",
+    "@weinibuliu/maa-debugger-linux-x64": "0.0.0",
+    "@weinibuliu/maa-debugger-linux-arm64": "0.0.0",
+    "@weinibuliu/maa-debugger-darwin-x64": "0.0.0",
+    "@weinibuliu/maa-debugger-darwin-arm64": "0.0.0"
+  },
   "repository": {
     "type": "github",
     "url": "git+https://github.com/MaaXYZ/MaaDebugger.git"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [
     "maaframework",

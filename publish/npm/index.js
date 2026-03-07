@@ -4,7 +4,7 @@ const { spawn } = require("node:child_process");
 const { existsSync } = require("node:fs");
 const path = require("node:path");
 
-const platformPackageName = `maa-debugger-${process.platform}-${process.arch}`;
+const platformPackageName = `@weinibuliu/maa-debugger-${process.platform}-${process.arch}`;
 
 let platformPackageRoot;
 try {
