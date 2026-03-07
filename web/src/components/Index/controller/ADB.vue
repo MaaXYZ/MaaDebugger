@@ -4,12 +4,12 @@
         <div class="flex flex-row gap-2">
             <UTooltip text="Detect">
                 <UButton color="success" variant="outline" icon="i-lucide-search" size="xl" :loading="detecting"
-                         @click="onDetect" />
+                    @click="onDetect" />
             </UTooltip>
 
             <UTooltip text="Connect">
                 <UButton color="primary" variant="outline" icon="i-lucide-link" size="xl" :loading="connecting"
-                         :disabled="!selectedDevice || connecting" @click="onConnect" />
+                    :disabled="!selectedDevice || connecting" @click="onConnect" />
             </UTooltip>
 
             <UTooltip text="Disconnect">
@@ -20,7 +20,7 @@
         <!-- Device Select -->
         <div class="flex flex-1 items-center gap-2">
             <USelectMenu v-model="selectedDevice" value-key="value" :items="deviceItems"
-                         placeholder="Select a device..." icon="i-lucide-smartphone" class="w-full" size="xl" />
+                placeholder="Select a device..." icon="i-lucide-smartphone" class="w-full" size="xl" />
         </div>
 
         <!-- ADB Configuration (inline, no modal) -->
@@ -42,20 +42,19 @@
 
         <UFormField name="extra" label="Extra Config">
             <UButton color="neutral" variant="outline" icon="i-lucide-file-json" label="Edit JSON" class="w-full"
-                     @click="onEditExtra" />
+                @click="onEditExtra" />
         </UFormField>
 
-        <JsonEditorModal v-model:open="extraEditorOpen" v-model="controllerStore.adbConfig" title="Extra Config"
-                         description="ADB extra configuration (JSONC)" />
+        <component :is="jsonEditorModalComponent" v-if="jsonEditorModalComponent" v-model:open="extraEditorOpen"
+            v-model="controllerStore.adbConfig" title="Extra Config" description="ADB extra configuration (JSONC)" />
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed, onMounted } from 'vue'
+import { ref, reactive, watch, computed, onMounted, shallowRef, type Component } from 'vue'
 import { detectAdbDevices, connectController, disconnectController, getControllerMethod } from '@/api/http'
 import type { AdbDeviceInfo, ConnectControllerRequest, MethodItems } from '@/types/api'
 import { useControllerStore, DEFAULT_ADB_SCREENCAP, DEFAULT_ADB_INPUT } from '@/stores/controller'
-import { JsonEditorModal } from '@/components/MonacoEditor'
 
 const emit = defineEmits<{
     (e: 'connected'): void
@@ -333,8 +332,17 @@ watch(
 )
 
 const extraEditorOpen = ref(false)
+const jsonEditorModalComponent = ref<Component | null>(null)
 
-function onEditExtra() {
+async function ensureJsonEditorLoaded() {
+    if (jsonEditorModalComponent.value) return
+
+    const modalModule = await import('@/components/MonacoEditor/JsonEditorModal.vue')
+    jsonEditorModalComponent.value = modalModule.default as Component
+}
+
+async function onEditExtra() {
+    await ensureJsonEditorLoaded()
     extraEditorOpen.value = true
 }
 

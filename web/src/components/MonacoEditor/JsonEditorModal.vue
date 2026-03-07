@@ -1,8 +1,8 @@
 <template>
-    <UModal v-model:open="open" :title="title" :description="description">
+    <UModal v-model:open="open" :title="title" :description="description" :ui="{ content: 'sm:max-w-5xl' }">
         <template #body>
-            <MonacoEditor ref="editorRef" v-model="draft" :language="language" :read-only="false" :min-height="300"
-                          :max-height="500" />
+            <MonacoEditor ref="editorRef" v-model="draft" :language="language" :read-only="false" :min-height="420"
+                :max-height="720" />
         </template>
         <template #footer>
             <div class="flex justify-end gap-2 w-full">
@@ -16,7 +16,6 @@
 <script setup lang="ts">
 import { ref, watch, onBeforeUnmount, nextTick } from 'vue'
 import { MonacoEditor, monaco } from '@/components/MonacoEditor'
-import { MarkerSeverity } from 'monaco-editor'
 
 const props = withDefaults(
     defineProps<{
@@ -53,6 +52,24 @@ const modelUriStr = `json-editor://${instanceId}/editor.json`
 const schemaBaseUri = `schema://json-editor-modal/${instanceId}/`
 const rootSchemaUri = `${schemaBaseUri}pipeline.schema.json`
 
+import * as jsonContribution from 'monaco-editor/esm/vs/language/json/monaco.contribution.js'
+
+const jsonDefaults = (
+    jsonContribution as typeof jsonContribution & {
+        jsonDefaults: {
+            diagnosticsOptions: {
+                schemas?: Array<{
+                    uri: string
+                    fileMatch?: string[]
+                    schema: Record<string, unknown>
+                }>
+            }
+            setDiagnosticsOptions(options: unknown): void
+        }
+    }
+).jsonDefaults
+
+
 function normalizeRefPath(path: string): string {
     return path.replace(/^\.\//, '')
 }
@@ -69,7 +86,7 @@ function tryFormatJson(value: string): string {
 function registerSchemas() {
     if (!props.schema) return
 
-    const currentOptions = monaco.json.jsonDefaults.diagnosticsOptions
+    const currentOptions = jsonDefaults.diagnosticsOptions
     const existingSchemas = (currentOptions.schemas ?? []) as Array<{
         uri: string
         fileMatch?: string[]
@@ -102,7 +119,7 @@ function registerSchemas() {
         }
     }
 
-    monaco.json.jsonDefaults.setDiagnosticsOptions({
+    jsonDefaults.setDiagnosticsOptions({
         ...currentOptions,
         validate: true,
         schemas: [...filtered, ...nextSchemas],
@@ -110,7 +127,7 @@ function registerSchemas() {
 }
 
 function removeSchemas() {
-    const currentOptions = monaco.json.jsonDefaults.diagnosticsOptions
+    const currentOptions = jsonDefaults.diagnosticsOptions
     const existingSchemas = (currentOptions.schemas ?? []) as Array<{
         uri: string
         fileMatch?: string[]
@@ -119,7 +136,7 @@ function removeSchemas() {
 
     const filtered = existingSchemas.filter(s => !s.uri.startsWith(schemaBaseUri))
     if (filtered.length !== existingSchemas.length) {
-        monaco.json.jsonDefaults.setDiagnosticsOptions({
+        jsonDefaults.setDiagnosticsOptions({
             ...currentOptions,
             schemas: filtered,
         })
@@ -180,7 +197,7 @@ function onSave() {
         const model = editor.getModel()
         if (model) {
             const markers = monaco.editor.getModelMarkers({ resource: model.uri })
-            const errors = markers.filter(m => m.severity === MarkerSeverity.Error)
+            const errors = markers.filter(m => m.severity === monaco.MarkerSeverity.Error)
             if (errors.length > 0) {
                 const firstError = errors[0]!
                 toast.add({

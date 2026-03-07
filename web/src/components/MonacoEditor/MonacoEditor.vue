@@ -2,14 +2,15 @@
     <div class="monaco-editor-wrapper relative">
         <div ref="containerRef" class="monaco-editor-container" :style="containerStyle"></div>
         <UButton :icon="copied ? 'i-lucide-check' : 'i-lucide-copy'" size="xs" variant="ghost"
-                 :color="copied ? 'success' : 'neutral'" class="absolute top-1 right-1 z-10 opacity-60 hover:opacity-100"
-                 @click="copyContent" />
+            :color="copied ? 'success' : 'neutral'" class="absolute top-1 right-1 z-10 opacity-60 hover:opacity-100"
+            @click="copyContent" />
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, computed, type CSSProperties } from 'vue'
 import { monaco } from './setup'
+import { useEditorSettingsStore } from '@/stores/editorSettings'
 import type { editor as MonacoEditor } from 'monaco-editor'
 
 export interface MonacoEditorProps {
@@ -47,6 +48,7 @@ const emit = defineEmits<{
     'update:modelValue': [value: string]
 }>()
 
+const editorSettingsStore = useEditorSettingsStore()
 const containerRef = ref<HTMLDivElement>()
 let editorInstance: MonacoEditor.IStandaloneCodeEditor | null = null
 let darkModeObserver: MutationObserver | null = null
@@ -68,9 +70,13 @@ async function copyContent() {
     }
 }
 
+const effectiveFontSize = computed(() => editorSettingsStore.normalizedFontSize)
+const effectiveMinHeight = computed(() => Math.max(props.minHeight, editorSettingsStore.normalizedMinHeight))
+const effectiveMaxHeight = computed(() => Math.max(props.maxHeight, editorSettingsStore.normalizedMaxHeight, effectiveMinHeight.value))
+
 const containerStyle = computed<CSSProperties>(() => ({
-    minHeight: `${props.minHeight}px`,
-    maxHeight: `${props.maxHeight}px`,
+    minHeight: `${effectiveMinHeight.value}px`,
+    maxHeight: `${effectiveMaxHeight.value}px`,
 }))
 
 /**
@@ -80,7 +86,7 @@ const containerStyle = computed<CSSProperties>(() => ({
 function updateEditorHeight() {
     if (!editorInstance || !containerRef.value) return
     const contentHeight = editorInstance.getContentHeight()
-    const clampedHeight = Math.min(Math.max(contentHeight, props.minHeight), props.maxHeight)
+    const clampedHeight = Math.min(Math.max(contentHeight, effectiveMinHeight.value), effectiveMaxHeight.value)
     containerRef.value.style.height = `${clampedHeight}px`
     editorInstance.layout()
 }
@@ -109,7 +115,7 @@ onMounted(() => {
         minimap: { enabled: false },
         scrollBeyondLastLine: false,
         lineNumbers: 'on',
-        fontSize: 13,
+        fontSize: effectiveFontSize.value,
         tabSize: 2,
         wordWrap: 'on',
         folding: true,
@@ -200,6 +206,15 @@ watch(
         monaco.editor.setTheme(resolveTheme())
     },
 )
+
+watch(effectiveFontSize, (fontSize) => {
+    editorInstance?.updateOptions({ fontSize })
+    updateEditorHeight()
+})
+
+watch([effectiveMinHeight, effectiveMaxHeight], () => {
+    updateEditorHeight()
+})
 
 onBeforeUnmount(() => {
     if (copyTimer) clearTimeout(copyTimer)

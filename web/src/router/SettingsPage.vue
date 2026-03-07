@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useShortcutsStore, eventToShortcut, formatShortcut } from '@/stores/shortcuts'
+import { useEditorSettingsStore } from '@/stores/editorSettings'
 import type { ShortcutAction } from '@/stores/shortcuts'
 import AboutCard from '@/components/Settings/AboutCard.vue'
 
 const shortcutsStore = useShortcutsStore()
+const editorSettingsStore = useEditorSettingsStore()
 
 // --- Recording state ---
 const recordingAction = ref<ShortcutAction | null>(null)
@@ -50,19 +52,64 @@ function resetBinding(action: ShortcutAction) {
 <template>
     <UContainer class="py-2">
         <div class="mt-8 flex flex-col gap-6">
+            <UCard size="xl">
+                <template #header>
+                    <div class="flex flex-row items-center justify-between gap-3">
+                        <div class="flex flex-col">
+                            <span class="font-bold">Editor</span>
+                            <span class="text-sm text-dimmed">Configure JSON editor size and readability.</span>
+                        </div>
+                        <UButton color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" label="Reset" size="xs"
+                            @click="editorSettingsStore.reset()" />
+                    </div>
+                </template>
+
+                <div class="flex flex-col gap-6">
+                    <div class="flex flex-col gap-2">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-medium">Editor font size</span>
+                            <span class="text-sm text-dimmed tabular-nums">{{ editorSettingsStore.normalizedFontSize }}
+                                px</span>
+                        </div>
+                        <USlider :model-value="editorSettingsStore.normalizedFontSize" :min="12" :max="24" :step="1"
+                            @update:model-value="editorSettingsStore.setFontSize(Number($event))" />
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-medium">Minimum editor height</span>
+                            <span class="text-sm text-dimmed tabular-nums">{{ editorSettingsStore.normalizedMinHeight }}
+                                px</span>
+                        </div>
+                        <USlider :model-value="editorSettingsStore.normalizedMinHeight" :min="360" :max="960" :step="20"
+                            @update:model-value="editorSettingsStore.setMinHeight(Number($event))" />
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-medium">Maximum editor height</span>
+                            <span class="text-sm text-dimmed tabular-nums">{{ editorSettingsStore.normalizedMaxHeight }}
+                                px</span>
+                        </div>
+                        <USlider :model-value="editorSettingsStore.normalizedMaxHeight" :min="420" :max="1200"
+                            :step="20" @update:model-value="editorSettingsStore.setMaxHeight(Number($event))" />
+                    </div>
+                </div>
+            </UCard>
+
             <!-- Keyboard Shortcuts Section -->
             <UCard size="xl">
                 <template #header>
                     <div class="flex flex-row items-center justify-between">
                         <span class="font-bold">Keyboard Shortcuts</span>
                         <UButton color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" label="Reset All" size="xs"
-                                 @click="shortcutsStore.resetAll()" />
+                            @click="shortcutsStore.resetAll()" />
                     </div>
                 </template>
 
                 <div class="flex flex-col gap-3">
                     <div v-for="item in shortcutsStore.allShortcuts" :key="item.action"
-                         class="flex flex-row items-center justify-between gap-4 rounded-lg border border-default p-3">
+                        class="flex flex-row items-center justify-between gap-4 rounded-lg border border-default p-3">
                         <!-- Action label -->
                         <span class="text-sm font-medium">{{ item.label }}</span>
 
@@ -70,15 +117,15 @@ function resetBinding(action: ShortcutAction) {
                         <div class="flex flex-row items-center gap-2">
                             <!-- Current binding display or recording prompt -->
                             <button v-if="recordingAction === item.action"
-                                    class="flex items-center gap-1 rounded-md border-2 border-primary px-3 py-1.5 text-sm animate-pulse"
-                                    autofocus @keydown="onRecordKeydown" @blur="stopRecording">
+                                class="flex items-center gap-1 rounded-md border-2 border-primary px-3 py-1.5 text-sm animate-pulse"
+                                autofocus @keydown="onRecordKeydown" @blur="stopRecording">
                                 <UIcon name="i-lucide-keyboard" class="size-4" />
                                 <span>Press a key...</span>
                             </button>
 
                             <button v-else
-                                    class="flex items-center gap-1 rounded-md border border-default px-3 py-1.5 text-sm cursor-pointer hover:bg-elevated transition-colors"
-                                    @click="startRecording(item.action)">
+                                class="flex items-center gap-1 rounded-md border border-default px-3 py-1.5 text-sm cursor-pointer hover:bg-elevated transition-colors"
+                                @click="startRecording(item.action)">
                                 <template v-if="item.binding">
                                     <UKbd v-for="k in formatShortcut(item.binding)" :key="k" :value="k" />
                                 </template>
@@ -88,13 +135,13 @@ function resetBinding(action: ShortcutAction) {
                             <!-- Clear binding -->
                             <UTooltip text="Clear binding">
                                 <UButton color="neutral" variant="ghost" icon="i-lucide-x" size="xs"
-                                         :disabled="!item.binding" @click="clearBinding(item.action)" />
+                                    :disabled="!item.binding" @click="clearBinding(item.action)" />
                             </UTooltip>
 
                             <!-- Reset to default -->
                             <UTooltip text="Reset to default">
                                 <UButton color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" size="xs"
-                                         @click="resetBinding(item.action)" />
+                                    @click="resetBinding(item.action)" />
                             </UTooltip>
                         </div>
                     </div>

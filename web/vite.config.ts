@@ -7,9 +7,20 @@ import path from "path";
 export default defineConfig({
   plugins: [vue(), ui()],
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "src"),
-    },
+    alias: [
+      {
+        find: "@",
+        replacement: path.resolve(__dirname, "src"),
+      },
+      {
+        find: /^monaco-editor$/,
+        replacement: path.resolve(__dirname, "node_modules/monaco-editor/esm/vs/editor/editor.api.js"),
+      },
+      {
+        find: "monaco-editor/esm/vs/editor/editor.main.js",
+        replacement: path.resolve(__dirname, "node_modules/monaco-editor/esm/vs/editor/editor.api.js"),
+      },
+    ],
   },
   build: {
     outDir: path.resolve(__dirname, "../server/frontend/dist"),
