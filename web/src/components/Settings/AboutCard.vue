@@ -70,7 +70,31 @@ const buildTime = ref("")
 const currentChannel = ref("")
 const currentChannelLabel = ref("")
 
+function formatBuildTime(timestamp: string | null | undefined) {
+    if (!timestamp) {
+        return ""
+    }
 
+    const unixTimestamp = Number(timestamp)
+    if (!Number.isFinite(unixTimestamp)) {
+        return timestamp
+    }
+
+    const date = new Date(unixTimestamp * 1000)
+    if (Number.isNaN(date.getTime())) {
+        return timestamp
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+    }).format(date)
+}
 
 onMounted(async () => {
     maaVersion.value = await getMaaFrameworkVersion()
@@ -78,7 +102,7 @@ onMounted(async () => {
     const dbgInfos = await getMaaDebuggerInfos()
     maaDebuggerVersion.value = dbgInfos.version ?? "dev"
     commitSHA.value = dbgInfos.commit_sha ?? ""
-    buildTime.value = dbgInfos.build_time ?? ""
+    buildTime.value = formatBuildTime(dbgInfos.build_time)
 
     const channel = await getChannel()
     switch (channel) {

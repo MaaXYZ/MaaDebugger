@@ -9,5 +9,5 @@ import (
 var (
 	Version   string = "dev"
 	CommitSHA string = "dev"
-	BuildTime string = fmt.Sprintf("%s", time.Now().Format("2006-01-02 15:04:05"))
+	BuildTime string = fmt.Sprintf("%d", time.Now().Unix())
 )
