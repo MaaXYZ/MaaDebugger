@@ -42,7 +42,7 @@ export const launchGraph = ref<LaunchGraph>({
 });
 
 /**
- * 参考 maa-js reduceLaunchGraph 状态机实现
+ * 参考 https://github.com/neko-para/maa-support-extension reduceLaunchGraph 状态机实现
  * 直接修改 ref 的内部状态，由 Vue 进行深度响应
  */
 export function reduceLaunchGraph(graph: LaunchGraph, msg: TaskEvent) {

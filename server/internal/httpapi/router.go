@@ -7,10 +7,12 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
 	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	maa "github.com/MaaXYZ/maa-framework-go/v4"
 	"github.com/gorilla/websocket"
@@ -928,17 +930,190 @@ func parsePort(v string, fallback int) int {
 }
 
 func containsOrRegexMatch(value, pattern string) bool {
-	// 当前先按包含匹配，后续可升级为编译正则并忽略无效表达式
-	return value == pattern || (pattern != "" && contains(value, pattern))
+	pattern = strings.TrimSpace(pattern)
+	if pattern == "" {
+		return true
+	}
+
+	matcher, err := compileDesktopFilter(pattern)
+	if err != nil {
+		log.Warn().Err(err).Str("pattern", pattern).Msg("[Controller] invalid desktop filter pattern, fallback to plain contains")
+		return value == pattern || strings.Contains(value, pattern)
+	}
+
+	return matcher(value)
 }
 
-func contains(s, sub string) bool {
-	return len(sub) == 0 || (len(s) >= len(sub) && (func() bool {
-		for i := 0; i+len(sub) <= len(s); i++ {
-			if s[i:i+len(sub)] == sub {
-				return true
+func compileDesktopFilter(pattern string) (func(string) bool, error) {
+	tokens := splitDesktopFilter(pattern)
+	matcher, next, err := parseDesktopOrExpr(tokens, 0)
+	if err != nil {
+		return nil, err
+	}
+	if next != len(tokens) {
+		return nil, fmt.Errorf("unexpected token %q", tokens[next])
+	}
+	return matcher, nil
+}
+
+func parseDesktopOrExpr(tokens []string, index int) (func(string) bool, int, error) {
+	left, next, err := parseDesktopAndExpr(tokens, index)
+	if err != nil {
+		return nil, index, err
+	}
+
+	for next < len(tokens) && strings.EqualFold(tokens[next], "or") {
+		right, afterRight, parseErr := parseDesktopAndExpr(tokens, next+1)
+		if parseErr != nil {
+			return nil, index, parseErr
+		}
+		prev := left
+		left = func(value string) bool {
+			return prev(value) || right(value)
+		}
+		next = afterRight
+	}
+
+	return left, next, nil
+}
+
+func parseDesktopAndExpr(tokens []string, index int) (func(string) bool, int, error) {
+	left, next, err := parseDesktopPrimary(tokens, index)
+	if err != nil {
+		return nil, index, err
+	}
+
+	for next < len(tokens) && strings.EqualFold(tokens[next], "and") {
+		right, afterRight, parseErr := parseDesktopPrimary(tokens, next+1)
+		if parseErr != nil {
+			return nil, index, parseErr
+		}
+		prev := left
+		left = func(value string) bool {
+			return prev(value) && right(value)
+		}
+		next = afterRight
+	}
+
+	return left, next, nil
+}
+
+func parseDesktopPrimary(tokens []string, index int) (func(string) bool, int, error) {
+	if index >= len(tokens) {
+		return nil, index, fmt.Errorf("missing operand")
+	}
+
+	token := tokens[index]
+	if token == "(" {
+		matcher, next, err := parseDesktopOrExpr(tokens, index+1)
+		if err != nil {
+			return nil, index, err
+		}
+		if next >= len(tokens) || tokens[next] != ")" {
+			return nil, index, fmt.Errorf("missing closing parenthesis")
+		}
+		return matcher, next + 1, nil
+	}
+
+	if token == ")" {
+		return nil, index, fmt.Errorf("unexpected closing parenthesis")
+	}
+
+	if strings.EqualFold(token, "and") || strings.EqualFold(token, "or") {
+		return nil, index, fmt.Errorf("unexpected operator %q", token)
+	}
+
+	matcher, err := compileDesktopTerm(token)
+	if err != nil {
+		return nil, index, err
+	}
+	return matcher, index + 1, nil
+}
+
+func compileDesktopTerm(token string) (func(string) bool, error) {
+	term := strings.TrimSpace(token)
+	if term == "" {
+		return nil, fmt.Errorf("empty term")
+	}
+
+	re, err := regexp.Compile(term)
+	if err != nil {
+		return nil, fmt.Errorf("compile regex %q: %w", term, err)
+	}
+
+	return func(value string) bool {
+		return value == term || strings.Contains(value, term) || re.MatchString(value)
+	}, nil
+}
+
+func splitDesktopFilter(pattern string) []string {
+	var tokens []string
+	var current strings.Builder
+	var escaped bool
+	var inCharClass bool
+
+	flush := func() {
+		if current.Len() == 0 {
+			return
+		}
+		tokens = append(tokens, current.String())
+		current.Reset()
+	}
+
+	for _, r := range pattern {
+		switch {
+		case escaped:
+			current.WriteRune(r)
+			escaped = false
+		case r == '\\':
+			current.WriteRune(r)
+			escaped = true
+		case inCharClass:
+			current.WriteRune(r)
+			if r == ']' {
+				inCharClass = false
+			}
+		case r == '[':
+			current.WriteRune(r)
+			inCharClass = true
+		case r == '(' || r == ')':
+			flush()
+			tokens = append(tokens, string(r))
+		case unicode.IsSpace(r):
+			flush()
+		default:
+			current.WriteRune(r)
+		}
+	}
+
+	flush()
+	return mergeDesktopOperatorTokens(tokens)
+}
+
+func mergeDesktopOperatorTokens(tokens []string) []string {
+	merged := make([]string, 0, len(tokens))
+	for i := 0; i < len(tokens); i++ {
+		if i+2 < len(tokens) && isDesktopOperatorWord(tokens[i]) && isDesktopOperatorWord(tokens[i+1]) && isDesktopOperatorWord(tokens[i+2]) {
+			candidate := tokens[i] + tokens[i+1] + tokens[i+2]
+			if strings.EqualFold(candidate, "and") || strings.EqualFold(candidate, "or") {
+				merged = append(merged, candidate)
+				i += 2
+				continue
 			}
 		}
+		merged = append(merged, tokens[i])
+	}
+	return merged
+}
+
+func isDesktopOperatorWord(token string) bool {
+	if token == "" {
 		return false
-	})())
+	}
+	for _, r := range token {
+		if !unicode.IsLetter(r) {
+			return false
+		}
+	}
+	return len(token) == 1
 }

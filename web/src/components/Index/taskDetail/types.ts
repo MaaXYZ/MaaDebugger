@@ -102,6 +102,7 @@ export interface NextListItem {
   name: string;
   jump_back: boolean;
   anchor: boolean;
+  label?: string;
 }
 
 export interface NextListEventMsg {

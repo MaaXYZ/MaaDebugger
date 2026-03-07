@@ -112,6 +112,7 @@ func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
 				"name":      item.Name,
 				"jump_back": item.JumpBack,
 				"anchor":    item.Anchor,
+				"label":     item.FormatName(),
 			})
 		}
 		s.emitEvent(map[string]any{
@@ -120,7 +121,6 @@ func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
 			"list": list,
 		})
 	})
-
 	tasker.OnNodeRecognitionInContext(func(_ *maa.Context, event maa.EventStatus, detail maa.NodeRecognitionDetail) {
 		suffix := eventStatusToString(event)
 		s.emitEvent(map[string]any{
