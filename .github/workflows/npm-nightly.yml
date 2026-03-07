@@ -95,7 +95,7 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: pkgs-nodejs-${{ matrix.artifact_id }}
+          name: ${{ matrix.artifact_id }}
           path: dist/platform
           if-no-files-found: error
 
