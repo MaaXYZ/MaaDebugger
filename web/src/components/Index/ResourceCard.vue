@@ -162,10 +162,12 @@ watch(() => statusStore.taskStatus, (newStatus, oldStatus) => {
 const isLoading = computed(() => statusStore.resourceStatus === 'loading')
 const isConnecting = computed(() => statusStore.controllerStatus === 'connecting')
 
+const isTaskRunning = computed(() => statusStore.taskStatus === 'running')
+
 /**
- * 当 controller 正在连接或资源正在加载时，禁用整个 ResourceCard 的交互
+ * 当 controller 正在连接、资源正在加载或任务正在运行时，禁用整个 ResourceCard 的交互
  */
-const isCardDisabled = computed(() => isConnecting.value || isLoading.value)
+const isCardDisabled = computed(() => isConnecting.value || isLoading.value || isTaskRunning.value)
 
 const statusLabel = computed(() => {
     switch (statusStore.resourceStatus) {

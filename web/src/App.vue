@@ -59,6 +59,29 @@ onMounted(async () => {
         onTaskEvent(event) {
             handleTaskEvent(event)
         },
+        onTaskCompleted(result) {
+            if (result.stopped) {
+                // 用户主动停止，不需要额外提示
+                return
+            }
+            if (result.success) {
+                toast.add({
+                    id: 'task-completed',
+                    title: 'Task Completed',
+                    description: result.entry ? `Task "${result.entry}" finished successfully` : 'Task finished successfully',
+                    icon: 'i-lucide-circle-check',
+                    color: 'success',
+                })
+            } else {
+                toast.add({
+                    id: 'task-completed',
+                    title: 'Task Failed',
+                    description: result.error || 'Unknown error',
+                    icon: 'i-lucide-circle-x',
+                    color: 'error',
+                })
+            }
+        },
         onAgentUpdate(agents) {
             latestAgentUpdate.value = agents
         },

@@ -5,6 +5,12 @@ import type { AgentInfo } from "@/api/http";
 export type WSEventHandler = {
   onStatusUpdate?: (status: StatusSnapshot) => void;
   onTaskEvent?: (event: TaskEvent) => void;
+  onTaskCompleted?: (result: {
+    success: boolean;
+    error?: string;
+    stopped?: boolean;
+    entry?: string;
+  }) => void;
   onAgentUpdate?: (agents: AgentInfo[]) => void;
   onScreenshotFrame?: (data: ArrayBuffer) => void;
   onScreenshotError?: (reason: string) => void;
@@ -122,6 +128,17 @@ class WSClient {
 
         case "task.event":
           this.handlers.onTaskEvent?.(message.payload as TaskEvent);
+          break;
+
+        case "task.completed":
+          this.handlers.onTaskCompleted?.(
+            message.payload as {
+              success: boolean;
+              error?: string;
+              stopped?: boolean;
+              entry?: string;
+            },
+          );
           break;
 
         case "agent.update":

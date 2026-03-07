@@ -1,5 +1,7 @@
 <template>
-    <UCard class="w-full" size="xl" :ui="{ body: 'p-0 sm:p-0', footer: 'p-0 sm:p-0' }">
+    <UCard class="w-full transition-opacity duration-200"
+        :class="{ 'opacity-50 pointer-events-none': isTaskRunning }" size="xl"
+        :ui="{ body: 'p-0 sm:p-0', footer: 'p-0 sm:p-0' }">
         <template #header>
             <div class="flex flex-col gap-2">
                 <div class="flex flex-row items-center justify-between gap-4">
@@ -133,6 +135,7 @@ import { useStatusStore } from '@/stores/status'
 
 const store = useAgentStore()
 const statusStore = useStatusStore()
+const isTaskRunning = computed(() => statusStore.taskStatus === 'running')
 const showFullCard = computed({
     get: () => store.cardExpanded,
     set: (value: boolean) => {

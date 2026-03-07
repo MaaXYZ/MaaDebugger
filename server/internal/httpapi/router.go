@@ -539,6 +539,12 @@ func (r *router) handleResourceLoad(w http.ResponseWriter, req *http.Request) {
 }
 
 func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
+	// 防止重复提交：如果已经在 running 状态则拒绝
+	if r.deps.StatusStore.GetTask() == "running" {
+		response.Fail(w, http.StatusConflict, "A task is already running")
+		return
+	}
+
 	var payload struct {
 		Entry            string          `json:"entry"`
 		PipelineOverride json.RawMessage `json:"pipeline_override"`
@@ -557,27 +563,58 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 	r.deps.StatusStore.SetTask("running")
 	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 
-	result := r.deps.TaskerService.RunTask(payload.Entry, payload.PipelineOverride)
-	if result.Success {
-		r.deps.StatusStore.SetTask("success")
-		log.Info().Str("entry", payload.Entry).Msg("[Task] run succeeded, status → success")
+	// 异步执行任务，立即返回
+	go func() {
+		defer func() {
+			if rv := recover(); rv != nil {
+				log.Error().
+					Interface("panic", rv).
+					Str("stack", string(debug.Stack())).
+					Msg("[Task] run panic in goroutine")
+				r.deps.StatusStore.SetTask("failed")
+				r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
+				r.deps.Hub.BroadcastJSON(ws.Message{
+					Type:    "task.completed",
+					Payload: map[string]any{"success": false, "error": fmt.Sprintf("internal panic: %v", rv)},
+				})
+			}
+		}()
+
+		result := r.deps.TaskerService.RunTask(payload.Entry, payload.PipelineOverride)
+
+		if result.Success {
+			r.deps.StatusStore.SetTask("success")
+			log.Info().Str("entry", payload.Entry).Msg("[Task] run succeeded, status → success")
+			r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
+			r.deps.Hub.BroadcastJSON(ws.Message{
+				Type:    "task.completed",
+				Payload: map[string]any{"success": true, "entry": payload.Entry},
+			})
+			return
+		}
+
+		// 用户主动停止任务后 RunTask 也会返回失败，此时状态已被 handleTaskStop 设为 stopped，
+		// 不应覆盖为 failed。
+		if r.deps.StatusStore.GetTask() == "stopped" {
+			log.Info().Str("entry", payload.Entry).Msg("[Task] run ended after user stop, keeping stopped status")
+			r.deps.Hub.BroadcastJSON(ws.Message{
+				Type:    "task.completed",
+				Payload: map[string]any{"success": false, "stopped": true, "entry": payload.Entry},
+			})
+			return
+		}
+
+		r.deps.StatusStore.SetTask("failed")
+		log.Warn().Str("entry", payload.Entry).Str("error", result.Error).Msg("[Task] run failed, status → failed")
 		r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
-		response.OK(w, nil)
-		return
-	}
+		r.deps.Hub.BroadcastJSON(ws.Message{
+			Type:    "task.completed",
+			Payload: map[string]any{"success": false, "error": result.Error, "entry": payload.Entry},
+		})
+	}()
 
-	// 用户主动停止任务后 RunTask 也会返回失败，此时状态已被 handleTaskStop 设为 stopped，
-	// 不应覆盖为 failed，也不需要向前端报错。
-	if r.deps.StatusStore.GetTask() == "stopped" {
-		log.Info().Str("entry", payload.Entry).Msg("[Task] run ended after user stop, keeping stopped status")
-		response.OK(w, nil)
-		return
-	}
-
-	r.deps.StatusStore.SetTask("failed")
-	log.Warn().Str("entry", payload.Entry).Str("error", result.Error).Msg("[Task] run failed, status → failed")
-	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
-	response.Fail(w, http.StatusBadRequest, result.Error)
+	// 立即返回，告知前端任务已提交
+	response.OK(w, nil)
 }
 
 func (r *router) handleTaskStop(w http.ResponseWriter, _ *http.Request) {

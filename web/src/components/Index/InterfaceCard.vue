@@ -1,5 +1,6 @@
 <template>
-    <UCard class="w-full max-w-xl" size="xl" :ui="{ body: 'p-0 sm:p-0' }">
+    <UCard class="w-full max-w-xl transition-opacity duration-200"
+        :class="{ 'opacity-50 pointer-events-none': isTaskRunning }" size="xl" :ui="{ body: 'p-0 sm:p-0' }">
         <template #header>
             <div class="flex flex-col gap-2">
                 <div class="flex flex-row items-center justify-between gap-4">
@@ -52,6 +53,7 @@ const toast = useToast()
 const statusStore = useStatusStore()
 
 const showFullCard = ref(true)
+const isTaskRunning = computed(() => statusStore.taskStatus === 'running')
 const interfacePath = ref('')
 const loading = ref(false)
 const pathError = ref('')

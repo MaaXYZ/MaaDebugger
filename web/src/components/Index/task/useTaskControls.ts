@@ -58,6 +58,7 @@ export default function useTaskControls(toast: ToastApi) {
   const isRunning = computed(() => taskStatus.value === "running");
   const canStart = computed(
     () =>
+      !isRunning.value &&
       statusStore.controllerStatus === "connected" &&
       statusStore.resourceStatus === "loaded" &&
       !agentStore.hasConnecting &&
@@ -181,7 +182,7 @@ export default function useTaskControls(toast: ToastApi) {
       return;
     }
 
-    // 运行任务
+    // 运行任务（后端异步执行，立即返回是否成功提交）
     const result = await runTask(selectedEntry.value, {});
     if (!result.succeed) {
       toast.add({
@@ -195,6 +196,7 @@ export default function useTaskControls(toast: ToastApi) {
       toast.add({
         id: "task-toast",
         title: "Task Started",
+        description: "Task is running in background",
         icon: "i-lucide-play",
         color: "success",
       });
