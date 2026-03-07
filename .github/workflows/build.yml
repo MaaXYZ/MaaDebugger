@@ -15,9 +15,6 @@ on:
 
   workflow_call:
 
-permissions:
-  contents: read
-
 jobs:
   build-frontend:
     runs-on: ubuntu-latest
