@@ -126,7 +126,6 @@ func main() {
 		})
 	})
 
-	// the config file saved to {CWD}/.maa/dbg.json
 	cfgStore := configstore.New(getCwd())
 	defer cfgStore.Close()
 	defer agentService.DisconnectAll()
@@ -137,7 +136,7 @@ func main() {
 	argPath, _ := parsed.String("lib-path")
 
 	// Set the release channel and channel path
-	channel := getenv("MAADBG_CHANNEL", "github") // npm | pypi | github
+	channel := getenv("MAADBG_CHANNEL", "github") // npm | pypi | github TODO: const enum
 	channelPath := getenv("MAADBG_CHANNEL_PATH", "")
 	cfgStore.Merge(map[string]any{"channel": channel, "channel_path": channelPath})
 
@@ -225,18 +224,19 @@ func loadMaaFramework(devMode bool, argPath string, channel string, channelPath 
 	}
 
 	// Load Maa
+	cfgPath := filepath.Join(getCwd(), ".maa")
 	if err := maa.Init(maa.WithDebugMode(true), maa.WithLibDir(libPath)); err != nil {
 		log.Fatal().Err(err).Msg("maa init failed")
 		os.Exit(1)
 	}
-	if err := maa.ConfigInitOption(root, "{}"); err != nil {
+	if err := maa.ConfigInitOption(cfgPath, "{}"); err != nil {
 		log.Warn().
-			Str("userPath", root).
+			Str("userPath", cfgPath).
 			Err(err).
 			Msg("Failed to init toolkit config option")
 	} else {
 		log.Info().
-			Str("userPath", root).
+			Str("userPath", cfgPath).
 			Msg("Toolkit config option initialized")
 	}
 }
