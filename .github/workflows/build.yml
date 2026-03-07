@@ -142,9 +142,10 @@ jobs:
           repository: MaaXYZ/MaaFramework
           tag: ${{ env.MAAFW_VERSION }}
           latest: false
-          fileName: MAA-${{ matrix.maafw_os }}-${{ matrix.maafw_arch }}-*.zip
+          fileName: MAA-${{ matrix.maafw_os }}-${{ matrix.maafw_arch }}*.zip
           out-file-path: maafw_dl
           extract: true
+          preRelease: true
 
       - name: Build Go binary
         run: node build.mjs --skip-frontend --os ${{ matrix.goos }} --arch ${{ matrix.goarch }}
