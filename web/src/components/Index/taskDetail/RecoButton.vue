@@ -9,7 +9,8 @@
                     <UBadge v-if="algorithmType" size="xs" color="info" variant="subtle" class="shrink-0">
                         {{ algorithmType }}
                     </UBadge>
-                    <span class="text-[11px] text-dimmed shrink-0">#{{ reco.msg.reco_id }}</span>
+                    <span v-if="taskDetailSettingsStore.showRecoId" class="text-[11px] text-dimmed shrink-0">#{{
+                        reco.msg.reco_id }}</span>
                 </span>
             </template>
         </UButton>
@@ -19,6 +20,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { getRecoDetailById } from '@/api/http'
+import { useTaskDetailSettingsStore } from '@/stores/taskDetailSettings'
 import type { RecoScope, NextListItem } from './types'
 
 const props = defineProps<{
@@ -31,6 +33,7 @@ defineEmits<{
     requestDetail: [recoId: number]
 }>()
 
+const taskDetailSettingsStore = useTaskDetailSettingsStore()
 const algorithmType = ref<'And' | 'Or' | null>(null)
 
 watch(
