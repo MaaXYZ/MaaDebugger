@@ -24,13 +24,10 @@ jobs:
   build:
     uses: ./.github/workflows/build.yml
 
-  publish-platform-nightly:
-    name: Publish ${{ matrix.package_name }}
+  package-nodejs-nightly:
+    name: Package nodejs nightly
     needs: build
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
     strategy:
       fail-fast: false
       matrix:
@@ -69,17 +66,12 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-
       - uses: actions/download-artifact@v8
         with:
           name: ${{ matrix.artifact_name }}
           path: .artifacts/platform
 
-      - name: Prepare platform nightly package
+      - name: Prepare nodejs nightly package
         shell: bash
         run: |
           rm -rf dist/platform
@@ -94,26 +86,19 @@ jobs:
           TARGET_CPU="${{ matrix.cpu }}" \
           node -e "const fs=require('node:fs'); const path=require('node:path'); const packagePath=path.resolve('dist/platform/package.json'); const pkg=JSON.parse(fs.readFileSync(packagePath,'utf8')); const sha=(process.env.GITHUB_SHA||'dev').slice(0,7); const runNumber=process.env.GITHUB_RUN_NUMBER||'0'; const runAttempt=process.env.GITHUB_RUN_ATTEMPT||'1'; const version=`0.0.0-nightly.${runNumber}.${runAttempt}.${sha}`; pkg.name=process.env.PACKAGE_NAME; pkg.version=version; pkg.os=[process.env.TARGET_OS]; pkg.cpu=[process.env.TARGET_CPU]; pkg.publishConfig={access:'public', provenance:true, tag:'nightly'}; fs.writeFileSync(packagePath, JSON.stringify(pkg, null, 2)+'\n');"
 
-      - name: Publish platform nightly
-        run: npm publish ./dist/platform --tag nightly --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pkgs-nodejs-${{ matrix.package_name }}
+          path: dist/platform
+          if-no-files-found: error
 
-  publish-main-nightly:
-    name: Publish maa-debugger
-    needs: publish-platform-nightly
+  package-nodejs-main-nightly:
+    name: Package maa-debugger nightly
+    needs: build
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
 
     steps:
       - uses: actions/checkout@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
 
       - name: Prepare main nightly package
         shell: bash
@@ -127,7 +112,52 @@ jobs:
 
           node -e "const fs=require('node:fs'); const path=require('node:path'); const packagePath=path.resolve('dist/main/package.json'); const pkg=JSON.parse(fs.readFileSync(packagePath,'utf8')); const sha=(process.env.GITHUB_SHA||'dev').slice(0,7); const runNumber=process.env.GITHUB_RUN_NUMBER||'0'; const runAttempt=process.env.GITHUB_RUN_ATTEMPT||'1'; const version=`0.0.0-nightly.${runNumber}.${runAttempt}.${sha}`; pkg.version=version; pkg.publishConfig={access:'public', provenance:true, tag:'nightly'}; if (pkg.optionalDependencies) { for (const key of Object.keys(pkg.optionalDependencies)) { pkg.optionalDependencies[key]=version; } } fs.writeFileSync(packagePath, JSON.stringify(pkg, null, 2)+'\n');"
 
-      - name: Publish main nightly
-        run: npm publish ./dist/main --tag nightly --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pkgs-nodejs-maa-debugger
+          path: dist/main
+          if-no-files-found: error
+
+  merge-nodejs-nightly-artifacts:
+    name: Merge nodejs nightly artifacts
+    needs:
+      - package-nodejs-nightly
+      - package-nodejs-main-nightly
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: pkgs-nodejs-*
+          path: assets/pkgs-nodejs
+          merge-multiple: false
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pkgs-nodejs
+          path: assets/pkgs-nodejs
+          if-no-files-found: error
+
+  publish-nodejs-nightly:
+    name: Publish nodejs nightly
+    needs: merge-nodejs-nightly-artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: pkgs-nodejs
+          path: assets/pkgs-nodejs
+
+      - uses: ./.github/actions/publish_nodejs
+        id: publish
+        with:
+          access: public
+          path: assets/pkgs-nodejs
+          tag: nightly
+          dry-run: false
+          token: ${{ secrets.NPM_TOKEN }}
