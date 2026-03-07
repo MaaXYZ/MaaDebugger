@@ -1,16 +1,6 @@
 name: Build
 
 on:
-  push:
-    branches:
-      - "rft/nodejs"
-    paths:
-      - ".github/workflows/**"
-      - "build.mjs"
-      - "publish/dependence.txt"
-      - "server/**"
-      - "web/**"
-
   workflow_dispatch:
 
   workflow_call:
@@ -53,6 +43,7 @@ jobs:
   build:
     needs: build-frontend
     strategy:
+      fail-fast: false
       matrix:
         include:
           - goos: windows
@@ -155,6 +146,7 @@ jobs:
 
           cp "MaaDebugger${{ matrix.ext }}" "${ARTIFACT_NAME}/"
           cp -r maafw_dl/bin/* "${ARTIFACT_NAME}/bin/"
+          cp README.md LICENSE "${ARTIFACT_NAME}/"
 
           echo "ARTIFACT_NAME=${ARTIFACT_NAME}" >> "$GITHUB_ENV"
 

@@ -1,0 +1,133 @@
+name: npm Nightly
+
+on:
+  push:
+    branches:
+      - "rft/nodejs"
+    tags-ignore:
+      - "**"
+    paths:
+      - ".github/workflows/**"
+      - "build.mjs"
+      - "publish/**"
+      - "server/**"
+      - "web/**"
+      - "README.md"
+      - "LICENSE"
+  workflow_dispatch:
+
+concurrency:
+  group: npm-nightly-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+
+  publish-platform-nightly:
+    name: Publish ${{ matrix.package_name }}
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - artifact_name: MaaDebugger-win-x86_64
+            package_name: maa-debugger-win32-x64
+            os: win32
+            cpu: x64
+            bin_name: MaaDebugger.exe
+          - artifact_name: MaaDebugger-win-aarch64
+            package_name: maa-debugger-win32-arm64
+            os: win32
+            cpu: arm64
+            bin_name: MaaDebugger.exe
+          - artifact_name: MaaDebugger-linux-x86_64
+            package_name: maa-debugger-linux-x64
+            os: linux
+            cpu: x64
+            bin_name: MaaDebugger
+          - artifact_name: MaaDebugger-linux-aarch64
+            package_name: maa-debugger-linux-arm64
+            os: linux
+            cpu: arm64
+            bin_name: MaaDebugger
+          - artifact_name: MaaDebugger-macos-x86_64
+            package_name: maa-debugger-darwin-x64
+            os: darwin
+            cpu: x64
+            bin_name: MaaDebugger
+          - artifact_name: MaaDebugger-macos-aarch64
+            package_name: maa-debugger-darwin-arm64
+            os: darwin
+            cpu: arm64
+            bin_name: MaaDebugger
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: .artifacts/platform
+
+      - name: Prepare platform nightly package
+        shell: bash
+        run: |
+          rm -rf dist/platform
+          mkdir -p dist/platform
+
+          cp publish/npm/platform-package.json dist/platform/package.json
+          cp README.md LICENSE dist/platform/
+          cp ".artifacts/platform/${{ matrix.bin_name }}" "dist/platform/${{ matrix.bin_name }}"
+
+          PACKAGE_NAME="${{ matrix.package_name }}" \
+          TARGET_OS="${{ matrix.os }}" \
+          TARGET_CPU="${{ matrix.cpu }}" \
+          node -e "const fs=require('node:fs'); const path=require('node:path'); const packagePath=path.resolve('dist/platform/package.json'); const pkg=JSON.parse(fs.readFileSync(packagePath,'utf8')); const sha=(process.env.GITHUB_SHA||'dev').slice(0,7); const runNumber=process.env.GITHUB_RUN_NUMBER||'0'; const runAttempt=process.env.GITHUB_RUN_ATTEMPT||'1'; const version=`0.0.0-nightly.${runNumber}.${runAttempt}.${sha}`; pkg.name=process.env.PACKAGE_NAME; pkg.version=version; pkg.os=[process.env.TARGET_OS]; pkg.cpu=[process.env.TARGET_CPU]; pkg.publishConfig={access:'public', provenance:true, tag:'nightly'}; fs.writeFileSync(packagePath, JSON.stringify(pkg, null, 2)+'\n');"
+
+      - name: Publish platform nightly
+        run: npm publish ./dist/platform --tag nightly --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-main-nightly:
+    name: Publish maa-debugger
+    needs: publish-platform-nightly
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Prepare main nightly package
+        shell: bash
+        run: |
+          rm -rf dist/main
+          mkdir -p dist/main
+
+          cp publish/npm/package.json dist/main/package.json
+          cp publish/npm/index.js dist/main/index.js
+          cp README.md LICENSE dist/main/
+
+          node -e "const fs=require('node:fs'); const path=require('node:path'); const packagePath=path.resolve('dist/main/package.json'); const pkg=JSON.parse(fs.readFileSync(packagePath,'utf8')); const sha=(process.env.GITHUB_SHA||'dev').slice(0,7); const runNumber=process.env.GITHUB_RUN_NUMBER||'0'; const runAttempt=process.env.GITHUB_RUN_ATTEMPT||'1'; const version=`0.0.0-nightly.${runNumber}.${runAttempt}.${sha}`; pkg.version=version; pkg.publishConfig={access:'public', provenance:true, tag:'nightly'}; if (pkg.optionalDependencies) { for (const key of Object.keys(pkg.optionalDependencies)) { pkg.optionalDependencies[key]=version; } } fs.writeFileSync(packagePath, JSON.stringify(pkg, null, 2)+'\n');"
+
+      - name: Publish main nightly
+        run: npm publish ./dist/main --tag nightly --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

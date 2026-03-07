@@ -7,8 +7,6 @@
   },
   "files": [
     "index.js",
-    "MaaDebugger.exe",
-    "MaaDebugger",
     "README.md",
     "LICENSE"
   ],

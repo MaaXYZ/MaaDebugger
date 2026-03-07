@@ -1,0 +1,17 @@
+{
+  "name": "maa-debugger-platform",
+  "version": "0.0.0",
+  "description": "Platform binary package for MaaDebugger.",
+  "files": ["MaaDebugger.exe", "MaaDebugger", "README.md", "LICENSE"],
+  "repository": {
+    "type": "github",
+    "url": "git+https://github.com/MaaXYZ/MaaDebugger.git"
+  },
+  "keywords": ["maaframework", "maa", "debugger", "automation", "desktop"],
+  "author": "MaaXYZ",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MaaXYZ/MaaDebugger/issues"
+  },
+  "homepage": "https://github.com/MaaXYZ/MaaDebugger"
+}

@@ -3,13 +3,27 @@
 const { spawn } = require("node:child_process");
 const { existsSync } = require("node:fs");
 const path = require("node:path");
-const { exit } = require("node:process");
 
-// 获取可执行文件路径
-const rootDir = path.resolve(__dirname);
+const platformPackageName = `maa-debugger-${process.platform}-${process.arch}`;
+
+let platformPackageRoot;
+try {
+  platformPackageRoot = path.dirname(
+    require.resolve(`${platformPackageName}/package.json`),
+  );
+} catch (error) {
+  console.error(
+    `[maa-debugger] Missing platform package: ${platformPackageName}`,
+  );
+  console.error(
+    `[maa-debugger] Reinstall the package on ${process.platform}-${process.arch} or choose a supported platform.`,
+  );
+  process.exit(1);
+}
+
 const isWindows = process.platform === "win32";
 const executableName = `MaaDebugger${isWindows ? ".exe" : ""}`;
-const exePath = path.join(rootDir, executableName);
+const exePath = path.join(platformPackageRoot, executableName);
 if (!existsSync(exePath)) {
   console.error(`[maa-debugger] Missing executable: ${exePath}`);
   console.error(
@@ -18,16 +32,13 @@ if (!existsSync(exePath)) {
   process.exit(1);
 }
 
-// 获取 MaaFramework 动态库路径
 const nodePath = path.resolve(require.resolve("@maaxyz/maa-node"), "../../../");
 const channelPath = path.join(
   nodePath,
   `maa-node-${process.platform}-${process.arch}`,
 );
 
-// 启动进程
 const child = spawn(exePath, process.argv.slice(2), {
-  // cwd: rootDir,
   stdio: "inherit",
   env: {
     ...process.env,
