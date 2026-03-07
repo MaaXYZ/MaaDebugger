@@ -20,7 +20,7 @@ function getPackageVersion(channel) {
     const sha = (process.env.GITHUB_SHA || "dev").slice(0, 7);
     const runNumber = process.env.GITHUB_RUN_NUMBER || "0";
     const runAttempt = process.env.GITHUB_RUN_ATTEMPT || "1";
-    return `0.0.0-nightly.${runNumber}.${runAttempt}.${sha}`;
+    return `0.1.0-nightly.${runNumber}.${runAttempt}.${sha}`;
   }
 
   if (channel === "latest") {
