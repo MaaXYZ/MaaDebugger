@@ -6,8 +6,8 @@
 
         <template #default>
             <div class="flex flex-col gap-4">
-                <div class="flex items-center gap-2">
-                    <div class="flex items-center gap-1">
+                <div class="flex flex-wrap items-centers gap-x-4 gap-y-2">
+                    <div class="flex min-w-0 flex-wrap items-center gap-1">
                         <span>MaaDebugger Version: {{ maaDebuggerVersion }}</span>
                         <UTooltip text="Open on GitHub">
                             <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
@@ -22,12 +22,15 @@
                                 target="_blank" icon="i-simple-icons:pypi" aria-label="open-in-pypi" />
                         </UTooltip>
                     </div>
-                    <span>Build Time: {{ buildTime }}</span>
-
-                    <ULink :to="`https://github.com/MaaXYZ/MaaDebugger/commit/${commitSHA}`" target="_blank"
-                        v-if="commitSHA != 'dev'">
-                        <span>Commit SHA: {{ commitSHA }}</span>
-                    </ULink>
+                    <div
+                        class="flex min-w-0 flex-wrap items-center gap-2 rounded-md border border-muted bg-elevated px-3 py-1 text-sm text-toned">
+                        <span class="font-medium text-default">Build Info</span>
+                        <span class="truncate">Build Time: {{ buildTime }}</span>
+                        <ULink :to="`https://github.com/MaaXYZ/MaaDebugger/commit/${commitSHA}`" target="_blank"
+                            v-if="commitSHA != 'dev'">
+                            <span class="truncate">Commit SHA: {{ commitSHA }}</span>
+                        </ULink>
+                    </div>
                 </div>
                 <div class="flex items-center gap-1">
                     <span>MaaFramework Version: {{ maaVersion }}</span>
