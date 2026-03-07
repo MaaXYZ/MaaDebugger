@@ -81,10 +81,11 @@ jobs:
           cp README.md LICENSE dist/platform/
           cp ".artifacts/platform/${{ matrix.bin_name }}" "dist/platform/${{ matrix.bin_name }}"
 
+          PACKAGE_JSON_PATH="dist/platform/package.json" \
           PACKAGE_NAME="${{ matrix.package_name }}" \
           TARGET_OS="${{ matrix.os }}" \
           TARGET_CPU="${{ matrix.cpu }}" \
-          node -e "const fs=require('node:fs'); const path=require('node:path'); const packagePath=path.resolve('dist/platform/package.json'); const pkg=JSON.parse(fs.readFileSync(packagePath,'utf8')); const sha=(process.env.GITHUB_SHA||'dev').slice(0,7); const runNumber=process.env.GITHUB_RUN_NUMBER||'0'; const runAttempt=process.env.GITHUB_RUN_ATTEMPT||'1'; const version=`0.0.0-nightly.${runNumber}.${runAttempt}.${sha}`; pkg.name=process.env.PACKAGE_NAME; pkg.version=version; pkg.os=[process.env.TARGET_OS]; pkg.cpu=[process.env.TARGET_CPU]; pkg.publishConfig={access:'public', provenance:true, tag:'nightly'}; fs.writeFileSync(packagePath, JSON.stringify(pkg, null, 2)+'\n');"
+          node .github/scripts/prepare-npm-package.mjs
 
       - uses: actions/upload-artifact@v7
         with:

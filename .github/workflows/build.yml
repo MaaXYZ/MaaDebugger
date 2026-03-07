@@ -6,8 +6,33 @@ on:
   workflow_call:
 
 jobs:
-  build-frontend:
+  prepare-build-metadata:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.metadata.outputs.version }}
+      commit_sha: ${{ steps.metadata.outputs.commit_sha }}
+      build_time: ${{ steps.metadata.outputs.build_time }}
+    steps:
+      - name: Prepare build metadata
+        id: metadata
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          if [[ "${GITHUB_REF_TYPE}" != "tag" || -z "${VERSION}" ]]; then
+            VERSION="dev"
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "build_time=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+  build-frontend:
+    needs: prepare-build-metadata
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.prepare-build-metadata.outputs.version }}
+      COMMIT_SHA: ${{ needs.prepare-build-metadata.outputs.commit_sha }}
+      BUILD_TIME: ${{ needs.prepare-build-metadata.outputs.build_time }}
     steps:
       - uses: actions/checkout@v6
 
@@ -19,18 +44,6 @@ jobs:
         with:
           version: 10.30
 
-      - name: Prepare build metadata
-        shell: bash
-        run: |
-          VERSION="${GITHUB_REF_NAME}"
-          if [[ "${GITHUB_REF_TYPE}" != "tag" || -z "${VERSION}" ]]; then
-            VERSION="dev"
-          fi
-
-          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
-          echo "COMMIT_SHA=${GITHUB_SHA}" >> "$GITHUB_ENV"
-          echo "BUILD_TIME=$(date +%s)" >> "$GITHUB_ENV"
-
       - name: Build frontend
         run: node build.mjs --skip-go
 
@@ -41,7 +54,9 @@ jobs:
           if-no-files-found: error
 
   build:
-    needs: build-frontend
+    needs:
+      - prepare-build-metadata
+      - build-frontend
     strategy:
       fail-fast: false
       matrix:
@@ -84,6 +99,10 @@ jobs:
             ext: ""
 
     runs-on: ${{ matrix.runner }}
+    env:
+      VERSION: ${{ needs.prepare-build-metadata.outputs.version }}
+      COMMIT_SHA: ${{ needs.prepare-build-metadata.outputs.commit_sha }}
+      BUILD_TIME: ${{ needs.prepare-build-metadata.outputs.build_time }}
 
     steps:
       - uses: actions/checkout@v6
@@ -100,18 +119,6 @@ jobs:
         with:
           name: frontend-dist
           path: server/frontend/dist
-
-      - name: Prepare build metadata
-        shell: bash
-        run: |
-          VERSION="${GITHUB_REF_NAME}"
-          if [[ "${GITHUB_REF_TYPE}" != "tag" || -z "${VERSION}" ]]; then
-            VERSION="dev"
-          fi
-
-          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
-          echo "COMMIT_SHA=${GITHUB_SHA}" >> "$GITHUB_ENV"
-          echo "BUILD_TIME=$(date +%s)" >> "$GITHUB_ENV"
 
       - name: Load dependency versions
         shell: bash
