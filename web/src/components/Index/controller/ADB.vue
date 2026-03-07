@@ -51,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed, onMounted, shallowRef, type Component } from 'vue'
+import { ref, reactive, watch, computed, onMounted, type Component } from 'vue'
 import { detectAdbDevices, connectController, disconnectController, getControllerMethod } from '@/api/http'
 import type { AdbDeviceInfo, ConnectControllerRequest, MethodItems } from '@/types/api'
 import { useControllerStore, DEFAULT_ADB_SCREENCAP, DEFAULT_ADB_INPUT } from '@/stores/controller'

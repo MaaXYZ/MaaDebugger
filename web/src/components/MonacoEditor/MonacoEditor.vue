@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, computed, type CSSProperties } from 'vue'
-import { monaco } from './setup'
+import { ensureMonacoReady, monaco } from './setup'
 import { useEditorSettingsStore } from '@/stores/editorSettings'
 import type { editor as MonacoEditor } from 'monaco-editor'
 
@@ -50,11 +50,17 @@ const emit = defineEmits<{
 
 const editorSettingsStore = useEditorSettingsStore()
 const containerRef = ref<HTMLDivElement>()
+const ready = ref(false)
 let editorInstance: MonacoEditor.IStandaloneCodeEditor | null = null
 let darkModeObserver: MutationObserver | null = null
+let mounted = true
 
 const copied = ref(false)
 let copyTimer: ReturnType<typeof setTimeout> | null = null
+let readyResolve: ((editor: MonacoEditor.IStandaloneCodeEditor) => void) | null = null
+const readyPromise = new Promise<MonacoEditor.IStandaloneCodeEditor>((resolve) => {
+    readyResolve = resolve
+})
 
 async function copyContent() {
     const value = editorInstance?.getValue() ?? props.modelValue
@@ -103,8 +109,11 @@ function resolveTheme(): string {
     return props.theme
 }
 
-onMounted(() => {
+onMounted(async () => {
     if (!containerRef.value) return
+
+    await ensureMonacoReady()
+    if (!mounted || !containerRef.value) return
 
     editorInstance = monaco.editor.create(containerRef.value, {
         value: props.modelValue,
@@ -134,6 +143,10 @@ onMounted(() => {
         contextmenu: !props.readOnly,
         ...props.options,
     })
+
+    ready.value = true
+    readyResolve?.(editorInstance)
+    readyResolve = null
 
     // Auto-resize based on content
     editorInstance.onDidContentSizeChange(() => {
@@ -217,16 +230,20 @@ watch([effectiveMinHeight, effectiveMaxHeight], () => {
 })
 
 onBeforeUnmount(() => {
+    mounted = false
     if (copyTimer) clearTimeout(copyTimer)
     darkModeObserver?.disconnect()
     darkModeObserver = null
     editorInstance?.dispose()
     editorInstance = null
+    ready.value = false
 })
 
 defineExpose({
     /** Get the underlying monaco editor instance */
     getEditor: () => editorInstance,
+    ready,
+    whenReady: () => readyPromise,
 })
 </script>
 

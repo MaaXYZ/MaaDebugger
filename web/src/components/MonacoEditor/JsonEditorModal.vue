@@ -14,8 +14,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount, nextTick } from 'vue'
-import { MonacoEditor, monaco } from '@/components/MonacoEditor'
+import { ref, watch, onBeforeUnmount } from 'vue'
+import { MonacoEditor, monaco, ensureMonacoReady, getJsonDiagnosticsOptions, setJsonDiagnosticsOptions, runMonacoJsonSession } from '@/components/MonacoEditor'
+import type { editor as MonacoEditorNamespace, IDisposable } from 'monaco-editor'
+import type { MonacoJsonSchemaEntry } from './setup'
 
 const props = withDefaults(
     defineProps<{
@@ -46,29 +48,16 @@ const open = defineModel<boolean>('open', { default: false })
 
 const toast = useToast()
 const editorRef = ref<InstanceType<typeof MonacoEditor> | null>(null)
+const draft = ref(props.modelValue)
 
 const instanceId = Math.random().toString(36).slice(2)
 const modelUriStr = `json-editor://${instanceId}/editor.json`
 const schemaBaseUri = `schema://json-editor-modal/${instanceId}/`
 const rootSchemaUri = `${schemaBaseUri}pipeline.schema.json`
+const workerReadyTimeoutMs = 500
 
-import * as jsonContribution from 'monaco-editor/esm/vs/language/json/monaco.contribution.js'
-
-const jsonDefaults = (
-    jsonContribution as typeof jsonContribution & {
-        jsonDefaults: {
-            diagnosticsOptions: {
-                schemas?: Array<{
-                    uri: string
-                    fileMatch?: string[]
-                    schema: Record<string, unknown>
-                }>
-            }
-            setDiagnosticsOptions(options: unknown): void
-        }
-    }
-).jsonDefaults
-
+let activeSessionToken = 0
+let contentListener: IDisposable | null = null
 
 function normalizeRefPath(path: string): string {
     return path.replace(/^\.\//, '')
@@ -83,26 +72,22 @@ function tryFormatJson(value: string): string {
     }
 }
 
-function registerSchemas() {
-    if (!props.schema) return
-
-    const currentOptions = jsonDefaults.diagnosticsOptions
-    const existingSchemas = (currentOptions.schemas ?? []) as Array<{
-        uri: string
-        fileMatch?: string[]
-        schema: Record<string, unknown>
-    }>
-
+function buildOwnedSchemaUris() {
     const ownedUris = new Set<string>([rootSchemaUri])
     if (props.externalSchemas) {
         for (const refPath of Object.keys(props.externalSchemas)) {
             ownedUris.add(`${schemaBaseUri}${normalizeRefPath(refPath)}`)
         }
     }
+    return ownedUris
+}
 
-    const filtered = existingSchemas.filter(s => !ownedUris.has(s.uri))
+function buildSessionSchemas(): MonacoJsonSchemaEntry[] {
+    if (!props.schema) {
+        return []
+    }
 
-    const nextSchemas: Array<{ uri: string; fileMatch?: string[]; schema: Record<string, unknown> }> = [
+    const nextSchemas: MonacoJsonSchemaEntry[] = [
         {
             uri: rootSchemaUri,
             fileMatch: [modelUriStr],
@@ -119,69 +104,145 @@ function registerSchemas() {
         }
     }
 
-    jsonDefaults.setDiagnosticsOptions({
-        ...currentOptions,
-        validate: true,
-        schemas: [...filtered, ...nextSchemas],
+    return nextSchemas
+}
+
+function unregisterContentListener() {
+    contentListener?.dispose()
+    contentListener = null
+}
+
+function waitForJsonWorkerReady(model: MonacoEditorNamespace.ITextModel, sessionToken: number): Promise<void> {
+    const resource = model.uri
+
+    return new Promise((resolve) => {
+        let settled = false
+
+        const finish = () => {
+            if (settled) {
+                return
+            }
+            settled = true
+            markerListener.dispose()
+            clearTimeout(timeoutId)
+            resolve()
+        }
+
+        const markerListener = monaco.editor.onDidChangeMarkers((changedResources) => {
+            if (!open.value || sessionToken !== activeSessionToken) {
+                finish()
+                return
+            }
+
+            if (changedResources.some(uri => uri.toString() === resource.toString())) {
+                finish()
+            }
+        })
+
+        const timeoutId = window.setTimeout(() => {
+            finish()
+        }, workerReadyTimeoutMs)
+
+        queueMicrotask(() => {
+            if (!open.value || sessionToken !== activeSessionToken) {
+                finish()
+                return
+            }
+
+            const markers = monaco.editor.getModelMarkers({ resource })
+            if (markers.length > 0) {
+                finish()
+            }
+        })
     })
 }
 
-function removeSchemas() {
-    const currentOptions = jsonDefaults.diagnosticsOptions
-    const existingSchemas = (currentOptions.schemas ?? []) as Array<{
-        uri: string
-        fileMatch?: string[]
-        schema: Record<string, unknown>
-    }>
+async function ensureSessionInitialized() {
+    if (!open.value) return
 
-    const filtered = existingSchemas.filter(s => !s.uri.startsWith(schemaBaseUri))
-    if (filtered.length !== existingSchemas.length) {
-        jsonDefaults.setDiagnosticsOptions({
-            ...currentOptions,
-            schemas: filtered,
+    const sessionToken = ++activeSessionToken
+    const formattedDraft = tryFormatJson(props.modelValue)
+    draft.value = formattedDraft
+
+    try {
+        await runMonacoJsonSession(async () => {
+            await ensureMonacoReady()
+            const editor = await editorRef.value?.whenReady()
+            if (!editor || !open.value || sessionToken !== activeSessionToken) {
+                return
+            }
+
+            const ownedUris = buildOwnedSchemaUris()
+            const currentOptions = getJsonDiagnosticsOptions()
+            const filteredSchemas = (currentOptions.schemas ?? []).filter(schema => !ownedUris.has(schema.uri))
+            const sessionSchemas = buildSessionSchemas()
+
+            setJsonDiagnosticsOptions({
+                ...currentOptions,
+                validate: true,
+                schemas: [...filteredSchemas, ...sessionSchemas],
+            })
+
+            const uri = monaco.Uri.parse(modelUriStr)
+            let model = monaco.editor.getModel(uri)
+            if (!model) {
+                model = monaco.editor.createModel(formattedDraft, props.language, uri)
+            } else {
+                if (model.getValue() !== formattedDraft) {
+                    model.setValue(formattedDraft)
+                }
+                if (model.getLanguageId() !== props.language) {
+                    monaco.editor.setModelLanguage(model, props.language)
+                }
+            }
+
+            const oldModel = editor.getModel()
+            if (oldModel !== model) {
+                editor.setModel(model)
+            }
+
+            unregisterContentListener()
+            contentListener = model.onDidChangeContent(() => {
+                draft.value = model!.getValue()
+            })
+
+            await waitForJsonWorkerReady(model, sessionToken)
         })
+    } finally {
+        if (sessionToken !== activeSessionToken || !open.value) {
+            return
+        }
     }
 }
 
-const draft = ref(props.modelValue)
+async function cleanupSession() {
+    ++activeSessionToken
+    unregisterContentListener()
 
-if (props.schema) registerSchemas()
+    await runMonacoJsonSession(async () => {
+        await ensureMonacoReady()
 
-function applySchemaModel() {
-    const editor = editorRef.value?.getEditor()
-    if (!editor || !props.schema) return
-
-    const uri = monaco.Uri.parse(modelUriStr)
-    let model = monaco.editor.getModel(uri)
-    if (!model) {
-        model = monaco.editor.createModel(draft.value, props.language, uri)
-    } else if (model.getValue() !== draft.value) {
-        model.setValue(draft.value)
-    }
-
-    const oldModel = editor.getModel()
-    if (oldModel !== model) {
-        editor.setModel(model)
-        if (oldModel && oldModel.uri.toString() !== modelUriStr) {
-            oldModel.dispose()
+        const currentOptions = getJsonDiagnosticsOptions()
+        const filteredSchemas = (currentOptions.schemas ?? []).filter(schema => !schema.uri.startsWith(schemaBaseUri))
+        if (filteredSchemas.length !== (currentOptions.schemas ?? []).length) {
+            setJsonDiagnosticsOptions({
+                ...currentOptions,
+                schemas: filteredSchemas,
+            })
         }
-    }
 
-    model.onDidChangeContent(() => {
-        draft.value = model!.getValue()
+        const model = monaco.editor.getModel(monaco.Uri.parse(modelUriStr)) as MonacoEditorNamespace.ITextModel | null
+        model?.dispose()
     })
 }
 
 watch(open, async (isOpen) => {
-    if (!isOpen) return
+    if (isOpen) {
+        await ensureSessionInitialized()
+        return
+    }
 
-    draft.value = tryFormatJson(props.modelValue)
-    registerSchemas()
-
-    await nextTick()
-    setTimeout(() => {
-        applySchemaModel()
-    }, 50)
+    await cleanupSession()
 })
 
 watch(
@@ -221,8 +282,6 @@ function onCancel() {
 }
 
 onBeforeUnmount(() => {
-    removeSchemas()
-    const model = monaco.editor.getModel(monaco.Uri.parse(modelUriStr))
-    model?.dispose()
+    void cleanupSession()
 })
 </script>

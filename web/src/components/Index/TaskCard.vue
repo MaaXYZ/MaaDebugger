@@ -63,6 +63,7 @@
                     </div>
                     <UTooltip text="Edit task override">
                         <UButton color="neutral" variant="outline" icon="i-lucide-file-edit" size="xl"
+                            :loading="isPreparingOverrideEditor" :disabled="isPreparingOverrideEditor"
                             @click="onEditOverride" />
                     </UTooltip>
                     <UButton v-if="!isRunning" color="success" variant="soft" icon="i-lucide-play" size="xl"
@@ -188,17 +189,19 @@
 </template>
 
 <script setup lang="ts">
-import { defineAsyncComponent, onMounted, onUnmounted, shallowRef, watch, watchEffect } from 'vue'
+import { defineAsyncComponent, onMounted, onUnmounted, ref, shallowRef, watch, watchEffect } from 'vue'
 import type { Component } from 'vue'
 import TaskStatusBadge from './task/TaskStatusBadge.vue'
 import useTaskControls from './task/useTaskControls'
 import { useScreenshotStream } from './task/useScreenshotStream'
 import { MAX_ZOOM, MIN_ZOOM, usePanZoom } from './task/usePanZoom'
+import { warmupMonacoJsonWorker } from '@/components/MonacoEditor'
 
 const toast = useToast()
 const jsonEditorModalComponent = shallowRef<Component | null>(null)
 const editorSchema = shallowRef<Record<string, unknown> | undefined>()
 const editorExternalSchemas = shallowRef<Record<string, Record<string, unknown>> | undefined>()
+const isPreparingOverrideEditor = ref(false)
 let editorAssetsLoaded = false
 
 const {
@@ -216,7 +219,6 @@ const {
     taskStore,
     onStart,
     onStop,
-    onEditOverride,
     refreshNodes,
     mount,
     unmount,
@@ -280,6 +282,7 @@ async function ensureEditorAssetsLoaded() {
         import('@/schema/pipeline.schema.json'),
         import('@/schema/custom.action.schema.json'),
         import('@/schema/custom.recognition.schema.json'),
+        warmupMonacoJsonWorker(),
     ])
 
     jsonEditorModalComponent.value = defineAsyncComponent(() => Promise.resolve(modalModule.default))
@@ -299,10 +302,19 @@ watch(isFullscreen, (val) => {
     handleFullscreenChange(val)
 })
 
-watch(overrideEditorOpen, async (isOpen) => {
-    if (!isOpen) return
-    await ensureEditorAssetsLoaded()
-})
+async function onEditOverride() {
+    if (isPreparingOverrideEditor.value) {
+        return
+    }
+
+    isPreparingOverrideEditor.value = true
+    try {
+        await ensureEditorAssetsLoaded()
+        overrideEditorOpen.value = true
+    } finally {
+        isPreparingOverrideEditor.value = false
+    }
+}
 
 onMounted(async () => {
     mount()
