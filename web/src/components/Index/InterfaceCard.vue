@@ -1,6 +1,6 @@
 <template>
     <UCard class="w-full max-w-xl transition-opacity duration-200"
-        :class="{ 'opacity-50 pointer-events-none': isTaskRunning }" size="xl" :ui="{ body: 'p-0 sm:p-0' }">
+           :class="{ 'opacity-50 pointer-events-none': isTaskRunning }" size="xl" :ui="{ body: 'p-0 sm:p-0' }">
         <template #header>
             <div class="flex flex-col gap-2">
                 <div class="flex flex-row items-center justify-between gap-4">
@@ -8,10 +8,10 @@
                         <span class="font-bold">Interface</span>
                     </div>
                     <UButton variant="outline" color="neutral" trailing-icon="i-lucide-chevron-down"
-                        :data-state="showFullCard ? 'open' : 'closed'" @click="showFullCard = !showFullCard" />
+                             :data-state="showFullCard ? 'open' : 'closed'" @click="showFullCard = !showFullCard" />
                 </div>
                 <div class="grid transition-all duration-200 ease-out"
-                    :class="showFullCard ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'">
+                     :class="showFullCard ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'">
                     <div class="overflow-hidden">
                         <div class="text-sm text-dimmed truncate">
                             {{ summaryText }}
@@ -27,13 +27,13 @@
                     <div class="p-4 sm:p-6 min-h-36 flex flex-col gap-3">
                         <UFormField name="interfacePath" label="File Path" :error="pathError || undefined">
                             <UInput v-model="interfacePath" class="w-full"
-                                placeholder="Enter interface.json file path..." icon="i-lucide-file-json" size="xl"
-                                :color="pathError ? 'error' : 'neutral'" @blur="onPathBlur" />
+                                    placeholder="Enter interface.json file path..." icon="i-lucide-file-json" size="xl"
+                                    :color="pathError ? 'error' : 'neutral'" @blur="onPathBlur" />
                         </UFormField>
 
                         <div class="flex flex-row items-center justify-end">
                             <UButton color="primary" variant="soft" icon="i-lucide-folder-open" size="xl"
-                                :loading="loading" :disabled="!canLoad" @click="onLoad">
+                                     :loading="loading" :disabled="!canLoad" @click="onLoad">
                                 Load
                             </UButton>
                         </div>

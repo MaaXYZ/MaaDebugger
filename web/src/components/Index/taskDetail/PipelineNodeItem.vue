@@ -2,9 +2,9 @@
     <div class="rounded-lg border border-default transition-colors hover:bg-elevated w-full flex-1">
         <!-- Header: always visible -->
         <div class="flex flex-row items-center gap-2 min-w-0 p-3 cursor-pointer select-none w-full"
-            @click="expanded = !expanded">
+             @click="expanded = !expanded">
             <UIcon :name="expanded ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
-                class="size-3.5 shrink-0 text-dimmed" />
+                   class="size-3.5 shrink-0 text-dimmed" />
             <UIcon name="i-lucide-workflow" class="size-4 shrink-0 text-dimmed" />
             <div class="min-w-0 flex-1">
                 <span class="text-sm font-medium truncate block w-full" :title="node.msg.name">{{ node.msg.name
@@ -41,8 +41,8 @@
                         </div>
                         <div class="pl-5">
                             <NodeStatusButton :status="node.action.status" :label="node.action.msg.name"
-                                :action-id="node.action.msg.action_id" size="sm"
-                                @click="$emit('requestActionDetail', node.action!.msg.action_id)" />
+                                              :action-id="node.action.msg.action_id" size="sm"
+                                              @click="$emit('requestActionDetail', node.action!.msg.action_id)" />
                         </div>
                     </div>
                 </div>

@@ -11,23 +11,23 @@
                         <span>MaaDebugger Version: {{ maaDebuggerVersion }}</span>
                         <UTooltip text="Open on GitHub">
                             <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
-                                target="_blank" icon="i-simple-icons:github" aria-label="open-in-GitHub" />
+                                     target="_blank" icon="i-simple-icons:github" aria-label="open-in-GitHub" />
                         </UTooltip>
                         <UTooltip text="Open on npm">
                             <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
-                                target="_blank" icon="i-simple-icons:npm" aria-label="open-in-npm" />
+                                     target="_blank" icon="i-simple-icons:npm" aria-label="open-in-npm" />
                         </UTooltip>
                         <UTooltip text="Open on PyPI">
                             <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
-                                target="_blank" icon="i-simple-icons:pypi" aria-label="open-in-pypi" />
+                                     target="_blank" icon="i-simple-icons:pypi" aria-label="open-in-pypi" />
                         </UTooltip>
                     </div>
                     <div
                         class="flex min-w-0 flex-wrap items-center gap-2 rounded-md border border-muted bg-elevated px-3 py-1 text-sm text-toned">
                         <span class="font-medium text-default">Build Info</span>
                         <span class="truncate">Build Time: {{ buildTime }}</span>
-                        <ULink :to="`https://github.com/MaaXYZ/MaaDebugger/commit/${commitSHA}`" target="_blank"
-                            v-if="commitSHA != 'dev'">
+                        <ULink v-if="commitSHA != 'dev'" :to="`https://github.com/MaaXYZ/MaaDebugger/commit/${commitSHA}`"
+                               target="_blank">
                             <span class="truncate">Commit SHA: {{ commitSHA }}</span>
                         </ULink>
                     </div>
@@ -36,20 +36,20 @@
                     <span>MaaFramework Version: {{ maaVersion }}</span>
                     <UTooltip text="Open on GitHub">
                         <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaFramework"
-                            target="_blank" icon="i-simple-icons:github" aria-label="open-in-GitHub" />
+                                 target="_blank" icon="i-simple-icons:github" aria-label="open-in-GitHub" />
                     </UTooltip>
                 </div>
                 <div class="flex items-center gap-1">
                     <span>Channel: {{ currentChannelLabel }}</span>
-                    <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaFramework/releases"
-                        target="_blank" icon="i-simple-icons:github" aria-label="open-in-GitHub"
-                        v-if="currentChannel == GITHUB" />
-                    <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaFramework/releases"
-                        target="_blank" icon="i-simple-icons:npm" aria-label="open-in-GitHub"
-                        v-else-if="currentChannel == NPM" />
-                    <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaFramework/releases"
-                        target="_blank" icon="i-simple-icons:pypi" aria-label="open-in-GitHub"
-                        v-else-if="currentChannel == PYPI" />
+                    <UButton v-if="currentChannel == GITHUB" color="neutral" variant="ghost"
+                             to="https://github.com/MaaXYZ/MaaFramework/releases" target="_blank" icon="i-simple-icons:github"
+                             aria-label="open-in-GitHub" />
+                    <UButton v-else-if="currentChannel == NPM" color="neutral" variant="ghost"
+                             to="https://github.com/MaaXYZ/MaaFramework/releases" target="_blank" icon="i-simple-icons:npm"
+                             aria-label="open-in-GitHub" />
+                    <UButton v-else-if="currentChannel == PYPI" color="neutral" variant="ghost"
+                             to="https://github.com/MaaXYZ/MaaFramework/releases" target="_blank" icon="i-simple-icons:pypi"
+                             aria-label="open-in-GitHub" />
                 </div>
 
                 <UButton label="Check for Updates" block />
@@ -109,21 +109,21 @@ onMounted(async () => {
 
     const channel = await getChannel()
     switch (channel) {
-        case GITHUB:
-            currentChannel.value = GITHUB
-            currentChannelLabel.value = "Github"
-            break
-        case NPM:
-            currentChannel.value = NPM
-            currentChannelLabel.value = "npm"
-            break
-        case PYPI:
-            currentChannel.value = PYPI
-            currentChannelLabel.value = "PyPI"
-            break
-        default:
-            currentChannel.value = GITHUB
-            currentChannelLabel.value = "Github"
+    case GITHUB:
+        currentChannel.value = GITHUB
+        currentChannelLabel.value = "Github"
+        break
+    case NPM:
+        currentChannel.value = NPM
+        currentChannelLabel.value = "npm"
+        break
+    case PYPI:
+        currentChannel.value = PYPI
+        currentChannelLabel.value = "PyPI"
+        break
+    default:
+        currentChannel.value = GITHUB
+        currentChannelLabel.value = "Github"
     }
 })
 </script>

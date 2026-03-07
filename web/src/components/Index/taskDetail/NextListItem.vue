@@ -3,13 +3,13 @@
         <!-- Already resolved reco scopes -->
         <template v-for="(reco, idx) in nextList.childs" :key="`reco-${idx}`">
             <RecoButton :reco="reco" :info="nextList.msg.list?.[idx]" use-warning
-                @request-detail="$emit('requestDetail', $event)" />
+                        @request-detail="$emit('requestDetail', $event)" />
         </template>
         <!-- Pending (not yet started) items -->
         <template v-for="(item, idx) in pendingItems" :key="`wait-${idx}`">
             <UTooltip :text="formatItemLabel(item)">
                 <UButton size="sm" variant="outline" color="neutral" disabled
-                    class="max-w-full min-w-0 overflow-hidden">
+                         class="max-w-full min-w-0 overflow-hidden">
                     <span class="truncate block min-w-0">{{ formatItemLabel(item) }}</span>
                 </UButton>
             </UTooltip>
