@@ -43,7 +43,7 @@
                             <div class="font-medium text-default">{{ loadedInterface.name || 'Unnamed interface' }}
                             </div>
                             <div class="mt-1 text-dimmed">Controllers: {{ loadedInterface.controller_candidates.length
-                                }} · Resources: {{ loadedInterface.resource_candidates.length }} · Tasks: {{
+                            }} · Resources: {{ loadedInterface.resource_candidates.length }} · Tasks: {{
                                     loadedInterface.task_candidates.length }}</div>
                             <div class="mt-2 text-dimmed break-all">{{ loadedInterface.interface_path }}</div>
                         </div>
@@ -245,7 +245,7 @@ async function onLoad() {
                     ? `Task detected: ${parsed.task_candidates.length} (TODO)`
                     : 'Task detected: 0',
                 resourceCount > 0 ? `Resolved resource paths: ${resourceCount}` : 'Resolved resource paths: 0',
-            ].filter(Boolean).join('\n\n'),
+            ].filter(Boolean).join('\n'),
             icon: 'i-lucide-check-circle',
             color: 'success',
         })
