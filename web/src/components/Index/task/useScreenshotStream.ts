@@ -9,6 +9,7 @@ import {
 } from "@/api/http";
 import {
   latestFrame,
+  screenshotActualFps,
   screenshotError,
   screenshotFps,
   screenshotPaused,
@@ -22,10 +23,13 @@ export function useScreenshotStream() {
 
   let pendingFrame: ArrayBuffer | null = null;
   let rafId = 0;
+  let fpsWindowStart = 0;
+  let fpsFrameCount = 0;
 
   const isStreaming = computed(() => screenshotRunning.value);
   const isPaused = computed(() => screenshotPaused.value);
   const currentFps = computed(() => screenshotFps.value);
+  const actualFps = computed(() => screenshotActualFps.value);
 
   async function toggleStreaming() {
     if (isStreaming.value) {
@@ -36,6 +40,9 @@ export function useScreenshotStream() {
       await startScreenshot();
       screenshotRunning.value = true;
       screenshotPaused.value = false;
+      screenshotActualFps.value = 0;
+      fpsWindowStart = 0;
+      fpsFrameCount = 0;
     }
   }
 
@@ -102,6 +109,26 @@ export function useScreenshotStream() {
     URL.revokeObjectURL(url);
   }
 
+  function recordFrame() {
+    const now = performance.now();
+    if (!fpsWindowStart) {
+      fpsWindowStart = now;
+      fpsFrameCount = 1;
+      screenshotActualFps.value = 0;
+      return;
+    }
+
+    fpsFrameCount += 1;
+    const elapsed = now - fpsWindowStart;
+    if (elapsed >= 1000) {
+      screenshotActualFps.value = Number(
+        ((fpsFrameCount * 1000) / elapsed).toFixed(1),
+      );
+      fpsWindowStart = now;
+      fpsFrameCount = 0;
+    }
+  }
+
   async function initStatus() {
     const status = await getScreenshotStatus();
     if (status) {
@@ -109,6 +136,9 @@ export function useScreenshotStream() {
       screenshotPaused.value = status.paused;
       screenshotFps.value = status.fps;
       fpsSlider.value = status.fps;
+    }
+    if (!status?.running) {
+      screenshotActualFps.value = 0;
     }
   }
 
@@ -118,6 +148,7 @@ export function useScreenshotStream() {
       return;
     }
 
+    recordFrame();
     pendingFrame = frame;
     if (!rafId) {
       rafId = requestAnimationFrame(flushFrame);
@@ -131,6 +162,7 @@ export function useScreenshotStream() {
   onUnmounted(() => {
     if (rafId) cancelAnimationFrame(rafId);
     if (imageUrl.value) URL.revokeObjectURL(imageUrl.value);
+    screenshotActualFps.value = 0;
   });
 
   return {
@@ -140,6 +172,7 @@ export function useScreenshotStream() {
     isStreaming,
     isPaused,
     currentFps,
+    actualFps,
     screenshotError,
     toggleStreaming,
     togglePause,
