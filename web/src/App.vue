@@ -118,12 +118,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <UApp :toaster="{ position: 'bottom-right', duration: 3000 }">
+    <UApp
+        :toaster="{ position: 'bottom-right', duration: 3000, class: 'whitespace-pre-wrap break-words [overflow-wrap:anywhere]' }">
         <UTheme :ui="{
             select: selectTheme,
         }">
-
-
             <UMain>
                 <UHeader title="MaaDebugger" :ui="{ toggle: 'hidden' }">
                     <template #right>
