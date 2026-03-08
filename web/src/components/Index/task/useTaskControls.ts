@@ -62,7 +62,7 @@ export default function useTaskControls(toast: ToastApi) {
       statusStore.controllerStatus === "connected" &&
       statusStore.resourceStatus === "loaded" &&
       !agentStore.hasConnecting &&
-      !!selectedEntry.value,
+      !!taskStore.effectiveEntry,
   );
   const startStopKeys = computed(() =>
     formatShortcut(shortcutsStore.getBinding("task.startStop")),
@@ -72,7 +72,7 @@ export default function useTaskControls(toast: ToastApi) {
     taskStore.interfaceTasks.map((task) => ({
       label: task.name,
       value: task.name,
-      description: task.entry || task.description || task.name,
+      // description: task.entry || task.description || task.name,
     })),
   );
   const hasInterfaceTasks = computed(() => interfaceTaskItems.value.length > 0);
@@ -83,6 +83,14 @@ export default function useTaskControls(toast: ToastApi) {
   const selectedTaskOptionSelections = computed(
     () => taskStore.selectedTaskOptionSelections,
   );
+  const taskLaunchMode = computed({
+    get: () => taskStore.taskLaunchMode,
+    set: (value: "manual" | "interface") => {
+      taskStore.setTaskLaunchMode(value);
+    },
+  });
+  const usingInterfaceTask = computed(() => taskStore.usingInterfaceTask);
+  const effectiveEntry = computed(() => taskStore.effectiveEntry);
 
   const entrySelectItems = computed(() => {
     const all = entries.value.map((e) => ({ label: e.label, value: e.value }));
@@ -200,7 +208,7 @@ export default function useTaskControls(toast: ToastApi) {
     }
 
     const result = await runTask(
-      selectedEntry.value,
+      effectiveEntry.value,
       taskStore.effectiveOverrideObject,
     );
     if (!result.succeed) {
@@ -261,16 +269,15 @@ export default function useTaskControls(toast: ToastApi) {
       e.preventDefault();
       if (isRunning.value) {
         void onStop();
-      } else if (canStart.value) {
+      } else {
         void onStart();
       }
     }
   }
 
   function mount() {
-    window.addEventListener("keydown", onKeydown);
     void refreshNodes();
-    taskStore.syncOverrideJson();
+    window.addEventListener("keydown", onKeydown);
   }
 
   function unmount() {
@@ -295,6 +302,9 @@ export default function useTaskControls(toast: ToastApi) {
     selectedInterfaceTask,
     selectedTaskOptionDefs,
     selectedTaskOptionSelections,
+    taskLaunchMode,
+    usingInterfaceTask,
+    effectiveEntry,
     selectInterfaceTask,
     setInterfaceOptionCase,
     setOverrideJson,

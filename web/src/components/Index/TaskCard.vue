@@ -21,7 +21,7 @@
                             <div class="flex items-center justify-between gap-3">
                                 <span class="text-xs text-muted">Actual FPS</span>
                                 <span class="text-xs tabular-nums font-medium" :class="actualFpsTone">{{ actualFpsLabel
-                                    }}</span>
+                                }}</span>
                             </div>
                             <USeparator />
                             <div class="flex flex-col gap-2">
@@ -57,59 +57,89 @@
 
         <template #default>
             <div class="flex flex-col gap-3">
-                <div v-if="hasInterfaceTasks" class="flex justify-end">
-                    <UButton color="neutral" variant="soft" icon="i-lucide-list-tree" size="sm"
-                        @click="openInterfaceTaskModal">
-                        Interface Task
-                    </UButton>
+                <div v-if="showTaskModeTabs" class="rounded-lg border border-default bg-elevated/30 p-2">
+                    <UTabs key="value" v-model="taskLaunchMode" :items="taskModeTabItems" class="w-full" />
                 </div>
 
-                <div class="flex flex-row items-center gap-2">
-                    <div class="flex-1 min-w-0">
-                        <UTooltip :text="selectedEntry">
-                            <USelectMenu v-model="selectedEntry" v-model:search-term="entrySearchTerm" virtualize
-                                :items="entrySelectItems" ignore-filter placeholder="Select task entry..."
-                                :search-input="{
-                                    placeholder: 'Filter...',
-                                    icon: 'i-lucide-search'
-                                }"
-                                :ui="{ base: 'w-full', content: '!w-auto min-w-(--entry-content-min-w) max-w-[80vw]' }"
-                                class="w-full" size="xl" value-key="value" :disabled="isRunning" arrow />
-                        </UTooltip>
-                    </div>
-                    <UTooltip text="Edit task override">
-                        <UButton color="neutral" variant="outline" icon="i-lucide-file-edit" size="xl"
-                            :loading="isPreparingOverrideEditor" :disabled="isPreparingOverrideEditor"
-                            @click="onEditOverride" />
-                    </UTooltip>
-                    <UButton v-if="!isRunning" color="success" variant="soft" icon="i-lucide-play" size="xl"
-                        :disabled="!canStart" @click="onStart">
-                        <template v-if="startStopKeys.length" #trailing>
-                            <UKbd v-for="k in startStopKeys" :key="k" :value="k" />
-                        </template>
-                    </UButton>
-                    <UButton v-else color="error" variant="soft" icon="i-lucide-square" size="xl" :loading="isStopping"
-                        :disabled="isStopping" @click="onStop">
-                        <template v-if="startStopKeys.length" #trailing>
-                            <UKbd v-for="k in startStopKeys" :key="k" :value="k" />
-                        </template>
-                    </UButton>
-                </div>
-
-                <div v-if="hasInterfaceTasks && selectedInterfaceTask"
-                    class="rounded-lg border border-default bg-elevated/40 p-3 text-sm">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="min-w-0">
-                            <div class="font-medium text-default break-all">
-                                {{ selectedInterfaceTask.name }}
-                            </div>
-                            <div class="text-xs text-dimmed break-all">
-                                Entry: {{ selectedInterfaceTask.entry || selectedEntry }}
-                            </div>
+                <div v-if="taskLaunchMode === 'manual' || !hasInterfaceTasks" class="flex flex-col gap-3">
+                    <div class="flex flex-row items-center gap-2">
+                        <div class="flex-1 min-w-0">
+                            <UTooltip :text="selectedEntry">
+                                <USelectMenu v-model="selectedEntry" v-model:search-term="entrySearchTerm" virtualize
+                                    :items="entrySelectItems" ignore-filter placeholder="Select task entry..."
+                                    :search-input="{
+                                        placeholder: 'Filter...',
+                                        icon: 'i-lucide-search'
+                                    }"
+                                    :ui="{ base: 'w-full', content: '!w-auto min-w-(--entry-content-min-w) max-w-[80vw]' }"
+                                    class="w-full" size="xl" value-key="value" :disabled="isRunning" arrow />
+                            </UTooltip>
                         </div>
-                        <UBadge color="primary" variant="subtle">
-                            {{ selectedTaskOptionSelections.length }} option(s)
-                        </UBadge>
+                        <UTooltip text="Edit task override">
+                            <UButton color="neutral" variant="outline" icon="i-lucide-file-edit" size="xl"
+                                :loading="isPreparingOverrideEditor" :disabled="isPreparingOverrideEditor"
+                                @click="onEditOverride" />
+                        </UTooltip>
+                        <UButton v-if="!isRunning" color="success" variant="soft" icon="i-lucide-play" size="xl"
+                            :disabled="!canStart" @click="onStart">
+                            <template v-if="startStopKeys.length" #trailing>
+                                <UKbd v-for="k in startStopKeys" :key="k" :value="k" />
+                            </template>
+                        </UButton>
+                        <UButton v-else color="error" variant="soft" icon="i-lucide-square" size="xl"
+                            :loading="isStopping" :disabled="isStopping" @click="onStop">
+                            <template v-if="startStopKeys.length" #trailing>
+                                <UKbd v-for="k in startStopKeys" :key="k" :value="k" />
+                            </template>
+                        </UButton>
+                    </div>
+                </div>
+
+                <div v-else-if="taskLaunchMode === 'interface' && hasInterfaceTasks" class="flex flex-col gap-3">
+                    <div v-if="selectedInterfaceTask"
+                        class="rounded-lg border border-default bg-elevated/40 p-3 text-sm"
+                        @click="openInterfaceTaskModal">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <div class="font-medium text-default break-all">
+                                    {{ selectedInterfaceTask.name }}
+                                </div>
+                                <div class="text-xs text-dimmed break-all">
+                                    Entry: {{ effectiveEntry || selectedInterfaceTask.entry || '-' }}
+                                </div>
+                            </div>
+                            <UBadge color="primary" variant="subtle">
+                                {{ selectedTaskOptionSelections.length }} option(s)
+                            </UBadge>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-row items-center gap-2">
+                        <div class="flex-1 min-w-0">
+                            <UTooltip :text="selectedInterfaceTask?.name || ''">
+                                <USelectMenu :model-value="selectedInterfaceTask?.name || ''"
+                                    :items="interfaceTaskItems" value-key="value" placeholder="Select interface task..."
+                                    class="w-full" size="xl" :disabled="isRunning"
+                                    @update:model-value="(value) => onInterfaceTaskSelected(value as string)" />
+                            </UTooltip>
+                        </div>
+                        <UTooltip text="Edit task override">
+                            <UButton color="neutral" variant="outline" icon="i-lucide-file-edit" size="xl"
+                                :loading="isPreparingOverrideEditor" :disabled="isPreparingOverrideEditor"
+                                @click="onEditOverride" />
+                        </UTooltip>
+                        <UButton v-if="!isRunning" color="success" variant="soft" icon="i-lucide-play" size="xl"
+                            :disabled="!canStart" @click="onStart">
+                            <template v-if="startStopKeys.length" #trailing>
+                                <UKbd v-for="k in startStopKeys" :key="k" :value="k" />
+                            </template>
+                        </UButton>
+                        <UButton v-else color="error" variant="soft" icon="i-lucide-square" size="xl"
+                            :loading="isStopping" :disabled="isStopping" @click="onStop">
+                            <template v-if="startStopKeys.length" #trailing>
+                                <UKbd v-for="k in startStopKeys" :key="k" :value="k" />
+                            </template>
+                        </UButton>
                     </div>
                 </div>
 
@@ -216,10 +246,6 @@
         :ui="{ content: 'sm:max-w-2xl' }">
         <template #body>
             <div class="w-full flex flex-col gap-3">
-                <div class="text-sm font-medium">Task Preset</div>
-                <USelectMenu :model-value="interfaceTaskDraftName" :items="interfaceTaskItems" value-key="value"
-                    @update:model-value="onInterfaceTaskDraftSelected" />
-
                 <div v-if="draftSelectedTask" class="rounded-lg border border-default bg-elevated/50 p-3 space-y-3">
                     <div>
                         <div class="text-sm font-medium text-default">
@@ -228,38 +254,34 @@
                         <div class="text-xs text-dimmed break-all">
                             Entry: {{ draftSelectedTask.entry || 'n/a' }}
                         </div>
-                        <div v-if="draftSelectedTask.description" class="mt-1 text-xs text-dimmed whitespace-pre-wrap">
+                        <div v-if="draftSelectedTask.description && !draftSelectedTask.description?.startsWith('$')"
+                            class="mt-1 text-xs text-dimmed whitespace-pre-wrap">
                             {{ draftSelectedTask.description }}
                         </div>
                     </div>
+                </div>
 
-                    <div v-if="draftTaskOptionDefs.length" class="space-y-3">
-                        <div class="text-xs font-medium text-default">Options</div>
-                        <div v-for="optionDef in draftTaskOptionDefs" :key="optionDef.name" class="space-y-2">
-                            <div class="flex items-start justify-between gap-3">
-                                <div class="min-w-0">
-                                    <div class="text-xs font-medium text-default break-all">
-                                        {{ optionDef.name }}
-                                    </div>
-                                    <div v-if="optionDef.description"
-                                        class="text-xs text-dimmed whitespace-pre-wrap break-all">
-                                        {{ optionDef.description }}
-                                    </div>
+                <div v-if="draftSelectedTask && draftTaskOptionDefs.length"
+                    class="rounded-lg border border-default bg-elevated/50 p-3 space-y-3">
+                    <div class="text-xs font-medium text-default">Options</div>
+                    <div v-for="optionDef in draftTaskOptionDefs" :key="optionDef.name" class="space-y-2">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <div class="text-xs font-medium text-default break-all">
+                                    {{ optionDef.name }}
                                 </div>
-                                <UBadge color="neutral" variant="subtle" size="sm">
-                                    {{ optionDef.type || 'option' }}
-                                </UBadge>
+                                <div v-if="optionDef.description && !optionDef.description?.startsWith('$')"
+                                    class="text-xs text-dimmed whitespace-pre-wrap break-all">
+                                    {{ optionDef.description }}
+                                </div>
                             </div>
-                            <USelectMenu :model-value="draftSelectedCaseMap[optionDef.name]"
-                                :items="buildOptionCaseItems(optionDef)" value-key="value"
-                                @update:model-value="(value) => onOptionCaseDraftSelected(optionDef.name, value as string)" />
+                            <UBadge color="neutral" variant="subtle" size="md">
+                                {{ optionDef.type || 'option' }}
+                            </UBadge>
                         </div>
-                    </div>
-
-                    <div class="space-y-2">
-                        <div class="text-xs font-medium text-default">Generated Override</div>
-                        <pre
-                            class="max-h-48 overflow-auto rounded-md border border-default bg-default p-2 text-[11px] leading-5 text-toned">{{ draftDerivedOverridePreview }}</pre>
+                        <USelectMenu :model-value="draftSelectedCaseMap[optionDef.name]"
+                            :items="buildOptionCaseItems(optionDef)" value-key="value" class="w-full" arrow
+                            @update:model-value="(value) => onOptionCaseDraftSelected(optionDef.name, value as string)" />
                     </div>
                 </div>
             </div>
@@ -316,6 +338,9 @@ const {
     interfaceTaskItems,
     selectedInterfaceTask,
     selectedTaskOptionSelections,
+    taskLaunchMode,
+    usingInterfaceTask,
+    effectiveEntry,
     selectInterfaceTask,
     setInterfaceOptionCase,
     setOverrideJson,
@@ -378,15 +403,25 @@ const actualFpsTone = computed(() => {
     if (actualFps.value >= currentFps.value * 0.6) return 'text-warning'
     return 'text-error'
 })
+const showTaskModeTabs = computed(() => hasInterfaceTasks.value)
+const taskModeTabItems = computed(() => [
+    {
+        label: 'Manual Entry',
+        value: 'manual',
+        icon: 'i-lucide-list',
+    },
+    {
+        label: 'Interface Task',
+        value: 'interface',
+        icon: 'i-lucide-list-tree',
+    },
+])
 const draftSelectedTask = computed(() =>
     taskStore.interfaceTasks.find((task) => task.name === interfaceTaskDraftName.value) ?? null,
 )
 const draftTaskOptionDefs = computed(() => draftSelectedTask.value?.option_defs ?? [])
 const draftSelectedCaseMap = computed<Record<string, string>>(() =>
     Object.fromEntries(interfaceOptionDraftSelections.value.map((item) => [item.optionName, item.caseName])),
-)
-const draftDerivedOverridePreview = computed(() =>
-    JSON.stringify(buildDraftOverride(), null, 2),
 )
 
 watch(() => taskStore.overrideJson, (value) => {
@@ -400,6 +435,12 @@ watch(overrideEditorDraft, (value) => {
         setOverrideJson(value)
     }
 })
+
+watch(showTaskModeTabs, (visible) => {
+    if (!visible && taskLaunchMode.value !== 'manual') {
+        taskLaunchMode.value = 'manual'
+    }
+}, { immediate: true })
 
 watchEffect(() => {
     document.documentElement.style.setProperty('--entry-content-min-w', entryContentMinWidth.value)
@@ -429,33 +470,7 @@ function buildOptionCaseItems(optionDef: InterfaceTaskOptionDefinition) {
     return (optionDef.cases ?? []).map((item) => ({
         label: item.name,
         value: item.name,
-        description: item.description || (item.pipeline_override_keys?.length
-            ? `Override: ${item.pipeline_override_keys.join(', ')}`
-            : 'No override'),
     }))
-}
-
-function cloneValue<T>(value: T): T {
-    return JSON.parse(JSON.stringify(value)) as T
-}
-
-function mergeObjects(base: Record<string, unknown>, patch: Record<string, unknown>) {
-    const next = cloneValue(base)
-    for (const [key, value] of Object.entries(patch)) {
-        if (
-            value &&
-            typeof value === 'object' &&
-            !Array.isArray(value) &&
-            next[key] &&
-            typeof next[key] === 'object' &&
-            !Array.isArray(next[key])
-        ) {
-            next[key] = mergeObjects(next[key] as Record<string, unknown>, value as Record<string, unknown>)
-            continue
-        }
-        next[key] = cloneValue(value)
-    }
-    return next
 }
 
 function snapshotInterfaceDraft() {
@@ -463,32 +478,20 @@ function snapshotInterfaceDraft() {
     interfaceOptionDraftSelections.value = selectedTaskOptionSelections.value.map((item) => ({ ...item }))
 }
 
-function buildDraftOverride() {
-    let merged: Record<string, unknown> = {}
-    for (const optionDef of draftTaskOptionDefs.value) {
-        const caseName = draftSelectedCaseMap.value[optionDef.name]
-        const selectedCase = (optionDef.cases ?? []).find((item) => item.name === caseName)
-        if (!selectedCase?.pipeline_override) {
-            continue
-        }
-        merged = mergeObjects(merged, selectedCase.pipeline_override as Record<string, unknown>)
-    }
-    return merged
-}
 
 function openInterfaceTaskModal() {
+    if (!taskStore.selectedInterfaceTaskName && interfaceTaskItems.value.length > 0) {
+        selectInterfaceTask(interfaceTaskItems.value[0]?.value ?? '')
+    }
     snapshotInterfaceDraft()
     interfaceTaskModalOpen.value = true
 }
 
-function onInterfaceTaskDraftSelected(value: string | number) {
-    if (typeof value !== 'string') return
-    interfaceTaskDraftName.value = value
-    interfaceOptionDraftSelections.value = (draftSelectedTask.value?.option_defs ?? []).map((optionDef) => ({
-        optionName: optionDef.name,
-        caseName: optionDef.default_case || optionDef.cases?.[0]?.name || '',
-    })).filter((item) => item.caseName)
+function onInterfaceTaskSelected(value: string) {
+    if (!value) return
+    selectInterfaceTask(value)
 }
+
 
 function onOptionCaseDraftSelected(optionName: string, value: string) {
     if (!value) return
@@ -500,6 +503,7 @@ function onOptionCaseDraftSelected(optionName: string, value: string) {
 
 async function onInterfaceTaskConfirm() {
     if (interfaceTaskDraftName.value) {
+        taskLaunchMode.value = 'interface'
         selectInterfaceTask(interfaceTaskDraftName.value)
         await nextTick()
         for (const selection of interfaceOptionDraftSelections.value) {
@@ -520,6 +524,12 @@ function onImageWheel(e: WheelEvent) {
 
 watch(isFullscreen, (val) => {
     handleFullscreenChange(val)
+})
+
+watch(usingInterfaceTask, (enabled) => {
+    if (enabled && !taskStore.selectedInterfaceTaskName && interfaceTaskItems.value.length > 0) {
+        interfaceTaskDraftName.value = interfaceTaskItems.value[0]?.value ?? ''
+    }
 })
 
 async function onEditOverride() {
@@ -552,5 +562,6 @@ defineExpose({
     refreshNodes,
     imageData,
     aspectMode,
+    effectiveEntry,
 })
 </script>

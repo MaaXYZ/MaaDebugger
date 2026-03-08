@@ -134,6 +134,7 @@ export const useTaskStore = defineStore(
   "task",
   () => {
     const selectedEntry = ref("");
+    const taskLaunchMode = ref<"manual" | "interface">("manual");
     /** Pipeline override JSON string (derived result + manual patch), persisted */
     const overrideJson = ref("{}");
     /** User-editable extra patch merged on top of interface-derived override */
@@ -193,9 +194,27 @@ export const useTaskStore = defineStore(
       return merged;
     });
 
+    const usingInterfaceTask = computed(
+      () =>
+        taskLaunchMode.value === "interface" &&
+        interfaceTasks.value.length > 0 &&
+        !!selectedInterfaceTask.value,
+    );
+
+    const effectiveEntry = computed(() => {
+      if (usingInterfaceTask.value && selectedInterfaceTask.value?.entry) {
+        return selectedInterfaceTask.value.entry;
+      }
+      return selectedEntry.value;
+    });
+
+    const effectiveBaseOverride = computed<Record<string, unknown>>(() =>
+      usingInterfaceTask.value ? derivedInterfaceOverride.value : {},
+    );
+
     const effectiveOverrideObject = computed<Record<string, unknown>>(() => {
       const manualPatch = parseStoredJsonObject(manualOverrideJson.value);
-      return deepMergeOverride(derivedInterfaceOverride.value, manualPatch);
+      return deepMergeOverride(effectiveBaseOverride.value, manualPatch);
     });
 
     function syncOverrideJson() {
@@ -210,7 +229,7 @@ export const useTaskStore = defineStore(
       overrideJson.value = value;
       const parsedOverride = parseStoredJsonObject(value);
       const manualPatch = buildManualOverridePatch(
-        derivedInterfaceOverride.value,
+        effectiveBaseOverride.value,
         parsedOverride,
       );
       manualOverrideJson.value = JSON.stringify(manualPatch, null, 2);
@@ -219,6 +238,11 @@ export const useTaskStore = defineStore(
 
     function setManualOverrideJson(value: string) {
       manualOverrideJson.value = value;
+      syncOverrideJson();
+    }
+
+    function setTaskLaunchMode(value: "manual" | "interface") {
+      taskLaunchMode.value = value;
       syncOverrideJson();
     }
 
@@ -261,10 +285,6 @@ export const useTaskStore = defineStore(
       const activeTask = matchedTask ?? interfaceTasks.value[0] ?? null;
 
       selectedInterfaceTaskName.value = activeTask?.name ?? "";
-      if (activeTask?.entry) {
-        selectedEntry.value = activeTask.entry;
-      }
-
       rebuildSelections(activeTask);
       syncOverrideJson();
     }
@@ -272,9 +292,6 @@ export const useTaskStore = defineStore(
     function selectInterfaceTask(taskName: string) {
       selectedInterfaceTaskName.value = taskName;
       const task = selectedInterfaceTask.value;
-      if (task?.entry) {
-        selectedEntry.value = task.entry;
-      }
       rebuildSelections(task);
       syncOverrideJson();
     }
@@ -283,6 +300,9 @@ export const useTaskStore = defineStore(
       interfaceTasks.value = [];
       selectedInterfaceTaskName.value = "";
       selectedOptionCases.value = [];
+      if (taskLaunchMode.value === "interface") {
+        taskLaunchMode.value = "manual";
+      }
       syncOverrideJson();
     }
 
@@ -293,6 +313,7 @@ export const useTaskStore = defineStore(
 
     return {
       selectedEntry,
+      taskLaunchMode,
       overrideJson,
       manualOverrideJson,
       interfaceTasks,
@@ -302,9 +323,12 @@ export const useTaskStore = defineStore(
       selectedTaskOptionDefs,
       selectedTaskOptionSelections,
       derivedInterfaceOverride,
+      usingInterfaceTask,
+      effectiveEntry,
       effectiveOverrideObject,
       setOverrideJson,
       setManualOverrideJson,
+      setTaskLaunchMode,
       setSelectedOptionCase,
       applyInterfaceTasks,
       selectInterfaceTask,
