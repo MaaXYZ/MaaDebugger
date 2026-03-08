@@ -154,6 +154,15 @@ export interface RecoResultsResponse {
   filtered: RecoResultItem[];
 }
 
+export interface TaskImageRef {
+  id: string;
+  url: string;
+  mime: string;
+  width?: number;
+  height?: number;
+  content_size?: number;
+}
+
 export interface RecoDetailResponse {
   name: string;
   algorithm: string;
@@ -161,8 +170,8 @@ export interface RecoDetailResponse {
   box?: RectResponse;
   detail_json?: unknown;
   combined_result?: RecoDetailResponse[];
-  draw_images?: string[];
-  raw_image?: string;
+  draw_images?: TaskImageRef[];
+  raw_image?: TaskImageRef;
   results?: RecoResultsResponse;
 }
 
@@ -304,7 +313,7 @@ export interface ActionDetailResponse {
   success: boolean;
   detail_json?: unknown;
   result?: ActionResult;
-  raw_image?: string;
+  raw_image?: TaskImageRef;
   controller_type?: string;
 }
 

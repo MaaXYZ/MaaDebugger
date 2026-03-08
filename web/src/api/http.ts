@@ -329,6 +329,10 @@ export async function getActionDetailById(
   return result.data ?? null;
 }
 
+export function getTaskImageUrl(imageId: string): string {
+  return `${BASE_URL}/task/image/${encodeURIComponent(imageId)}`;
+}
+
 /**
  * 获取可运行节点列表
  */

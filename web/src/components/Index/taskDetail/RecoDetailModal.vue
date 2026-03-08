@@ -47,7 +47,7 @@
                     <span class="text-xs text-dimmed font-medium">Draw:</span>
                     <div class="flex flex-col gap-2">
                         <div v-for="(img, idx) in detail.draw_images" :key="idx" class="relative group">
-                            <img :src="img"
+                            <img :src="resolveImageUrl(img)"
                                 class="max-w-full rounded-lg border border-default cursor-pointer hover:opacity-80 transition-opacity"
                                 @click="openImagePreview(img)" />
                             <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -118,8 +118,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { getRecoDetailById } from '@/api/http'
-import type { RecoDetailResponse } from './types'
+import { getRecoDetailById, getTaskImageUrl } from '@/api/http'
+import type { RecoDetailResponse, TaskImageRef } from './types'
 import RecoDetailItem from './RecoDetailItem.vue'
 import RecognitionDrawCanvas from './RecognitionDrawCanvas.vue'
 import NodeDataModal from './NodeDataModal.vue'
@@ -163,8 +163,12 @@ const previewImageStyle = computed(() => ({
     objectFit: 'contain' as const,
 }))
 
-function openImagePreview(src: string) {
-    previewImageSrc.value = src
+function resolveImageUrl(image: TaskImageRef): string {
+    return image.url || getTaskImageUrl(image.id)
+}
+
+function openImagePreview(image: TaskImageRef) {
+    previewImageSrc.value = resolveImageUrl(image)
     imagePreviewOpen.value = true
 }
 

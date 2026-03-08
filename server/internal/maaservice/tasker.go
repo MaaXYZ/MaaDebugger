@@ -1,12 +1,9 @@
 package maaservice
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"image/png"
 	"sort"
-	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -26,8 +23,8 @@ type TaskerService struct {
 	// 不在 sink 中渲染/处理，只做消息转发。
 	onEvent atomic.Pointer[func(msg map[string]any)]
 
-	// actionScreenshots 缓存 action 开始前的截图（action_id → base64 PNG data URI）。
-	actionScreenshots sync.Map
+	// taskImages 缓存 reco/action 详情图，供独立 image 接口按需读取。
+	taskImages sync.Map
 }
 
 // NewTaskerService 创建一个新的 TaskerService。
@@ -296,8 +293,8 @@ type RecoDetailResponse struct {
 	Box            *RectResponse         `json:"box,omitempty"`
 	DetailJSON     any                   `json:"detail_json,omitempty"`
 	CombinedResult []*RecoDetailResponse `json:"combined_result,omitempty"`
-	DrawImages     []string              `json:"draw_images,omitempty"`
-	RawImage       string                `json:"raw_image,omitempty"`
+	DrawImages     []*ImageRef           `json:"draw_images,omitempty"`
+	RawImage       *ImageRef             `json:"raw_image,omitempty"`
 	Results        *RecoResultsResponse  `json:"results,omitempty"`
 }
 
@@ -410,7 +407,7 @@ func convertResultList(results []*maa.RecognitionResult) []*RecoResultItem {
 }
 
 // convertRecoDetail 递归转换 RecognitionDetail 到响应结构。
-func convertRecoDetail(detail *maa.RecognitionDetail) *RecoDetailResponse {
+func (s *TaskerService) convertRecoDetail(detail *maa.RecognitionDetail) *RecoDetailResponse {
 	if detail == nil {
 		return nil
 	}
@@ -421,7 +418,6 @@ func convertRecoDetail(detail *maa.RecognitionDetail) *RecoDetailResponse {
 		Hit:       detail.Hit,
 	}
 
-	// Box
 	if detail.Hit {
 		resp.Box = &RectResponse{
 			X: int(detail.Box.X()),
@@ -431,7 +427,6 @@ func convertRecoDetail(detail *maa.RecognitionDetail) *RecoDetailResponse {
 		}
 	}
 
-	// DetailJSON
 	if detail.DetailJson != "" {
 		var parsed any
 		if err := json.Unmarshal([]byte(detail.DetailJson), &parsed); err == nil {
@@ -441,44 +436,30 @@ func convertRecoDetail(detail *maa.RecognitionDetail) *RecoDetailResponse {
 		}
 	}
 
-	// CombinedResult (for And/Or algorithms)
 	if len(detail.CombinedResult) > 0 {
 		resp.CombinedResult = make([]*RecoDetailResponse, 0, len(detail.CombinedResult))
 		for _, sub := range detail.CombinedResult {
-			resp.CombinedResult = append(resp.CombinedResult, convertRecoDetail(sub))
+			resp.CombinedResult = append(resp.CombinedResult, s.convertRecoDetail(sub))
 		}
 	}
 
-	// Draw images → base64 PNG
 	if len(detail.Draws) > 0 {
-		resp.DrawImages = make([]string, 0, len(detail.Draws))
-		for _, img := range detail.Draws {
+		resp.DrawImages = make([]*ImageRef, 0, len(detail.Draws))
+		for idx, img := range detail.Draws {
 			if img == nil {
 				continue
 			}
-			var buf strings.Builder
-			buf.WriteString("data:image/png;base64,")
-			encoder := base64.NewEncoder(base64.StdEncoding, &buf)
-			if err := png.Encode(encoder, img); err != nil {
-				continue
+			id := fmt.Sprintf("reco-%d-draw-%d", detail.ID, idx)
+			if ref := storeTaskImage(&s.taskImages, id, img); ref != nil {
+				resp.DrawImages = append(resp.DrawImages, ref)
 			}
-			encoder.Close()
-			resp.DrawImages = append(resp.DrawImages, buf.String())
 		}
 	}
 
-	// Raw image → base64 PNG (截图原图)
 	if detail.Raw != nil {
-		var buf strings.Builder
-		buf.WriteString("data:image/png;base64,")
-		encoder := base64.NewEncoder(base64.StdEncoding, &buf)
-		if err := png.Encode(encoder, detail.Raw); err == nil {
-			encoder.Close()
-			resp.RawImage = buf.String()
-		}
+		resp.RawImage = storeTaskImage(&s.taskImages, fmt.Sprintf("reco-%d-raw", detail.ID), detail.Raw)
 	}
 
-	// Results (all/best/filtered 识别结果的 box 数据)
 	if detail.Results != nil {
 		var best []*RecoResultItem
 		if detail.Results.Best != nil {
@@ -524,7 +505,7 @@ type ActionDetailResp struct {
 	Success        bool           `json:"success"`
 	DetailJSON     any            `json:"detail_json,omitempty"`
 	Result         any            `json:"result,omitempty"`
-	RawImage       string         `json:"raw_image,omitempty"`
+	RawImage       *ImageRef      `json:"raw_image,omitempty"`
 	ControllerType ControllerType `json:"controller_type"`
 }
 
@@ -702,7 +683,7 @@ func (s *TaskerService) GetLatestNodeDetail(name string) (*NodeDetailResponse, e
 		RunCompleted: detail.RunCompleted,
 	}
 	if detail.Recognition != nil {
-		resp.Recognition = convertRecoDetail(detail.Recognition)
+		resp.Recognition = s.convertRecoDetail(detail.Recognition)
 	}
 	if detail.Action != nil {
 		resp.Action = convertActionDetail(detail.Action, s.controllerSvc.ControllerType())
@@ -720,7 +701,7 @@ func (s *TaskerService) GetRecognitionDetailByID(recoID int64) (*RecoDetailRespo
 	if err != nil {
 		return nil, fmt.Errorf("get recognition detail failed: %w", err)
 	}
-	return convertRecoDetail(detail), nil
+	return s.convertRecoDetail(detail), nil
 }
 
 // GetNodeData 获取运行时节点原始定义 JSON。
@@ -779,29 +760,41 @@ func (s *TaskerService) captureActionScreenshot(actionID uint64) {
 		log.Warn().Err(err).Uint64("action_id", actionID).Msg("[MaaService] action screenshot: CacheImage failed")
 		return
 	}
-	var buf strings.Builder
-	buf.WriteString("data:image/png;base64,")
-	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
-	if err := png.Encode(encoder, img); err != nil {
-		log.Warn().Err(err).Uint64("action_id", actionID).Msg("[MaaService] action screenshot: PNG encode failed")
+	id := fmt.Sprintf("action-%d-raw", actionID)
+	if ref := storeTaskImage(&s.taskImages, id, img); ref == nil {
+		log.Warn().Uint64("action_id", actionID).Msg("[MaaService] action screenshot: JPEG encode failed")
 		return
 	}
-	encoder.Close()
-	s.actionScreenshots.Store(actionID, buf.String())
 	log.Debug().Uint64("action_id", actionID).Msg("[MaaService] action screenshot captured")
 }
 
-// ClearActionScreenshots 清除所有缓存的 action 截图。
-func (s *TaskerService) ClearActionScreenshots() {
-	s.actionScreenshots.Range(func(key, _ any) bool {
-		s.actionScreenshots.Delete(key)
+// ClearTaskImages 清除所有缓存的详情图片。
+func (s *TaskerService) ClearTaskImages() {
+	s.taskImages.Range(func(key, _ any) bool {
+		s.taskImages.Delete(key)
 		return true
 	})
 }
 
-// ClearTaskerCahce 清除 Tasker 缓存
+// ClearTaskerCache 清除 Tasker 缓存
 func (s *TaskerService) ClearCache() {
-	s.tasker.Load().ClearCache()
+	tasker := s.tasker.Load()
+	if tasker != nil {
+		_ = tasker.ClearCache()
+	}
+}
+
+// GetTaskImage 获取缓存图片。
+func (s *TaskerService) GetTaskImage(id string) (*taskImageItem, bool) {
+	item, ok := s.taskImages.Load(id)
+	if !ok {
+		return nil, false
+	}
+	imageItem, ok := item.(*taskImageItem)
+	if !ok {
+		return nil, false
+	}
+	return imageItem, true
 }
 
 // GetActionDetailByID 通过 action_id 获取动作详情。
@@ -815,12 +808,9 @@ func (s *TaskerService) GetActionDetailByID(actionID int64) (*ActionDetailResp, 
 		return nil, fmt.Errorf("get action detail failed: %w", err)
 	}
 	resp := convertActionDetail(detail, s.controllerSvc.ControllerType())
-
-	// 从缓存中获取 action 开始前的截图（注意：captureActionScreenshot 以 uint64 存储，这里需要转换）
-	if cached, ok := s.actionScreenshots.Load(uint64(actionID)); ok {
-		resp.RawImage = cached.(string)
+	if item, ok := s.GetTaskImage(fmt.Sprintf("action-%d-raw", actionID)); ok {
+		resp.RawImage = buildTaskImageRef(fmt.Sprintf("action-%d-raw", actionID), item)
 	}
-
 	return resp, nil
 }
 

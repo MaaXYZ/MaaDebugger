@@ -24,7 +24,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { getActionDetailById } from '@/api/http'
+import { getActionDetailById, getTaskImageUrl } from '@/api/http'
 import type { ActionDetailResponse } from './types'
 import { actionHasCoords } from './types'
 import ActionDetailItem from './ActionDetailItem.vue'
@@ -59,7 +59,7 @@ watch([() => props.actionId, open], async ([id, isOpen]) => {
     try {
         const detail = await getActionDetailById(id)
         actionDetail.value = detail
-        rawImage.value = detail?.raw_image ?? null
+        rawImage.value = detail?.raw_image ? (detail.raw_image.url || getTaskImageUrl(detail.raw_image.id)) : null
     } catch {
         actionDetail.value = null
         rawImage.value = null

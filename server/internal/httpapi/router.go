@@ -86,6 +86,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.HandleFunc("GET /api/task/node-data/{name}", r.handleTaskNodeData)
 	mux.HandleFunc("GET /api/task/reco/{id}", r.handleTaskRecoDetail)
 	mux.HandleFunc("GET /api/task/action/{id}", r.handleTaskActionDetail)
+	mux.HandleFunc("GET /api/task/image/{id}", r.handleTaskImage)
 	mux.HandleFunc("POST /api/agent/connect", r.handleAgentConnect)
 	mux.HandleFunc("POST /api/agent/disconnect", r.handleAgentDisconnect)
 	mux.HandleFunc("GET /api/agent/list", r.handleAgentList)
@@ -709,9 +710,23 @@ func (r *router) handleTaskActionDetail(w http.ResponseWriter, req *http.Request
 	response.OK(w, detail)
 }
 
+func (r *router) handleTaskImage(w http.ResponseWriter, req *http.Request) {
+	id := strings.TrimSpace(req.PathValue("id"))
+	if id == "" {
+		response.Fail(w, http.StatusBadRequest, "image id is required")
+		return
+	}
+	item, ok := r.deps.TaskerService.GetTaskImage(id)
+	if !ok {
+		response.Fail(w, http.StatusNotFound, "image not found")
+		return
+	}
+	maaservice.WriteTaskImageResponse(w, req, item)
+}
+
 // --- Clear ---
 func (r *router) handleClearCache(w http.ResponseWriter, req *http.Request) {
-	r.deps.TaskerService.ClearActionScreenshots()
+	r.deps.TaskerService.ClearTaskImages()
 	r.deps.TaskerService.ClearCache()
 	response.OK(w, nil)
 }
