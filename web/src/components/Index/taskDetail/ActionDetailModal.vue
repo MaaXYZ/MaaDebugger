@@ -7,7 +7,7 @@
             <div v-else-if="actionDetail" class="flex flex-col gap-3">
                 <div class="flex items-center justify-end">
                     <UButton color="neutral" variant="ghost" size="xs" icon="i-lucide-file-json"
-                        @click="nodeDataOpen = true">
+                             @click="nodeDataOpen = true">
                         NodeData
                     </UButton>
                 </div>
