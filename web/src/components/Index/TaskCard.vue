@@ -21,7 +21,7 @@
                             <div class="flex items-center justify-between gap-3">
                                 <span class="text-xs text-muted">Actual FPS</span>
                                 <span class="text-xs tabular-nums font-medium" :class="actualFpsTone">{{ actualFpsLabel
-                                }}</span>
+                                    }}</span>
                             </div>
                             <USeparator />
                             <div class="flex flex-col gap-2">
@@ -325,7 +325,6 @@ const {
     selectInterfaceTask,
     setInterfaceOptionCase,
     setOverrideJson,
-    setManualOverrideJson,
     onStart,
     onStop,
     refreshNodes,
