@@ -5,6 +5,7 @@ import type {
   StatusSnapshot,
   MethodItems,
 } from "@/types/api";
+import type { InterfaceParseResult } from "@/types/interface";
 
 import type { NodeDataResponse } from "@/components/Index/taskDetail/types";
 
@@ -258,6 +259,18 @@ export async function checkPathExists(
   return request<{ exists: boolean }>("/path/exists", {
     method: "POST",
     body: JSON.stringify({ path, type: pathType }),
+  });
+}
+
+/**
+ * 解析 interface 文件
+ */
+export async function parseInterface(
+  path: string,
+): Promise<ApiResponse<InterfaceParseResult>> {
+  return request("/interface/parse", {
+    method: "POST",
+    body: JSON.stringify({ path }),
   });
 }
 

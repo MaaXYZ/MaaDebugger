@@ -16,6 +16,7 @@ export interface PathItem {
 export interface ResourceProfile {
   id: number;
   name: string;
+  source?: "manual" | "interface";
   paths: PathItem[];
 }
 
@@ -31,7 +32,7 @@ export const useResourceStore = defineStore(
     let nextProfileId = 0;
 
     const profiles = ref<ResourceProfile[]>([
-      { id: nextProfileId++, name: "Default", paths: [] },
+      { id: nextProfileId++, name: "Default", source: "manual", paths: [] },
     ]);
 
     const activeProfileId = ref<number>(profiles.value[0]!.id);
@@ -84,6 +85,7 @@ export const useResourceStore = defineStore(
       const newProfile: ResourceProfile = {
         id: nextProfileId++,
         name: `Profile ${profiles.value.length + 1}`,
+        source: "manual",
         paths: [],
       };
       profiles.value.push(newProfile);
@@ -113,12 +115,94 @@ export const useResourceStore = defineStore(
         .map((item) => item.path);
     }
 
+    function replaceActiveProfilePaths(nextPaths: PathItem[]) {
+      profiles.value = profiles.value.map((profile) =>
+        profile.id === activeProfileId.value
+          ? { ...profile, paths: nextPaths }
+          : profile,
+      );
+    }
+
     function setPaths(newPaths: string[]) {
-      activePaths.value = newPaths.map((p) => ({
-        id: nextId++,
-        path: p,
-        enabled: true,
-      }));
+      replaceActiveProfilePaths(
+        newPaths.map((p) => ({
+          id: nextId++,
+          path: p,
+          enabled: true,
+        })),
+      );
+    }
+
+    function buildPatchedPaths(
+      existingPaths: PathItem[],
+      newPaths: string[],
+    ): PathItem[] {
+      const normalizedNewPaths = newPaths
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0);
+
+      const existing = [...existingPaths];
+      const existingMap = new Map(existing.map((item) => [item.path, item]));
+      const merged: PathItem[] = [];
+      const seen = new Set<string>();
+
+      for (const path of normalizedNewPaths) {
+        if (seen.has(path)) continue;
+        seen.add(path);
+        const reused = existingMap.get(path);
+        merged.push(
+          reused
+            ? { ...reused }
+            : {
+                id: nextId++,
+                path,
+                enabled: true,
+              },
+        );
+      }
+
+      for (const item of existing) {
+        if (seen.has(item.path)) continue;
+        seen.add(item.path);
+        merged.push({ ...item });
+      }
+
+      return merged;
+    }
+
+    function patchPaths(newPaths: string[]) {
+      replaceActiveProfilePaths(buildPatchedPaths(activePaths.value, newPaths));
+    }
+
+    function applyInterfaceResourceProfile(profileName: string, newPaths: string[]) {
+      const normalizedName = profileName.trim() || `Interface Resource ${profiles.value.length + 1}`;
+      const existingProfile = profiles.value.find((profile) => profile.name === normalizedName);
+      const patchedPaths = buildPatchedPaths(existingProfile?.paths ?? [], newPaths);
+
+      if (existingProfile) {
+        profiles.value = profiles.value.map((profile) =>
+          profile.id === existingProfile.id
+            ? {
+                ...profile,
+                name: normalizedName,
+                source: "interface",
+                paths: patchedPaths,
+              }
+            : profile,
+        );
+        activeProfileId.value = existingProfile.id;
+        return existingProfile.id;
+      }
+
+      const profileId = nextProfileId++;
+      profiles.value.push({
+        id: profileId,
+        name: normalizedName,
+        source: "interface",
+        paths: patchedPaths,
+      });
+      activeProfileId.value = profileId;
+      return profileId;
     }
 
     /**
@@ -150,6 +234,8 @@ export const useResourceStore = defineStore(
       renameProfile,
       getEnabledPaths,
       setPaths,
+      patchPaths,
+      applyInterfaceResourceProfile,
       onRestore,
     };
   },

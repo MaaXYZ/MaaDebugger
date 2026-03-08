@@ -78,6 +78,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.HandleFunc("POST /api/controller/disconnect", r.handleControllerDisconnect)
 	mux.HandleFunc("GET /api/controller/methods", r.handleGetControllerMethods)
 	mux.HandleFunc("POST /api/path/exists", r.handlePathExists)
+	mux.HandleFunc("POST /api/interface/parse", r.handleInterfaceParse)
 	mux.HandleFunc("POST /api/resource/load", r.handleResourceLoad)
 	mux.HandleFunc("POST /api/task/run", r.handleTaskRun)
 	mux.HandleFunc("POST /api/task/stop", r.handleTaskStop)

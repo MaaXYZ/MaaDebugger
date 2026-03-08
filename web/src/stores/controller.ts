@@ -31,6 +31,7 @@ export const useControllerStore = defineStore(
   () => {
     // 控制器类型
     const controllerType = ref("adb");
+    const interfaceControllerName = ref("");
 
     // --- ADB 配置 ---
     const adbPath = ref("");
@@ -121,8 +122,42 @@ export const useControllerStore = defineStore(
       playcoverUuid.value = config.uuid;
     }
 
+    function applyInterfaceController(candidate: {
+      name: string;
+      type: string;
+      class_regex?: string;
+      window_regex?: string;
+      uuid?: string;
+    }) {
+      const normalizedType = candidate.type.trim().toLowerCase();
+      interfaceControllerName.value = candidate.name?.trim?.() ?? "";
+
+      if (
+        normalizedType !== "adb" &&
+        normalizedType !== "win32" &&
+        normalizedType !== "gamepad" &&
+        normalizedType !== "playcover"
+      ) {
+        return false;
+      }
+
+      controllerType.value = normalizedType;
+
+      if (normalizedType === "win32" || normalizedType === "gamepad") {
+        desktopClassFilter.value = candidate.class_regex?.trim?.() ?? "";
+        desktopWindowRegex.value = candidate.window_regex?.trim?.() ?? "";
+      }
+
+      if (normalizedType === "playcover") {
+        playcoverUuid.value = candidate.uuid?.trim?.() ?? "";
+      }
+
+      return true;
+    }
+
     return {
       controllerType,
+      interfaceControllerName,
       // ADB
       adbPath,
       adbAddress,
@@ -153,6 +188,7 @@ export const useControllerStore = defineStore(
       updateWin32Input,
       updateGamepadInput,
       updatePlayCoverConfig,
+      applyInterfaceController,
     };
   },
   { persist: true, persistExclude: ["connecting"] },
