@@ -38,13 +38,13 @@
 
                 <UTooltip :text="isPaused ? 'Resume' : 'Pause'">
                     <UButton color="neutral" variant="ghost" :icon="isPaused ? 'i-lucide-play' : 'i-lucide-pause'"
-                        size="sm" :disabled="!isStreaming" @click="togglePause" />
+                             size="sm" :disabled="!isStreaming" @click="togglePause" />
                 </UTooltip>
 
                 <UTooltip :text="isStreaming ? 'Stop streaming' : 'Start streaming'">
                     <UButton :color="isStreaming ? 'error' : 'primary'" variant="ghost"
-                        :icon="isStreaming ? 'i-lucide-video-off' : 'i-lucide-video'" size="sm"
-                        @click="toggleStreaming" />
+                             :icon="isStreaming ? 'i-lucide-video-off' : 'i-lucide-video'" size="sm"
+                             @click="toggleStreaming" />
                 </UTooltip>
 
                 <UTooltip :text="aspectMode === 'landscape' ? 'Switch to 9:16 portrait' : 'Switch to 16:9 landscape'">
@@ -66,28 +66,28 @@
                         <div class="flex-1 min-w-0">
                             <UTooltip :text="selectedEntry">
                                 <USelectMenu v-model="selectedEntry" v-model:search-term="entrySearchTerm" virtualize
-                                    :items="entrySelectItems" ignore-filter placeholder="Select task entry..."
-                                    :search-input="{
-                                        placeholder: 'Filter...',
-                                        icon: 'i-lucide-search'
-                                    }"
-                                    :ui="{ base: 'w-full', content: '!w-auto min-w-(--entry-content-min-w) max-w-[80vw]' }"
-                                    class="w-full" size="xl" value-key="value" :disabled="isRunning" arrow />
+                                             :items="entrySelectItems" ignore-filter placeholder="Select task entry..."
+                                             :search-input="{
+                                                 placeholder: 'Filter...',
+                                                 icon: 'i-lucide-search'
+                                             }"
+                                             :ui="{ base: 'w-full', content: '!w-auto min-w-(--entry-content-min-w) max-w-[80vw]' }"
+                                             class="w-full" size="xl" value-key="value" :disabled="isRunning" arrow />
                             </UTooltip>
                         </div>
                         <UTooltip text="Edit task override">
                             <UButton color="neutral" variant="outline" icon="i-lucide-file-edit" size="xl"
-                                :loading="isPreparingOverrideEditor" :disabled="isPreparingOverrideEditor"
-                                @click="onEditOverride" />
+                                     :loading="isPreparingOverrideEditor" :disabled="isPreparingOverrideEditor"
+                                     @click="onEditOverride" />
                         </UTooltip>
                         <UButton v-if="!isRunning" color="success" variant="soft" icon="i-lucide-play" size="xl"
-                            :disabled="!canStart" @click="onStart">
+                                 :disabled="!canStart" @click="onStart">
                             <template v-if="startStopKeys.length" #trailing>
                                 <UKbd v-for="k in startStopKeys" :key="k" :value="k" />
                             </template>
                         </UButton>
                         <UButton v-else color="error" variant="soft" icon="i-lucide-square" size="xl"
-                            :loading="isStopping" :disabled="isStopping" @click="onStop">
+                                 :loading="isStopping" :disabled="isStopping" @click="onStop">
                             <template v-if="startStopKeys.length" #trailing>
                                 <UKbd v-for="k in startStopKeys" :key="k" :value="k" />
                             </template>
@@ -97,8 +97,8 @@
 
                 <div v-else-if="taskLaunchMode === 'interface' && hasInterfaceTasks" class="flex flex-col gap-3">
                     <div v-if="selectedInterfaceTask"
-                        class="rounded-lg border border-default bg-elevated/40 p-3 text-sm"
-                        @click="openInterfaceTaskModal">
+                         class="rounded-lg border border-default bg-elevated/40 p-3 text-sm"
+                         @click="openInterfaceTaskModal">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <div class="font-medium text-default break-all">
@@ -118,24 +118,24 @@
                         <div class="flex-1 min-w-0">
                             <UTooltip :text="selectedInterfaceTask?.name || ''">
                                 <USelectMenu :model-value="selectedInterfaceTask?.name || ''"
-                                    :items="interfaceTaskItems" value-key="value" placeholder="Select interface task..."
-                                    class="w-full" size="xl" :disabled="isRunning"
-                                    @update:model-value="(value) => onInterfaceTaskSelected(value as string)" />
+                                             :items="interfaceTaskItems" value-key="value" placeholder="Select interface task..."
+                                             class="w-full" size="xl" :disabled="isRunning"
+                                             @update:model-value="(value) => onInterfaceTaskSelected(value as string)" />
                             </UTooltip>
                         </div>
                         <UTooltip text="Edit task override">
                             <UButton color="neutral" variant="outline" icon="i-lucide-file-edit" size="xl"
-                                :loading="isPreparingOverrideEditor" :disabled="isPreparingOverrideEditor"
-                                @click="onEditOverride" />
+                                     :loading="isPreparingOverrideEditor" :disabled="isPreparingOverrideEditor"
+                                     @click="onEditOverride" />
                         </UTooltip>
                         <UButton v-if="!isRunning" color="success" variant="soft" icon="i-lucide-play" size="xl"
-                            :disabled="!canStart" @click="onStart">
+                                 :disabled="!canStart" @click="onStart">
                             <template v-if="startStopKeys.length" #trailing>
                                 <UKbd v-for="k in startStopKeys" :key="k" :value="k" />
                             </template>
                         </UButton>
                         <UButton v-else color="error" variant="soft" icon="i-lucide-square" size="xl"
-                            :loading="isStopping" :disabled="isStopping" @click="onStop">
+                                 :loading="isStopping" :disabled="isStopping" @click="onStop">
                             <template v-if="startStopKeys.length" #trailing>
                                 <UKbd v-for="k in startStopKeys" :key="k" :value="k" />
                             </template>
@@ -144,16 +144,16 @@
                 </div>
 
                 <div class="relative overflow-hidden rounded-md border border-default bg-muted" :style="containerStyle"
-                    @wheel.prevent="onImageWheel">
+                     @wheel.prevent="onImageWheel">
                     <div v-if="imageUrl"
-                        class="absolute inset-0 flex items-center justify-center cursor-grab select-none"
-                        :class="{ 'cursor-grabbing': isDragging }" @mousedown="onDragStart" @mousemove="onDragMove"
-                        @mouseup="onDragEnd" @mouseleave="onDragEnd">
+                         class="absolute inset-0 flex items-center justify-center cursor-grab select-none"
+                         :class="{ 'cursor-grabbing': isDragging }" @mousedown="onDragStart" @mousemove="onDragMove"
+                         @mouseup="onDragEnd" @mouseleave="onDragEnd">
                         <img :src="imageUrl" alt="Screenshot" draggable="false"
-                            class="pointer-events-none w-full h-full object-contain" :style="imageStyle" />
+                             class="pointer-events-none w-full h-full object-contain" :style="imageStyle" />
                     </div>
                     <div v-else-if="screenshotError"
-                        class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-error">
+                         class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-error">
                         <UIcon name="i-lucide-circle-x" class="size-12" />
                         <span class="text-sm font-medium">Screenshot Failed</span>
                         <span class="text-xs text-dimmed max-w-xs text-center">{{ screenshotError }}</span>
@@ -171,14 +171,14 @@
                 <div class="flex items-center gap-1">
                     <UTooltip text="Zoom out">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-out" size="sm"
-                            :disabled="!imageUrl || zoomLevel <= MIN_ZOOM" @click="zoomOut" />
+                                 :disabled="!imageUrl || zoomLevel <= MIN_ZOOM" @click="zoomOut" />
                     </UTooltip>
                     <span class="text-xs text-muted min-w-10 text-center tabular-nums">
                         {{ zoomPercentage }}%
                     </span>
                     <UTooltip text="Zoom in">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-in" size="sm"
-                            :disabled="!imageUrl || zoomLevel >= MAX_ZOOM" @click="zoomIn" />
+                                 :disabled="!imageUrl || zoomLevel >= MAX_ZOOM" @click="zoomIn" />
                     </UTooltip>
                 </div>
 
@@ -186,19 +186,19 @@
 
                 <UTooltip text="Fit to view">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-maximize" size="sm" :disabled="!imageUrl"
-                        @click="resetZoom" />
+                             @click="resetZoom" />
                 </UTooltip>
 
                 <div class="flex-1"></div>
 
                 <UTooltip text="Fullscreen">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-fullscreen" size="sm" :disabled="!imageUrl"
-                        @click="isFullscreen = true" />
+                             @click="isFullscreen = true" />
                 </UTooltip>
 
                 <UTooltip text="Download">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-download" size="sm" :disabled="!imageUrl"
-                        @click="downloadImage" />
+                             @click="downloadImage" />
                 </UTooltip>
             </div>
         </template>
@@ -207,35 +207,35 @@
     <UModal v-model:open="isFullscreen" title="Screenshot" fullscreen>
         <template #body>
             <div class="relative w-full h-full flex items-center justify-center overflow-hidden bg-muted"
-                @wheel.prevent="onFullscreenWheel">
+                 @wheel.prevent="onFullscreenWheel">
                 <div class="flex items-center justify-center cursor-grab select-none"
-                    :class="{ 'cursor-grabbing': isFullscreenDragging }" @mousedown="onFullscreenDragStart"
-                    @mousemove="onFullscreenDragMove" @mouseup="onFullscreenDragEnd" @mouseleave="onFullscreenDragEnd">
+                     :class="{ 'cursor-grabbing': isFullscreenDragging }" @mousedown="onFullscreenDragStart"
+                     @mousemove="onFullscreenDragMove" @mouseup="onFullscreenDragEnd" @mouseleave="onFullscreenDragEnd">
                     <img v-if="imageUrl" :src="imageUrl" alt="Screenshot" draggable="false"
-                        class="pointer-events-none max-w-none" :style="fullscreenImageStyle" />
+                         class="pointer-events-none max-w-none" :style="fullscreenImageStyle" />
                 </div>
                 <div
                     class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-elevated/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-default shadow-lg">
                     <UTooltip text="Zoom out">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-out" size="sm"
-                            :disabled="fullscreenZoom <= MIN_ZOOM" @click="fullscreenZoomOut" />
+                                 :disabled="fullscreenZoom <= MIN_ZOOM" @click="fullscreenZoomOut" />
                     </UTooltip>
                     <span class="text-xs text-muted min-w-10 text-center tabular-nums">
                         {{ fullscreenZoomPercentage }}%
                     </span>
                     <UTooltip text="Zoom in">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-in" size="sm"
-                            :disabled="fullscreenZoom >= MAX_ZOOM" @click="fullscreenZoomIn" />
+                                 :disabled="fullscreenZoom >= MAX_ZOOM" @click="fullscreenZoomIn" />
                     </UTooltip>
                     <USeparator orientation="vertical" class="h-5" />
                     <UTooltip text="Fit to view">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-maximize" size="sm"
-                            @click="resetFullscreenZoom" />
+                                 @click="resetFullscreenZoom" />
                     </UTooltip>
                     <USeparator orientation="vertical" class="h-5" />
                     <UTooltip text="Download">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-download" size="sm"
-                            @click="downloadImage" />
+                                 @click="downloadImage" />
                     </UTooltip>
                 </div>
             </div>
@@ -243,7 +243,7 @@
     </UModal>
 
     <UModal v-model:open="interfaceTaskModalOpen" title="Interface Task" :dismissible="false"
-        :ui="{ content: 'sm:max-w-2xl' }">
+            :ui="{ content: 'sm:max-w-2xl' }">
         <template #body>
             <div class="w-full flex flex-col gap-3">
                 <div v-if="draftSelectedTask" class="rounded-lg border border-default bg-elevated/50 p-3 space-y-3">
@@ -255,14 +255,14 @@
                             Entry: {{ draftSelectedTask.entry || 'n/a' }}
                         </div>
                         <div v-if="draftSelectedTask.description && !draftSelectedTask.description?.startsWith('$')"
-                            class="mt-1 text-xs text-dimmed whitespace-pre-wrap">
+                             class="mt-1 text-xs text-dimmed whitespace-pre-wrap">
                             {{ draftSelectedTask.description }}
                         </div>
                     </div>
                 </div>
 
                 <div v-if="draftSelectedTask && draftTaskOptionDefs.length"
-                    class="rounded-lg border border-default bg-elevated/50 p-3 space-y-3">
+                     class="rounded-lg border border-default bg-elevated/50 p-3 space-y-3">
                     <div class="text-xs font-medium text-default">Options</div>
                     <div v-for="optionDef in draftTaskOptionDefs" :key="optionDef.name" class="space-y-2">
                         <div class="flex items-start justify-between gap-3">
@@ -271,7 +271,7 @@
                                     {{ optionDef.name }}
                                 </div>
                                 <div v-if="optionDef.description && !optionDef.description?.startsWith('$')"
-                                    class="text-xs text-dimmed whitespace-pre-wrap break-all">
+                                     class="text-xs text-dimmed whitespace-pre-wrap break-all">
                                     {{ optionDef.description }}
                                 </div>
                             </div>
@@ -280,8 +280,8 @@
                             </UBadge>
                         </div>
                         <USelectMenu :model-value="draftSelectedCaseMap[optionDef.name]"
-                            :items="buildOptionCaseItems(optionDef)" value-key="value" class="w-full" arrow
-                            @update:model-value="(value) => onOptionCaseDraftSelected(optionDef.name, value as string)" />
+                                     :items="buildOptionCaseItems(optionDef)" value-key="value" class="w-full" arrow
+                                     @update:model-value="(value) => onOptionCaseDraftSelected(optionDef.name, value as string)" />
                     </div>
                 </div>
             </div>
@@ -295,9 +295,9 @@
     </UModal>
 
     <component :is="jsonEditorModalComponent" v-if="jsonEditorModalComponent" v-model:open="overrideEditorOpen"
-        v-model="overrideEditorDraft" title="Pipeline Override"
-        description="Edit the effective override JSON. Interface-generated values remain synced until you change them manually."
-        :schema="editorSchema" :external-schemas="editorExternalSchemas" />
+               v-model="overrideEditorDraft" title="Pipeline Override"
+               description="Edit the effective override JSON. Interface-generated values remain synced until you change them manually."
+               :schema="editorSchema" :external-schemas="editorExternalSchemas" />
 </template>
 
 <script setup lang="ts">

@@ -1,6 +1,6 @@
 <template>
     <UCard class="w-full max-w-xl transition-opacity duration-200"
-        :class="{ 'opacity-50 pointer-events-none': isTaskRunning }" size="xl" :ui="{ body: 'p-0 sm:p-0' }">
+           :class="{ 'opacity-50 pointer-events-none': isTaskRunning }" size="xl" :ui="{ body: 'p-0 sm:p-0' }">
         <template #header>
             <div class="flex flex-col gap-2">
                 <div class="flex flex-row items-center justify-between gap-4">
@@ -9,17 +9,17 @@
                         <UBadge :color="statusColor" variant="subtle" size="sm" class="gap-1.5">
                             <span class="relative flex size-2">
                                 <span v-if="loading"
-                                    class="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-75"></span>
+                                      class="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-75"></span>
                                 <span class="relative inline-flex size-2 rounded-full" :class="dotClass"></span>
                             </span>
                             {{ statusLabel }}
                         </UBadge>
                     </div>
                     <UButton variant="outline" color="neutral" trailing-icon="i-lucide-chevron-down"
-                        :data-state="showFullCard ? 'open' : 'closed'" @click="showFullCard = !showFullCard" />
+                             :data-state="showFullCard ? 'open' : 'closed'" @click="showFullCard = !showFullCard" />
                 </div>
                 <div class="grid transition-all duration-200 ease-out"
-                    :class="showFullCard ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'">
+                     :class="showFullCard ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'">
                     <div class="overflow-hidden">
                         <div class="text-sm text-dimmed truncate">
                             {{ summaryText }}
@@ -35,8 +35,8 @@
                     <div class="p-4 sm:p-6 min-h-36 flex flex-col gap-3">
                         <UFormField name="interfacePath" label="File Path" :error="pathError || undefined">
                             <UInput v-model="interfacePath" class="w-full"
-                                placeholder="Enter interface.json file path..." icon="i-lucide-file-json" size="xl"
-                                :color="pathError ? 'error' : 'neutral'" @blur="onPathBlur" />
+                                    placeholder="Enter interface.json file path..." icon="i-lucide-file-json" size="xl"
+                                    :color="pathError ? 'error' : 'neutral'" @blur="onPathBlur" />
                         </UFormField>
 
                         <div v-if="loadedInterface" class="rounded-lg border border-default bg-elevated/50 p-3 text-sm">
@@ -44,13 +44,13 @@
                             </div>
                             <div class="mt-1 text-dimmed">Controllers: {{ loadedInterface.controller_candidates.length
                             }} · Resources: {{ loadedInterface.resource_candidates.length }} · Tasks: {{
-                                    loadedInterface.task_candidates.length }} · Imports: {{ importCount }}</div>
+                                loadedInterface.task_candidates.length }} · Imports: {{ importCount }}</div>
                             <div class="mt-2 text-dimmed break-all">{{ loadedInterface.interface_path }}</div>
                         </div>
 
                         <div class="flex flex-row items-center justify-end">
                             <UButton color="primary" variant="soft" icon="i-lucide-folder-open" size="xl"
-                                :loading="loading" :disabled="!canLoad" @click="onLoad">
+                                     :loading="loading" :disabled="!canLoad" @click="onLoad">
                                 Load
                             </UButton>
                         </div>
