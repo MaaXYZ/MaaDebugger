@@ -43,8 +43,14 @@
                             <div class="font-medium text-default">{{ loadedInterface.name || 'Unnamed interface' }}
                             </div>
                             <div class="mt-1 text-dimmed">Controllers: {{ loadedInterface.controller_candidates.length
-                            }} · Resources: {{ loadedInterface.resource_candidates.length }} · Tasks: {{
-                                    loadedInterface.task_candidates.length }}</div>
+                                }} · Resources: {{ loadedInterface.resource_candidates.length }} · Tasks: {{
+                                    loadedInterface.task_candidates.length }} · Imports: {{ importCount }}</div>
+                            <div v-if="taskSummaryLines.length" class="mt-2 space-y-1">
+                                <div class="text-xs font-medium text-default">Detected tasks</div>
+                                <div v-for="line in taskSummaryLines" :key="line" class="text-xs text-dimmed break-all">
+                                    {{ line }}
+                                </div>
+                            </div>
                             <div class="mt-2 text-dimmed break-all">{{ loadedInterface.interface_path }}</div>
                         </div>
 
@@ -100,9 +106,20 @@ const dotClass = computed(() => {
 const summaryText = computed(() => {
     if (loadedInterface.value) {
         const name = loadedInterface.value.name || 'Unnamed interface'
-        return `${name} · ${loadedInterface.value.interface_path}`
+        const taskCount = loadedInterface.value.task_candidates.length
+        return `${name} · ${taskCount} task(s) · ${loadedInterface.value.interface_path}`
     }
     return interfacePath.value.trim() || 'No interface loaded'
+})
+const importCount = computed(() => loadedInterface.value?.imports?.length ?? 0)
+const taskSummaryLines = computed(() => {
+    const tasks = loadedInterface.value?.task_candidates ?? []
+    return tasks.slice(0, 3).map((task) => {
+        const source = task.source ? ` [${task.source}]` : ''
+        const entry = task.entry ? ` -> ${task.entry}` : ''
+        const optionCount = task.option_defs?.length ?? task.options?.length ?? 0
+        return `${task.name}${entry}${source} · ${optionCount} option(s)`
+    })
 })
 
 // 任务开始运行时自动收起卡片
@@ -241,9 +258,11 @@ async function onLoad() {
                     : 'Controller: skipped',
                 `Resource profile: ${resourceProfile.profileName}`,
                 `Resource paths patched: ${resourceProfile.paths.length}`,
-                parsed.task_candidates.length > 0
-                    ? `Task detected: ${parsed.task_candidates.length} (TODO)`
-                    : 'Task detected: 0',
+                `Task detected: ${parsed.task_candidates.length}`,
+                `Import files: ${parsed.imports?.length ?? 0}`,
+                parsed.task_candidates[0]?.entry
+                    ? `First task entry: ${parsed.task_candidates[0].entry}`
+                    : 'First task entry: n/a',
                 resourceCount > 0 ? `Resolved resource paths: ${resourceCount}` : 'Resolved resource paths: 0',
             ].filter(Boolean).join('\n'),
             icon: 'i-lucide-check-circle',
