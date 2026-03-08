@@ -6,19 +6,19 @@
                 <div class="flex-1"></div>
                 <template v-if="allTasks.length > 1">
                     <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-chevron-left"
-                             :disabled="activeIndex <= 0" @click="activeIndex--" />
+                        :disabled="activeIndex <= 0" @click="activeIndex--" />
                     <span class="text-xs tabular-nums text-dimmed min-w-12 text-center">
                         {{ activeIndex + 1 }} / {{ allTasks.length }}
                     </span>
                     <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-chevron-right"
-                             :disabled="activeIndex >= allTasks.length - 1" @click="activeIndex++" />
+                        :disabled="activeIndex >= allTasks.length - 1" @click="activeIndex++" />
                 </template>
                 <UTooltip v-if="showOpenAsPage" text="Open as page">
                     <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-arrow-up-right" to="/TaskDetail"
-                             aria-label="Open Task Detail as page" />
+                        aria-label="Open Task Detail as page" />
                 </UTooltip>
                 <UButton v-if="allTasks.length > 0" size="xs" variant="ghost" color="neutral" icon="i-lucide-trash-2"
-                         @click="resetGraph" />
+                    @click="resetGraph" />
             </div>
         </template>
 
@@ -26,7 +26,7 @@
             <div class="flex flex-col gap-3">
                 <!-- Empty state -->
                 <UEmpty v-if="allTasks.length === 0" icon="i-material-symbols:checklist-rounded"
-                        title="No Task Details" />
+                    title="No Task Details" />
 
                 <template v-else-if="activeTask">
                     <!-- Task status header -->
@@ -46,12 +46,12 @@
 
                     <!-- Pipeline nodes -->
                     <div v-if="activeTask.childs.length > 0" ref="scrollContainerRef"
-                         class="node-list max-h-screen overflow-y-auto pr-1">
+                        class="node-list max-h-screen overflow-y-auto pr-1">
                         <div class="flex flex-col gap-2">
                             <PipelineNodeItem v-for="(node, idx) in activeTask.childs"
-                                              :key="`${node.msg.name}-${node.msg.node_id}`" :node="node"
-                                              :default-expanded="idx === activeTask.childs.length - 1"
-                                              @request-detail="onRequestDetail" @request-action-detail="onRequestActionDetail" />
+                                :key="`${node.msg.name}-${node.msg.node_id}`" :node="node"
+                                :default-expanded="idx === activeTask.childs.length - 1"
+                                @request-detail="onRequestDetail" @request-action-detail="onRequestActionDetail" />
                         </div>
                     </div>
                     <div v-else class="text-xs text-dimmed italic pl-2">
@@ -63,7 +63,7 @@
     </UCard>
 
     <!-- Reco Detail Modal -->
-    <RecoDetailModal v-model:open="modalOpen" :reco-id="selectedRecoId" />
+    <RecoDetailModal v-model:open="modalOpen" :reco-id="selectedRecoId" :node-name="selectedRecoName" />
 
     <!-- Action Detail Modal -->
     <ActionDetailModal v-model:open="actionModalOpen" :action-id="selectedActionId" />
@@ -121,9 +121,26 @@ watch(
 // --- Reco Modal ---
 const modalOpen = ref(false)
 const selectedRecoId = ref<number | null>(null)
+const selectedRecoName = ref<string | null>(null)
+
+function findRecoNameById(recoId: number): string | null {
+    for (const task of allTasks.value) {
+        for (const pipelineNode of task.childs) {
+            for (const nextList of pipelineNode.reco) {
+                for (const reco of nextList.childs) {
+                    if (reco.msg.reco_id === recoId) {
+                        return reco.msg.name
+                    }
+                }
+            }
+        }
+    }
+    return null
+}
 
 function onRequestDetail(recoId: number) {
     selectedRecoId.value = recoId
+    selectedRecoName.value = findRecoNameById(recoId)
     modalOpen.value = true
 }
 

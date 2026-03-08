@@ -23,8 +23,14 @@ type TaskerService struct {
 	// 不在 sink 中渲染/处理，只做消息转发。
 	onEvent atomic.Pointer[func(msg map[string]any)]
 
+	// activeRuntimeID 标识当前运行期，避免同名节点在不同运行期间互相覆盖。
+	activeRuntimeID atomic.Uint64
+	runtimeSeq      atomic.Uint64
+
 	// taskImages 缓存 reco/action 详情图，供独立 image 接口按需读取。
 	taskImages sync.Map
+	// nodeDataByID 按运行时 + reco/action id 缓存运行时节点定义。
+	nodeDataByID sync.Map
 }
 
 // NewTaskerService 创建一个新的 TaskerService。
@@ -118,7 +124,9 @@ func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
 			"list": list,
 		})
 	})
-	tasker.OnNodeRecognitionInContext(func(_ *maa.Context, event maa.EventStatus, detail maa.NodeRecognitionDetail) {
+	tasker.OnNodeRecognitionInContext(func(ctx *maa.Context, event maa.EventStatus, detail maa.NodeRecognitionDetail) {
+		s.cacheRuntimeNodeData(ctx, detail.Name, nodeDataKindRecognition, int64(detail.RecognitionID))
+
 		suffix := eventStatusToString(event)
 		s.emitEvent(map[string]any{
 			"msg":     fmt.Sprintf("Recognition.%s", suffix),
@@ -128,6 +136,7 @@ func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
 	})
 
 	tasker.OnNodeActionInContext(func(ctx *maa.Context, event maa.EventStatus, detail maa.NodeActionDetail) {
+		s.cacheRuntimeNodeData(ctx, detail.Name, nodeDataKindAction, int64(detail.ActionID))
 		// 在 action 开始前截图并缓存（仅对有坐标的 action 类型）
 		if event == maa.EventStatusStarting {
 			node, err := ctx.GetNode(detail.Name)
@@ -215,7 +224,9 @@ func (s *TaskerService) RunTask(entry string, pipelineOverride json.RawMessage) 
 		}
 	}
 
-	log.Info().Str("entry", entry).Msg("[MaaService] posting task...")
+	runtimeID := s.runtimeSeq.Add(1)
+	s.activeRuntimeID.Store(runtimeID)
+	log.Info().Str("entry", entry).Uint64("runtime_id", runtimeID).Msg("[MaaService] posting task...")
 	var job *maa.TaskJob
 	if override != nil {
 		job = tasker.PostTask(entry, override)
@@ -491,6 +502,19 @@ type NodeDataResponse struct {
 	NodeJSON string `json:"node_json"`
 }
 
+type nodeDataKind string
+
+const (
+	nodeDataKindRecognition nodeDataKind = "recognition"
+	nodeDataKindAction      nodeDataKind = "action"
+)
+
+type nodeDataCacheKey struct {
+	RuntimeID uint64
+	Kind      nodeDataKind
+	ID        int64
+}
+
 // PointResponse 坐标点。
 type PointResponse struct {
 	X int `json:"x"`
@@ -704,8 +728,71 @@ func (s *TaskerService) GetRecognitionDetailByID(recoID int64) (*RecoDetailRespo
 	return s.convertRecoDetail(detail), nil
 }
 
+func (s *TaskerService) cacheRuntimeNodeData(ctx *maa.Context, name string, kind nodeDataKind, id int64) {
+	if ctx == nil || name == "" || id <= 0 {
+		return
+	}
+
+	nodeJSON, err := ctx.GetNodeJSON(name)
+	if err != nil {
+		log.Warn().Err(err).Str("name", name).Str("kind", string(kind)).Int64("id", id).Msg("[MaaService] get runtime node data failed")
+		return
+	}
+
+	runtimeID := s.activeRuntimeID.Load()
+	if runtimeID == 0 {
+		return
+	}
+
+	s.nodeDataByID.Store(nodeDataCacheKey{
+		RuntimeID: runtimeID,
+		Kind:      kind,
+		ID:        id,
+	}, &NodeDataResponse{
+		Name:     name,
+		NodeJSON: nodeJSON,
+	})
+}
+
+func (s *TaskerService) getCachedNodeData(kind nodeDataKind, id int64) (*NodeDataResponse, bool) {
+	if id <= 0 {
+		return nil, false
+	}
+
+	runtimeID := s.activeRuntimeID.Load()
+	if runtimeID == 0 {
+		return nil, false
+	}
+
+	cached, ok := s.nodeDataByID.Load(nodeDataCacheKey{
+		RuntimeID: runtimeID,
+		Kind:      kind,
+		ID:        id,
+	})
+	if !ok {
+		return nil, false
+	}
+
+	resp, ok := cached.(*NodeDataResponse)
+	return resp, ok
+}
+
 // GetNodeData 获取运行时节点原始定义 JSON。
-func (s *TaskerService) GetNodeData(name string) (*NodeDataResponse, error) {
+func (s *TaskerService) GetNodeData(name string, recoID, actionID int64) (*NodeDataResponse, error) {
+	if recoID > 0 {
+		if detail, ok := s.getCachedNodeData(nodeDataKindRecognition, recoID); ok {
+			return detail, nil
+		}
+		return nil, fmt.Errorf("runtime node data not found for reco_id %d", recoID)
+	}
+
+	if actionID > 0 {
+		if detail, ok := s.getCachedNodeData(nodeDataKindAction, actionID); ok {
+			return detail, nil
+		}
+		return nil, fmt.Errorf("runtime node data not found for action_id %d", actionID)
+	}
+
 	res := s.resourceSvc.Resource()
 	if res == nil {
 		return nil, fmt.Errorf("resource is not loaded")
@@ -778,6 +865,12 @@ func (s *TaskerService) ClearTaskImages() {
 
 // ClearTaskerCache 清除 Tasker 缓存
 func (s *TaskerService) ClearCache() {
+	s.activeRuntimeID.Store(0)
+	s.nodeDataByID.Range(func(key, _ any) bool {
+		s.nodeDataByID.Delete(key)
+		return true
+	})
+
 	tasker := s.tasker.Load()
 	if tasker != nil {
 		_ = tasker.ClearCache()

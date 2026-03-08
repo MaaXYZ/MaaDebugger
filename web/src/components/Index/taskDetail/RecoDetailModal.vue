@@ -113,7 +113,7 @@
             </div>
         </template>
     </UModal>
-    <NodeDataModal v-model:open="nodeDataOpen" :node-name="detail?.name ?? null" />
+    <NodeDataModal v-model:open="nodeDataOpen" :node-name="props.nodeName ?? detail?.name ?? null" :reco-id="props.recoId" />
 </template>
 
 <script setup lang="ts">
@@ -131,6 +131,7 @@ const ZOOM_STEP = 0.15
 
 const props = defineProps<{
     recoId: number | null
+    nodeName?: string | null
 }>()
 
 const open = defineModel<boolean>('open', { default: false })

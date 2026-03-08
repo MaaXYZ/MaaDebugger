@@ -19,7 +19,7 @@
             </div>
         </template>
     </UModal>
-    <NodeDataModal v-model:open="nodeDataOpen" :node-name="actionDetail?.name ?? null" />
+    <NodeDataModal v-model:open="nodeDataOpen" :node-name="actionDetail?.name ?? null" :action-id="props.actionId" />
 </template>
 
 <script setup lang="ts">

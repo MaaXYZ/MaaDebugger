@@ -294,10 +294,19 @@ export async function getNodeDetail(
  */
 export async function getNodeData(
   name: string,
+  options: { recoId?: number | null; actionId?: number | null } = {},
 ): Promise<NodeDataResponse | null> {
+  const params = new URLSearchParams();
+  if (options.recoId != null) {
+    params.set("reco_id", String(options.recoId));
+  }
+  if (options.actionId != null) {
+    params.set("action_id", String(options.actionId));
+  }
+  const query = params.toString();
   const result = await request<
     import("@/components/Index/taskDetail/types").NodeDataResponse
-  >(`/task/node-data/${encodeURIComponent(name)}`);
+  >(`/task/node-data/${encodeURIComponent(name)}${query ? `?${query}` : ""}`);
   return result.data ?? null;
 }
 

@@ -31,6 +31,8 @@ import { MonacoEditor } from '@/components/MonacoEditor'
 
 const props = defineProps<{
     nodeName: string | null
+    recoId?: number | null
+    actionId?: number | null
 }>()
 
 const open = defineModel<boolean>('open', { default: false })
@@ -62,7 +64,10 @@ async function loadNodeData() {
     errorMessage.value = ''
 
     try {
-        const detail = await getNodeData(props.nodeName)
+        const detail = await getNodeData(props.nodeName, {
+            recoId: props.recoId,
+            actionId: props.actionId,
+        })
         if (!detail?.node_json) {
             editorValue.value = '{}'
             errorMessage.value = '未获取到节点原始定义'
@@ -79,7 +84,7 @@ async function loadNodeData() {
 }
 
 watch(
-    [open, () => props.nodeName],
+    [open, () => props.nodeName, () => props.recoId, () => props.actionId],
     async ([isOpen, nodeName]) => {
         if (!isOpen || !nodeName) {
             loading.value = false

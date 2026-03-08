@@ -469,6 +469,14 @@ func orDefault(val, fallback string) string {
 	return val
 }
 
+func parseOptionalInt64Query(req *http.Request, key string) (int64, error) {
+	value := strings.TrimSpace(req.URL.Query().Get(key))
+	if value == "" {
+		return 0, nil
+	}
+	return strconv.ParseInt(value, 10, 64)
+}
+
 func (r *router) handlePathExists(w http.ResponseWriter, req *http.Request) {
 	var payload struct {
 		Path string `json:"path"`
@@ -671,7 +679,18 @@ func (r *router) handleTaskNodeData(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	detail, err := r.deps.TaskerService.GetNodeData(name)
+	recoID, err := parseOptionalInt64Query(req, "reco_id")
+	if err != nil {
+		response.Fail(w, http.StatusBadRequest, "invalid reco id")
+		return
+	}
+	actionID, err := parseOptionalInt64Query(req, "action_id")
+	if err != nil {
+		response.Fail(w, http.StatusBadRequest, "invalid action id")
+		return
+	}
+
+	detail, err := r.deps.TaskerService.GetNodeData(name, recoID, actionID)
 	if err != nil {
 		response.Fail(w, http.StatusBadRequest, err.Error())
 		return
