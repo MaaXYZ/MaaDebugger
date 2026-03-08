@@ -894,7 +894,7 @@ func logging(next http.Handler) http.Handler {
 		rw := &statusWriter{
 			ResponseWriter: w,
 			status:         http.StatusOK,
-			captureBody:    isAPIPath(req.URL.Path),
+			captureBody:    shouldCaptureResponseBody(req.URL.Path),
 		}
 		next.ServeHTTP(rw, req)
 
@@ -947,6 +947,13 @@ func (w *statusWriter) Write(b []byte) (int, error) {
 
 func isAPIPath(path string) bool {
 	return strings.HasPrefix(path, "/api/")
+}
+
+func shouldCaptureResponseBody(path string) bool {
+	if !isAPIPath(path) {
+		return false
+	}
+	return !strings.HasPrefix(path, "/api/task/image/")
 }
 
 func normalizeLogBody(body []byte) string {
