@@ -10,6 +10,8 @@ import { latestFrame, screenshotRunning, screenshotPaused, screenshotFps, screen
 const BACKEND_DISCONNECT_TOAST_ID = 'backend-disconnected'
 const PING_INTERVAL_MS = 5000
 
+const selectTheme = { trailingIcon: 'transition-transform ease-in-out duration-200 group-data-[state=open]:rotate-180' }
+
 const statusStore = useStatusStore()
 const toast = useToast()
 const backendConnected = ref(true)
@@ -117,23 +119,29 @@ onUnmounted(() => {
 
 <template>
     <UApp :toaster="{ position: 'bottom-right', duration: 3000 }">
-        <UMain>
-            <UHeader title="MaaDebugger" :ui="{ toggle: 'hidden' }">
-                <template #right>
-                    <UColorModeButton />
+        <UTheme :ui="{
+            select: selectTheme,
+        }">
 
-                    <UTooltip text="Settings">
-                        <UButton color="neutral" variant="ghost" to="/settings" icon="i-lucide-settings"
-                                 aria-label="Settings" />
-                    </UTooltip>
 
-                    <UTooltip text="Open on GitHub">
-                        <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
-                                 target="_blank" icon="i-simple-icons:github" aria-label="GitHub" />
-                    </UTooltip>
-                </template>
-            </UHeader>
-            <RouterView />
-        </UMain>
+            <UMain>
+                <UHeader title="MaaDebugger" :ui="{ toggle: 'hidden' }">
+                    <template #right>
+                        <UColorModeButton />
+
+                        <UTooltip text="Settings">
+                            <UButton color="neutral" variant="ghost" to="/settings" icon="i-lucide-settings"
+                                aria-label="Settings" />
+                        </UTooltip>
+
+                        <UTooltip text="Open on GitHub">
+                            <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
+                                target="_blank" icon="i-simple-icons:github" aria-label="GitHub" />
+                        </UTooltip>
+                    </template>
+                </UHeader>
+                <RouterView />
+            </UMain>
+        </UTheme>
     </UApp>
 </template>

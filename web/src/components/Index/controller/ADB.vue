@@ -4,12 +4,12 @@
         <div class="flex flex-row gap-2">
             <UTooltip text="Detect">
                 <UButton color="success" variant="outline" icon="i-lucide-search" size="xl" :loading="detecting"
-                         @click="onDetect" />
+                    @click="onDetect" />
             </UTooltip>
 
             <UTooltip text="Connect">
                 <UButton color="primary" variant="outline" icon="i-lucide-link" size="xl" :loading="connecting"
-                         :disabled="!selectedDevice || connecting" @click="onConnect" />
+                    :disabled="!selectedDevice || connecting" @click="onConnect" />
             </UTooltip>
 
             <UTooltip text="Disconnect">
@@ -20,7 +20,7 @@
         <!-- Device Select -->
         <div class="flex flex-1 items-center gap-2">
             <USelectMenu v-model="selectedDevice" value-key="value" :items="deviceItems"
-                         placeholder="Select a device..." icon="i-lucide-smartphone" class="w-full" size="xl" />
+                placeholder="Select a device..." icon="i-lucide-smartphone" class="w-full" size="xl" />
         </div>
 
         <!-- ADB Configuration (inline, no modal) -->
@@ -33,20 +33,20 @@
         </UFormField>
 
         <UFormField name="screencap" label="Screencap Method">
-            <USelect v-model="config.screencap_method" :items="screencapMethods" class="w-full" />
+            <USelect v-model="config.screencap_method" :items="screencapMethods" class="w-full" arrow />
         </UFormField>
 
         <UFormField name="input" label="Input Method">
-            <USelect v-model="config.input_method" :items="inputMethods" class="w-full" />
+            <USelect v-model="config.input_method" :items="inputMethods" class="w-full" arrow />
         </UFormField>
 
         <UFormField name="extra" label="Extra Config">
             <UButton color="neutral" variant="outline" icon="i-lucide-file-json" label="Edit JSON" class="w-full"
-                     @click="onEditExtra" />
+                @click="onEditExtra" />
         </UFormField>
 
         <component :is="jsonEditorModalComponent" v-if="jsonEditorModalComponent" v-model:open="extraEditorOpen"
-                   v-model="controllerStore.adbConfig" title="Extra Config" description="ADB extra configuration (JSONC)" />
+            v-model="controllerStore.adbConfig" title="Extra Config" description="ADB extra configuration (JSONC)" />
     </div>
 </template>
 
