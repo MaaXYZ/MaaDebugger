@@ -24,6 +24,7 @@ export interface InterfaceTaskOptionCase {
   label?: string;
   description?: string;
   pipeline_override_keys?: string[];
+  pipeline_override?: Record<string, unknown>;
 }
 
 export interface InterfaceTaskOptionDefinition {

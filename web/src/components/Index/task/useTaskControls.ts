@@ -68,6 +68,22 @@ export default function useTaskControls(toast: ToastApi) {
     formatShortcut(shortcutsStore.getBinding("task.startStop")),
   );
 
+  const interfaceTaskItems = computed(() =>
+    taskStore.interfaceTasks.map((task) => ({
+      label: task.name,
+      value: task.name,
+      description: task.entry || task.description || task.name,
+    })),
+  );
+  const hasInterfaceTasks = computed(() => interfaceTaskItems.value.length > 0);
+  const selectedInterfaceTask = computed(() => taskStore.selectedInterfaceTask);
+  const selectedTaskOptionDefs = computed(
+    () => taskStore.selectedTaskOptionDefs,
+  );
+  const selectedTaskOptionSelections = computed(
+    () => taskStore.selectedTaskOptionSelections,
+  );
+
   const entrySelectItems = computed(() => {
     const all = entries.value.map((e) => ({ label: e.label, value: e.value }));
     const q = entrySearchTerm.value.toLowerCase();
@@ -89,23 +105,13 @@ export default function useTaskControls(toast: ToastApi) {
     return [...startsWith, ...endsWith, ...contains, ...fuzzy];
   });
 
-  // CJK character range test
   const cjkRegex =
     /[\u2E80-\u2FFF\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\u3100-\u312F\u3200-\u32FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFFEF]/;
 
-  /**
-   * Compute a CSS min-width value for the dropdown content based on the longest
-   * visible label (after filtering). CJK characters use `em` (≈ full-width),
-   * ASCII characters use `ch` (≈ half-width).
-   *
-   * Performance: only iterates the filtered list once to find the longest item,
-   * then scans that single string — negligible cost even with thousands of entries.
-   */
   const entryContentMinWidth = computed(() => {
     const items = entrySelectItems.value;
     if (items.length === 0) return "0px";
 
-    // Find the longest label and count its CJK/ASCII chars in one pass
     let longestWidth = 0;
     let bestCjk = 0;
     let bestAscii = 0;
@@ -129,10 +135,7 @@ export default function useTaskControls(toast: ToastApi) {
       }
     }
 
-    // Add padding: ~3ch for scrollbar + internal padding
     const padding = 3;
-
-    // Build calc() expression: CJK chars as em, ASCII chars as ch
     const parts: string[] = [];
     if (bestCjk > 0) parts.push(`${bestCjk}em`);
     parts.push(`${bestAscii + padding}ch`);
@@ -149,6 +152,18 @@ export default function useTaskControls(toast: ToastApi) {
     },
   );
 
+  function selectInterfaceTask(taskName: string) {
+    taskStore.selectInterfaceTask(taskName);
+  }
+
+  function setInterfaceOptionCase(optionName: string, caseName: string) {
+    taskStore.setSelectedOptionCase(optionName, caseName);
+  }
+
+  function setManualOverrideJson(value: string) {
+    taskStore.setManualOverrideJson(value);
+  }
+
   async function onStart() {
     if (!canStart.value) return;
 
@@ -163,7 +178,6 @@ export default function useTaskControls(toast: ToastApi) {
       return;
     }
 
-    // 重新加载资源
     const loadResult = await tryLoadResource();
     if (!loadResult.success) {
       toast.add({
@@ -176,14 +190,15 @@ export default function useTaskControls(toast: ToastApi) {
       return;
     }
 
-    // 重新连接 Agent
     const connectResult = await connectAgents();
     if (!connectResult.success) {
       return;
     }
 
-    // 运行任务（后端异步执行，立即返回是否成功提交）
-    const result = await runTask(selectedEntry.value, {});
+    const result = await runTask(
+      selectedEntry.value,
+      taskStore.effectiveOverrideObject,
+    );
     if (!result.succeed) {
       toast.add({
         id: "task-toast",
@@ -221,10 +236,6 @@ export default function useTaskControls(toast: ToastApi) {
     }
   }
 
-  function onEditOverride() {
-    overrideEditorOpen.value = true;
-  }
-
   async function refreshNodes() {
     const nodes = await getTaskNodes();
     entries.value = nodes.map((n) => ({ label: n, value: n }));
@@ -255,6 +266,7 @@ export default function useTaskControls(toast: ToastApi) {
   function mount() {
     window.addEventListener("keydown", onKeydown);
     void refreshNodes();
+    taskStore.syncOverrideJson();
   }
 
   function unmount() {
@@ -274,9 +286,16 @@ export default function useTaskControls(toast: ToastApi) {
     startStopKeys,
     overrideEditorOpen,
     taskStore,
+    hasInterfaceTasks,
+    interfaceTaskItems,
+    selectedInterfaceTask,
+    selectedTaskOptionDefs,
+    selectedTaskOptionSelections,
+    selectInterfaceTask,
+    setInterfaceOptionCase,
+    setManualOverrideJson,
     onStart,
     onStop,
-    onEditOverride,
     refreshNodes,
     mount,
     unmount,

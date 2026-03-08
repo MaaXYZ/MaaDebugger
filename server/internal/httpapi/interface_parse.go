@@ -144,10 +144,11 @@ type interfaceTaskOptionItem struct {
 }
 
 type interfaceTaskOptionCase struct {
-	Name                 string   `json:"name"`
-	Label                string   `json:"label,omitempty"`
-	Description          string   `json:"description,omitempty"`
-	PipelineOverrideKeys []string `json:"pipeline_override_keys,omitempty"`
+	Name                 string         `json:"name"`
+	Label                string         `json:"label,omitempty"`
+	Description          string         `json:"description,omitempty"`
+	PipelineOverrideKeys []string       `json:"pipeline_override_keys,omitempty"`
+	PipelineOverride     map[string]any `json:"pipeline_override,omitempty"`
 }
 
 type parsedImportedTasks struct {
@@ -375,6 +376,7 @@ func buildTaskOptionCandidate(name string, raw rawImportedTaskOption, sourceInte
 			Label:                rawCase.Label,
 			Description:          stringifyText(rawCase.Description),
 			PipelineOverrideKeys: keys,
+			PipelineOverride:     rawCase.PipelineOverride,
 		})
 	}
 

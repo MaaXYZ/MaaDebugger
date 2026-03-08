@@ -73,12 +73,14 @@ import { checkPathExists, getStoreConfig, parseInterface, saveStoreConfig } from
 import { useStatusStore } from '@/stores/status'
 import { useControllerStore } from '@/stores/controller'
 import { useResourceStore } from '@/stores/resource'
+import { useTaskStore } from '@/stores/task'
 import type { InterfaceControllerCandidate, InterfaceParseResult } from '@/types/interface'
 
 const toast = useToast()
 const statusStore = useStatusStore()
 const controllerStore = useControllerStore()
 const resourceStore = useResourceStore()
+const taskStore = useTaskStore()
 
 const showFullCard = ref(true)
 const isTaskRunning = computed(() => statusStore.taskStatus === 'running')
@@ -239,9 +241,12 @@ async function onLoad() {
             console.log('[Interface] resource store after patch:', resourceStore.activePaths)
         }
 
+        taskStore.applyInterfaceTasks(parsed.task_candidates)
+
         await Promise.all([
             saveStoreConfig('controller', JSON.parse(JSON.stringify(controllerStore.$state))),
             saveStoreConfig('resource', JSON.parse(JSON.stringify(resourceStore.$state))),
+            saveStoreConfig('task', JSON.parse(JSON.stringify(taskStore.$state))),
             persistInterfacePath(),
         ])
 

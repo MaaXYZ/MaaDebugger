@@ -6,7 +6,65 @@
                 <TaskStatusBadge :status="taskStatus" />
                 <div class="flex-1"></div>
 
-                <!-- FPS control -->
+                <UPopover v-if="hasInterfaceTasks">
+                    <UButton color="neutral" variant="ghost" icon="i-lucide-list-tree" size="sm">
+                        Interface Task
+                    </UButton>
+                    <template #content>
+                        <div class="w-[28rem] max-w-[90vw] p-3 flex flex-col gap-3">
+                            <div class="text-sm font-medium">Task Preset</div>
+                            <USelectMenu :model-value="taskStore.selectedInterfaceTaskName" :items="interfaceTaskItems"
+                                value-key="value" @update:model-value="onInterfaceTaskSelected" />
+
+                            <div v-if="selectedInterfaceTask"
+                                class="rounded-lg border border-default bg-elevated/50 p-3 space-y-3">
+                                <div>
+                                    <div class="text-sm font-medium text-default">
+                                        {{ selectedInterfaceTask.name }}
+                                    </div>
+                                    <div class="text-xs text-dimmed break-all">
+                                        Entry: {{ selectedInterfaceTask.entry || 'n/a' }}
+                                    </div>
+                                    <div v-if="selectedInterfaceTask.description"
+                                        class="mt-1 text-xs text-dimmed whitespace-pre-wrap">
+                                        {{ selectedInterfaceTask.description }}
+                                    </div>
+                                </div>
+
+                                <div v-if="selectedTaskOptionDefs.length" class="space-y-3">
+                                    <div class="text-xs font-medium text-default">Options</div>
+                                    <div v-for="optionDef in selectedTaskOptionDefs" :key="optionDef.name"
+                                        class="space-y-2">
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div class="min-w-0">
+                                                <div class="text-xs font-medium text-default break-all">
+                                                    {{ optionDef.name }}
+                                                </div>
+                                                <div v-if="optionDef.description"
+                                                    class="text-xs text-dimmed whitespace-pre-wrap break-all">
+                                                    {{ optionDef.description }}
+                                                </div>
+                                            </div>
+                                            <UBadge color="neutral" variant="subtle" size="sm">
+                                                {{ optionDef.type || 'option' }}
+                                            </UBadge>
+                                        </div>
+                                        <USelectMenu :model-value="selectedCaseMap[optionDef.name]"
+                                            :items="buildOptionCaseItems(optionDef)" value-key="value"
+                                            @update:model-value="(value) => onOptionCaseSelected(optionDef.name, value as string)" />
+                                    </div>
+                                </div>
+
+                                <div class="space-y-2">
+                                    <div class="text-xs font-medium text-default">Generated Override</div>
+                                    <pre
+                                        class="max-h-48 overflow-auto rounded-md border border-default bg-default p-2 text-[11px] leading-5 text-toned">{{ derivedOverridePreview }}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </UPopover>
+
                 <UPopover>
                     <UButton color="neutral" variant="ghost" size="sm" class="tabular-nums">
                         {{ currentFps }} /
@@ -22,7 +80,7 @@
                             <div class="flex items-center justify-between gap-3">
                                 <span class="text-xs text-muted">Actual FPS</span>
                                 <span class="text-xs tabular-nums font-medium" :class="actualFpsTone">{{ actualFpsLabel
-                                    }}</span>
+                                }}</span>
                             </div>
                             <USeparator />
                             <div class="flex flex-col gap-2">
@@ -37,20 +95,17 @@
                     </template>
                 </UPopover>
 
-                <!-- Pause/Resume -->
                 <UTooltip :text="isPaused ? 'Resume' : 'Pause'">
                     <UButton color="neutral" variant="ghost" :icon="isPaused ? 'i-lucide-play' : 'i-lucide-pause'"
                         size="sm" :disabled="!isStreaming" @click="togglePause" />
                 </UTooltip>
 
-                <!-- Start/Stop streaming -->
                 <UTooltip :text="isStreaming ? 'Stop streaming' : 'Start streaming'">
                     <UButton :color="isStreaming ? 'error' : 'primary'" variant="ghost"
                         :icon="isStreaming ? 'i-lucide-video-off' : 'i-lucide-video'" size="sm"
                         @click="toggleStreaming" />
                 </UTooltip>
 
-                <!-- Aspect ratio toggle -->
                 <UTooltip :text="aspectMode === 'landscape' ? 'Switch to 9:16 portrait' : 'Switch to 16:9 landscape'">
                     <UButton color="neutral" variant="ghost" :icon="aspectMode === 'landscape'
                         ? 'i-lucide-monitor'
@@ -61,7 +116,6 @@
 
         <template #default>
             <div class="flex flex-col gap-3">
-                <!-- Task controls -->
                 <div class="flex flex-row items-center gap-2">
                     <div class="flex-1 min-w-0">
                         <UTooltip :text="selectedEntry">
@@ -78,7 +132,13 @@
                     <UTooltip text="Edit task override">
                         <UButton color="neutral" variant="outline" icon="i-lucide-file-edit" size="xl"
                             :loading="isPreparingOverrideEditor" :disabled="isPreparingOverrideEditor"
-                            @click="onEditOverride" />
+                            @click="onEditOverride">
+                            <template v-if="hasInterfaceTasks" #trailing>
+                                <UBadge color="neutral" variant="subtle" size="sm">
+                                    {{ selectedTaskOptionSelections.length }}
+                                </UBadge>
+                            </template>
+                        </UButton>
                     </UTooltip>
                     <UButton v-if="!isRunning" color="success" variant="soft" icon="i-lucide-play" size="xl"
                         :disabled="!canStart" @click="onStart">
@@ -94,7 +154,23 @@
                     </UButton>
                 </div>
 
-                <!-- Screenshot area -->
+                <div v-if="hasInterfaceTasks && selectedInterfaceTask"
+                    class="rounded-lg border border-default bg-elevated/40 p-3 text-sm">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <div class="font-medium text-default break-all">
+                                {{ selectedInterfaceTask.name }}
+                            </div>
+                            <div class="text-xs text-dimmed break-all">
+                                Entry: {{ selectedInterfaceTask.entry || selectedEntry }}
+                            </div>
+                        </div>
+                        <UBadge color="primary" variant="subtle">
+                            {{ selectedTaskOptionSelections.length }} option(s)
+                        </UBadge>
+                    </div>
+                </div>
+
                 <div class="relative overflow-hidden rounded-md border border-default bg-muted" :style="containerStyle"
                     @wheel.prevent="onImageWheel">
                     <div v-if="imageUrl"
@@ -156,7 +232,6 @@
         </template>
     </UCard>
 
-    <!-- Fullscreen modal -->
     <UModal v-model:open="isFullscreen" title="Screenshot" fullscreen>
         <template #body>
             <div class="relative w-full h-full flex items-center justify-center overflow-hidden bg-muted"
@@ -195,11 +270,10 @@
         </template>
     </UModal>
 
-    <!-- Override editor modal -->
     <component :is="jsonEditorModalComponent" v-if="jsonEditorModalComponent" v-model:open="overrideEditorOpen"
-        v-model="taskStore.overrideJson" title="Pipeline Override"
-        description="Edit pipeline override (JSONC with schema validation)" :schema="editorSchema"
-        :external-schemas="editorExternalSchemas" />
+        :model-value="taskStore.manualOverrideJson" title="Pipeline Override"
+        description="Edit manual override patch (merged on top of selected interface task options)"
+        :schema="editorSchema" :external-schemas="editorExternalSchemas" @update:model-value="setManualOverrideJson" />
 </template>
 
 <script setup lang="ts">
@@ -210,6 +284,7 @@ import useTaskControls from './task/useTaskControls'
 import { useScreenshotStream } from './task/useScreenshotStream'
 import { MAX_ZOOM, MIN_ZOOM, usePanZoom } from './task/usePanZoom'
 import { warmupMonacoJsonWorker } from '@/components/MonacoEditor'
+import type { InterfaceTaskOptionDefinition } from '@/types/interface'
 
 const toast = useToast()
 const jsonEditorModalComponent = shallowRef<Component | null>(null)
@@ -231,6 +306,14 @@ const {
     startStopKeys,
     overrideEditorOpen,
     taskStore,
+    hasInterfaceTasks,
+    interfaceTaskItems,
+    selectedInterfaceTask,
+    selectedTaskOptionDefs,
+    selectedTaskOptionSelections,
+    selectInterfaceTask,
+    setInterfaceOptionCase,
+    setManualOverrideJson,
     onStart,
     onStop,
     refreshNodes,
@@ -290,8 +373,13 @@ const actualFpsTone = computed(() => {
     if (actualFps.value >= currentFps.value * 0.6) return 'text-warning'
     return 'text-error'
 })
+const selectedCaseMap = computed<Record<string, string>>(() =>
+    Object.fromEntries(selectedTaskOptionSelections.value.map((item) => [item.optionName, item.caseName])),
+)
+const derivedOverridePreview = computed(() =>
+    JSON.stringify(taskStore.derivedInterfaceOverride, null, 2),
+)
 
-// Sync entry content min-width CSS variable to :root for portal-rendered dropdown
 watchEffect(() => {
     document.documentElement.style.setProperty('--entry-content-min-w', entryContentMinWidth.value)
 })
@@ -314,6 +402,26 @@ async function ensureEditorAssetsLoaded() {
         './custom.recognition.schema.json': customRecognitionSchemaModule.default as Record<string, unknown>,
     }
     editorAssetsLoaded = true
+}
+
+function buildOptionCaseItems(optionDef: InterfaceTaskOptionDefinition) {
+    return (optionDef.cases ?? []).map((item) => ({
+        label: item.name,
+        value: item.name,
+        description: item.description || (item.pipeline_override_keys?.length
+            ? `Override: ${item.pipeline_override_keys.join(', ')}`
+            : 'No override'),
+    }))
+}
+
+function onInterfaceTaskSelected(value: string | number) {
+    if (typeof value !== 'string') return
+    selectInterfaceTask(value)
+}
+
+function onOptionCaseSelected(optionName: string, value: string) {
+    if (!value) return
+    setInterfaceOptionCase(optionName, value)
 }
 
 function onImageWheel(e: WheelEvent) {
