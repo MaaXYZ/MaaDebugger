@@ -6,6 +6,14 @@
                 <div class="flex flex-row items-center justify-between gap-4">
                     <div class="flex items-center gap-2">
                         <span class="font-bold">Interface</span>
+                        <UBadge :color="statusColor" variant="subtle" size="sm" class="gap-1.5">
+                            <span class="relative flex size-2">
+                                <span v-if="loading"
+                                    class="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-75"></span>
+                                <span class="relative inline-flex size-2 rounded-full" :class="dotClass"></span>
+                            </span>
+                            {{ statusLabel }}
+                        </UBadge>
                     </div>
                     <UButton variant="outline" color="neutral" trailing-icon="i-lucide-chevron-down"
                         :data-state="showFullCard ? 'open' : 'closed'" @click="showFullCard = !showFullCard" />
@@ -74,6 +82,21 @@ const pathError = ref('')
 
 const canLoad = computed(() => interfacePath.value.trim().length > 0 && !loading.value && !pathError.value)
 const loadedInterface = ref<InterfaceParseResult | null>(null)
+const statusLabel = computed(() => {
+    if (loading.value) return 'Loading'
+    if (loadedInterface.value) return 'Loaded'
+    return 'Idle'
+})
+const statusColor = computed(() => {
+    if (loading.value) return 'warning' as const
+    if (loadedInterface.value) return 'success' as const
+    return 'neutral' as const
+})
+const dotClass = computed(() => {
+    if (loading.value) return 'bg-warning'
+    if (loadedInterface.value) return 'bg-success'
+    return 'bg-gray-400 dark:bg-gray-500'
+})
 const summaryText = computed(() => {
     if (loadedInterface.value) {
         const name = loadedInterface.value.name || 'Unnamed interface'
@@ -226,6 +249,7 @@ async function onLoad() {
             icon: 'i-lucide-check-circle',
             color: 'success',
         })
+        showFullCard.value = false
     } finally {
         loading.value = false
     }
