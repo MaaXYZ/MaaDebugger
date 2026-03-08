@@ -80,13 +80,7 @@
                     <UTooltip text="Edit task override">
                         <UButton color="neutral" variant="outline" icon="i-lucide-file-edit" size="xl"
                             :loading="isPreparingOverrideEditor" :disabled="isPreparingOverrideEditor"
-                            @click="onEditOverride">
-                            <template v-if="hasInterfaceTasks" #trailing>
-                                <UBadge color="neutral" variant="subtle" size="sm">
-                                    {{ selectedTaskOptionSelections.length }}
-                                </UBadge>
-                            </template>
-                        </UButton>
+                            @click="onEditOverride" />
                     </UTooltip>
                     <UButton v-if="!isRunning" color="success" variant="soft" icon="i-lucide-play" size="xl"
                         :disabled="!canStart" @click="onStart">
