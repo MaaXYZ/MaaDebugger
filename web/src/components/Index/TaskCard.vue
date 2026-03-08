@@ -261,7 +261,7 @@ watch(() => hasInterfaceTasks.value, (visible) => {
 }, { immediate: true })
 
 watchEffect(() => {
-    // document.documentElement.style.setProperty('--entry-content-min-w', entryContentMinWidth.value)
+    document.documentElement.style.setProperty('--entry-content-min-w', entryContentMinWidth.value)
 })
 
 async function ensureEditorAssetsLoaded() {

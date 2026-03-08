@@ -67,7 +67,6 @@
 
 <script setup lang="ts">
 import type { InterfaceTaskCandidate, InterfaceTaskOptionCase, InterfaceTaskOptionDefinition } from '@/types/interface'
-import { describe } from 'node:test';
 
 const props = defineProps<{
     open: boolean
