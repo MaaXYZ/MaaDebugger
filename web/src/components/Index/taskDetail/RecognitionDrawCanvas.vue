@@ -5,14 +5,7 @@
             <!-- Draw mode selector -->
             <div class="flex flex-row items-center gap-2 flex-wrap px-1">
                 <span class="text-xs text-dimmed font-medium">Draw:</span>
-                <UButtonGroup size="xs">
-                    <UButton :variant="drawMode === 'best' ? 'solid' : 'outline'" color="primary"
-                        @click="setDrawMode('best')">Best</UButton>
-                    <UButton :variant="drawMode === 'filtered' ? 'solid' : 'outline'" color="primary"
-                        @click="setDrawMode('filtered')">Filtered</UButton>
-                    <UButton :variant="drawMode === 'custom' ? 'solid' : 'outline'" color="primary"
-                        @click="setDrawMode('custom')">Custom</UButton>
-                </UButtonGroup>
+                <UTabs :items="drawModeOptions" key="value" v-model="drawMode" />
                 <span class="text-xs text-dimmed tabular-nums">
                     ({{ activeResults.length }})
                 </span>
@@ -31,14 +24,14 @@
                 </UTooltip>
             </div>
 
-            <!-- Result list (all modes) -->
-            <div class="reco-list">
+            <!-- Result list -->
+            <div v-if="showResultList" class="reco-list">
                 <template v-if="drawMode === 'custom'">
                     <label v-for="entry in filteredCustomEntries" :key="entry.idx" class="reco-list-item" :class="[
-                        customSelectedDetail === entry.idx ? 'bg-primary/10 text-primary' : 'hover:bg-muted',
+                        focusedResultIndex === entry.idx ? 'bg-primary/10 text-primary' : 'hover:bg-muted',
                         hoveredIndex === entry.idx ? 'ring-1 ring-primary/40' : ''
                     ]" @mouseenter="hoveredIndex = entry.idx" @mouseleave="hoveredIndex = -1"
-                        @click.stop="customSelectedDetail = entry.idx">
+                        @click.stop="setFocusedResultIndex(entry.idx)">
                         <input type="checkbox" :checked="customSelection.has(entry.idx)" class="accent-primary shrink-0"
                             @change.stop="toggleCustom(entry.idx)" @click.stop />
                         <span class="tabular-nums text-dimmed shrink-0">#{{ entry.idx }}</span>
@@ -52,10 +45,11 @@
                     </label>
                 </template>
                 <template v-else>
-                    <div v-for="(item, idx) in activeResults" :key="idx" class="reco-list-item"
-                        :class="hoveredIndex === idx ? 'ring-1 ring-primary/40 bg-primary/5' : 'hover:bg-muted'"
-                        @mouseenter="hoveredIndex = idx" @mouseleave="hoveredIndex = -1"
-                        @click.stop="copyResultJson(idx)">
+                    <div v-for="(item, idx) in activeResults" :key="idx" class="reco-list-item" :class="[
+                        focusedResultIndex === idx ? 'bg-primary/10 text-primary' : 'hover:bg-muted',
+                        hoveredIndex === idx ? 'ring-1 ring-primary/40' : ''
+                    ]" @mouseenter="hoveredIndex = idx" @mouseleave="hoveredIndex = -1"
+                        @click.stop="setFocusedResultIndex(idx)">
                         <span class="tabular-nums text-dimmed shrink-0">#{{ idx }}</span>
                         <span v-if="item.extra && 'score' in item.extra" class="tabular-nums shrink-0">
                             {{ Number(item.extra.score).toFixed(3) }}
@@ -71,24 +65,27 @@
                 </div>
             </div>
 
-            <!-- Detail panel (custom mode) -->
-            <div v-if="drawMode === 'custom'" class="reco-detail">
-                <div v-if="customDetailItem" class="flex flex-col gap-2 text-xs">
-                    <div class="flex items-center justify-between">
-                        <span class="font-semibold text-sm">#{{ customSelectedDetail }}</span>
+            <!-- Detail panel -->
+            <div class="reco-detail">
+                <div v-if="focusedDetailItem" class="flex flex-col gap-2 text-xs">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <UBadge color="neutral" variant="subtle" size="xs">{{ activeModeLabel }}</UBadge>
+                            <span class="font-semibold text-sm tabular-nums">#{{ focusedResultIndex }}</span>
+                        </div>
                         <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-copy"
-                            @click="copyResultJson(customSelectedDetail)" />
+                            @click="copyResultJson(focusedResultIndex)" />
                     </div>
-                    <div v-if="customDetailItem.box"
+                    <div v-if="focusedDetailItem.box"
                         class="flex gap-x-3 gap-y-1 flex-wrap tabular-nums text-default/70">
-                        <span><span class="text-default/40">x:</span> {{ customDetailItem.box.x }}</span>
-                        <span><span class="text-default/40">y:</span> {{ customDetailItem.box.y }}</span>
-                        <span><span class="text-default/40">w:</span> {{ customDetailItem.box.w }}</span>
-                        <span><span class="text-default/40">h:</span> {{ customDetailItem.box.h }}</span>
+                        <span><span class="text-default/40">x:</span> {{ focusedDetailItem.box.x }}</span>
+                        <span><span class="text-default/40">y:</span> {{ focusedDetailItem.box.y }}</span>
+                        <span><span class="text-default/40">w:</span> {{ focusedDetailItem.box.w }}</span>
+                        <span><span class="text-default/40">h:</span> {{ focusedDetailItem.box.h }}</span>
                     </div>
-                    <template v-if="customDetailItem.extra">
+                    <template v-if="focusedDetailItem.extra">
                         <USeparator />
-                        <div v-for="(val, key) in customDetailItem.extra" :key="String(key)"
+                        <div v-for="(val, key) in focusedDetailItem.extra" :key="String(key)"
                             class="flex justify-between gap-2 text-default/70">
                             <span class="text-default/40 shrink-0">{{ key }}</span>
                             <span class="text-right break-all">{{ formatExtraValue(val) }}</span>
@@ -100,7 +97,7 @@
                 </div>
                 <div v-else class="flex flex-col items-center justify-center h-full text-dimmed text-xs gap-1">
                     <UIcon name="i-lucide-pointer" class="size-5" />
-                    <span>Select an item</span>
+                    <span>{{ emptyDetailText }}</span>
                 </div>
             </div>
         </div>
@@ -253,7 +250,13 @@ const toast = useToast()
 
 // Custom panel state
 const customSearch = ref('')
-const customSelectedDetail = ref(-1)
+const focusedResultIndex = ref(-1)
+
+const drawModeOptions = [
+    { label: 'Best', value: 'best' },
+    { label: 'Filtered', value: 'filtered' },
+    { label: 'Custom', value: 'custom' },
+] satisfies Array<{ label: string, value: DrawMode }>
 
 const filteredCustomEntries = computed(() => {
     const q = customSearch.value.toLowerCase().trim()
@@ -268,9 +271,22 @@ const filteredCustomEntries = computed(() => {
         })
 })
 
-const customDetailItem = computed<RecoResultItem | null>(() => {
-    if (customSelectedDetail.value < 0) return null
-    return allResults.value[customSelectedDetail.value] ?? null
+const showResultList = computed(() => drawMode.value !== 'best')
+
+const activeModeLabel = computed(() => {
+    if (drawMode.value === 'best') return 'Best'
+    if (drawMode.value === 'filtered') return 'Filtered'
+    return 'Custom'
+})
+
+const focusedDetailItem = computed<RecoResultItem | null>(() => {
+    if (focusedResultIndex.value < 0) return null
+    return activeResults.value[focusedResultIndex.value] ?? null
+})
+
+const emptyDetailText = computed(() => {
+    if (drawMode.value === 'best') return 'No best result'
+    return 'Select an item'
 })
 
 // --- Cropped image preview (cached) ---
@@ -309,10 +325,10 @@ function buildCroppedUrl(item: RecoResultItem, img: HTMLImageElement, idx: numbe
 }
 
 const croppedImageUrl = computed<string | null>(() => {
-    const item = customDetailItem.value
+    const item = focusedDetailItem.value
     const img = rawImageObj.value
-    if (!item?.box || !img) return null
-    return buildCroppedUrl(item, img, customSelectedDetail.value)
+    if (!item?.box || !img || focusedResultIndex.value < 0) return null
+    return buildCroppedUrl(item, img, focusedResultIndex.value)
 })
 
 function selectAllCustom() {
@@ -376,13 +392,34 @@ const zoomPercentage = computed(() => Math.round(zoomLevel.value * 100))
 // Label rects from last draw, used for hit testing
 let lastLabelRects: LabelRect[] = []
 
-// --- Draw mode ---
-function setDrawMode(mode: DrawMode) {
-    drawMode.value = mode
-    if (mode === 'custom' && customSelection.value.size === 0) {
-        const newSet = new Set<number>()
-        for (let i = 0; i < allResults.value.length; i++) newSet.add(i)
-        customSelection.value = newSet
+function ensureCustomSelection() {
+    if (customSelection.value.size > 0) return
+    const newSet = new Set<number>()
+    for (let i = 0; i < allResults.value.length; i++) newSet.add(i)
+    customSelection.value = newSet
+}
+
+function setFocusedResultIndex(nextIndex: number) {
+    focusedResultIndex.value = nextIndex >= 0 && nextIndex < activeResults.value.length ? nextIndex : -1
+}
+
+function syncFocusedResultIndex() {
+    if (drawMode.value === 'best') {
+        setFocusedResultIndex(activeResults.value.length > 0 ? 0 : -1)
+        return
+    }
+
+    if (drawMode.value === 'custom') {
+        ensureCustomSelection()
+    }
+
+    if (activeResults.value.length === 0) {
+        setFocusedResultIndex(-1)
+        return
+    }
+
+    if (focusedResultIndex.value < 0 || focusedResultIndex.value >= activeResults.value.length) {
+        setFocusedResultIndex(0)
     }
 }
 
@@ -539,7 +576,10 @@ function onCanvasClick(e: MouseEvent) {
     const coords = mouseToImageCoords(e)
     if (!coords) return
     const idx = hitTest(coords.ix, coords.iy)
-    if (idx >= 0) copyResultJson(idx)
+    if (idx >= 0) {
+        setFocusedResultIndex(idx)
+        copyResultJson(idx)
+    }
 }
 
 function copyResultJson(resultIdx: number) {
@@ -562,6 +602,18 @@ const tooltipStyle = computed(() => {
         zIndex: 9999,
     }
 })
+
+watch(drawMode, (mode) => {
+    if (mode === 'custom') {
+        ensureCustomSelection()
+    }
+    syncFocusedResultIndex()
+})
+
+watch(activeResults, () => {
+    syncFocusedResultIndex()
+    nextTick(() => drawCanvas())
+}, { deep: true })
 
 // --- Label detail level based on zoom and draw mode ---
 // all/filtered: canvas labels always show index only; detail via tooltip
@@ -812,15 +864,12 @@ watch(rawImage, () => {
     resetView()
 })
 
-watch(activeResults, () => {
-    nextTick(() => drawCanvas())
-}, { deep: true })
-
 watch(zoomLevel, () => {
     nextTick(() => drawCanvas())
 })
 
 onMounted(() => {
+    syncFocusedResultIndex()
     loadRawImage()
 })
 </script>
