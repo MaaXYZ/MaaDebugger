@@ -73,6 +73,36 @@ function deepMergeOverride(
   return next;
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function buildManualOverridePatch(
+  base: Record<string, unknown>,
+  target: Record<string, unknown>,
+): Record<string, unknown> {
+  const patch: Record<string, unknown> = {};
+
+  for (const [key, rawTargetValue] of Object.entries(target)) {
+    const targetValue = normalizeOverrideValue(rawTargetValue);
+    const baseValue = base[key];
+
+    if (isPlainObject(baseValue) && isPlainObject(targetValue)) {
+      const nestedPatch = buildManualOverridePatch(baseValue, targetValue);
+      if (Object.keys(nestedPatch).length > 0) {
+        patch[key] = nestedPatch;
+      }
+      continue;
+    }
+
+    if (JSON.stringify(baseValue) !== JSON.stringify(targetValue)) {
+      patch[key] = cloneObject(targetValue);
+    }
+  }
+
+  return patch;
+}
+
 function parseStoredJsonObject(raw: string): Record<string, unknown> {
   const trimmed = raw.trim();
   if (!trimmed) return {};
@@ -176,6 +206,17 @@ export const useTaskStore = defineStore(
       );
     }
 
+    function setOverrideJson(value: string) {
+      overrideJson.value = value;
+      const parsedOverride = parseStoredJsonObject(value);
+      const manualPatch = buildManualOverridePatch(
+        derivedInterfaceOverride.value,
+        parsedOverride,
+      );
+      manualOverrideJson.value = JSON.stringify(manualPatch, null, 2);
+      syncOverrideJson();
+    }
+
     function setManualOverrideJson(value: string) {
       manualOverrideJson.value = value;
       syncOverrideJson();
@@ -262,6 +303,7 @@ export const useTaskStore = defineStore(
       selectedTaskOptionSelections,
       derivedInterfaceOverride,
       effectiveOverrideObject,
+      setOverrideJson,
       setManualOverrideJson,
       setSelectedOptionCase,
       applyInterfaceTasks,

@@ -6,65 +6,6 @@
                 <TaskStatusBadge :status="taskStatus" />
                 <div class="flex-1"></div>
 
-                <UPopover v-if="hasInterfaceTasks">
-                    <UButton color="neutral" variant="ghost" icon="i-lucide-list-tree" size="sm">
-                        Interface Task
-                    </UButton>
-                    <template #content>
-                        <div class="w-[28rem] max-w-[90vw] p-3 flex flex-col gap-3">
-                            <div class="text-sm font-medium">Task Preset</div>
-                            <USelectMenu :model-value="taskStore.selectedInterfaceTaskName" :items="interfaceTaskItems"
-                                value-key="value" @update:model-value="onInterfaceTaskSelected" />
-
-                            <div v-if="selectedInterfaceTask"
-                                class="rounded-lg border border-default bg-elevated/50 p-3 space-y-3">
-                                <div>
-                                    <div class="text-sm font-medium text-default">
-                                        {{ selectedInterfaceTask.name }}
-                                    </div>
-                                    <div class="text-xs text-dimmed break-all">
-                                        Entry: {{ selectedInterfaceTask.entry || 'n/a' }}
-                                    </div>
-                                    <div v-if="selectedInterfaceTask.description"
-                                        class="mt-1 text-xs text-dimmed whitespace-pre-wrap">
-                                        {{ selectedInterfaceTask.description }}
-                                    </div>
-                                </div>
-
-                                <div v-if="selectedTaskOptionDefs.length" class="space-y-3">
-                                    <div class="text-xs font-medium text-default">Options</div>
-                                    <div v-for="optionDef in selectedTaskOptionDefs" :key="optionDef.name"
-                                        class="space-y-2">
-                                        <div class="flex items-start justify-between gap-3">
-                                            <div class="min-w-0">
-                                                <div class="text-xs font-medium text-default break-all">
-                                                    {{ optionDef.name }}
-                                                </div>
-                                                <div v-if="optionDef.description"
-                                                    class="text-xs text-dimmed whitespace-pre-wrap break-all">
-                                                    {{ optionDef.description }}
-                                                </div>
-                                            </div>
-                                            <UBadge color="neutral" variant="subtle" size="sm">
-                                                {{ optionDef.type || 'option' }}
-                                            </UBadge>
-                                        </div>
-                                        <USelectMenu :model-value="selectedCaseMap[optionDef.name]"
-                                            :items="buildOptionCaseItems(optionDef)" value-key="value"
-                                            @update:model-value="(value) => onOptionCaseSelected(optionDef.name, value as string)" />
-                                    </div>
-                                </div>
-
-                                <div class="space-y-2">
-                                    <div class="text-xs font-medium text-default">Generated Override</div>
-                                    <pre
-                                        class="max-h-48 overflow-auto rounded-md border border-default bg-default p-2 text-[11px] leading-5 text-toned">{{ derivedOverridePreview }}</pre>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </UPopover>
-
                 <UPopover>
                     <UButton color="neutral" variant="ghost" size="sm" class="tabular-nums">
                         {{ currentFps }} /
@@ -116,6 +57,13 @@
 
         <template #default>
             <div class="flex flex-col gap-3">
+                <div v-if="hasInterfaceTasks" class="flex justify-end">
+                    <UButton color="neutral" variant="soft" icon="i-lucide-list-tree" size="sm"
+                        @click="openInterfaceTaskModal">
+                        Interface Task
+                    </UButton>
+                </div>
+
                 <div class="flex flex-row items-center gap-2">
                     <div class="flex-1 min-w-0">
                         <UTooltip :text="selectedEntry">
@@ -270,14 +218,74 @@
         </template>
     </UModal>
 
+    <UModal v-model:open="interfaceTaskModalOpen" title="Interface Task" :dismissible="false"
+        :ui="{ content: 'sm:max-w-2xl' }">
+        <template #body>
+            <div class="w-full flex flex-col gap-3">
+                <div class="text-sm font-medium">Task Preset</div>
+                <USelectMenu :model-value="interfaceTaskDraftName" :items="interfaceTaskItems" value-key="value"
+                    @update:model-value="onInterfaceTaskDraftSelected" />
+
+                <div v-if="draftSelectedTask" class="rounded-lg border border-default bg-elevated/50 p-3 space-y-3">
+                    <div>
+                        <div class="text-sm font-medium text-default">
+                            {{ draftSelectedTask.name }}
+                        </div>
+                        <div class="text-xs text-dimmed break-all">
+                            Entry: {{ draftSelectedTask.entry || 'n/a' }}
+                        </div>
+                        <div v-if="draftSelectedTask.description" class="mt-1 text-xs text-dimmed whitespace-pre-wrap">
+                            {{ draftSelectedTask.description }}
+                        </div>
+                    </div>
+
+                    <div v-if="draftTaskOptionDefs.length" class="space-y-3">
+                        <div class="text-xs font-medium text-default">Options</div>
+                        <div v-for="optionDef in draftTaskOptionDefs" :key="optionDef.name" class="space-y-2">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <div class="text-xs font-medium text-default break-all">
+                                        {{ optionDef.name }}
+                                    </div>
+                                    <div v-if="optionDef.description"
+                                        class="text-xs text-dimmed whitespace-pre-wrap break-all">
+                                        {{ optionDef.description }}
+                                    </div>
+                                </div>
+                                <UBadge color="neutral" variant="subtle" size="sm">
+                                    {{ optionDef.type || 'option' }}
+                                </UBadge>
+                            </div>
+                            <USelectMenu :model-value="draftSelectedCaseMap[optionDef.name]"
+                                :items="buildOptionCaseItems(optionDef)" value-key="value"
+                                @update:model-value="(value) => onOptionCaseDraftSelected(optionDef.name, value as string)" />
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="text-xs font-medium text-default">Generated Override</div>
+                        <pre
+                            class="max-h-48 overflow-auto rounded-md border border-default bg-default p-2 text-[11px] leading-5 text-toned">{{ draftDerivedOverridePreview }}</pre>
+                    </div>
+                </div>
+            </div>
+        </template>
+        <template #footer>
+            <div class="flex w-full justify-end gap-2">
+                <UButton color="neutral" variant="ghost" @click="onInterfaceTaskCancel">Cancel</UButton>
+                <UButton color="primary" @click="onInterfaceTaskConfirm">Confirm</UButton>
+            </div>
+        </template>
+    </UModal>
+
     <component :is="jsonEditorModalComponent" v-if="jsonEditorModalComponent" v-model:open="overrideEditorOpen"
-        :model-value="taskStore.manualOverrideJson" title="Pipeline Override"
-        description="Edit manual override patch (merged on top of selected interface task options)"
-        :schema="editorSchema" :external-schemas="editorExternalSchemas" @update:model-value="setManualOverrideJson" />
+        v-model="overrideEditorDraft" title="Pipeline Override"
+        description="Edit the effective override JSON. Interface-generated values remain synced until you change them manually."
+        :schema="editorSchema" :external-schemas="editorExternalSchemas" />
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, shallowRef, watch, watchEffect } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, shallowRef, watch, watchEffect } from 'vue'
 import type { Component } from 'vue'
 import TaskStatusBadge from './task/TaskStatusBadge.vue'
 import useTaskControls from './task/useTaskControls'
@@ -291,6 +299,10 @@ const jsonEditorModalComponent = shallowRef<Component | null>(null)
 const editorSchema = shallowRef<Record<string, unknown> | undefined>()
 const editorExternalSchemas = shallowRef<Record<string, Record<string, unknown>> | undefined>()
 const isPreparingOverrideEditor = ref(false)
+const interfaceTaskModalOpen = ref(false)
+const overrideEditorDraft = ref('{}')
+const interfaceTaskDraftName = ref('')
+const interfaceOptionDraftSelections = ref<Array<{ optionName: string, caseName: string }>>([])
 let editorAssetsLoaded = false
 
 const {
@@ -309,10 +321,10 @@ const {
     hasInterfaceTasks,
     interfaceTaskItems,
     selectedInterfaceTask,
-    selectedTaskOptionDefs,
     selectedTaskOptionSelections,
     selectInterfaceTask,
     setInterfaceOptionCase,
+    setOverrideJson,
     setManualOverrideJson,
     onStart,
     onStop,
@@ -373,12 +385,28 @@ const actualFpsTone = computed(() => {
     if (actualFps.value >= currentFps.value * 0.6) return 'text-warning'
     return 'text-error'
 })
-const selectedCaseMap = computed<Record<string, string>>(() =>
-    Object.fromEntries(selectedTaskOptionSelections.value.map((item) => [item.optionName, item.caseName])),
+const draftSelectedTask = computed(() =>
+    taskStore.interfaceTasks.find((task) => task.name === interfaceTaskDraftName.value) ?? null,
 )
-const derivedOverridePreview = computed(() =>
-    JSON.stringify(taskStore.derivedInterfaceOverride, null, 2),
+const draftTaskOptionDefs = computed(() => draftSelectedTask.value?.option_defs ?? [])
+const draftSelectedCaseMap = computed<Record<string, string>>(() =>
+    Object.fromEntries(interfaceOptionDraftSelections.value.map((item) => [item.optionName, item.caseName])),
 )
+const draftDerivedOverridePreview = computed(() =>
+    JSON.stringify(buildDraftOverride(), null, 2),
+)
+
+watch(() => taskStore.overrideJson, (value) => {
+    if (value !== overrideEditorDraft.value) {
+        overrideEditorDraft.value = value
+    }
+}, { immediate: true })
+
+watch(overrideEditorDraft, (value) => {
+    if (value !== taskStore.overrideJson) {
+        setOverrideJson(value)
+    }
+})
 
 watchEffect(() => {
     document.documentElement.style.setProperty('--entry-content-min-w', entryContentMinWidth.value)
@@ -414,14 +442,83 @@ function buildOptionCaseItems(optionDef: InterfaceTaskOptionDefinition) {
     }))
 }
 
-function onInterfaceTaskSelected(value: string | number) {
-    if (typeof value !== 'string') return
-    selectInterfaceTask(value)
+function cloneValue<T>(value: T): T {
+    return JSON.parse(JSON.stringify(value)) as T
 }
 
-function onOptionCaseSelected(optionName: string, value: string) {
+function mergeObjects(base: Record<string, unknown>, patch: Record<string, unknown>) {
+    const next = cloneValue(base)
+    for (const [key, value] of Object.entries(patch)) {
+        if (
+            value &&
+            typeof value === 'object' &&
+            !Array.isArray(value) &&
+            next[key] &&
+            typeof next[key] === 'object' &&
+            !Array.isArray(next[key])
+        ) {
+            next[key] = mergeObjects(next[key] as Record<string, unknown>, value as Record<string, unknown>)
+            continue
+        }
+        next[key] = cloneValue(value)
+    }
+    return next
+}
+
+function snapshotInterfaceDraft() {
+    interfaceTaskDraftName.value = taskStore.selectedInterfaceTaskName
+    interfaceOptionDraftSelections.value = selectedTaskOptionSelections.value.map((item) => ({ ...item }))
+}
+
+function buildDraftOverride() {
+    let merged: Record<string, unknown> = {}
+    for (const optionDef of draftTaskOptionDefs.value) {
+        const caseName = draftSelectedCaseMap.value[optionDef.name]
+        const selectedCase = (optionDef.cases ?? []).find((item) => item.name === caseName)
+        if (!selectedCase?.pipeline_override) {
+            continue
+        }
+        merged = mergeObjects(merged, selectedCase.pipeline_override as Record<string, unknown>)
+    }
+    return merged
+}
+
+function openInterfaceTaskModal() {
+    snapshotInterfaceDraft()
+    interfaceTaskModalOpen.value = true
+}
+
+function onInterfaceTaskDraftSelected(value: string | number) {
+    if (typeof value !== 'string') return
+    interfaceTaskDraftName.value = value
+    interfaceOptionDraftSelections.value = (draftSelectedTask.value?.option_defs ?? []).map((optionDef) => ({
+        optionName: optionDef.name,
+        caseName: optionDef.default_case || optionDef.cases?.[0]?.name || '',
+    })).filter((item) => item.caseName)
+}
+
+function onOptionCaseDraftSelected(optionName: string, value: string) {
     if (!value) return
-    setInterfaceOptionCase(optionName, value)
+    interfaceOptionDraftSelections.value = [
+        ...interfaceOptionDraftSelections.value.filter((item) => item.optionName !== optionName),
+        { optionName, caseName: value },
+    ]
+}
+
+async function onInterfaceTaskConfirm() {
+    if (interfaceTaskDraftName.value) {
+        selectInterfaceTask(interfaceTaskDraftName.value)
+        await nextTick()
+        for (const selection of interfaceOptionDraftSelections.value) {
+            setInterfaceOptionCase(selection.optionName, selection.caseName)
+        }
+    }
+    interfaceTaskModalOpen.value = false
+}
+
+function onInterfaceTaskCancel() {
+    snapshotInterfaceDraft()
+    interfaceTaskModalOpen.value = false
 }
 
 function onImageWheel(e: WheelEvent) {

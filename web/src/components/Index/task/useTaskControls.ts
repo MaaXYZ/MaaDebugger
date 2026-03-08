@@ -160,6 +160,10 @@ export default function useTaskControls(toast: ToastApi) {
     taskStore.setSelectedOptionCase(optionName, caseName);
   }
 
+  function setOverrideJson(value: string) {
+    taskStore.setOverrideJson(value);
+  }
+
   function setManualOverrideJson(value: string) {
     taskStore.setManualOverrideJson(value);
   }
@@ -293,6 +297,7 @@ export default function useTaskControls(toast: ToastApi) {
     selectedTaskOptionSelections,
     selectInterfaceTask,
     setInterfaceOptionCase,
+    setOverrideJson,
     setManualOverrideJson,
     onStart,
     onStop,
