@@ -156,16 +156,24 @@ jobs:
         shell: bash
         run: |
           ARTIFACT_NAME="MaaDebugger-${{ matrix.maafw_os }}-${{ matrix.maafw_arch }}"
+          ARCHIVE_NAME="${ARTIFACT_NAME}.tar.gz"
           mkdir -p "${ARTIFACT_NAME}/bin"
 
           cp "MaaDebugger${{ matrix.ext }}" "${ARTIFACT_NAME}/"
           cp -r maafw_dl/bin/* "${ARTIFACT_NAME}/bin/"
           cp README.md LICENSE "${ARTIFACT_NAME}/"
 
+          if [[ "${{ matrix.goos }}" != "windows" ]]; then
+            chmod 755 "${ARTIFACT_NAME}/MaaDebugger${{ matrix.ext }}"
+          fi
+
+          tar -czf "${ARCHIVE_NAME}" "${ARTIFACT_NAME}"
+
           echo "ARTIFACT_NAME=${ARTIFACT_NAME}" >> "$GITHUB_ENV"
+          echo "ARCHIVE_NAME=${ARCHIVE_NAME}" >> "$GITHUB_ENV"
 
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ env.ARTIFACT_NAME }}
-          path: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARCHIVE_NAME }}
           if-no-files-found: error

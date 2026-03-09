@@ -88,12 +88,14 @@ jobs:
       - name: Prepare nodejs nightly package
         shell: bash
         run: |
-          rm -rf dist/platform
-          mkdir -p dist/platform
+          rm -rf dist/platform .artifacts/platform/extracted
+          mkdir -p dist/platform .artifacts/platform/extracted
+
+          tar -xzf ".artifacts/platform/${{ matrix.artifact_name }}.tar.gz" -C .artifacts/platform/extracted
 
           cp publish/npm/platform-package.json dist/platform/package.json
           cp README.md LICENSE dist/platform/
-          cp ".artifacts/platform/${{ matrix.bin_name }}" "dist/platform/${{ matrix.bin_name }}"
+          cp ".artifacts/platform/extracted/${{ matrix.artifact_name }}/${{ matrix.bin_name }}" "dist/platform/${{ matrix.bin_name }}"
 
           PACKAGE_JSON_PATH="dist/platform/package.json" \
           PACKAGE_NAME="${{ matrix.package_name }}" \
