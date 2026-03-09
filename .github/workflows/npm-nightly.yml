@@ -156,7 +156,9 @@ jobs:
 
   publish-nodejs-nightly:
     name: Publish nodejs nightly
-    needs: merge-nodejs-nightly-artifacts
+    needs:
+      - merge-nodejs-nightly-artifacts
+      - metadata
     runs-on: ubuntu-latest
     permissions:
       id-token: write
