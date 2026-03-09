@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const { spawn } = require("node:child_process");
-const { existsSync } = require("node:fs");
+const { execFile, spawn } = require("node:child_process");
+const { existsSync, readdirSync } = require("node:fs");
 const path = require("node:path");
 
 const platformPackageName = `@weinibuliu/maa-debugger-${process.platform}-${process.arch}`;
@@ -38,14 +38,22 @@ const channelPath = path.join(
   `maa-node-${process.platform}-${process.arch}`,
 );
 
-const child = spawn(exePath, process.argv.slice(2), {
-  stdio: "inherit",
-  env: {
-    ...process.env,
-    MAADBG_CHANNEL: "npm",
-    MAADBG_CHANNEL_PATH: channelPath,
-  },
-});
+const childEnv = {
+  ...process.env,
+  MAADBG_CHANNEL: "npm",
+  MAADBG_CHANNEL_PATH: channelPath,
+};
+
+const child = isWindows
+  ? execFile(exePath, process.argv.slice(2), {
+      stdio: "inherit",
+      env: childEnv,
+      windowsHide: false,
+    })
+  : spawn(exePath, process.argv.slice(2), {
+      stdio: "inherit",
+      env: childEnv,
+    });
 
 child.on("exit", (code, signal) => {
   if (signal) {
@@ -57,6 +65,24 @@ child.on("exit", (code, signal) => {
 
 child.on("error", (err) => {
   console.error(`[maa-debugger] Failed to start ${executableName}:`, err);
+
+  const exeDir = path.dirname(exePath);
+  console.debug(`[maa-debugger] Executable path: ${exePath}`);
+  console.debug(`[maa-debugger] Executable path length: ${exePath.length}`);
+  console.debug(
+    `[maa-debugger] Executable exists before launch: ${existsSync(exePath)}`,
+  );
+  console.debug(`[maa-debugger] Platform package root: ${platformPackageRoot}`);
+  console.debug(`[maa-debugger] Channel path: ${channelPath}`);
+  try {
+    console.debug(
+      `[maa-debugger] Executable directory entries: ${readdirSync(exeDir).join(", ") || "(empty)"}`,
+    );
+  } catch (readDirError) {
+    console.error(
+      `[maa-debugger] Failed to inspect executable directory: ${readDirError}`,
+    );
+  }
 
   switch (err.code) {
     case "EACCES":
@@ -71,6 +97,11 @@ child.on("error", (err) => {
       console.error(
         `[maa-debugger] Executable not found or cannot be resolved at runtime: ${exePath}`,
       );
+      if (isWindows) {
+        console.error(
+          `[maa-debugger] On Windows, this can also be caused by CreateProcess failing on a deeply nested pnpm dlx cache path.`,
+        );
+      }
       break;
     }
   }
