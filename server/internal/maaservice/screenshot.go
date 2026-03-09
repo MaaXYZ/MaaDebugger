@@ -294,12 +294,10 @@ func (s *ScreenshotService) jpegLoop(stop <-chan struct{}) {
 	results := make(chan jpegResult, workerCount)
 	var wg sync.WaitGroup
 
-	for i := 0; i < workerCount; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range workerCount {
+		wg.Go(func() {
 			s.jpegWorker(stop, results)
-		}()
+		})
 	}
 
 	defer wg.Wait()
@@ -403,15 +401,7 @@ func (s *ScreenshotService) prepareLatestJPEGJob(seq uint64) (*jpegJob, error) {
 		return nil, nil
 	}
 
-	clone, err := cloneImage(img)
-	if err != nil {
-		return nil, err
-	}
-	if clone == nil {
-		return nil, nil
-	}
-
-	return &jpegJob{seq: seq, img: clone}, nil
+	return &jpegJob{seq: seq, img: img}, nil
 }
 
 func (s *ScreenshotService) enqueueLatestJPEGJob(job *jpegJob) {
@@ -458,22 +448,6 @@ func (s *ScreenshotService) encodeJPEGImage(img image.Image, buf *bytes.Buffer, 
 	s.stats.encodedFrames.Add(1)
 	return data, nil
 }
-
-func cloneImage(src image.Image) (image.Image, error) {
-	nrgba, ok := src.(*image.NRGBA)
-	if !ok || nrgba == nil || nrgba.Rect.Empty() {
-		return nil, nil
-	}
-
-	dst := image.NewNRGBA(nrgba.Rect)
-	for y := nrgba.Rect.Min.Y; y < nrgba.Rect.Max.Y; y++ {
-		srcOffset := nrgba.PixOffset(nrgba.Rect.Min.X, y)
-		dstOffset := dst.PixOffset(dst.Rect.Min.X, y)
-		copy(dst.Pix[dstOffset:dstOffset+nrgba.Rect.Dx()*4], nrgba.Pix[srcOffset:srcOffset+nrgba.Rect.Dx()*4])
-	}
-	return dst, nil
-}
-
 func (s *ScreenshotService) emitJPEGFrame(data []byte) {
 	if len(data) == 0 {
 		return
