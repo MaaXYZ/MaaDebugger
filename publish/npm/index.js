@@ -57,5 +57,23 @@ child.on("exit", (code, signal) => {
 
 child.on("error", (err) => {
   console.error(`[maa-debugger] Failed to start ${executableName}:`, err);
+
+  switch (err.code) {
+    case "EACCES":
+      console.error(
+        `[maa-debugger] Permission denied when starting ${executableName}. The executable bit may be missing from the installed platform package.`,
+      );
+      console.error(
+        `[maa-debugger] Try restoring execute permission manually, for example: chmod 755 "${exePath}"`,
+      );
+      break;
+    case "ENOENT": {
+      console.error(
+        `[maa-debugger] Executable not found or cannot be resolved at runtime: ${exePath}`,
+      );
+      break;
+    }
+  }
+
   process.exit(1);
 });

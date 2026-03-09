@@ -97,6 +97,10 @@ jobs:
           cp README.md LICENSE dist/platform/
           cp ".artifacts/platform/extracted/${{ matrix.artifact_name }}/${{ matrix.bin_name }}" "dist/platform/${{ matrix.bin_name }}"
 
+          if [[ "${{ matrix.os }}" != "win32" ]]; then
+            chmod 755 "dist/platform/${{ matrix.bin_name }}"
+          fi
+
           PACKAGE_JSON_PATH="dist/platform/package.json" \
           PACKAGE_NAME="${{ matrix.package_name }}" \
           TARGET_OS="${{ matrix.os }}" \
