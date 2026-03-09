@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"image"
-	"image/draw"
 	"image/jpeg"
 	"runtime"
 	"sync"
@@ -83,7 +82,7 @@ func NewScreenshotService(ctrlSvc *ControllerService) *ScreenshotService {
 	s := &ScreenshotService{
 		controllerSvc: ctrlSvc,
 	}
-	s.fps.Store(30)
+	s.fps.Store(15)
 	return s
 }
 
@@ -461,66 +460,18 @@ func (s *ScreenshotService) encodeJPEGImage(img image.Image, buf *bytes.Buffer, 
 }
 
 func cloneImage(src image.Image) (image.Image, error) {
-	if src == nil {
+	nrgba, ok := src.(*image.NRGBA)
+	if !ok || nrgba == nil || nrgba.Rect.Empty() {
 		return nil, nil
 	}
 
-	switch img := src.(type) {
-	case *image.RGBA:
-		return cloneRGBA(img), nil
-	case *image.NRGBA:
-		return cloneNRGBA(img), nil
-	case *image.Gray:
-		return cloneGray(img), nil
+	dst := image.NewNRGBA(nrgba.Rect)
+	for y := nrgba.Rect.Min.Y; y < nrgba.Rect.Max.Y; y++ {
+		srcOffset := nrgba.PixOffset(nrgba.Rect.Min.X, y)
+		dstOffset := dst.PixOffset(dst.Rect.Min.X, y)
+		copy(dst.Pix[dstOffset:dstOffset+nrgba.Rect.Dx()*4], nrgba.Pix[srcOffset:srcOffset+nrgba.Rect.Dx()*4])
 	}
-
-	bounds := src.Bounds()
-	if bounds.Empty() {
-		return nil, nil
-	}
-
-	dst := image.NewRGBA(bounds)
-	draw.Draw(dst, bounds, src, bounds.Min, draw.Src)
 	return dst, nil
-}
-
-func cloneRGBA(src *image.RGBA) image.Image {
-	if src == nil || src.Rect.Empty() {
-		return nil
-	}
-	dst := image.NewRGBA(src.Rect)
-	for y := src.Rect.Min.Y; y < src.Rect.Max.Y; y++ {
-		srcOffset := src.PixOffset(src.Rect.Min.X, y)
-		dstOffset := dst.PixOffset(dst.Rect.Min.X, y)
-		copy(dst.Pix[dstOffset:dstOffset+src.Rect.Dx()*4], src.Pix[srcOffset:srcOffset+src.Rect.Dx()*4])
-	}
-	return dst
-}
-
-func cloneNRGBA(src *image.NRGBA) image.Image {
-	if src == nil || src.Rect.Empty() {
-		return nil
-	}
-	dst := image.NewNRGBA(src.Rect)
-	for y := src.Rect.Min.Y; y < src.Rect.Max.Y; y++ {
-		srcOffset := src.PixOffset(src.Rect.Min.X, y)
-		dstOffset := dst.PixOffset(dst.Rect.Min.X, y)
-		copy(dst.Pix[dstOffset:dstOffset+src.Rect.Dx()*4], src.Pix[srcOffset:srcOffset+src.Rect.Dx()*4])
-	}
-	return dst
-}
-
-func cloneGray(src *image.Gray) image.Image {
-	if src == nil || src.Rect.Empty() {
-		return nil
-	}
-	dst := image.NewGray(src.Rect)
-	for y := src.Rect.Min.Y; y < src.Rect.Max.Y; y++ {
-		srcOffset := src.PixOffset(src.Rect.Min.X, y)
-		dstOffset := dst.PixOffset(dst.Rect.Min.X, y)
-		copy(dst.Pix[dstOffset:dstOffset+src.Rect.Dx()], src.Pix[srcOffset:srcOffset+src.Rect.Dx()])
-	}
-	return dst
 }
 
 func (s *ScreenshotService) emitJPEGFrame(data []byte) {
