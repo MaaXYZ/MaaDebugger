@@ -21,8 +21,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  metadata:
+    uses: ./.github/workflows/metadata.yml
+
   build:
+    needs: metadata
     uses: ./.github/workflows/build.yml
+    with:
+      version: ${{ needs.metadata.outputs.version }}
+      commit_sha: ${{ needs.metadata.outputs.commit_sha }}
+      build_time: ${{ needs.metadata.outputs.build_time }}
 
   package-nodejs-nightly:
     name: Package nodejs nightly

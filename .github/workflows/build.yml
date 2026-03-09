@@ -2,20 +2,42 @@ name: Build
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: Build version
+        required: true
+        type: string
+      commit_sha:
+        description: Git commit SHA
+        required: true
+        type: string
+      build_time:
+        description: Unix timestamp of build time
+        required: true
+        type: string
 
   workflow_call:
+    inputs:
+      version:
+        description: Build version
+        required: true
+        type: string
+      commit_sha:
+        description: Git commit SHA
+        required: true
+        type: string
+      build_time:
+        description: Unix timestamp of build time
+        required: true
+        type: string
 
 jobs:
-  metadata:
-    uses: ./.github/workflows/metadata.yml
-
   build-frontend:
-    needs: metadata
     runs-on: ubuntu-latest
     env:
-      VERSION: ${{ needs.metadata.outputs.version }}
-      COMMIT_SHA: ${{ needs.metadata.outputs.commit_sha }}
-      BUILD_TIME: ${{ needs.metadata.outputs.build_time }}
+      VERSION: ${{ inputs.version }}
+      COMMIT_SHA: ${{ inputs.commit_sha }}
+      BUILD_TIME: ${{ inputs.build_time }}
     steps:
       - uses: actions/checkout@v6
 
@@ -38,7 +60,6 @@ jobs:
 
   build:
     needs:
-      - metadata
       - build-frontend
     strategy:
       fail-fast: false
@@ -83,9 +104,9 @@ jobs:
 
     runs-on: ${{ matrix.runner }}
     env:
-      VERSION: ${{ needs.metadata.outputs.version }}
-      COMMIT_SHA: ${{ needs.metadata.outputs.commit_sha }}
-      BUILD_TIME: ${{ needs.metadata.outputs.build_time }}
+      VERSION: ${{ inputs.version }}
+      COMMIT_SHA: ${{ inputs.commit_sha }}
+      BUILD_TIME: ${{ inputs.build_time }}
 
     steps:
       - uses: actions/checkout@v6
