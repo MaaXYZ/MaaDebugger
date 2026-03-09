@@ -187,8 +187,8 @@ jobs:
           client-payload: |-
             {
               "nightly": {
-                "version": "${{github.sha}}",
-                "timestamp": ""
+                "version": "${{ github.sha }}",
+                "timestamp": "${{ needs.metadata.outputs.build_time }}"
               },
               "pre": {},
               "release": {}
