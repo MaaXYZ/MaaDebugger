@@ -55,7 +55,8 @@ func NewRouter(deps Dependencies) http.Handler {
 	deps.TaskerService.SetEventCallback(func(msg map[string]any) {
 		deps.Hub.BroadcastJSON(ws.Message{Type: "task.event", Payload: msg})
 
-		// On recognition events, notify screenshot service to read from cache
+		// Recognition 事件到达后，通知 screenshot service 在下一次 capture tick
+		// 跳过 PostScreencap，让 consumer 优先读取 controller 当前 cache。
 		if msgStr, _ := msg["msg"].(string); len(msgStr) >= 11 && msgStr[:11] == "Recognition" {
 			deps.ScreenshotService.NotifyRecoUpdate()
 		}
@@ -96,6 +97,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.HandleFunc("POST /api/screenshot/pause", r.handleScreenshotPause)
 	mux.HandleFunc("POST /api/screenshot/resume", r.handleScreenshotResume)
 	mux.HandleFunc("PUT /api/screenshot/fps", r.handleScreenshotSetFPS)
+	mux.HandleFunc("PUT /api/screenshot/output", r.handleScreenshotSetOutput)
 	mux.HandleFunc("GET /api/screenshot/status", r.handleScreenshotStatus)
 	mux.HandleFunc("POST /api/clear/cache", r.handleClearCache)
 	mux.HandleFunc("GET /ws", r.handleWS)
@@ -792,11 +794,33 @@ func (r *router) handleScreenshotSetFPS(w http.ResponseWriter, req *http.Request
 	response.OK(w, map[string]any{"fps": r.deps.ScreenshotService.GetFPS()})
 }
 
+func (r *router) handleScreenshotSetOutput(w http.ResponseWriter, req *http.Request) {
+	var payload struct {
+		Output maaservice.ScreenshotOutput `json:"output"`
+	}
+	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+		response.Fail(w, http.StatusBadRequest, "invalid json body")
+		return
+	}
+
+	outputs := r.deps.ScreenshotService.SetOutputDemand(payload.Output)
+	response.OK(w, map[string]any{
+		"output": outputs,
+		"jpeg":   r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputJPEG),
+		"h264":   r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH264),
+		"h265":   r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH265),
+	})
+}
+
 func (r *router) handleScreenshotStatus(w http.ResponseWriter, _ *http.Request) {
 	response.OK(w, map[string]any{
 		"running": r.deps.ScreenshotService.Running(),
 		"paused":  r.deps.ScreenshotService.Paused(),
 		"fps":     r.deps.ScreenshotService.GetFPS(),
+		"output":  r.deps.ScreenshotService.OutputDemand(),
+		"jpeg":    r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputJPEG),
+		"h264":    r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH264),
+		"h265":    r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH265),
 	})
 }
 

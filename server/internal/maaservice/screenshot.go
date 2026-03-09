@@ -3,7 +3,6 @@ package maaservice
 import (
 	"bytes"
 	"fmt"
-	"image"
 	"image/jpeg"
 	"sync"
 	"sync/atomic"
@@ -14,35 +13,36 @@ import (
 
 const maxConsecutiveFailures = 10
 
+type ScreenshotOutput uint32
+
+const (
+	ScreenshotOutputJPEG ScreenshotOutput = 1
+	ScreenshotOutputH264 ScreenshotOutput = 1 << 1
+	ScreenshotOutputH265 ScreenshotOutput = 1 << 2
+)
+
 type screenshotStats struct {
 	capturedFrames    atomic.Uint64
 	encodedFrames     atomic.Uint64
 	broadcastedFrames atomic.Uint64
 }
 
-type frameSnapshot struct {
-	img        image.Image
-	capturedAt time.Time
-}
-
-type encodedFrame struct {
-	data      []byte
-	encodedAt time.Time
-}
-
 // ScreenshotService manages a periodic screenshot pipeline.
 //
 // The internal model is split into four stages:
 //  1. capture   -> request screencap or reuse controller cache
-//  2. cache     -> keep the latest raw frame in memory
-//  3. encode    -> JPEG-encode the latest cached frame
+//  2. notify    -> publish a frame update event
+//  3. encode    -> JPEG-encode the latest controller cache image
 //  4. broadcast -> deliver the encoded bytes via callback
 //
 // Public behavior remains compatible with the previous implementation.
-// When a recognition event fires, the next capture cycle reads from CacheImage
-// without issuing a fresh PostScreencap.
+// When a recognition event fires, the next capture tick skips PostScreencap so
+// downstream consumers read the controller's current cache image first.
 // If any stage fails maxConsecutiveFailures times in a row, the loop stops and
 // onError is called.
+type frameHandler func(data []byte)
+type errorHandler func(reason string)
+
 type ScreenshotService struct {
 	controllerSvc *ControllerService
 
@@ -50,18 +50,15 @@ type ScreenshotService struct {
 	stopCh  chan struct{}
 	running bool
 
-	paused   atomic.Bool
-	fps      atomic.Int32
-	useCache atomic.Bool // set temporarily when reco fires so next capture reads CacheImage
+	paused       atomic.Bool
+	fps          atomic.Int32
+	useCache     atomic.Bool
+	frameSeq     atomic.Uint64
+	outputDemand atomic.Uint32
 
-	onFrame func(data []byte)
-	onError func(reason string)
-
-	cacheMu     sync.RWMutex
-	latestFrame frameSnapshot
-
-	encodedMu     sync.RWMutex
-	latestEncoded encodedFrame
+	frameNotify atomic.Value
+	onFrame     atomic.Value
+	onError     atomic.Value
 
 	stats screenshotStats
 }
@@ -75,15 +72,78 @@ func NewScreenshotService(ctrlSvc *ControllerService) *ScreenshotService {
 }
 
 func (s *ScreenshotService) SetOnFrame(fn func(data []byte)) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.onFrame = fn
+	if fn == nil {
+		s.onFrame.Store(frameHandler(nil))
+		s.disableOutput(ScreenshotOutputJPEG)
+		return
+	}
+
+	s.onFrame.Store(frameHandler(fn))
+	s.enableOutput(ScreenshotOutputJPEG)
+}
+
+func (s *ScreenshotService) EnableOutput(output ScreenshotOutput) {
+	s.enableOutput(output)
+}
+
+func (s *ScreenshotService) DisableOutput(output ScreenshotOutput) {
+	s.disableOutput(output)
+}
+
+func (s *ScreenshotService) EnableJPEG() {
+	s.EnableOutput(ScreenshotOutputJPEG)
+}
+
+func (s *ScreenshotService) DisableJPEG() {
+	s.DisableOutput(ScreenshotOutputJPEG)
+}
+
+func (s *ScreenshotService) OutputDemand() ScreenshotOutput {
+	return ScreenshotOutput(s.outputDemand.Load())
+}
+
+func (s *ScreenshotService) OutputEnabled(output ScreenshotOutput) bool {
+	return s.shouldEncodeOutput(output)
+}
+
+func (s *ScreenshotService) SetOutputDemand(outputs ScreenshotOutput) ScreenshotOutput {
+	s.outputDemand.Store(uint32(outputs))
+	return s.OutputDemand()
+}
+
+func (s *ScreenshotService) shouldEncodeJPEG() bool {
+	return s.shouldEncodeOutput(ScreenshotOutputJPEG)
+}
+
+func (s *ScreenshotService) shouldEncodeOutput(output ScreenshotOutput) bool {
+	mask := uint32(output)
+	return s.outputDemand.Load()&mask != 0
+}
+
+func (s *ScreenshotService) enableOutput(output ScreenshotOutput) {
+	mask := uint32(output)
+	for {
+		current := s.outputDemand.Load()
+		updated := current | mask
+		if current == updated || s.outputDemand.CompareAndSwap(current, updated) {
+			return
+		}
+	}
+}
+
+func (s *ScreenshotService) disableOutput(output ScreenshotOutput) {
+	mask := uint32(output)
+	for {
+		current := s.outputDemand.Load()
+		updated := current &^ mask
+		if current == updated || s.outputDemand.CompareAndSwap(current, updated) {
+			return
+		}
+	}
 }
 
 func (s *ScreenshotService) SetOnError(fn func(reason string)) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.onError = fn
+	s.onError.Store(errorHandler(fn))
 }
 
 // Start begins the screenshot loop. Safe to call multiple times; only one loop runs.
@@ -95,9 +155,11 @@ func (s *ScreenshotService) Start() {
 	}
 	s.running = true
 	s.stopCh = make(chan struct{})
+	s.frameNotify.Store(make(chan struct{}, 1))
 	s.resetPipelineStateLocked()
-	go s.loop(s.stopCh)
-	log.Info().Int32("fps", s.fps.Load()).Msg("[Screenshot] loop started")
+	go s.captureLoop(s.stopCh)
+	go s.jpegLoop(s.stopCh)
+	log.Info().Int32("fps", s.fps.Load()).Msg("[Screenshot] loops started")
 }
 
 // Stop halts the screenshot loop.
@@ -109,7 +171,7 @@ func (s *ScreenshotService) Stop() {
 	}
 	close(s.stopCh)
 	s.running = false
-	log.Info().Msg("[Screenshot] loop stopped")
+	log.Info().Msg("[Screenshot] loops stopped")
 }
 
 func (s *ScreenshotService) Running() bool {
@@ -146,15 +208,13 @@ func (s *ScreenshotService) Paused() bool {
 	return s.paused.Load()
 }
 
-// NotifyRecoUpdate tells the capture stage to read from CacheImage on the next tick
-// instead of issuing a fresh PostScreencap.
+// NotifyRecoUpdate marks the next capture tick to skip PostScreencap so frame
+// consumers observe the controller's current cache image first.
 func (s *ScreenshotService) NotifyRecoUpdate() {
 	s.useCache.Store(true)
 }
 
-func (s *ScreenshotService) loop(stop chan struct{}) {
-	var buf bytes.Buffer
-	jpegOpts := &jpeg.Options{Quality: 80}
+func (s *ScreenshotService) captureLoop(stop <-chan struct{}) {
 	lastTick := time.Now()
 	consecutiveFailures := 0
 
@@ -180,7 +240,7 @@ func (s *ScreenshotService) loop(stop chan struct{}) {
 			continue
 		}
 
-		if err := s.captureLatestFrame(); err != nil {
+		if err := s.triggerCapture(); err != nil {
 			consecutiveFailures++
 			log.Warn().Err(err).Int("failures", consecutiveFailures).Msg("[Screenshot] capture stage failed")
 			if consecutiveFailures >= maxConsecutiveFailures {
@@ -191,7 +251,47 @@ func (s *ScreenshotService) loop(stop chan struct{}) {
 			continue
 		}
 
-		if err := s.encodeLatestFrame(&buf, jpegOpts); err != nil {
+		s.frameSeq.Add(1)
+		s.notifyFrameUpdated()
+		consecutiveFailures = 0
+	}
+}
+
+func (s *ScreenshotService) jpegLoop(stop <-chan struct{}) {
+	var buf bytes.Buffer
+	jpegOpts := &jpeg.Options{Quality: 80}
+	consecutiveFailures := 0
+	lastSeq := s.frameSeq.Load()
+
+	for {
+		frameNotify, _ := s.frameNotify.Load().(chan struct{})
+		if frameNotify == nil {
+			select {
+			case <-stop:
+				return
+			case <-time.After(time.Millisecond):
+			}
+			continue
+		}
+
+		select {
+		case <-stop:
+			return
+		case <-frameNotify:
+		}
+
+		seq := s.frameSeq.Load()
+		if seq == lastSeq {
+			continue
+		}
+		lastSeq = seq
+
+		if !s.shouldEncodeJPEG() {
+			continue
+		}
+
+		data, err := s.encodeLatestFrame(&buf, jpegOpts)
+		if err != nil {
 			consecutiveFailures++
 			log.Warn().Err(err).Int("failures", consecutiveFailures).Msg("[Screenshot] encode stage failed")
 			if consecutiveFailures >= maxConsecutiveFailures {
@@ -202,12 +302,12 @@ func (s *ScreenshotService) loop(stop chan struct{}) {
 			continue
 		}
 
-		s.broadcastLatestEncoded()
+		s.emitJPEGFrame(data)
 		consecutiveFailures = 0
 	}
 }
 
-func (s *ScreenshotService) captureLatestFrame() error {
+func (s *ScreenshotService) triggerCapture() error {
 	ctrl := s.controllerSvc.Controller()
 	if ctrl == nil {
 		return nil
@@ -222,74 +322,60 @@ func (s *ScreenshotService) captureLatestFrame() error {
 		}
 	}
 
-	img, err := ctrl.CacheImage()
-	if err != nil {
-		return fmt.Errorf("CacheImage failed: %w", err)
-	}
-
-	s.cacheMu.Lock()
-	s.latestFrame = frameSnapshot{
-		img:        img,
-		capturedAt: time.Now(),
-	}
-	s.cacheMu.Unlock()
 	s.stats.capturedFrames.Add(1)
 	return nil
 }
 
-func (s *ScreenshotService) encodeLatestFrame(buf *bytes.Buffer, jpegOpts *jpeg.Options) error {
-	s.cacheMu.RLock()
-	frame := s.latestFrame
-	s.cacheMu.RUnlock()
-
-	if frame.img == nil {
-		return nil
-	}
-
-	buf.Reset()
-	if err := jpeg.Encode(buf, frame.img, jpegOpts); err != nil {
-		return err
-	}
-
-	data := append([]byte(nil), buf.Bytes()...)
-
-	s.encodedMu.Lock()
-	s.latestEncoded = encodedFrame{
-		data:      data,
-		encodedAt: time.Now(),
-	}
-	s.encodedMu.Unlock()
-	s.stats.encodedFrames.Add(1)
-	return nil
-}
-
-func (s *ScreenshotService) broadcastLatestEncoded() {
-	s.encodedMu.RLock()
-	frame := s.latestEncoded
-	s.encodedMu.RUnlock()
-
-	if len(frame.data) == 0 {
+func (s *ScreenshotService) notifyFrameUpdated() {
+	frameNotify, _ := s.frameNotify.Load().(chan struct{})
+	if frameNotify == nil {
 		return
 	}
 
-	s.mu.Lock()
-	fn := s.onFrame
-	s.mu.Unlock()
+	select {
+	case frameNotify <- struct{}{}:
+	default:
+	}
+}
+
+func (s *ScreenshotService) encodeLatestFrame(buf *bytes.Buffer, jpegOpts *jpeg.Options) ([]byte, error) {
+	ctrl := s.controllerSvc.Controller()
+	if ctrl == nil {
+		return nil, nil
+	}
+
+	img, err := ctrl.CacheImage()
+	if err != nil {
+		return nil, fmt.Errorf("CacheImage failed: %w", err)
+	}
+	if img == nil {
+		return nil, nil
+	}
+
+	buf.Reset()
+	if err := jpeg.Encode(buf, img, jpegOpts); err != nil {
+		return nil, err
+	}
+
+	data := append([]byte(nil), buf.Bytes()...)
+	s.stats.encodedFrames.Add(1)
+	return data, nil
+}
+
+func (s *ScreenshotService) emitJPEGFrame(data []byte) {
+	if len(data) == 0 {
+		return
+	}
+
+	fn, _ := s.onFrame.Load().(frameHandler)
 	if fn != nil {
-		fn(frame.data)
+		fn(data)
 		s.stats.broadcastedFrames.Add(1)
 	}
 }
 
 func (s *ScreenshotService) resetPipelineStateLocked() {
-	s.cacheMu.Lock()
-	s.latestFrame = frameSnapshot{}
-	s.cacheMu.Unlock()
-
-	s.encodedMu.Lock()
-	s.latestEncoded = encodedFrame{}
-	s.encodedMu.Unlock()
-
+	s.frameSeq.Store(0)
 	s.stats.capturedFrames.Store(0)
 	s.stats.encodedFrames.Store(0)
 	s.stats.broadcastedFrames.Store(0)
@@ -299,8 +385,8 @@ func (s *ScreenshotService) resetPipelineStateLocked() {
 func (s *ScreenshotService) stopWithError(reason string) {
 	s.mu.Lock()
 	s.running = false
-	fn := s.onError
 	s.mu.Unlock()
+	fn, _ := s.onError.Load().(errorHandler)
 	if fn != nil {
 		fn(reason)
 	}
