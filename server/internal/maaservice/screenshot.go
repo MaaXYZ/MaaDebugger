@@ -43,22 +43,20 @@ type jpegResult struct {
 
 // ScreenshotService manages a periodic screenshot pipeline.
 //
-// The internal model is split into four stages:
-//  1. poll      -> read the controller cache image on each tick
-//  2. compare   -> sample feature-region fingerprints and skip unchanged frames
-//  3. notify    -> publish a frame-changed event only when cache content changes
-//  4. encode    -> JPEG-encode the changed cache image and broadcast it via callback
+// The internal model is split into five stages:
+//  1. tick      -> run at the configured target FPS
+//  2. screencap -> while connected and task is not running, refresh controller cache via PostScreencap
+//  3. poll      -> read the controller cache image as the only source of truth
+//  4. compare   -> sample feature-region fingerprints and skip unchanged frames
+//  5. encode    -> JPEG-encode the changed cache image and broadcast it via callback
 //
-// The service no longer requests realtime frames via PostScreencap.
-// A frame is considered updated only when the cache image content differs from
-// the previous emitted snapshot. Identical cache frames are treated as idle and
-// do not trigger notify/broadcast work.
-//
-// The polling loop itself is started explicitly and can remain alive while the
-// output stage is disabled. Task execution enables screenshot output and resumes
-// polling; when a task ends, polling is paused and output is disabled without
-// discarding the user's configured output demand, so runtime toggles can be
-// applied again on the next task run. If any stage fails
+// Cache remains the only truth for downstream consumers. PostScreencap is only
+// used by a bounded-lifetime refresh loop to update that cache while the
+// controller is connected, not manually paused, and no task is running. Once a
+// task enters running state, the refresh loop stops issuing PostScreencap
+// immediately, but the service still keeps polling and consuming cache on each
+// tick. After the task ends, the service attempts to resume PostScreencap
+// automatically unless it was manually paused or stopped. If any stage fails
 // maxConsecutiveFailures times in a row, the loop stops and onError is called.
 type frameHandler func(data []byte)
 type errorHandler func(reason string)
@@ -73,6 +71,8 @@ type ScreenshotService struct {
 	jpegJobs chan *jpegJob
 
 	paused       atomic.Bool
+	manualPaused atomic.Bool
+	taskRunning  atomic.Bool
 	fps          atomic.Int32
 	useCache     atomic.Bool
 	frameSeq     atomic.Uint64
@@ -238,28 +238,62 @@ func (s *ScreenshotService) GetFPS() int32 {
 }
 
 func (s *ScreenshotService) Pause() {
+	s.manualPaused.Store(true)
 	s.paused.Store(true)
 	log.Info().Msg("[Screenshot] paused")
 }
 
 func (s *ScreenshotService) Resume() {
-	s.paused.Store(false)
-	log.Info().Msg("[Screenshot] resumed")
+	s.manualPaused.Store(false)
+	s.resumeIfAllowed()
 }
 
-func (s *ScreenshotService) EnableForTask() {
+func (s *ScreenshotService) OnConnected() {
 	s.Start()
 	s.EnableOutputDelivery()
-	s.Resume()
+	s.taskRunning.Store(false)
+	s.resumeIfAllowed()
 }
 
-func (s *ScreenshotService) DisableAfterTask() {
-	s.DisableOutputDelivery()
-	s.Pause()
+func (s *ScreenshotService) OnTaskStarted() {
+	s.taskRunning.Store(true)
+	log.Info().Msg("[Screenshot] task running, PostScreencap paused")
+}
+
+func (s *ScreenshotService) OnTaskEnded() {
+	s.taskRunning.Store(false)
+	log.Info().Msg("[Screenshot] task ended, attempting to resume PostScreencap")
+	if s.manualPaused.Load() {
+		return
+	}
+	if !s.outputActive.Load() {
+		return
+	}
+	s.paused.Store(false)
 }
 
 func (s *ScreenshotService) Paused() bool {
 	return s.paused.Load()
+}
+
+func (s *ScreenshotService) resumeIfAllowed() {
+	if s.manualPaused.Load() {
+		s.paused.Store(true)
+		log.Info().Msg("[Screenshot] resume skipped: manually paused")
+		return
+	}
+	if !s.outputActive.Load() {
+		s.paused.Store(true)
+		log.Info().Msg("[Screenshot] resume skipped: output delivery disabled")
+		return
+	}
+
+	s.paused.Store(false)
+	if s.taskRunning.Load() {
+		log.Info().Msg("[Screenshot] resumed cache polling with PostScreencap disabled by task state")
+		return
+	}
+	log.Info().Msg("[Screenshot] resumed")
 }
 
 func (s *ScreenshotService) captureLoop(stop <-chan struct{}) {
@@ -289,6 +323,17 @@ func (s *ScreenshotService) captureLoop(stop <-chan struct{}) {
 		}
 
 		seq := s.frameSeq.Add(1)
+		if err := s.refreshCacheSnapshot(seq); err != nil {
+			consecutiveFailures++
+			log.Warn().Err(err).Uint64("seq", seq).Int("failures", consecutiveFailures).Msg("[Screenshot] screencap stage failed")
+			if consecutiveFailures >= maxConsecutiveFailures {
+				log.Error().Int("failures", consecutiveFailures).Msg("[Screenshot] too many consecutive failures, stopping")
+				s.stopWithError("PostScreencap failed repeatedly")
+				return
+			}
+			continue
+		}
+
 		job, changed, err := s.prepareChangedJPEGJob(seq)
 		if err != nil {
 			consecutiveFailures++
@@ -392,6 +437,27 @@ func (s *ScreenshotService) notifyFrameChanged() {
 	}
 }
 
+func (s *ScreenshotService) refreshCacheSnapshot(seq uint64) error {
+	if s.taskRunning.Load() {
+		return nil
+	}
+
+	ctrl := s.controllerSvc.Controller()
+	if ctrl == nil {
+		return nil
+	}
+
+	job := ctrl.PostScreencap()
+	if job == nil {
+		return fmt.Errorf("PostScreencap returned nil job")
+	}
+	job.Wait()
+	if !job.Success() {
+		return fmt.Errorf("PostScreencap failed")
+	}
+	return nil
+}
+
 func (s *ScreenshotService) prepareChangedJPEGJob(seq uint64) (*jpegJob, bool, error) {
 	ctrl := s.controllerSvc.Controller()
 	if ctrl == nil {
@@ -478,6 +544,8 @@ func (s *ScreenshotService) resetPipelineStateLocked() {
 	s.lastCacheHash = 0
 	s.lastCacheHashValid = false
 	s.outputActive.Store(false)
+	s.manualPaused.Store(false)
+	s.taskRunning.Store(false)
 	s.paused.Store(true)
 	s.stats.encodedFrames.Store(0)
 	s.stats.broadcastedFrames.Store(0)
