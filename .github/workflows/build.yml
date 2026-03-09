@@ -18,12 +18,18 @@ jobs:
         shell: bash
         run: |
           VERSION="${GITHUB_REF_NAME}"
+          COMMIT_SHA="${GITHUB_SHA}"
+          if [[ -z "${COMMIT_SHA}" ]]; then
+            echo "GITHUB_SHA is empty" >&2
+            exit 1
+          fi
+
           if [[ "${GITHUB_REF_TYPE}" != "tag" || -z "${VERSION}" ]]; then
-            VERSION="dev"
+            VERSION="${COMMIT_SHA}"
           fi
 
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "commit_sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=${COMMIT_SHA}" >> "$GITHUB_OUTPUT"
           echo "build_time=$(date +%s)" >> "$GITHUB_OUTPUT"
 
   build-frontend:
