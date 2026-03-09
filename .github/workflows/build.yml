@@ -118,6 +118,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
 
       - uses: actions/download-artifact@v8
         with:
