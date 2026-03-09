@@ -3,7 +3,10 @@ package maaservice
 import (
 	"bytes"
 	"fmt"
+	"image"
+	"image/draw"
 	"image/jpeg"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -25,6 +28,17 @@ type screenshotStats struct {
 	capturedFrames    atomic.Uint64
 	encodedFrames     atomic.Uint64
 	broadcastedFrames atomic.Uint64
+}
+
+type jpegJob struct {
+	seq uint64
+	img image.Image
+}
+
+type jpegResult struct {
+	seq  uint64
+	data []byte
+	err  error
 }
 
 // ScreenshotService manages a periodic screenshot pipeline.
@@ -49,6 +63,8 @@ type ScreenshotService struct {
 	mu      sync.Mutex
 	stopCh  chan struct{}
 	running bool
+
+	jpegJobs chan *jpegJob
 
 	paused       atomic.Bool
 	fps          atomic.Int32
@@ -251,59 +267,95 @@ func (s *ScreenshotService) captureLoop(stop <-chan struct{}) {
 			continue
 		}
 
-		s.frameSeq.Add(1)
+		seq := s.frameSeq.Add(1)
+		if s.shouldEncodeJPEG() {
+			job, err := s.prepareLatestJPEGJob(seq)
+			if err != nil {
+				consecutiveFailures++
+				log.Warn().Err(err).Uint64("seq", seq).Int("failures", consecutiveFailures).Msg("[Screenshot] jpeg snapshot stage failed")
+				if consecutiveFailures >= maxConsecutiveFailures {
+					log.Error().Int("failures", consecutiveFailures).Msg("[Screenshot] too many consecutive failures, stopping")
+					s.stopWithError("JPEG snapshot failed repeatedly")
+					return
+				}
+				continue
+			}
+			if job != nil {
+				s.enqueueLatestJPEGJob(job)
+			}
+		}
+
 		s.notifyFrameUpdated()
 		consecutiveFailures = 0
 	}
 }
 
 func (s *ScreenshotService) jpegLoop(stop <-chan struct{}) {
-	var buf bytes.Buffer
-	jpegOpts := &jpeg.Options{Quality: 80}
+	workerCount := s.jpegWorkerCount()
+	results := make(chan jpegResult, workerCount)
+	var wg sync.WaitGroup
+
+	for i := 0; i < workerCount; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			s.jpegWorker(stop, results)
+		}()
+	}
+
+	defer wg.Wait()
 	consecutiveFailures := 0
-	lastSeq := s.frameSeq.Load()
+	lastEmittedSeq := uint64(0)
 
 	for {
-		frameNotify, _ := s.frameNotify.Load().(chan struct{})
-		if frameNotify == nil {
-			select {
-			case <-stop:
-				return
-			case <-time.After(time.Millisecond):
-			}
-			continue
-		}
-
 		select {
 		case <-stop:
 			return
-		case <-frameNotify:
-		}
-
-		seq := s.frameSeq.Load()
-		if seq == lastSeq {
-			continue
-		}
-		lastSeq = seq
-
-		if !s.shouldEncodeJPEG() {
-			continue
-		}
-
-		data, err := s.encodeLatestFrame(&buf, jpegOpts)
-		if err != nil {
-			consecutiveFailures++
-			log.Warn().Err(err).Int("failures", consecutiveFailures).Msg("[Screenshot] encode stage failed")
-			if consecutiveFailures >= maxConsecutiveFailures {
-				log.Error().Int("failures", consecutiveFailures).Msg("[Screenshot] too many consecutive failures, stopping")
-				s.stopWithError("JPEG encode failed repeatedly")
-				return
+		case result := <-results:
+			if result.err != nil {
+				consecutiveFailures++
+				log.Warn().Err(result.err).Uint64("seq", result.seq).Int("failures", consecutiveFailures).Msg("[Screenshot] encode stage failed")
+				if consecutiveFailures >= maxConsecutiveFailures {
+					log.Error().Int("failures", consecutiveFailures).Msg("[Screenshot] too many consecutive failures, stopping")
+					s.stopWithError("JPEG encode failed repeatedly")
+					return
+				}
+				continue
 			}
-			continue
-		}
 
-		s.emitJPEGFrame(data)
-		consecutiveFailures = 0
+			if result.seq <= lastEmittedSeq {
+				continue
+			}
+			if len(result.data) == 0 {
+				continue
+			}
+
+			lastEmittedSeq = result.seq
+			s.emitJPEGFrame(result.data)
+			consecutiveFailures = 0
+		}
+	}
+}
+
+func (s *ScreenshotService) jpegWorker(stop <-chan struct{}, results chan<- jpegResult) {
+	var buf bytes.Buffer
+	jpegOpts := &jpeg.Options{Quality: 80}
+
+	for {
+		select {
+		case <-stop:
+			return
+		case job := <-s.jpegJobs:
+			if job == nil {
+				continue
+			}
+			data, err := s.encodeJPEGImage(job.img, &buf, jpegOpts)
+			select {
+			case <-stop:
+				return
+			case results <- jpegResult{seq: job.seq, data: data, err: err}:
+			}
+		}
 	}
 }
 
@@ -338,7 +390,7 @@ func (s *ScreenshotService) notifyFrameUpdated() {
 	}
 }
 
-func (s *ScreenshotService) encodeLatestFrame(buf *bytes.Buffer, jpegOpts *jpeg.Options) ([]byte, error) {
+func (s *ScreenshotService) prepareLatestJPEGJob(seq uint64) (*jpegJob, error) {
 	ctrl := s.controllerSvc.Controller()
 	if ctrl == nil {
 		return nil, nil
@@ -352,6 +404,52 @@ func (s *ScreenshotService) encodeLatestFrame(buf *bytes.Buffer, jpegOpts *jpeg.
 		return nil, nil
 	}
 
+	clone, err := cloneImage(img)
+	if err != nil {
+		return nil, err
+	}
+	if clone == nil {
+		return nil, nil
+	}
+
+	return &jpegJob{seq: seq, img: clone}, nil
+}
+
+func (s *ScreenshotService) enqueueLatestJPEGJob(job *jpegJob) {
+	if job == nil || s.jpegJobs == nil {
+		return
+	}
+
+	for {
+		select {
+		case s.jpegJobs <- job:
+			return
+		default:
+		}
+
+		select {
+		case <-s.jpegJobs:
+		default:
+		}
+	}
+}
+
+func (s *ScreenshotService) jpegWorkerCount() int {
+	count := runtime.GOMAXPROCS(0)
+	if count < 1 {
+		return 1
+	}
+	if count > 4 {
+		return 4
+	}
+	return count
+}
+
+func (s *ScreenshotService) encodeJPEGImage(img image.Image, buf *bytes.Buffer, jpegOpts *jpeg.Options) ([]byte, error) {
+	if img == nil {
+		return nil, nil
+	}
+
 	buf.Reset()
 	if err := jpeg.Encode(buf, img, jpegOpts); err != nil {
 		return nil, err
@@ -360,6 +458,69 @@ func (s *ScreenshotService) encodeLatestFrame(buf *bytes.Buffer, jpegOpts *jpeg.
 	data := append([]byte(nil), buf.Bytes()...)
 	s.stats.encodedFrames.Add(1)
 	return data, nil
+}
+
+func cloneImage(src image.Image) (image.Image, error) {
+	if src == nil {
+		return nil, nil
+	}
+
+	switch img := src.(type) {
+	case *image.RGBA:
+		return cloneRGBA(img), nil
+	case *image.NRGBA:
+		return cloneNRGBA(img), nil
+	case *image.Gray:
+		return cloneGray(img), nil
+	}
+
+	bounds := src.Bounds()
+	if bounds.Empty() {
+		return nil, nil
+	}
+
+	dst := image.NewRGBA(bounds)
+	draw.Draw(dst, bounds, src, bounds.Min, draw.Src)
+	return dst, nil
+}
+
+func cloneRGBA(src *image.RGBA) image.Image {
+	if src == nil || src.Rect.Empty() {
+		return nil
+	}
+	dst := image.NewRGBA(src.Rect)
+	for y := src.Rect.Min.Y; y < src.Rect.Max.Y; y++ {
+		srcOffset := src.PixOffset(src.Rect.Min.X, y)
+		dstOffset := dst.PixOffset(dst.Rect.Min.X, y)
+		copy(dst.Pix[dstOffset:dstOffset+src.Rect.Dx()*4], src.Pix[srcOffset:srcOffset+src.Rect.Dx()*4])
+	}
+	return dst
+}
+
+func cloneNRGBA(src *image.NRGBA) image.Image {
+	if src == nil || src.Rect.Empty() {
+		return nil
+	}
+	dst := image.NewNRGBA(src.Rect)
+	for y := src.Rect.Min.Y; y < src.Rect.Max.Y; y++ {
+		srcOffset := src.PixOffset(src.Rect.Min.X, y)
+		dstOffset := dst.PixOffset(dst.Rect.Min.X, y)
+		copy(dst.Pix[dstOffset:dstOffset+src.Rect.Dx()*4], src.Pix[srcOffset:srcOffset+src.Rect.Dx()*4])
+	}
+	return dst
+}
+
+func cloneGray(src *image.Gray) image.Image {
+	if src == nil || src.Rect.Empty() {
+		return nil
+	}
+	dst := image.NewGray(src.Rect)
+	for y := src.Rect.Min.Y; y < src.Rect.Max.Y; y++ {
+		srcOffset := src.PixOffset(src.Rect.Min.X, y)
+		dstOffset := dst.PixOffset(dst.Rect.Min.X, y)
+		copy(dst.Pix[dstOffset:dstOffset+src.Rect.Dx()], src.Pix[srcOffset:srcOffset+src.Rect.Dx()])
+	}
+	return dst
 }
 
 func (s *ScreenshotService) emitJPEGFrame(data []byte) {
@@ -376,6 +537,7 @@ func (s *ScreenshotService) emitJPEGFrame(data []byte) {
 
 func (s *ScreenshotService) resetPipelineStateLocked() {
 	s.frameSeq.Store(0)
+	s.jpegJobs = make(chan *jpegJob, s.jpegWorkerCount())
 	s.stats.capturedFrames.Store(0)
 	s.stats.encodedFrames.Store(0)
 	s.stats.broadcastedFrames.Store(0)
@@ -384,7 +546,10 @@ func (s *ScreenshotService) resetPipelineStateLocked() {
 // stopWithError marks the loop as stopped and invokes the onError callback.
 func (s *ScreenshotService) stopWithError(reason string) {
 	s.mu.Lock()
-	s.running = false
+	if s.running {
+		close(s.stopCh)
+		s.running = false
+	}
 	s.mu.Unlock()
 	fn, _ := s.onError.Load().(errorHandler)
 	if fn != nil {
