@@ -1,0 +1,54 @@
+name: Metadata
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    outputs:
+      version:
+        description: Build version
+        value: ${{ jobs.prepare-build-metadata.outputs.version }}
+      commit_sha:
+        description: Git commit SHA
+        value: ${{ jobs.prepare-build-metadata.outputs.commit_sha }}
+      build_time:
+        description: Unix timestamp of build time
+        value: ${{ jobs.prepare-build-metadata.outputs.build_time }}
+      is_prerelease:
+        description: Whether current tag is a prerelease tag
+        value: ${{ jobs.prepare-build-metadata.outputs.is_prerelease }}
+
+jobs:
+  prepare-build-metadata:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.metadata.outputs.version }}
+      commit_sha: ${{ steps.metadata.outputs.commit_sha }}
+      build_time: ${{ steps.metadata.outputs.build_time }}
+      is_prerelease: ${{ steps.metadata.outputs.is_prerelease }}
+    steps:
+      - name: Prepare build metadata
+        id: metadata
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          COMMIT_SHA="${GITHUB_SHA}"
+          IS_PRERELEASE="false"
+
+          if [[ -z "${COMMIT_SHA}" ]]; then
+            echo "GITHUB_SHA is empty" >&2
+            exit 1
+          fi
+
+          if [[ "${GITHUB_REF_TYPE}" != "tag" || -z "${VERSION}" ]]; then
+            VERSION="${COMMIT_SHA}"
+          else
+            TAG_LOWER="$(echo "${VERSION}" | tr '[:upper:]' '[:lower:]')"
+            if [[ "${TAG_LOWER}" =~ (alpha|beta|canary|rc) ]]; then
+              IS_PRERELEASE="true"
+            fi
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=${COMMIT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "build_time=$(date +%s)" >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=${IS_PRERELEASE}" >> "$GITHUB_OUTPUT"
