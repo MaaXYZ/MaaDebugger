@@ -54,12 +54,6 @@ func NewRouter(deps Dependencies) http.Handler {
 	// 设置事件回调：将 Tasker 事件通过 WS 广播（不在 sink 中渲染）
 	deps.TaskerService.SetEventCallback(func(msg map[string]any) {
 		deps.Hub.BroadcastJSON(ws.Message{Type: "task.event", Payload: msg})
-
-		// Recognition 事件到达后，通知 screenshot service 在下一次 capture tick
-		// 跳过 PostScreencap，让 consumer 优先读取 controller 当前 cache。
-		if msgStr, _ := msg["msg"].(string); len(msgStr) >= 11 && msgStr[:11] == "Recognition" {
-			deps.ScreenshotService.NotifyRecoUpdate()
-		}
 	})
 
 	mux := http.NewServeMux()
@@ -589,6 +583,7 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 	}
 
 	log.Info().Str("entry", payload.Entry).Msg("[Task] run request")
+	r.deps.ScreenshotService.EnableForTask()
 	r.deps.StatusStore.SetTask("running")
 	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 
@@ -600,6 +595,7 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 					Interface("panic", rv).
 					Str("stack", string(debug.Stack())).
 					Msg("[Task] run panic in goroutine")
+				r.deps.ScreenshotService.DisableAfterTask()
 				r.deps.StatusStore.SetTask("failed")
 				r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 				r.deps.Hub.BroadcastJSON(ws.Message{
@@ -612,6 +608,7 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 		result := r.deps.TaskerService.RunTask(payload.Entry, payload.PipelineOverride)
 
 		if result.Success {
+			r.deps.ScreenshotService.DisableAfterTask()
 			r.deps.StatusStore.SetTask("success")
 			log.Info().Str("entry", payload.Entry).Msg("[Task] run succeeded, status → success")
 			r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
@@ -625,6 +622,7 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 		// 用户主动停止任务后 RunTask 也会返回失败，此时状态已被 handleTaskStop 设为 stopped，
 		// 不应覆盖为 failed。
 		if r.deps.StatusStore.GetTask() == "stopped" {
+			r.deps.ScreenshotService.DisableAfterTask()
 			log.Info().Str("entry", payload.Entry).Msg("[Task] run ended after user stop, keeping stopped status")
 			r.deps.Hub.BroadcastJSON(ws.Message{
 				Type:    "task.completed",
@@ -633,6 +631,7 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
+		r.deps.ScreenshotService.DisableAfterTask()
 		r.deps.StatusStore.SetTask("failed")
 		log.Warn().Str("entry", payload.Entry).Str("error", result.Error).Msg("[Task] run failed, status → failed")
 		r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
@@ -648,6 +647,7 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 
 func (r *router) handleTaskStop(w http.ResponseWriter, _ *http.Request) {
 	log.Info().Msg("[Task] stop request")
+	r.deps.ScreenshotService.DisableAfterTask()
 	r.deps.StatusStore.SetTask("stopped")
 	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 	r.deps.TaskerService.StopTask()
@@ -814,13 +814,14 @@ func (r *router) handleScreenshotSetOutput(w http.ResponseWriter, req *http.Requ
 
 func (r *router) handleScreenshotStatus(w http.ResponseWriter, _ *http.Request) {
 	response.OK(w, map[string]any{
-		"running": r.deps.ScreenshotService.Running(),
-		"paused":  r.deps.ScreenshotService.Paused(),
-		"fps":     r.deps.ScreenshotService.GetFPS(),
-		"output":  r.deps.ScreenshotService.OutputDemand(),
-		"jpeg":    r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputJPEG),
-		"h264":    r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH264),
-		"h265":    r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH265),
+		"running":      r.deps.ScreenshotService.Running(),
+		"paused":       r.deps.ScreenshotService.Paused(),
+		"output_active": r.deps.ScreenshotService.OutputActive(),
+		"fps":          r.deps.ScreenshotService.GetFPS(),
+		"output":       r.deps.ScreenshotService.OutputDemand(),
+		"jpeg":         r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputJPEG),
+		"h264":         r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH264),
+		"h265":         r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH265),
 	})
 }
 

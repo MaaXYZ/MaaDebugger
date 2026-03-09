@@ -3,6 +3,8 @@ package maaservice
 import (
 	"bytes"
 	"fmt"
+	"hash"
+	"hash/fnv"
 	"image"
 	"image/jpeg"
 	"runtime"
@@ -24,7 +26,6 @@ const (
 )
 
 type screenshotStats struct {
-	capturedFrames    atomic.Uint64
 	encodedFrames     atomic.Uint64
 	broadcastedFrames atomic.Uint64
 }
@@ -43,16 +44,22 @@ type jpegResult struct {
 // ScreenshotService manages a periodic screenshot pipeline.
 //
 // The internal model is split into four stages:
-//  1. capture   -> request screencap or reuse controller cache
-//  2. notify    -> publish a frame update event
-//  3. encode    -> JPEG-encode the latest controller cache image
-//  4. broadcast -> deliver the encoded bytes via callback
+//  1. poll      -> read the controller cache image on each tick
+//  2. compare   -> sample feature-region fingerprints and skip unchanged frames
+//  3. notify    -> publish a frame-changed event only when cache content changes
+//  4. encode    -> JPEG-encode the changed cache image and broadcast it via callback
 //
-// Public behavior remains compatible with the previous implementation.
-// When a recognition event fires, the next capture tick skips PostScreencap so
-// downstream consumers read the controller's current cache image first.
-// If any stage fails maxConsecutiveFailures times in a row, the loop stops and
-// onError is called.
+// The service no longer requests realtime frames via PostScreencap.
+// A frame is considered updated only when the cache image content differs from
+// the previous emitted snapshot. Identical cache frames are treated as idle and
+// do not trigger notify/broadcast work.
+//
+// The polling loop itself is started explicitly and can remain alive while the
+// output stage is disabled. Task execution enables screenshot output and resumes
+// polling; when a task ends, polling is paused and output is disabled without
+// discarding the user's configured output demand, so runtime toggles can be
+// applied again on the next task run. If any stage fails
+// maxConsecutiveFailures times in a row, the loop stops and onError is called.
 type frameHandler func(data []byte)
 type errorHandler func(reason string)
 
@@ -70,10 +77,14 @@ type ScreenshotService struct {
 	useCache     atomic.Bool
 	frameSeq     atomic.Uint64
 	outputDemand atomic.Uint32
+	outputActive atomic.Bool
 
-	frameNotify atomic.Value
-	onFrame     atomic.Value
-	onError     atomic.Value
+	frameChangedNotify atomic.Value
+	onFrame            atomic.Value
+	onError            atomic.Value
+
+	lastCacheHash      uint64
+	lastCacheHashValid bool
 
 	stats screenshotStats
 }
@@ -121,6 +132,10 @@ func (s *ScreenshotService) OutputEnabled(output ScreenshotOutput) bool {
 	return s.shouldEncodeOutput(output)
 }
 
+func (s *ScreenshotService) OutputActive() bool {
+	return s.outputActive.Load()
+}
+
 func (s *ScreenshotService) SetOutputDemand(outputs ScreenshotOutput) ScreenshotOutput {
 	s.outputDemand.Store(uint32(outputs))
 	return s.OutputDemand()
@@ -131,6 +146,9 @@ func (s *ScreenshotService) shouldEncodeJPEG() bool {
 }
 
 func (s *ScreenshotService) shouldEncodeOutput(output ScreenshotOutput) bool {
+	if !s.outputActive.Load() {
+		return false
+	}
 	mask := uint32(output)
 	return s.outputDemand.Load()&mask != 0
 }
@@ -161,6 +179,16 @@ func (s *ScreenshotService) SetOnError(fn func(reason string)) {
 	s.onError.Store(errorHandler(fn))
 }
 
+func (s *ScreenshotService) EnableOutputDelivery() {
+	s.outputActive.Store(true)
+	log.Info().Msg("[Screenshot] output delivery enabled")
+}
+
+func (s *ScreenshotService) DisableOutputDelivery() {
+	s.outputActive.Store(false)
+	log.Info().Msg("[Screenshot] output delivery disabled")
+}
+
 // Start begins the screenshot loop. Safe to call multiple times; only one loop runs.
 func (s *ScreenshotService) Start() {
 	s.mu.Lock()
@@ -170,7 +198,7 @@ func (s *ScreenshotService) Start() {
 	}
 	s.running = true
 	s.stopCh = make(chan struct{})
-	s.frameNotify.Store(make(chan struct{}, 1))
+	s.frameChangedNotify.Store(make(chan struct{}, 1))
 	s.resetPipelineStateLocked()
 	go s.captureLoop(s.stopCh)
 	go s.jpegLoop(s.stopCh)
@@ -219,14 +247,19 @@ func (s *ScreenshotService) Resume() {
 	log.Info().Msg("[Screenshot] resumed")
 }
 
-func (s *ScreenshotService) Paused() bool {
-	return s.paused.Load()
+func (s *ScreenshotService) EnableForTask() {
+	s.Start()
+	s.EnableOutputDelivery()
+	s.Resume()
 }
 
-// NotifyRecoUpdate marks the next capture tick to skip PostScreencap so frame
-// consumers observe the controller's current cache image first.
-func (s *ScreenshotService) NotifyRecoUpdate() {
-	s.useCache.Store(true)
+func (s *ScreenshotService) DisableAfterTask() {
+	s.DisableOutputDelivery()
+	s.Pause()
+}
+
+func (s *ScreenshotService) Paused() bool {
+	return s.paused.Load()
 }
 
 func (s *ScreenshotService) captureLoop(stop <-chan struct{}) {
@@ -255,36 +288,27 @@ func (s *ScreenshotService) captureLoop(stop <-chan struct{}) {
 			continue
 		}
 
-		if err := s.triggerCapture(); err != nil {
+		seq := s.frameSeq.Add(1)
+		job, changed, err := s.prepareChangedJPEGJob(seq)
+		if err != nil {
 			consecutiveFailures++
-			log.Warn().Err(err).Int("failures", consecutiveFailures).Msg("[Screenshot] capture stage failed")
+			log.Warn().Err(err).Uint64("seq", seq).Int("failures", consecutiveFailures).Msg("[Screenshot] cache snapshot stage failed")
 			if consecutiveFailures >= maxConsecutiveFailures {
 				log.Error().Int("failures", consecutiveFailures).Msg("[Screenshot] too many consecutive failures, stopping")
-				s.stopWithError(fmt.Sprintf("capture failed %d times consecutively", consecutiveFailures))
+				s.stopWithError("Cache snapshot failed repeatedly")
 				return
 			}
 			continue
 		}
-
-		seq := s.frameSeq.Add(1)
-		if s.shouldEncodeJPEG() {
-			job, err := s.prepareLatestJPEGJob(seq)
-			if err != nil {
-				consecutiveFailures++
-				log.Warn().Err(err).Uint64("seq", seq).Int("failures", consecutiveFailures).Msg("[Screenshot] jpeg snapshot stage failed")
-				if consecutiveFailures >= maxConsecutiveFailures {
-					log.Error().Int("failures", consecutiveFailures).Msg("[Screenshot] too many consecutive failures, stopping")
-					s.stopWithError("JPEG snapshot failed repeatedly")
-					return
-				}
-				continue
-			}
-			if job != nil {
-				s.enqueueLatestJPEGJob(job)
-			}
+		if !changed {
+			consecutiveFailures = 0
+			continue
 		}
 
-		s.notifyFrameUpdated()
+		s.notifyFrameChanged()
+		if job != nil && s.shouldEncodeJPEG() {
+			s.enqueueLatestJPEGJob(job)
+		}
 		consecutiveFailures = 0
 	}
 }
@@ -356,52 +380,40 @@ func (s *ScreenshotService) jpegWorker(stop <-chan struct{}, results chan<- jpeg
 	}
 }
 
-func (s *ScreenshotService) triggerCapture() error {
-	ctrl := s.controllerSvc.Controller()
-	if ctrl == nil {
-		return nil
-	}
-
-	wantCache := s.useCache.Swap(false)
-	if !wantCache {
-		job := ctrl.PostScreencap()
-		job.Wait()
-		if !job.Success() {
-			return fmt.Errorf("PostScreencap failed")
-		}
-	}
-
-	s.stats.capturedFrames.Add(1)
-	return nil
-}
-
-func (s *ScreenshotService) notifyFrameUpdated() {
-	frameNotify, _ := s.frameNotify.Load().(chan struct{})
-	if frameNotify == nil {
+func (s *ScreenshotService) notifyFrameChanged() {
+	frameChangedNotify, _ := s.frameChangedNotify.Load().(chan struct{})
+	if frameChangedNotify == nil {
 		return
 	}
 
 	select {
-	case frameNotify <- struct{}{}:
+	case frameChangedNotify <- struct{}{}:
 	default:
 	}
 }
 
-func (s *ScreenshotService) prepareLatestJPEGJob(seq uint64) (*jpegJob, error) {
+func (s *ScreenshotService) prepareChangedJPEGJob(seq uint64) (*jpegJob, bool, error) {
 	ctrl := s.controllerSvc.Controller()
 	if ctrl == nil {
-		return nil, nil
+		return nil, false, nil
 	}
 
 	img, err := ctrl.CacheImage()
 	if err != nil {
-		return nil, fmt.Errorf("CacheImage failed: %w", err)
+		return nil, false, fmt.Errorf("CacheImage failed: %w", err)
 	}
 	if img == nil {
-		return nil, nil
+		return nil, false, nil
 	}
 
-	return &jpegJob{seq: seq, img: img}, nil
+	hash := fingerprintImage(img)
+	if s.lastCacheHashValid && s.lastCacheHash == hash {
+		return nil, false, nil
+	}
+
+	s.lastCacheHash = hash
+	s.lastCacheHashValid = true
+	return &jpegJob{seq: seq, img: img}, true, nil
 }
 
 func (s *ScreenshotService) enqueueLatestJPEGJob(job *jpegJob) {
@@ -463,9 +475,71 @@ func (s *ScreenshotService) emitJPEGFrame(data []byte) {
 func (s *ScreenshotService) resetPipelineStateLocked() {
 	s.frameSeq.Store(0)
 	s.jpegJobs = make(chan *jpegJob, s.jpegWorkerCount())
-	s.stats.capturedFrames.Store(0)
+	s.lastCacheHash = 0
+	s.lastCacheHashValid = false
+	s.outputActive.Store(false)
+	s.paused.Store(true)
 	s.stats.encodedFrames.Store(0)
 	s.stats.broadcastedFrames.Store(0)
+}
+
+func fingerprintImage(img image.Image) uint64 {
+	bounds := img.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+	if width <= 0 || height <= 0 {
+		return 0
+	}
+
+	h := fnv.New64a()
+	var pixel [8]byte
+	regions := [9][2]float64{
+		{0.15, 0.15}, {0.50, 0.15}, {0.85, 0.15},
+		{0.15, 0.50}, {0.50, 0.50}, {0.85, 0.50},
+		{0.15, 0.85}, {0.50, 0.85}, {0.85, 0.85},
+	}
+
+	for _, region := range regions {
+		cx := bounds.Min.X + int(float64(width-1)*region[0])
+		cy := bounds.Min.Y + int(float64(height-1)*region[1])
+		sampleFeatureRegion(h, img, cx, cy, width, height, &pixel)
+	}
+
+	return h.Sum64()
+}
+
+func sampleFeatureRegion(h hash.Hash64, img image.Image, cx, cy, width, height int, pixel *[8]byte) {
+	stepX := max(1, width/32)
+	stepY := max(1, height/32)
+	offsets := [5][2]int{
+		{0, 0},
+		{-stepX, 0},
+		{stepX, 0},
+		{0, -stepY},
+		{0, stepY},
+	}
+
+	for _, offset := range offsets {
+		x := cx + offset[0]
+		y := cy + offset[1]
+		r, g, b, a := img.At(x, y).RGBA()
+		pixel[0] = byte(r >> 8)
+		pixel[1] = byte(g >> 8)
+		pixel[2] = byte(b >> 8)
+		pixel[3] = byte(a >> 8)
+		pixel[4] = byte((r >> 8) ^ (g >> 8))
+		pixel[5] = byte((g >> 8) ^ (b >> 8))
+		pixel[6] = byte((a >> 8) ^ (r >> 8))
+		pixel[7] = byte((x + y) & 0xff)
+		_, _ = h.Write(pixel[:])
+	}
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 // stopWithError marks the loop as stopped and invokes the onError callback.
