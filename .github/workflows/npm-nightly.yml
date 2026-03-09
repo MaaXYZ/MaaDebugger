@@ -177,6 +177,11 @@ jobs:
           name: pkgs-nodejs
           path: assets/pkgs-nodejs
 
+      - name: Restore UNIX executable permissions before publish
+        shell: bash
+        run: |
+          find assets/pkgs-nodejs -type f -name 'MaaDebugger' -exec chmod 755 {} +
+
       - uses: ./.github/actions/publish_nodejs
         id: publish
         with:
