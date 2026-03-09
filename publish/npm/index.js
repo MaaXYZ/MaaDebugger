@@ -6,16 +6,48 @@ const path = require("node:path");
 
 const platformPackageName = `@weinibuliu/maa-debugger-${process.platform}-${process.arch}`;
 
+const supportsColor = (() => {
+  if (process.env.NO_COLOR) {
+    return false;
+  }
+  if (process.env.FORCE_COLOR === "0") {
+    return false;
+  }
+  if (process.env.FORCE_COLOR) {
+    return true;
+  }
+  return Boolean(process.stderr?.isTTY);
+})();
+
+const ansi = {
+  red: ["\u001B[31m", "\u001B[39m"],
+  cyan: ["\u001B[36m", "\u001B[39m"],
+};
+
+function colorize(name, text) {
+  if (!supportsColor) {
+    return text;
+  }
+  const color = ansi[name];
+  return color ? `${color[0]}${text}${color[1]}` : text;
+}
+
+function logError(message, ...rest) {
+  console.error(colorize("red", message), ...rest);
+}
+
+function logDebug(message, ...rest) {
+  console.debug(colorize("cyan", message), ...rest);
+}
+
 let platformPackageRoot;
 try {
   platformPackageRoot = path.dirname(
     require.resolve(`${platformPackageName}/package.json`),
   );
 } catch (error) {
-  console.error(
-    `[maa-debugger] Missing platform package: ${platformPackageName}`,
-  );
-  console.error(
+  logError(`[maa-debugger] Missing platform package: ${platformPackageName}`);
+  logError(
     `[maa-debugger] Reinstall the package on ${process.platform}-${process.arch} or choose a supported platform.`,
   );
   process.exit(1);
@@ -25,8 +57,8 @@ const isWindows = process.platform === "win32";
 const executableName = `MaaDebugger${isWindows ? ".exe" : ""}`;
 const exePath = path.join(platformPackageRoot, executableName);
 if (!existsSync(exePath)) {
-  console.error(`[maa-debugger] Missing executable: ${exePath}`);
-  console.error(
+  logError(`[maa-debugger] Missing executable: ${exePath}`);
+  logError(
     `[maa-debugger] Expected binary name for current platform: ${executableName}`,
   );
   process.exit(1);
@@ -64,41 +96,39 @@ child.on("exit", (code, signal) => {
 });
 
 child.on("error", (err) => {
-  console.error(`[maa-debugger] Failed to start ${executableName}:`, err);
+  logError(`[maa-debugger] Failed to start ${executableName}:`, err);
 
   const exeDir = path.dirname(exePath);
-  console.debug(`[maa-debugger] Executable path: ${exePath}`);
-  console.debug(`[maa-debugger] Executable path length: ${exePath.length}`);
-  console.debug(
-    `[maa-debugger] Executable exists before launch: ${existsSync(exePath)}`,
-  );
-  console.debug(`[maa-debugger] Platform package root: ${platformPackageRoot}`);
-  console.debug(`[maa-debugger] Channel path: ${channelPath}`);
+  logDebug(`[maa-debugger] Executable path: ${exePath}`);
+  logDebug(`[maa-debugger] Executable path length: ${exePath.length}`);
+  logDebug(`[maa-debugger] Executable exists before launch: ${existsSync(exePath)}`);
+  logDebug(`[maa-debugger] Platform package root: ${platformPackageRoot}`);
+  logDebug(`[maa-debugger] Channel path: ${channelPath}`);
   try {
-    console.debug(
+    logDebug(
       `[maa-debugger] Executable directory entries: ${readdirSync(exeDir).join(", ") || "(empty)"}`,
     );
   } catch (readDirError) {
-    console.error(
+    logError(
       `[maa-debugger] Failed to inspect executable directory: ${readDirError}`,
     );
   }
 
   switch (err.code) {
     case "EACCES":
-      console.error(
+      logError(
         `[maa-debugger] Permission denied when starting ${executableName}. The executable bit may be missing from the installed platform package.`,
       );
-      console.error(
+      logError(
         `[maa-debugger] Try restoring execute permission manually, for example: chmod 755 "${exePath}"`,
       );
       break;
     case "ENOENT": {
-      console.error(
+      logError(
         `[maa-debugger] Executable not found or cannot be resolved at runtime: ${exePath}`,
       );
       if (isWindows) {
-        console.error(
+        logError(
           `[maa-debugger] On Windows, this can also be caused by CreateProcess failing on a deeply nested pnpm dlx cache path.`,
         );
       }
