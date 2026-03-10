@@ -91,11 +91,23 @@ jobs:
           rm -rf dist/platform .artifacts/platform/extracted
           mkdir -p dist/platform .artifacts/platform/extracted
 
-          tar -xzf ".artifacts/platform/${{ matrix.artifact_name }}.tar.gz" -C .artifacts/platform/extracted
+          SOURCE_DIR=".artifacts/platform"
+
+          if [[ "${{ matrix.os }}" != "win32" ]]; then
+            tar -xzf ".artifacts/platform/${{ matrix.artifact_name }}.tar.gz" -C .artifacts/platform/extracted
+            SOURCE_DIR=".artifacts/platform/extracted/${{ matrix.artifact_name }}"
+          fi
+
+          BIN_SOURCE="$(find "${SOURCE_DIR}" -maxdepth 2 -type f -name "${{ matrix.bin_name }}" | head -n 1)"
+
+          if [[ -z "${BIN_SOURCE}" ]]; then
+            echo "Failed to locate ${{ matrix.bin_name }} under ${SOURCE_DIR}" >&2
+            exit 1
+          fi
 
           cp publish/npm/platform-package.json dist/platform/package.json
           cp README.md LICENSE dist/platform/
-          cp ".artifacts/platform/extracted/${{ matrix.artifact_name }}/${{ matrix.bin_name }}" "dist/platform/${{ matrix.bin_name }}"
+          cp "${BIN_SOURCE}" "dist/platform/${{ matrix.bin_name }}"
 
           if [[ "${{ matrix.os }}" != "win32" ]]; then
             chmod 755 "dist/platform/${{ matrix.bin_name }}"

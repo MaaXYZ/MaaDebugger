@@ -17,7 +17,7 @@ function getReleaseChannel() {
 
 function getPackageVersion(channel) {
   if (channel === "nightly") {
-    const sha = process.env.GITHUB_SHA || "dev";
+    const sha = process.env.GITHUB_SHA;
     return `0.1.0-nightly.${sha}`;
   }
 
