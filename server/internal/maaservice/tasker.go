@@ -18,6 +18,7 @@ type TaskerService struct {
 
 	controllerSvc *ControllerService
 	resourceSvc   *ResourceService
+	screenshotSvc *ScreenshotService
 
 	// onEvent 广播回调，由 router 设置，用于将事件通过 WS 广播。
 	// 不在 sink 中渲染/处理，只做消息转发。
@@ -30,10 +31,11 @@ type TaskerService struct {
 }
 
 // NewTaskerService 创建一个新的 TaskerService。
-func NewTaskerService(ctrlSvc *ControllerService, resSvc *ResourceService) *TaskerService {
+func NewTaskerService(ctrlSvc *ControllerService, resSvc *ResourceService, screenshotSvc *ScreenshotService) *TaskerService {
 	return &TaskerService{
 		controllerSvc: ctrlSvc,
 		resourceSvc:   resSvc,
+		screenshotSvc: screenshotSvc,
 	}
 }
 
@@ -122,6 +124,9 @@ func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
 	})
 	tasker.OnNodeRecognitionInContext(func(ctx *maa.Context, event maa.EventStatus, detail maa.NodeRecognitionDetail) {
 		s.cacheRuntimeNodeData(ctx, detail.Name, int64(detail.RecognitionID))
+		if s.screenshotSvc != nil {
+			s.screenshotSvc.NotifyCacheChanged()
+		}
 
 		suffix := eventStatusToString(event)
 		s.emitEvent(map[string]any{

@@ -3,8 +3,6 @@ package maaservice
 import (
 	"bytes"
 	"fmt"
-	"hash"
-	"hash/fnv"
 	"image"
 	"image/jpeg"
 	"runtime"
@@ -47,16 +45,15 @@ type jpegResult struct {
 //  1. tick      -> run at the configured target FPS
 //  2. screencap -> while connected and task is not running, refresh controller cache via PostScreencap
 //  3. poll      -> read the controller cache image as the only source of truth
-//  4. compare   -> sample feature-region fingerprints and skip unchanged frames
-//  5. encode    -> JPEG-encode the changed cache image and broadcast it via callback
+//  4. encode    -> JPEG-encode the cache image and broadcast it via callback
 //
 // Cache remains the only truth for downstream consumers. PostScreencap is only
 // used by a bounded-lifetime refresh loop to update that cache while the
 // controller is connected, not manually paused, and no task is running. Once a
-// task enters running state, the refresh loop stops issuing PostScreencap
-// immediately, but the service still keeps polling and consuming cache on each
-// tick. After the task ends, the service attempts to resume PostScreencap
-// automatically unless it was manually paused or stopped. If any stage fails
+// task enters running state, the refresh loop stops issuing PostScreencap and
+// waits for explicit cache-changed notifications before consuming cache again.
+// After the task ends, the service resumes FPS-driven PostScreencap ticks
+// unless it was manually paused or stopped. If any stage fails
 // maxConsecutiveFailures times in a row, the loop stops and onError is called.
 type frameHandler func(data []byte)
 type errorHandler func(reason string)
@@ -80,11 +77,10 @@ type ScreenshotService struct {
 	outputActive atomic.Bool
 
 	frameChangedNotify atomic.Value
+	cacheChangedNotify atomic.Value
+	stateChangedNotify atomic.Value
 	onFrame            atomic.Value
 	onError            atomic.Value
-
-	lastCacheHash      uint64
-	lastCacheHashValid bool
 
 	stats screenshotStats
 }
@@ -199,6 +195,8 @@ func (s *ScreenshotService) Start() {
 	s.running = true
 	s.stopCh = make(chan struct{})
 	s.frameChangedNotify.Store(make(chan struct{}, 1))
+	s.cacheChangedNotify.Store(make(chan struct{}, 1))
+	s.stateChangedNotify.Store(make(chan struct{}, 1))
 	s.resetPipelineStateLocked()
 	go s.captureLoop(s.stopCh)
 	go s.jpegLoop(s.stopCh)
@@ -231,6 +229,7 @@ func (s *ScreenshotService) SetFPS(fps int32) {
 		fps = 60
 	}
 	s.fps.Store(fps)
+	s.notifyStateChanged()
 }
 
 func (s *ScreenshotService) GetFPS() int32 {
@@ -257,12 +256,16 @@ func (s *ScreenshotService) OnConnected() {
 
 func (s *ScreenshotService) OnTaskStarted() {
 	s.taskRunning.Store(true)
-	log.Info().Msg("[Screenshot] task running, PostScreencap paused")
+	s.drainCacheChangedNotify()
+	s.notifyStateChanged()
+	log.Info().Msg("[Screenshot] task running, waiting for cache-changed notifications")
 }
 
 func (s *ScreenshotService) OnTaskEnded() {
 	s.taskRunning.Store(false)
-	log.Info().Msg("[Screenshot] task ended, attempting to resume PostScreencap")
+	s.drainCacheChangedNotify()
+	s.notifyStateChanged()
+	log.Info().Msg("[Screenshot] task ended, attempting to resume FPS-driven PostScreencap")
 	if s.manualPaused.Load() {
 		return
 	}
@@ -297,33 +300,20 @@ func (s *ScreenshotService) resumeIfAllowed() {
 }
 
 func (s *ScreenshotService) captureLoop(stop <-chan struct{}) {
-	lastTick := time.Now()
 	consecutiveFailures := 0
+	var nextTick time.Time
 
 	for {
-		fps := s.fps.Load()
-		interval := time.Second / time.Duration(fps)
-
-		elapsed := time.Since(lastTick)
-		sleep := interval - elapsed
-		if sleep < time.Millisecond {
-			sleep = time.Millisecond
-		}
-
-		select {
-		case <-stop:
+		if !s.waitForCaptureTrigger(stop, &nextTick) {
 			return
-		case <-time.After(sleep):
 		}
-
-		lastTick = time.Now()
 
 		if s.paused.Load() {
 			continue
 		}
 
 		seq := s.frameSeq.Add(1)
-		if err := s.refreshCacheSnapshot(seq); err != nil {
+		if err := s.refreshCacheSnapshot(); err != nil {
 			consecutiveFailures++
 			log.Warn().Err(err).Uint64("seq", seq).Int("failures", consecutiveFailures).Msg("[Screenshot] screencap stage failed")
 			if consecutiveFailures >= maxConsecutiveFailures {
@@ -334,7 +324,7 @@ func (s *ScreenshotService) captureLoop(stop <-chan struct{}) {
 			continue
 		}
 
-		job, changed, err := s.prepareChangedJPEGJob(seq)
+		job, err := s.prepareJPEGJob(seq)
 		if err != nil {
 			consecutiveFailures++
 			log.Warn().Err(err).Uint64("seq", seq).Int("failures", consecutiveFailures).Msg("[Screenshot] cache snapshot stage failed")
@@ -345,16 +335,68 @@ func (s *ScreenshotService) captureLoop(stop <-chan struct{}) {
 			}
 			continue
 		}
-		if !changed {
-			consecutiveFailures = 0
-			continue
-		}
-
 		s.notifyFrameChanged()
 		if job != nil && s.shouldEncodeJPEG() {
 			s.enqueueLatestJPEGJob(job)
 		}
 		consecutiveFailures = 0
+	}
+}
+
+func (s *ScreenshotService) waitForCaptureTrigger(stop <-chan struct{}, nextTick *time.Time) bool {
+	for {
+		if s.taskRunning.Load() {
+			*nextTick = time.Time{}
+			cacheChangedNotify, _ := s.cacheChangedNotify.Load().(chan struct{})
+			stateChangedNotify, _ := s.stateChangedNotify.Load().(chan struct{})
+			select {
+			case <-stop:
+				return false
+			case <-stateChangedNotify:
+				continue
+			case <-cacheChangedNotify:
+				return true
+			}
+		}
+
+		fps := s.fps.Load()
+		interval := time.Second / time.Duration(fps)
+		if interval < time.Millisecond {
+			interval = time.Millisecond
+		}
+
+		now := time.Now()
+		if nextTick.IsZero() {
+			*nextTick = now
+		}
+
+		sleep := time.Until(*nextTick)
+		if sleep <= 0 {
+			if now.Sub(*nextTick) > interval {
+				*nextTick = now.Add(interval)
+			} else {
+				*nextTick = nextTick.Add(interval)
+			}
+			return true
+		}
+
+		timer := time.NewTimer(sleep)
+		stateChangedNotify, _ := s.stateChangedNotify.Load().(chan struct{})
+		select {
+		case <-stop:
+			if !timer.Stop() {
+				<-timer.C
+			}
+			return false
+		case <-stateChangedNotify:
+			if !timer.Stop() {
+				<-timer.C
+			}
+			continue
+		case <-timer.C:
+			*nextTick = nextTick.Add(interval)
+			return true
+		}
 	}
 }
 
@@ -437,7 +479,46 @@ func (s *ScreenshotService) notifyFrameChanged() {
 	}
 }
 
-func (s *ScreenshotService) refreshCacheSnapshot(seq uint64) error {
+func (s *ScreenshotService) NotifyCacheChanged() {
+	cacheChangedNotify, _ := s.cacheChangedNotify.Load().(chan struct{})
+	if cacheChangedNotify == nil {
+		return
+	}
+
+	select {
+	case cacheChangedNotify <- struct{}{}:
+	default:
+	}
+}
+
+func (s *ScreenshotService) notifyStateChanged() {
+	stateChangedNotify, _ := s.stateChangedNotify.Load().(chan struct{})
+	if stateChangedNotify == nil {
+		return
+	}
+
+	select {
+	case stateChangedNotify <- struct{}{}:
+	default:
+	}
+}
+
+func (s *ScreenshotService) drainCacheChangedNotify() {
+	cacheChangedNotify, _ := s.cacheChangedNotify.Load().(chan struct{})
+	if cacheChangedNotify == nil {
+		return
+	}
+
+	for {
+		select {
+		case <-cacheChangedNotify:
+		default:
+			return
+		}
+	}
+}
+
+func (s *ScreenshotService) refreshCacheSnapshot() error {
 	if s.taskRunning.Load() {
 		return nil
 	}
@@ -458,28 +539,21 @@ func (s *ScreenshotService) refreshCacheSnapshot(seq uint64) error {
 	return nil
 }
 
-func (s *ScreenshotService) prepareChangedJPEGJob(seq uint64) (*jpegJob, bool, error) {
+func (s *ScreenshotService) prepareJPEGJob(seq uint64) (*jpegJob, error) {
 	ctrl := s.controllerSvc.Controller()
 	if ctrl == nil {
-		return nil, false, nil
+		return nil, nil
 	}
 
 	img, err := ctrl.CacheImage()
 	if err != nil {
-		return nil, false, fmt.Errorf("CacheImage failed: %w", err)
+		return nil, fmt.Errorf("CacheImage failed: %w", err)
 	}
 	if img == nil {
-		return nil, false, nil
+		return nil, nil
 	}
 
-	hash := fingerprintImage(img)
-	if s.lastCacheHashValid && s.lastCacheHash == hash {
-		return nil, false, nil
-	}
-
-	s.lastCacheHash = hash
-	s.lastCacheHashValid = true
-	return &jpegJob{seq: seq, img: img}, true, nil
+	return &jpegJob{seq: seq, img: img}, nil
 }
 
 func (s *ScreenshotService) enqueueLatestJPEGJob(job *jpegJob) {
@@ -541,73 +615,12 @@ func (s *ScreenshotService) emitJPEGFrame(data []byte) {
 func (s *ScreenshotService) resetPipelineStateLocked() {
 	s.frameSeq.Store(0)
 	s.jpegJobs = make(chan *jpegJob, s.jpegWorkerCount())
-	s.lastCacheHash = 0
-	s.lastCacheHashValid = false
 	s.outputActive.Store(false)
 	s.manualPaused.Store(false)
 	s.taskRunning.Store(false)
 	s.paused.Store(true)
 	s.stats.encodedFrames.Store(0)
 	s.stats.broadcastedFrames.Store(0)
-}
-
-func fingerprintImage(img image.Image) uint64 {
-	bounds := img.Bounds()
-	width := bounds.Dx()
-	height := bounds.Dy()
-	if width <= 0 || height <= 0 {
-		return 0
-	}
-
-	h := fnv.New64a()
-	var pixel [8]byte
-	regions := [9][2]float64{
-		{0.15, 0.15}, {0.50, 0.15}, {0.85, 0.15},
-		{0.15, 0.50}, {0.50, 0.50}, {0.85, 0.50},
-		{0.15, 0.85}, {0.50, 0.85}, {0.85, 0.85},
-	}
-
-	for _, region := range regions {
-		cx := bounds.Min.X + int(float64(width-1)*region[0])
-		cy := bounds.Min.Y + int(float64(height-1)*region[1])
-		sampleFeatureRegion(h, img, cx, cy, width, height, &pixel)
-	}
-
-	return h.Sum64()
-}
-
-func sampleFeatureRegion(h hash.Hash64, img image.Image, cx, cy, width, height int, pixel *[8]byte) {
-	stepX := max(1, width/32)
-	stepY := max(1, height/32)
-	offsets := [5][2]int{
-		{0, 0},
-		{-stepX, 0},
-		{stepX, 0},
-		{0, -stepY},
-		{0, stepY},
-	}
-
-	for _, offset := range offsets {
-		x := cx + offset[0]
-		y := cy + offset[1]
-		r, g, b, a := img.At(x, y).RGBA()
-		pixel[0] = byte(r >> 8)
-		pixel[1] = byte(g >> 8)
-		pixel[2] = byte(b >> 8)
-		pixel[3] = byte(a >> 8)
-		pixel[4] = byte((r >> 8) ^ (g >> 8))
-		pixel[5] = byte((g >> 8) ^ (b >> 8))
-		pixel[6] = byte((a >> 8) ^ (r >> 8))
-		pixel[7] = byte((x + y) & 0xff)
-		_, _ = h.Write(pixel[:])
-	}
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }
 
 // stopWithError marks the loop as stopped and invokes the onError callback.
