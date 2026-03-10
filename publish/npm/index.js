@@ -137,7 +137,7 @@ const launchPath = join(shortExeRoot, executableName);
 const childEnv = {
   ...process.env,
   MAADBG_CHANNEL: "npm",
-  MAADBG_CHANNEL_PATH: shortChannelPath,
+  MAADBG_CHANNEL_LIB_PATH: shortChannelPath,
 };
 
 const child = spawn(launchPath, process.argv.slice(2), {

@@ -138,10 +138,10 @@ func main() {
 
 	// Set the release channel and channel path
 	channel := getenv("MAADBG_CHANNEL", "github") // npm | pypi | github TODO: const enum
-	channelPath := getenv("MAADBG_CHANNEL_PATH", "")
+	channelLibPath := getenv("MAADBG_CHANNEL_LIB_PATH", "")
 
 	// Load Maa
-	loadMaaFramework(devMode, argPath, channel, channelPath)
+	loadMaaFramework(devMode, argPath, channel, channelLibPath)
 	defer func() {
 		if err := maa.Release(); err != nil {
 			log.Error().Err(err).Msg("maa release failed")
