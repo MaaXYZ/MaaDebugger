@@ -85,6 +85,16 @@ func (h *Hub) Remove(c *Client) {
 	h.mu.Unlock()
 }
 
+// Close 关闭所有客户端连接并清空 hub。
+func (h *Hub) Close() {
+	h.mu.Lock()
+	for c := range h.clients {
+		delete(h.clients, c)
+		close(c.send)
+	}
+	h.mu.Unlock()
+}
+
 func (h *Hub) BroadcastJSON(msg Message) {
 	buf, err := json.Marshal(msg)
 	if err != nil {

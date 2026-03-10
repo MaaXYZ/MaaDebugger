@@ -70,3 +70,8 @@ func (s *ResourceService) Loaded() bool {
 	}
 	return res.Loaded()
 }
+
+// Destroy 销毁当前 Resource 实例。
+func (s *ResourceService) Destroy() {
+	s.resource.Load().Destroy()
+}

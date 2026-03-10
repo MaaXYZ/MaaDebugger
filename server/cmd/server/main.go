@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -194,7 +193,7 @@ func main() {
 		openBrowser("http://" + addr)
 	}
 
-	fmt.Fprintf(console.ColorableStdout(), "\n%s%sMaaDebugger%s Version: %s%s%s\n\n",
+	fmt.Fprintf(console.ColorableStdout(), "\n%s%sMaaDebugger%s Version: %s%s%s\n",
 		console.Bold, console.BrightCyan, console.Reset,
 		console.BrightGreen, buildinfo.Version, console.Reset)
 	fmt.Fprintf(console.ColorableStdout(), "%s%sMaaDebugger is available on%s %s%s%s%s\n",
@@ -209,7 +208,12 @@ func main() {
 		}
 	}()
 
-	waitForShutdown(srv)
+	waitForShutdown(srv, hub)
+
+	fmt.Fprintf(console.ColorableStdout(), "\n%s%sMaaDebugger has been stopped. See you next time!%s\n",
+		console.Bold, console.BrightCyan, console.Reset)
+	fmt.Fprintf(console.ColorableStdout(), "MaaDebugger Github Repository URL: %shttps://github.com/MaaXYZ/MaaDebugger%s\n",
+		console.Bold, console.Reset)
 }
 
 // Load Maa Lib
@@ -299,17 +303,20 @@ func rotateLogFile(logPath string, maxBytes int64) error {
 	return nil
 }
 
-func waitForShutdown(srv *http.Server) {
+func waitForShutdown(srv *http.Server, hub *ws.Hub) {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	<-sigCh
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	fmt.Fprintf(console.ColorableStdout(), "\n%s%sShutting down...%s\n",
+		console.Bold, console.Dim, console.Reset)
 
-	if err := srv.Shutdown(ctx); err != nil {
-		log.Error().Err(err).Msg("graceful shutdown failed")
-		_ = srv.Close()
+	// 先关闭所有 WebSocket 连接
+	hub.Close()
+
+	// 立即关闭 HTTP server，不等待活跃连接
+	if err := srv.Close(); err != nil {
+		log.Error().Err(err).Msg("server close failed")
 	}
 
 	log.Info().Msg("server stopped")
