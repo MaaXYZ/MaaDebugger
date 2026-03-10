@@ -8,20 +8,24 @@ Official desktop debugger for MaaFramework, featuring a web-based UI and real-ti
 
 ### 使用 npm (Node.js)
 
-MaaDebugger 以 `maa-debugger` 的名称发布于 [npm](https://www.npmjs.com) 。你可以使用 npm 或其他包管理器(如 pnpm)安装、管理与使用。这里仅介绍 npm 用法。
+MaaDebugger 暂时以 `@weinibuliu/maa-debugger` 的名称发布于 [npm](https://www.npmjs.com) 。你可以使用 npm 或其他包管理器(如 pnpm)安装、管理与使用。这里仅介绍 npm 与 pnpm 用法。
+
+#### npm
 
 ```bash
-# 全局安装
-npm i -g maa-debugger
-maa-debugger
-# 非全局安装
-npx maa-debugger
+npx @weinibuliu/maa-debugger
+```
+
+#### pnpm
+
+```bash
+pnpm dlx @weinibuliu/maa-debugger
 ```
 
 MaaDebugger 支持命令行参数，你可以通过 `--help` / `-H` 命令来获取帮助。
 
 ```bash
-npx maa-debugger --help
+npx @weinibuliu/maa-debugger --help
 ```
 
 ### 使用 pip (Python)
@@ -35,7 +39,7 @@ MaaDebugger
 
 我们也提供了 [Github Release](https://github.com/MaaXYZ/MaaDebugger/releases) 下载渠道，下载解压后即可使用。
 >[!WARNING]
-在早期开发阶段，我们**不会**提供 Release，而是仅在 [Actions](https://github.com/MaaXYZ/MaaDebugger/actions/workflows/publish.yml) 上传产物，请自行前往下载。
+在早期开发阶段，我们**不会**发布至 Github Release，而是仅在 [Actions](https://github.com/MaaXYZ/MaaDebugger/actions/workflows/publish.yml) 上传产物，请自行前往下载。
 
 ## 开发模式
 
@@ -76,17 +80,3 @@ node build.mjs --skip-frontend     # 跳过前端构建（仅编译 Go）
 
 > [!NOTE]
 > 需要注意的是 `MaaDebugger` 将寻找 `./bin` 下的 MaaFramework 动态库。
-
-## 环境变量
-
-TODO
-
-## 技术栈
-
-| 层 | 技术 |
-|----|------|
-| 前端 | Vue 3 + Nuxt UI 4 + Pinia + Vite 7 + TypeScript |
-| 后端 | Go + net/http + gorilla/websocket + zerolog |
-| MaaFW | maa-framework-go (CGO binding) |
-| 通信 | REST API + WebSocket |
-| 嵌入 | Go `embed` (前端编译产物嵌入到 Go 二进制) |
