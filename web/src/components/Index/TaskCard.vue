@@ -26,7 +26,7 @@
                             <USeparator />
                             <div class="flex flex-col gap-2">
                                 <span class="text-xs text-muted">Frame Rate</span>
-                                <USlider v-model="fpsSlider" :min="1" :max="60" :step="1" />
+                                <USlider v-model="fpsSlider" :min="1" :max="30" :step="1" />
                                 <div class="flex items-center justify-between">
                                     <span class="text-xs text-muted tabular-nums">{{ fpsSlider }} FPS</span>
                                     <UButton size="xs" @click="applyFps">Apply</UButton>

@@ -8,6 +8,7 @@ import {
   stopScreenshot,
 } from "@/api/http";
 import {
+  DEFAULT_SCREENSHOT_FPS,
   latestFrame,
   screenshotActualFps,
   screenshotError,
@@ -19,7 +20,7 @@ import {
 export function useScreenshotStream() {
   const imageData = ref<ArrayBuffer | null>(null);
   const imageUrl = ref<string | null>(null);
-  const fpsSlider = ref(30);
+  const fpsSlider = ref(screenshotFps.value || DEFAULT_SCREENSHOT_FPS);
 
   let pendingFrame: ArrayBuffer | null = null;
   let rafId = 0;
@@ -157,6 +158,12 @@ export function useScreenshotStream() {
 
   watch(imageData, () => {
     updateImageUrl();
+  });
+
+  watch(screenshotFps, (fps, previousFps) => {
+    if (fpsSlider.value === previousFps) {
+      fpsSlider.value = fps;
+    }
   });
 
   onUnmounted(() => {

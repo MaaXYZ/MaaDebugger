@@ -14,6 +14,7 @@ import (
 )
 
 const maxConsecutiveFailures = 10
+const defaultScreenshotFPS = 15
 
 type ScreenshotOutput uint32
 
@@ -89,7 +90,7 @@ func NewScreenshotService(ctrlSvc *ControllerService) *ScreenshotService {
 	s := &ScreenshotService{
 		controllerSvc: ctrlSvc,
 	}
-	s.fps.Store(15)
+	s.fps.Store(defaultScreenshotFPS)
 	return s
 }
 
@@ -225,8 +226,8 @@ func (s *ScreenshotService) SetFPS(fps int32) {
 	if fps < 1 {
 		fps = 1
 	}
-	if fps > 60 {
-		fps = 60
+	if fps > 30 {
+		fps = 30
 	}
 	s.fps.Store(fps)
 	s.notifyStateChanged()
