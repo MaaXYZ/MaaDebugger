@@ -24,6 +24,7 @@ import (
 	"github.com/MaaXYZ/MaaDebugger/internal/maaservice"
 	"github.com/MaaXYZ/MaaDebugger/internal/response"
 	"github.com/MaaXYZ/MaaDebugger/internal/state"
+	"github.com/MaaXYZ/MaaDebugger/internal/updater"
 	"github.com/MaaXYZ/MaaDebugger/internal/ws"
 )
 
@@ -36,6 +37,7 @@ type Dependencies struct {
 	AgentService      *maaservice.AgentService
 	ScreenshotService *maaservice.ScreenshotService
 	ConfigStore       *configstore.Store
+	Channel           string
 }
 
 type router struct {
@@ -94,6 +96,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.HandleFunc("PUT /api/screenshot/output", r.handleScreenshotSetOutput)
 	mux.HandleFunc("GET /api/screenshot/status", r.handleScreenshotStatus)
 	mux.HandleFunc("POST /api/clear/cache", r.handleClearCache)
+	mux.HandleFunc("GET /api/update/check", r.handleCheckUpdate)
 	mux.HandleFunc("GET /ws", r.handleWS)
 
 	// Serve embedded frontend SPA for all non-API routes
@@ -102,6 +105,20 @@ func NewRouter(deps Dependencies) http.Handler {
 
 	return recoverer(logging(cors(mux)))
 }
+func (r *router) handleCheckUpdate(w http.ResponseWriter, _ *http.Request) {
+	// nightly is auto-detected: channel is npm or github, and version looks like a commit hash
+	nightly := (r.deps.Channel == "npm" || r.deps.Channel == "github") && updater.IsCommitHash(buildinfo.Version)
+
+	result, err := updater.CheckUpdate(nightly)
+	if err != nil {
+		log.Error().Err(err).Msg("check update failed")
+		response.Fail(w, http.StatusInternalServerError, "check update failed: "+err.Error())
+		return
+	}
+
+	response.OK(w, result)
+}
+
 func (r *router) handleMaaDebuggerInfo(w http.ResponseWriter, _ *http.Request) {
 	response.OK(w, map[string]string{
 		"version":    buildinfo.Version,

@@ -21,9 +21,11 @@ import (
 	"github.com/MaaXYZ/MaaDebugger/internal/buildinfo"
 	"github.com/MaaXYZ/MaaDebugger/internal/cliargs"
 	"github.com/MaaXYZ/MaaDebugger/internal/configstore"
+	"github.com/MaaXYZ/MaaDebugger/internal/console"
 	"github.com/MaaXYZ/MaaDebugger/internal/httpapi"
 	"github.com/MaaXYZ/MaaDebugger/internal/maaservice"
 	"github.com/MaaXYZ/MaaDebugger/internal/state"
+	"github.com/MaaXYZ/MaaDebugger/internal/updater"
 	"github.com/MaaXYZ/MaaDebugger/internal/ws"
 )
 
@@ -98,7 +100,7 @@ func main() {
 	if logStdoutAll {
 		stdoutMinLevel = zerolog.TraceLevel
 	}
-	errorConsoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+	errorConsoleWriter := zerolog.ConsoleWriter{Out: console.ColorableStdout(), TimeFormat: time.RFC3339}
 	splitWriter := selectiveLevelWriter{
 		file:      fileWriter,
 		stdout:    zerolog.MultiLevelWriter(errorConsoleWriter),
@@ -157,6 +159,7 @@ func main() {
 		AgentService:      agentService,
 		ScreenshotService: screenshotService,
 		ConfigStore:       cfgStore,
+		Channel:           channel,
 	})
 
 	// Arg > env > DEFAULT
@@ -191,8 +194,20 @@ func main() {
 		openBrowser("http://" + addr)
 	}
 
-	fmt.Printf("MaaDebugger Version: %s\n\n", buildinfo.Version)
-	fmt.Printf("MaaDebugger is available on %s\n", "http://"+addr)
+	fmt.Fprintf(console.ColorableStdout(), "\n%s%sMaaDebugger%s Version: %s%s%s\n\n",
+		console.Bold, console.BrightCyan, console.Reset,
+		console.BrightGreen, buildinfo.Version, console.Reset)
+	fmt.Fprintf(console.ColorableStdout(), "%s%sMaaDebugger is available on%s %s%s%s%s\n",
+		console.Bold, console.White, console.Reset,
+		console.Bold, console.Underln, "http://"+addr, console.Reset)
+
+	// Auto check for updates on startup (async, non-blocking, with cooldown)
+	go func() {
+		nightly := (channel == "npm" || channel == "github") && updater.IsCommitHash(buildinfo.Version)
+		if _, err := updater.AutoCheckUpdate(cfgStore, nightly); err != nil {
+			log.Warn().Err(err).Msg("startup update check failed")
+		}
+	}()
 
 	waitForShutdown(srv)
 }

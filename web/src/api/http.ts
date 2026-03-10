@@ -519,3 +519,25 @@ export async function saveStoreConfig(
     body: JSON.stringify(value),
   });
 }
+
+// ============================================================
+// Update Check API
+// ============================================================
+
+export interface UpdateCheckResult {
+  has_update: boolean;
+  current_version: string;
+  latest_version: string;
+  note?: string;
+  nightly: boolean;
+}
+
+/**
+ * Check for updates
+ * Nightly detection is handled automatically by the server
+ * (channel == npm and version is a commit hash)
+ */
+export async function checkForUpdates(): Promise<UpdateCheckResult | null> {
+  const result = await request<UpdateCheckResult>("/update/check");
+  return result.data ?? null;
+}

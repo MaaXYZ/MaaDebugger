@@ -52,15 +52,26 @@
                         aria-label="open-in-GitHub" />
                 </div>
 
-                <UButton label="Check for Updates" block />
+                <div class="flex flex-col gap-2">
+                    <UButton label="Check for Updates" :loading="checking" block @click="handleCheckUpdate" />
+
+                    <UAlert v-if="updateResult" :color="updateResult.has_update ? 'info' : 'success'"
+                        :icon="updateResult.has_update ? 'i-lucide-download' : 'i-lucide-check-circle'"
+                        :title="updateResult.has_update ? 'Update Available' : 'Up to Date'"
+                        :description="updateDescription" variant="subtle" />
+
+                    <UAlert v-if="updateError" color="error" icon="i-lucide-alert-circle" title="Check Failed"
+                        :description="updateError" variant="subtle" />
+                </div>
             </div>
         </template>
     </UCard>
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue';
-import { getMaaFrameworkVersion, getChannel, getMaaDebuggerInfos } from '@/api/http';
+import { onMounted, ref, computed } from 'vue';
+import { getMaaFrameworkVersion, getChannel, getMaaDebuggerInfos, checkForUpdates } from '@/api/http';
+import type { UpdateCheckResult } from '@/api/http';
 
 const GITHUB = "github"
 const NPM = "npm"
@@ -72,6 +83,44 @@ const commitSHA = ref("")
 const buildTime = ref("")
 const currentChannel = ref("")
 const currentChannelLabel = ref("")
+
+const checking = ref(false)
+const updateResult = ref<UpdateCheckResult | null>(null)
+const updateError = ref("")
+
+const updateDescription = computed(() => {
+    if (!updateResult.value) return ""
+    if (updateResult.value.has_update) {
+        const channel = updateResult.value.nightly ? "nightly" : "latest"
+        let desc = `Current: ${updateResult.value.current_version} → Latest: ${updateResult.value.latest_version} (${channel})`
+        if (updateResult.value.note) {
+            desc += `\n${updateResult.value.note}`
+        }
+        return desc
+    }
+    return `You are running the latest version (${updateResult.value.current_version})`
+})
+
+async function handleCheckUpdate() {
+    checking.value = true
+    updateError.value = ""
+    updateResult.value = null
+
+    if (maaDebuggerVersion.value === "dev") {
+        updateError.value = "You are running a development build. Update checking is not available."
+        checking.value = false
+        return
+    }
+
+    try {
+        const result = await checkForUpdates()
+        updateResult.value = result
+    } catch (e) {
+        updateError.value = e instanceof Error ? e.message : "Unknown error"
+    } finally {
+        checking.value = false
+    }
+}
 
 function formatBuildTime(timestamp: string | null | undefined) {
     if (!timestamp) {
