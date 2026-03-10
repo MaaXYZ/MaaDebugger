@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { execFile, spawn } = require("node:child_process");
+const { execFile, execSync, spawn } = require("node:child_process");
 const { existsSync, readdirSync } = require("node:fs");
 const path = require("node:path");
 
@@ -70,19 +70,91 @@ const channelPath = path.join(
   `maa-node-${process.platform}-${process.arch}`,
 );
 
+// --- Windows MAX_PATH (260) workaround via directory junctions ---
+// pnpm dlx creates deeply nested cache paths that can exceed the Windows
+// MAX_PATH limit.  CreateProcess (used by child_process) and LoadLibrary
+// both fail with ENOENT / ERROR_MOD_NOT_FOUND when the path is too long.
+//
+// Directory junctions (mklink /J) do NOT require administrator privileges
+// and create a short alias that points to the real directory without
+// copying any files.
+
+const MAX_PATH_THRESHOLD = 240;
+const pendingJunctions = [];
+
+/**
+ * If `targetDir` is longer than the threshold, create a directory junction
+ * inside the nearest `node_modules` ancestor so the resulting path stays
+ * within pnpm's own cache tree (no user-space pollution).
+ *
+ * Returns the (possibly shortened) directory path.
+ */
+function ensureShortPath(targetDir, junctionName) {
+  if (!isWindows || targetDir.length < MAX_PATH_THRESHOLD) {
+    return targetDir;
+  }
+
+  // Place the junction right inside the first `node_modules` segment so
+  // the alias sits inside the package manager's own cache directory.
+  const nmIndex = targetDir.indexOf("node_modules");
+  if (nmIndex === -1) {
+    return targetDir;
+  }
+  const junctionBase = targetDir.substring(0, nmIndex + "node_modules".length);
+  const junctionPath = path.join(junctionBase, junctionName);
+
+  try {
+    if (!existsSync(junctionPath)) {
+      execSync(`mklink /J "${junctionPath}" "${targetDir}"`, {
+        stdio: "ignore",
+        shell: true,
+      });
+    }
+    pendingJunctions.push(junctionPath);
+    logDebug(
+      `[maa-debugger] Created junction for long path (${targetDir.length} chars): ${junctionPath} -> ${targetDir}`,
+    );
+    return junctionPath;
+  } catch (junctionError) {
+    logDebug(
+      `[maa-debugger] Failed to create junction (falling back to original path): ${junctionError.message}`,
+    );
+    return targetDir;
+  }
+}
+
+function cleanupJunctions() {
+  for (const jp of pendingJunctions) {
+    try {
+      // `rmdir` removes only the junction reparse point, NOT the target
+      // directory contents.
+      execSync(`rmdir "${jp}"`, { stdio: "ignore", shell: true });
+    } catch {
+      // best-effort cleanup
+    }
+  }
+}
+
+// Register cleanup for all exit paths
+process.on("exit", cleanupJunctions);
+
+const shortExeRoot = ensureShortPath(platformPackageRoot, "_maadbg_exe");
+const shortChannelPath = ensureShortPath(channelPath, "_maadbg_lib");
+const launchPath = path.join(shortExeRoot, executableName);
+
 const childEnv = {
   ...process.env,
   MAADBG_CHANNEL: "npm",
-  MAADBG_CHANNEL_PATH: channelPath,
+  MAADBG_CHANNEL_PATH: shortChannelPath,
 };
 
 const child = isWindows
-  ? execFile(exePath, process.argv.slice(2), {
+  ? execFile(launchPath, process.argv.slice(2), {
       stdio: "inherit",
       env: childEnv,
       windowsHide: false,
     })
-  : spawn(exePath, process.argv.slice(2), {
+  : spawn(launchPath, process.argv.slice(2), {
       stdio: "inherit",
       env: childEnv,
     });
@@ -98,12 +170,16 @@ child.on("exit", (code, signal) => {
 child.on("error", (err) => {
   logError(`[maa-debugger] Failed to start ${executableName}:`, err);
 
-  const exeDir = path.dirname(exePath);
-  logDebug(`[maa-debugger] Executable path: ${exePath}`);
-  logDebug(`[maa-debugger] Executable path length: ${exePath.length}`);
-  logDebug(`[maa-debugger] Executable exists before launch: ${existsSync(exePath)}`);
+  const exeDir = path.dirname(launchPath);
+  logDebug(`[maa-debugger] Executable path: ${launchPath}`);
+  logDebug(`[maa-debugger] Executable path length: ${launchPath.length}`);
+  logDebug(`[maa-debugger] Original executable path: ${exePath}`);
+  logDebug(`[maa-debugger] Original path length: ${exePath.length}`);
+  logDebug(
+    `[maa-debugger] Executable exists before launch: ${existsSync(launchPath)}`,
+  );
   logDebug(`[maa-debugger] Platform package root: ${platformPackageRoot}`);
-  logDebug(`[maa-debugger] Channel path: ${channelPath}`);
+  logDebug(`[maa-debugger] Channel path: ${shortChannelPath}`);
   try {
     logDebug(
       `[maa-debugger] Executable directory entries: ${readdirSync(exeDir).join(", ") || "(empty)"}`,
@@ -125,7 +201,7 @@ child.on("error", (err) => {
       break;
     case "ENOENT": {
       logError(
-        `[maa-debugger] Executable not found or cannot be resolved at runtime: ${exePath}`,
+        `[maa-debugger] Executable not found or cannot be resolved at runtime: ${launchPath}`,
       );
       if (isWindows) {
         logError(
