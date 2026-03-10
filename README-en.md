@@ -17,6 +17,9 @@ s
 
 </div>
 
+> [!NOTE]
+> We are currently refactoring MaaDebugger. You can visit https://github.com/MaaXYZ/MaaDebugger/issues/163 for more details and to get an early preview version.
+
 ## Requirement
 
 - Python >= 3.9, <= 3.13
@@ -25,6 +28,7 @@ s
 ## Quick Start
 
 ### Using uv
+
 Provides faster installation speed and environment isolation.
 
 - **Install as a global tool**:
@@ -44,6 +48,7 @@ Provides faster installation speed and environment isolation.
 ---
 
 ### Using Python (pip)
+
 Traditional Python installation method.
 
 - **Install**:
