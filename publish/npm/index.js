@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-const { execFile, execSync, spawn } = require("node:child_process");
-const { existsSync, readdirSync } = require("node:fs");
-const path = require("node:path");
+import { execSync, spawn } from "node:child_process";
+import { existsSync, readdirSync, symlinkSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 
 const platformPackageName = `@weinibuliu/maa-debugger-${process.platform}-${process.arch}`;
 
@@ -42,7 +42,7 @@ function logDebug(message, ...rest) {
 
 let platformPackageRoot;
 try {
-  platformPackageRoot = path.dirname(
+  platformPackageRoot = dirname(
     require.resolve(`${platformPackageName}/package.json`),
   );
 } catch (error) {
@@ -55,7 +55,7 @@ try {
 
 const isWindows = process.platform === "win32";
 const executableName = `MaaDebugger${isWindows ? ".exe" : ""}`;
-const exePath = path.join(platformPackageRoot, executableName);
+const exePath = join(platformPackageRoot, executableName);
 if (!existsSync(exePath)) {
   logError(`[maa-debugger] Missing executable: ${exePath}`);
   logError(
@@ -64,20 +64,11 @@ if (!existsSync(exePath)) {
   process.exit(1);
 }
 
-const nodePath = path.resolve(require.resolve("@maaxyz/maa-node"), "../../../");
-const channelPath = path.join(
+const nodePath = resolve(require.resolve("@maaxyz/maa-node"), "../../../");
+const channelPath = join(
   nodePath,
   `maa-node-${process.platform}-${process.arch}`,
 );
-
-// --- Windows MAX_PATH (260) workaround via directory junctions ---
-// pnpm dlx creates deeply nested cache paths that can exceed the Windows
-// MAX_PATH limit.  CreateProcess (used by child_process) and LoadLibrary
-// both fail with ENOENT / ERROR_MOD_NOT_FOUND when the path is too long.
-//
-// Directory junctions (mklink /J) do NOT require administrator privileges
-// and create a short alias that points to the real directory without
-// copying any files.
 
 const MAX_PATH_THRESHOLD = 240;
 const pendingJunctions = [];
@@ -101,14 +92,11 @@ function ensureShortPath(targetDir, junctionName) {
     return targetDir;
   }
   const junctionBase = targetDir.substring(0, nmIndex + "node_modules".length);
-  const junctionPath = path.join(junctionBase, junctionName);
+  const junctionPath = join(junctionBase, junctionName);
 
   try {
     if (!existsSync(junctionPath)) {
-      execSync(`mklink /J "${junctionPath}" "${targetDir}"`, {
-        stdio: "ignore",
-        shell: true,
-      });
+      symlinkSync(targetDir, junctionPath, "junction");
     }
     pendingJunctions.push(junctionPath);
     logDebug(
@@ -140,7 +128,7 @@ process.on("exit", cleanupJunctions);
 
 const shortExeRoot = ensureShortPath(platformPackageRoot, "_maadbg_exe");
 const shortChannelPath = ensureShortPath(channelPath, "_maadbg_lib");
-const launchPath = path.join(shortExeRoot, executableName);
+const launchPath = join(shortExeRoot, executableName);
 
 const childEnv = {
   ...process.env,
@@ -148,16 +136,12 @@ const childEnv = {
   MAADBG_CHANNEL_PATH: shortChannelPath,
 };
 
-const child = isWindows
-  ? execFile(launchPath, process.argv.slice(2), {
-      stdio: "inherit",
-      env: childEnv,
-      windowsHide: false,
-    })
-  : spawn(launchPath, process.argv.slice(2), {
-      stdio: "inherit",
-      env: childEnv,
-    });
+const child = spawn(launchPath, process.argv.slice(2), {
+  stdio: "inherit",
+  env: childEnv,
+  shell: false,
+  windowsHide: false,
+});
 
 child.on("exit", (code, signal) => {
   if (signal) {
@@ -170,7 +154,7 @@ child.on("exit", (code, signal) => {
 child.on("error", (err) => {
   logError(`[maa-debugger] Failed to start ${executableName}:`, err);
 
-  const exeDir = path.dirname(launchPath);
+  const exeDir = dirname(launchPath);
   logDebug(`[maa-debugger] Executable path: ${launchPath}`);
   logDebug(`[maa-debugger] Executable path length: ${launchPath.length}`);
   logDebug(`[maa-debugger] Original executable path: ${exePath}`);
@@ -213,4 +197,17 @@ child.on("error", (err) => {
   }
 
   process.exit(1);
+});
+
+// ensure Ctrl+C can clear the junction
+process.on("SIGINT", () => {
+  child.kill("SIGINT");
+  cleanupJunctions();
+  process.exit(130);
+});
+
+process.on("SIGTERM", () => {
+  child.kill("SIGTERM");
+  cleanupJunctions();
+  process.exit(143);
 });
