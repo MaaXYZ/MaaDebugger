@@ -193,7 +193,7 @@ func main() {
 		openBrowser("http://" + addr)
 	}
 
-	fmt.Fprintf(console.ColorableStdout(), "\n%s%sMaaDebugger%s Version: %s%s%s\n",
+	fmt.Fprintf(console.ColorableStdout(), "%s%sMaaDebugger%s Version: %s%s%s\n",
 		console.Bold, console.BrightCyan, console.Reset,
 		console.BrightGreen, buildinfo.Version, console.Reset)
 	fmt.Fprintf(console.ColorableStdout(), "%s%sMaaDebugger is available on%s %s%s%s%s\n",
@@ -209,11 +209,6 @@ func main() {
 	}()
 
 	waitForShutdown(srv, hub)
-
-	fmt.Fprintf(console.ColorableStdout(), "\n%s%sMaaDebugger has been stopped. See you next time!%s\n",
-		console.Bold, console.BrightCyan, console.Reset)
-	fmt.Fprintf(console.ColorableStdout(), "MaaDebugger Github Repository URL: %shttps://github.com/MaaXYZ/MaaDebugger%s\n",
-		console.Bold, console.Reset)
 }
 
 // Load Maa Lib
@@ -308,10 +303,15 @@ func waitForShutdown(srv *http.Server, hub *ws.Hub) {
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	<-sigCh
 
-	fmt.Fprintf(console.ColorableStdout(), "\n%s%sShutting down...%s\n",
-		console.Bold, console.Dim, console.Reset)
+	// 在 Windows 上通过 npm/pnpm batch 启动时，Ctrl+C 后进程可能随时被杀。
+	// 所以必须先打印结束语，再做清理。
+	out := console.ColorableStdout()
+	fmt.Fprintf(out, "\n%s%sMaaDebugger has been stopped. See you next time!%s\n",
+		console.Bold, console.BrightCyan, console.Reset)
+	fmt.Fprintf(out, "MaaDebugger Github Repository URL: %shttps://github.com/MaaXYZ/MaaDebugger%s\n",
+		console.Bold, console.Reset)
 
-	// 先关闭所有 WebSocket 连接
+	// 关闭所有 WebSocket 连接
 	hub.Close()
 
 	// 立即关闭 HTTP server，不等待活跃连接
