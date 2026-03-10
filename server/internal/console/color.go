@@ -62,19 +62,6 @@ func Errorf(format string, a ...any) {
 	fmt.Fprintf(Stderr, "%s%s%s\n", Red, fmt.Sprintf(format, a...), Reset)
 }
 
-// Banner prints a prominent banner box.
-func Banner(color, title string, lines []string) {
-	divider := "========================================"
-	fmt.Fprintf(Stdout, "\n%s%s%s%s\n", Bold, color, divider, Reset)
-	fmt.Fprintf(Stdout, "%s%s  %s%s\n", Bold, color, title, Reset)
-
-	for _, line := range lines {
-		fmt.Fprintf(Stdout, "%s  %s%s\n", color, line, Reset)
-	}
-
-	fmt.Fprintf(Stdout, "%s%s%s%s\n\n", Bold, color, divider, Reset)
-}
-
 // ColorableStdout returns the colorable stdout writer (for use with zerolog ConsoleWriter).
 func ColorableStdout() io.Writer {
 	return Stdout

@@ -139,18 +139,12 @@ func CheckUpdate(nightly bool) (*CheckResult, error) {
 			Str("channel", channel).
 			Msg("New version available!")
 
-		lines := []string{
-			fmt.Sprintf("Current: %s%s%s", console.Red, currentVersion, console.Reset),
-			fmt.Sprintf("Latest:  %s%s%s%s", console.Bold, console.BrightGreen, latestVersion, console.Reset),
-		}
+		console.Warnf("New version available! (%s)", channel)
+		console.Infof("  Current: %s%s%s", console.Red, currentVersion, console.Reset)
+		console.Infof("  Latest:  %s%s%s", console.BrightGreen, latestVersion, console.Reset)
 		if note != "" {
-			lines = append(lines, fmt.Sprintf("Note:    %s%s%s", console.BrightCyan, note, console.Reset))
+			console.Infof("  Note:    %s%s%s", console.BrightCyan, note, console.Reset)
 		}
-		console.Banner(
-			console.BrightYellow,
-			fmt.Sprintf("%sNew version available!%s (%s%s%s%s)", console.Bold, console.Reset+console.BrightYellow, console.Bold, channel, console.Reset+console.BrightYellow, console.Reset),
-			lines,
-		)
 	}
 
 	return result, nil
