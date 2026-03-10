@@ -1,4 +1,5 @@
 import os
+import sys
 import platform
 import importlib.util
 import subprocess
@@ -32,7 +33,10 @@ ENV = {
 }
 
 try:
-    subprocess.run(EXE_PATH, env=ENV)
+    subprocess.run(
+        [str(EXE_PATH), *sys.argv[1:]],
+        env=ENV,
+    )
 except Exception as e:
     # TODO:: Catch
     raise e
