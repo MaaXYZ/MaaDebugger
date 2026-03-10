@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 
-import { execSync, spawn } from "node:child_process";
-import { existsSync, readdirSync, symlinkSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { existsSync, readdirSync, rmSync, symlinkSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
 
 const platformPackageName = `@weinibuliu/maa-debugger-${process.platform}-${process.arch}`;
 
@@ -46,6 +49,7 @@ try {
     require.resolve(`${platformPackageName}/package.json`),
   );
 } catch (error) {
+  logError(error);
   logError(`[maa-debugger] Missing platform package: ${platformPackageName}`);
   logError(
     `[maa-debugger] Reinstall the package on ${process.platform}-${process.arch} or choose a supported platform.`,
@@ -116,7 +120,7 @@ function cleanupJunctions() {
     try {
       // `rmdir` removes only the junction reparse point, NOT the target
       // directory contents.
-      execSync(`rmdir "${jp}"`, { stdio: "ignore", shell: true });
+      rmSync(jp);
     } catch {
       // best-effort cleanup
     }
