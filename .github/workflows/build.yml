@@ -85,24 +85,28 @@ jobs:
             maafw_os: linux
             maafw_arch: x86_64
             ext: ""
+            archive_ext: .tar.gz
           - goos: linux
             goarch: arm64
             runner: ubuntu-latest
             maafw_os: linux
             maafw_arch: aarch64
             ext: ""
+            archive_ext: .tar.gz
           - goos: darwin
             goarch: amd64
             runner: ubuntu-latest
             maafw_os: macos
             maafw_arch: x86_64
             ext: ""
+            archive_ext: .tar.gz
           - goos: darwin
             goarch: arm64
             runner: ubuntu-latest
             maafw_os: macos
             maafw_arch: aarch64
             ext: ""
+            archive_ext: .tar.gz
 
     runs-on: ${{ matrix.runner }}
     env:
@@ -156,24 +160,26 @@ jobs:
         shell: bash
         run: |
           ARTIFACT_NAME="MaaDebugger-${{ matrix.maafw_os }}-${{ matrix.maafw_arch }}"
-          ARCHIVE_NAME="${ARTIFACT_NAME}.tar.gz"
           mkdir -p "${ARTIFACT_NAME}/bin"
 
           cp "MaaDebugger${{ matrix.ext }}" "${ARTIFACT_NAME}/"
           cp -r maafw_dl/bin/* "${ARTIFACT_NAME}/bin/"
           cp README.md LICENSE "${ARTIFACT_NAME}/"
 
-          if [[ "${{ matrix.goos }}" != "windows" ]]; then
-            chmod 755 "${ARTIFACT_NAME}/MaaDebugger${{ matrix.ext }}"
-          fi
-
-          tar -czf "${ARCHIVE_NAME}" "${ARTIFACT_NAME}"
-
           echo "ARTIFACT_NAME=${ARTIFACT_NAME}" >> "$GITHUB_ENV"
-          echo "ARCHIVE_NAME=${ARCHIVE_NAME}" >> "$GITHUB_ENV"
+          echo "PACKAGE_PATH=${ARTIFACT_NAME}" >> "$GITHUB_ENV"
+
+      - name: Package Unix archive
+        if: matrix.goos != 'windows'
+        shell: bash
+        run: |
+          ARCHIVE_NAME="${ARTIFACT_NAME}${{ matrix.archive_ext }}"
+          chmod 755 "${ARTIFACT_NAME}/MaaDebugger${{ matrix.ext }}"
+          tar -czf "${ARCHIVE_NAME}" "${ARTIFACT_NAME}"
+          echo "PACKAGE_PATH=${ARCHIVE_NAME}" >> "$GITHUB_ENV"
 
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ env.ARTIFACT_NAME }}
-          path: ${{ env.ARCHIVE_NAME }}
+          path: ${{ env.PACKAGE_PATH }}
           if-no-files-found: error
