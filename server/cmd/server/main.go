@@ -202,8 +202,10 @@ func main() {
 
 	// Auto check for updates on startup (async, non-blocking, with cooldown)
 	go func() {
-		nightly := (channel == "npm" || channel == "github") && updater.IsCommitHash(buildinfo.Version)
-		if _, err := updater.AutoCheckUpdate(cfgStore, nightly); err != nil {
+		if _, err := updater.AutoCheckUpdate(cfgStore, updater.CheckOptions{
+			Nightly:           updater.IsNightlyBuild(channel, buildinfo.Version),
+			IncludePreRelease: updater.LoadIncludePreRelease(cfgStore),
+		}); err != nil {
 			log.Warn().Err(err).Msg("startup update check failed")
 		}
 	}()

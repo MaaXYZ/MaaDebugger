@@ -7,6 +7,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/mattn/go-colorable v0.1.14
 	github.com/rs/zerolog v1.34.0
+	golang.org/x/mod v0.33.0
 )
 
 require (

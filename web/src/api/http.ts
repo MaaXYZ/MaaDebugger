@@ -530,6 +530,7 @@ export interface UpdateCheckResult {
   latest_version: string;
   note?: string;
   nightly: boolean;
+  track: string;
 }
 
 /**
@@ -537,7 +538,14 @@ export interface UpdateCheckResult {
  * Nightly detection is handled automatically by the server
  * (channel == npm and version is a commit hash)
  */
-export async function checkForUpdates(): Promise<UpdateCheckResult | null> {
-  const result = await request<UpdateCheckResult>("/update/check");
+export async function checkForUpdates(
+  showPreRelease = false,
+): Promise<UpdateCheckResult | null> {
+  const query = new URLSearchParams({
+    showPre: String(showPreRelease),
+  });
+  const result = await request<UpdateCheckResult>(
+    `/update/check?${query.toString()}`,
+  );
   return result.data ?? null;
 }

@@ -105,11 +105,21 @@ func NewRouter(deps Dependencies) http.Handler {
 
 	return recoverer(logging(cors(mux)))
 }
-func (r *router) handleCheckUpdate(w http.ResponseWriter, _ *http.Request) {
-	// nightly is auto-detected: channel is npm or github, and version looks like a commit hash
-	nightly := (r.deps.Channel == "npm" || r.deps.Channel == "github") && updater.IsCommitHash(buildinfo.Version)
+func (r *router) handleCheckUpdate(w http.ResponseWriter, req *http.Request) {
+	showPre := updater.LoadIncludePreRelease(r.deps.ConfigStore)
+	if raw := req.URL.Query().Get("showPre"); raw != "" {
+		parsed, err := strconv.ParseBool(raw)
+		if err != nil {
+			response.Fail(w, http.StatusBadRequest, "invalid showPre query parameter")
+			return
+		}
+		showPre = parsed
+	}
 
-	result, err := updater.CheckUpdate(nightly)
+	result, err := updater.CheckUpdate(updater.CheckOptions{
+		Nightly:           updater.IsNightlyBuild(r.deps.Channel, buildinfo.Version),
+		IncludePreRelease: showPre,
+	})
 	if err != nil {
 		log.Error().Err(err).Msg("check update failed")
 		response.Fail(w, http.StatusInternalServerError, "check update failed: "+err.Error())

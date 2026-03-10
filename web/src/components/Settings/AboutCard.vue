@@ -53,6 +53,17 @@
                 </div>
 
                 <div class="flex flex-col gap-2">
+                    <div
+                        class="flex items-center justify-between gap-3 rounded-md border border-muted bg-elevated px-3 py-2">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-sm font-medium">Include pre-release updates</span>
+                            <span class="text-xs text-dimmed">When enabled, update checks may return newer pre-release
+                                versions.</span>
+                        </div>
+                        <USwitch :model-value="updateSettingsStore.showPreRelease"
+                            @update:model-value="updateSettingsStore.setShowPreRelease(Boolean($event))" />
+                    </div>
+
                     <UButton label="Check for Updates" :loading="checking" block @click="handleCheckUpdate" />
 
                     <UAlert v-if="updateResult" :color="updateResult.has_update ? 'info' : 'success'"
@@ -72,6 +83,7 @@
 import { onMounted, ref, computed } from 'vue';
 import { getMaaFrameworkVersion, getChannel, getMaaDebuggerInfos, checkForUpdates } from '@/api/http';
 import type { UpdateCheckResult } from '@/api/http';
+import { useUpdateSettingsStore } from '@/stores/updateSettings';
 
 const GITHUB = "github"
 const NPM = "npm"
@@ -83,6 +95,7 @@ const commitSHA = ref("")
 const buildTime = ref("")
 const currentChannel = ref("")
 const currentChannelLabel = ref("")
+const updateSettingsStore = useUpdateSettingsStore()
 
 const checking = ref(false)
 const updateResult = ref<UpdateCheckResult | null>(null)
@@ -91,7 +104,7 @@ const updateError = ref("")
 const updateDescription = computed(() => {
     if (!updateResult.value) return ""
     if (updateResult.value.has_update) {
-        const channel = updateResult.value.nightly ? "nightly" : "latest"
+        const channel = updateResult.value.track || (updateResult.value.nightly ? "nightly" : "release")
         let desc = `Current: ${updateResult.value.current_version} → Latest: ${updateResult.value.latest_version} (${channel})`
         if (updateResult.value.note) {
             desc += `\n${updateResult.value.note}`
@@ -113,7 +126,7 @@ async function handleCheckUpdate() {
     }
 
     try {
-        const result = await checkForUpdates()
+        const result = await checkForUpdates(updateSettingsStore.showPreRelease)
         updateResult.value = result
     } catch (e) {
         updateError.value = e instanceof Error ? e.message : "Unknown error"
