@@ -1,8 +1,8 @@
 <template>
     <UTooltip :text="reco.msg.name" class="inline-flex max-w-full min-w-0">
         <UButton size="sm" :variant="'outline'" :color="btnColor" :icon="btnIcon" :loading="reco.status === 'running'"
-                 class="font-medium max-w-full min-w-0 justify-start overflow-hidden"
-                 @click="$emit('requestDetail', reco.msg.reco_id)">
+            class="font-medium max-w-full min-w-0 justify-start overflow-hidden"
+            @click="$emit('requestDetail', reco.msg.reco_id)">
             <template #default>
                 <span class="flex items-center gap-1 max-w-full min-w-0 text-left overflow-hidden">
                     <span class="truncate block min-w-0">{{ itemBrief }}</span>
@@ -18,8 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { getRecoDetailById } from '@/api/http'
+import { computed } from 'vue'
 import { useTaskDetailSettingsStore } from '@/stores/taskDetailSettings'
 import type { RecoScope, NextListItem } from './types'
 
@@ -27,6 +26,7 @@ const props = defineProps<{
     reco: RecoScope
     info?: NextListItem
     useWarning?: boolean
+    algorithmType?: 'And' | 'Or'
 }>()
 
 defineEmits<{
@@ -34,23 +34,6 @@ defineEmits<{
 }>()
 
 const taskDetailSettingsStore = useTaskDetailSettingsStore()
-const algorithmType = ref<'And' | 'Or' | null>(null)
-
-watch(
-    () => props.reco.msg.reco_id,
-    async (recoId) => {
-        algorithmType.value = null
-        try {
-            const detail = await getRecoDetailById(recoId)
-            if (detail?.algorithm === 'And' || detail?.algorithm === 'Or') {
-                algorithmType.value = detail.algorithm
-            }
-        } catch {
-            algorithmType.value = null
-        }
-    },
-    { immediate: true },
-)
 
 const itemBrief = computed(() => {
     if (!props.info) return props.reco.msg.name

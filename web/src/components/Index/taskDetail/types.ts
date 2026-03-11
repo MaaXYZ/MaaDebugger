@@ -103,6 +103,7 @@ export interface NextListItem {
   jump_back: boolean;
   anchor: boolean;
   label?: string;
+  algorithm?: "And" | "Or";
 }
 
 export interface NextListEventMsg {

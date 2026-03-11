@@ -65,6 +65,52 @@ func eventStatusToString(status maa.EventStatus) string {
 	}
 }
 
+type runtimeNodeRecognitionV2 struct {
+	Type string `json:"type"`
+}
+
+type runtimeNodeRecognitionSnapshot struct {
+	Recognition any `json:"recognition"`
+}
+
+func resolveNextItemAlgorithm(ctx *maa.Context, name string) string {
+	if ctx == nil || name == "" {
+		return ""
+	}
+
+	nodeJSON, err := ctx.GetNodeJSON(name)
+	if err != nil || nodeJSON == "" {
+		return ""
+	}
+
+	var snapshot runtimeNodeRecognitionSnapshot
+	if err := json.Unmarshal([]byte(nodeJSON), &snapshot); err != nil {
+		return ""
+	}
+
+	switch recognition := snapshot.Recognition.(type) {
+	case string:
+		if recognition == "And" || recognition == "Or" {
+			return recognition
+		}
+	case map[string]any:
+		if rawType, ok := recognition["type"].(string); ok && (rawType == "And" || rawType == "Or") {
+			return rawType
+		}
+	}
+
+	var legacy struct {
+		Recognition runtimeNodeRecognitionV2 `json:"recognition"`
+	}
+	if err := json.Unmarshal([]byte(nodeJSON), &legacy); err == nil {
+		if legacy.Recognition.Type == "And" || legacy.Recognition.Type == "Or" {
+			return legacy.Recognition.Type
+		}
+	}
+
+	return ""
+}
+
 // registerSinks 注册所有事件回调到 Tasker 上。
 // 不在回调中做任何渲染，只将事件消息通过 emitEvent 发出。
 func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
@@ -105,16 +151,20 @@ func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
 		})
 	})
 
-	tasker.OnNodeNextListInContext(func(_ *maa.Context, event maa.EventStatus, detail maa.NodeNextListDetail) {
+	tasker.OnNodeNextListInContext(func(ctx *maa.Context, event maa.EventStatus, detail maa.NodeNextListDetail) {
 		suffix := eventStatusToString(event)
 		list := make([]map[string]any, 0, len(detail.List))
 		for _, item := range detail.List {
-			list = append(list, map[string]any{
+			entry := map[string]any{
 				"name":      item.Name,
 				"jump_back": item.JumpBack,
 				"anchor":    item.Anchor,
 				"label":     item.FormatName(),
-			})
+			}
+			if algorithm := resolveNextItemAlgorithm(ctx, item.Name); algorithm != "" {
+				entry["algorithm"] = algorithm
+			}
+			list = append(list, entry)
 		}
 		s.emitEvent(map[string]any{
 			"msg":  fmt.Sprintf("NextList.%s", suffix),
