@@ -5,7 +5,7 @@ import { getStatusSnapshot, getScreenshotStatus } from '@/api/http'
 import { useStatusStore } from '@/stores/status'
 import { handleTaskEvent } from '@/stores/launchGraph'
 import { latestAgentUpdate } from '@/api/agentEvents'
-import { latestFrame, screenshotRunning, screenshotPaused, screenshotFps, screenshotError } from '@/stores/screenshot'
+import { latestFrame, screenshotRunning, screenshotPaused, screenshotFps, screenshotError, screenshotOverlayState, screenshotOverlayMessage } from '@/stores/screenshot'
 
 const BACKEND_DISCONNECT_TOAST_ID = 'backend-disconnected'
 const PING_INTERVAL_MS = 5000
@@ -23,6 +23,8 @@ async function syncScreenshotStatus() {
         screenshotRunning.value = ss.running
         screenshotPaused.value = ss.paused
         screenshotFps.value = ss.fps
+        screenshotOverlayState.value = ss.overlay_state
+        screenshotOverlayMessage.value = ss.overlay_message
     }
 }
 
@@ -88,12 +90,19 @@ onMounted(async () => {
             latestAgentUpdate.value = agents
         },
         onScreenshotFrame(data) {
+            if (screenshotPaused.value || screenshotOverlayState.value === 'disconnected' || screenshotOverlayState.value === 'failed') {
+                return
+            }
             screenshotError.value = ''
+            screenshotOverlayState.value = 'none'
+            screenshotOverlayMessage.value = ''
             latestFrame.value = data
         },
         onScreenshotError(reason) {
             screenshotRunning.value = false
             screenshotError.value = reason
+            screenshotOverlayState.value = 'failed'
+            screenshotOverlayMessage.value = reason
             latestFrame.value = null
             toast.add({
                 id: 'screenshot-error',
@@ -130,12 +139,12 @@ onUnmounted(() => {
 
                         <UTooltip text="Settings">
                             <UButton color="neutral" variant="ghost" to="/settings" icon="i-lucide-settings"
-                                     aria-label="Settings" />
+                                aria-label="Settings" />
                         </UTooltip>
 
                         <UTooltip text="Open on GitHub">
                             <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
-                                     target="_blank" icon="i-simple-icons:github" aria-label="GitHub" />
+                                target="_blank" icon="i-simple-icons:github" aria-label="GitHub" />
                         </UTooltip>
                     </template>
                 </UHeader>

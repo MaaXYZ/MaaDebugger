@@ -427,6 +427,7 @@ func (r *router) handleControllerDisconnect(w http.ResponseWriter, _ *http.Reque
 	log.Info().Msg("[Controller] disconnect request")
 	r.deps.ScreenshotService.Stop()
 	r.deps.ControllerService.Disconnect()
+	r.deps.ScreenshotService.OnDisconnected()
 	r.deps.StatusStore.SetController("disconnected")
 	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 	log.Info().Msg("[Controller] disconnected, status → disconnected")
@@ -840,14 +841,16 @@ func (r *router) handleScreenshotSetOutput(w http.ResponseWriter, req *http.Requ
 
 func (r *router) handleScreenshotStatus(w http.ResponseWriter, _ *http.Request) {
 	response.OK(w, map[string]any{
-		"running":       r.deps.ScreenshotService.Running(),
-		"paused":        r.deps.ScreenshotService.Paused(),
-		"output_active": r.deps.ScreenshotService.OutputActive(),
-		"fps":           r.deps.ScreenshotService.GetFPS(),
-		"output":        r.deps.ScreenshotService.OutputDemand(),
-		"jpeg":          r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputJPEG),
-		"h264":          r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH264),
-		"h265":          r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH265),
+		"running":         r.deps.ScreenshotService.Running(),
+		"paused":          r.deps.ScreenshotService.Paused(),
+		"output_active":   r.deps.ScreenshotService.OutputActive(),
+		"fps":             r.deps.ScreenshotService.GetFPS(),
+		"output":          r.deps.ScreenshotService.OutputDemand(),
+		"jpeg":            r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputJPEG),
+		"h264":            r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH264),
+		"h265":            r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH265),
+		"overlay_state":   r.deps.ScreenshotService.OverlayState(),
+		"overlay_message": r.deps.ScreenshotService.OverlayMessage(),
 	})
 }
 

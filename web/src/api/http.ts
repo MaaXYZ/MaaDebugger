@@ -418,6 +418,8 @@ export interface ScreenshotStatus {
   running: boolean;
   paused: boolean;
   fps: number;
+  overlay_state: "none" | "disconnected" | "paused" | "failed";
+  overlay_message: string;
 }
 
 export async function startScreenshot(): Promise<ApiResponse> {

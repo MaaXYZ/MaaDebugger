@@ -4,8 +4,6 @@ import {
   pauseScreenshot,
   resumeScreenshot,
   setScreenshotFPS,
-  startScreenshot,
-  stopScreenshot,
 } from "@/api/http";
 import {
   DEFAULT_SCREENSHOT_FPS,
@@ -13,6 +11,8 @@ import {
   screenshotActualFps,
   screenshotError,
   screenshotFps,
+  screenshotOverlayMessage,
+  screenshotOverlayState,
   screenshotPaused,
   screenshotRunning,
 } from "@/stores/screenshot";
@@ -27,33 +27,21 @@ export function useScreenshotStream() {
   let fpsWindowStart = 0;
   let fpsFrameCount = 0;
 
-  const isStreaming = computed(() => screenshotRunning.value);
   const isPaused = computed(() => screenshotPaused.value);
   const currentFps = computed(() => screenshotFps.value);
   const actualFps = computed(() => screenshotActualFps.value);
 
-  async function toggleStreaming() {
-    if (isStreaming.value) {
-      await stopScreenshot();
-      screenshotRunning.value = false;
-    } else {
-      screenshotError.value = "";
-      await startScreenshot();
-      screenshotRunning.value = true;
-      screenshotPaused.value = false;
-      screenshotActualFps.value = 0;
-      fpsWindowStart = 0;
-      fpsFrameCount = 0;
-    }
-  }
-
   async function togglePause() {
     if (isPaused.value) {
-      await resumeScreenshot();
       screenshotPaused.value = false;
+      screenshotOverlayState.value = "none";
+      screenshotOverlayMessage.value = "";
+      await resumeScreenshot();
     } else {
-      await pauseScreenshot();
       screenshotPaused.value = true;
+      screenshotOverlayState.value = "paused";
+      screenshotOverlayMessage.value = "Screenshot paused";
+      await pauseScreenshot();
     }
   }
 
@@ -136,6 +124,8 @@ export function useScreenshotStream() {
       screenshotRunning.value = status.running;
       screenshotPaused.value = status.paused;
       screenshotFps.value = status.fps;
+      screenshotOverlayState.value = status.overlay_state;
+      screenshotOverlayMessage.value = status.overlay_message;
       fpsSlider.value = status.fps;
     }
     if (!status?.running) {
@@ -145,6 +135,7 @@ export function useScreenshotStream() {
 
   watch(latestFrame, (frame) => {
     if (!frame) {
+      pendingFrame = null;
       imageData.value = null;
       return;
     }
@@ -153,6 +144,14 @@ export function useScreenshotStream() {
     pendingFrame = frame;
     if (!rafId) {
       rafId = requestAnimationFrame(flushFrame);
+    }
+  });
+
+  watch(screenshotOverlayState, (state) => {
+    if (state === "paused" || state === "disconnected" || state === "failed") {
+      pendingFrame = null;
+      imageData.value = null;
+      screenshotActualFps.value = 0;
     }
   });
 
@@ -176,12 +175,12 @@ export function useScreenshotStream() {
     imageData,
     imageUrl,
     fpsSlider,
-    isStreaming,
     isPaused,
     currentFps,
     actualFps,
     screenshotError,
-    toggleStreaming,
+    screenshotOverlayState,
+    screenshotOverlayMessage,
     togglePause,
     applyFps,
     downloadImage,

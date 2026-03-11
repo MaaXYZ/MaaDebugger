@@ -59,6 +59,15 @@ type jpegResult struct {
 type frameHandler func(data []byte)
 type errorHandler func(reason string)
 
+type ScreenshotOverlayState string
+
+const (
+	ScreenshotOverlayStateNone         ScreenshotOverlayState = "none"
+	ScreenshotOverlayStateDisconnected ScreenshotOverlayState = "disconnected"
+	ScreenshotOverlayStatePaused       ScreenshotOverlayState = "paused"
+	ScreenshotOverlayStateFailed       ScreenshotOverlayState = "failed"
+)
+
 type ScreenshotService struct {
 	controllerSvc *ControllerService
 
@@ -77,6 +86,9 @@ type ScreenshotService struct {
 	outputDemand atomic.Uint32
 	outputActive atomic.Bool
 
+	overlayState   atomic.Value
+	overlayMessage atomic.Value
+
 	frameChangedNotify atomic.Value
 	cacheChangedNotify atomic.Value
 	stateChangedNotify atomic.Value
@@ -91,6 +103,8 @@ func NewScreenshotService(ctrlSvc *ControllerService) *ScreenshotService {
 		controllerSvc: ctrlSvc,
 	}
 	s.fps.Store(defaultScreenshotFPS)
+	s.overlayState.Store(ScreenshotOverlayStateDisconnected)
+	s.overlayMessage.Store("Controller disconnected")
 	return s
 }
 
@@ -178,11 +192,13 @@ func (s *ScreenshotService) SetOnError(fn func(reason string)) {
 
 func (s *ScreenshotService) EnableOutputDelivery() {
 	s.outputActive.Store(true)
+	s.updateOverlayState()
 	log.Info().Msg("[Screenshot] output delivery enabled")
 }
 
 func (s *ScreenshotService) DisableOutputDelivery() {
 	s.outputActive.Store(false)
+	s.updateOverlayState()
 	log.Info().Msg("[Screenshot] output delivery disabled")
 }
 
@@ -207,12 +223,14 @@ func (s *ScreenshotService) Start() {
 // Stop halts the screenshot loop.
 func (s *ScreenshotService) Stop() {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	if !s.running {
+		s.mu.Unlock()
 		return
 	}
 	close(s.stopCh)
 	s.running = false
+	s.mu.Unlock()
+	s.updateOverlayState()
 	log.Info().Msg("[Screenshot] loops stopped")
 }
 
@@ -240,6 +258,9 @@ func (s *ScreenshotService) GetFPS() int32 {
 func (s *ScreenshotService) Pause() {
 	s.manualPaused.Store(true)
 	s.paused.Store(true)
+	s.drainJPEGJobs()
+	s.notifyStateChanged()
+	s.updateOverlayState()
 	log.Info().Msg("[Screenshot] paused")
 }
 
@@ -253,6 +274,14 @@ func (s *ScreenshotService) OnConnected() {
 	s.EnableOutputDelivery()
 	s.taskRunning.Store(false)
 	s.resumeIfAllowed()
+	s.updateOverlayState()
+}
+
+func (s *ScreenshotService) OnDisconnected() {
+	s.manualPaused.Store(false)
+	s.paused.Store(true)
+	s.outputActive.Store(false)
+	s.setOverlayState(ScreenshotOverlayStateDisconnected, "Controller disconnected")
 }
 
 func (s *ScreenshotService) OnTaskStarted() {
@@ -274,25 +303,74 @@ func (s *ScreenshotService) OnTaskEnded() {
 		return
 	}
 	s.paused.Store(false)
+	s.updateOverlayState()
 }
 
 func (s *ScreenshotService) Paused() bool {
 	return s.paused.Load()
 }
 
+func (s *ScreenshotService) OverlayState() ScreenshotOverlayState {
+	state, _ := s.overlayState.Load().(ScreenshotOverlayState)
+	if state == "" {
+		return ScreenshotOverlayStateNone
+	}
+	return state
+}
+
+func (s *ScreenshotService) OverlayMessage() string {
+	message, _ := s.overlayMessage.Load().(string)
+	return message
+}
+
+func (s *ScreenshotService) setOverlayState(state ScreenshotOverlayState, message string) {
+	s.overlayState.Store(state)
+	s.overlayMessage.Store(message)
+}
+
+func (s *ScreenshotService) clearOverlayState() {
+	s.setOverlayState(ScreenshotOverlayStateNone, "")
+}
+
+func (s *ScreenshotService) updateOverlayState() {
+	s.mu.Lock()
+	running := s.running
+	s.mu.Unlock()
+	if s.controllerSvc.Controller() == nil {
+		s.setOverlayState(ScreenshotOverlayStateDisconnected, "Controller disconnected")
+		return
+	}
+	if s.manualPaused.Load() || s.paused.Load() {
+		s.setOverlayState(ScreenshotOverlayStatePaused, "Screenshot paused")
+		return
+	}
+	if !running || !s.outputActive.Load() {
+		s.clearOverlayState()
+		return
+	}
+	if s.OverlayState() == ScreenshotOverlayStateFailed {
+		return
+	}
+	s.clearOverlayState()
+}
+
 func (s *ScreenshotService) resumeIfAllowed() {
 	if s.manualPaused.Load() {
 		s.paused.Store(true)
+		s.updateOverlayState()
 		log.Info().Msg("[Screenshot] resume skipped: manually paused")
 		return
 	}
 	if !s.outputActive.Load() {
 		s.paused.Store(true)
+		s.updateOverlayState()
 		log.Info().Msg("[Screenshot] resume skipped: output delivery disabled")
 		return
 	}
 
 	s.paused.Store(false)
+	s.notifyStateChanged()
+	s.updateOverlayState()
 	if s.taskRunning.Load() {
 		log.Info().Msg("[Screenshot] resumed cache polling with PostScreencap disabled by task state")
 		return
@@ -319,7 +397,7 @@ func (s *ScreenshotService) captureLoop(stop <-chan struct{}) {
 			log.Warn().Err(err).Uint64("seq", seq).Int("failures", consecutiveFailures).Msg("[Screenshot] screencap stage failed")
 			if consecutiveFailures >= maxConsecutiveFailures {
 				log.Error().Int("failures", consecutiveFailures).Msg("[Screenshot] too many consecutive failures, stopping")
-				s.stopWithError("PostScreencap failed repeatedly")
+				s.stopWithError("Screenshot capture failed repeatedly")
 				return
 			}
 			continue
@@ -331,7 +409,7 @@ func (s *ScreenshotService) captureLoop(stop <-chan struct{}) {
 			log.Warn().Err(err).Uint64("seq", seq).Int("failures", consecutiveFailures).Msg("[Screenshot] cache snapshot stage failed")
 			if consecutiveFailures >= maxConsecutiveFailures {
 				log.Error().Int("failures", consecutiveFailures).Msg("[Screenshot] too many consecutive failures, stopping")
-				s.stopWithError("Cache snapshot failed repeatedly")
+				s.stopWithError("Screenshot capture failed repeatedly")
 				return
 			}
 			continue
@@ -426,7 +504,7 @@ func (s *ScreenshotService) jpegLoop(stop <-chan struct{}) {
 				log.Warn().Err(result.err).Uint64("seq", result.seq).Int("failures", consecutiveFailures).Msg("[Screenshot] encode stage failed")
 				if consecutiveFailures >= maxConsecutiveFailures {
 					log.Error().Int("failures", consecutiveFailures).Msg("[Screenshot] too many consecutive failures, stopping")
-					s.stopWithError("JPEG encode failed repeatedly")
+					s.stopWithError("Screenshot encode failed repeatedly")
 					return
 				}
 				continue
@@ -455,7 +533,7 @@ func (s *ScreenshotService) jpegWorker(stop <-chan struct{}, results chan<- jpeg
 		case <-stop:
 			return
 		case job := <-s.jpegJobs:
-			if job == nil {
+			if job == nil || s.paused.Load() {
 				continue
 			}
 			data, err := s.encodeJPEGImage(job.img, &buf, jpegOpts)
@@ -558,7 +636,7 @@ func (s *ScreenshotService) prepareJPEGJob(seq uint64) (*jpegJob, error) {
 }
 
 func (s *ScreenshotService) enqueueLatestJPEGJob(job *jpegJob) {
-	if job == nil || s.jpegJobs == nil {
+	if job == nil || s.jpegJobs == nil || s.paused.Load() {
 		return
 	}
 
@@ -572,6 +650,19 @@ func (s *ScreenshotService) enqueueLatestJPEGJob(job *jpegJob) {
 		select {
 		case <-s.jpegJobs:
 		default:
+		}
+	}
+}
+
+func (s *ScreenshotService) drainJPEGJobs() {
+	if s.jpegJobs == nil {
+		return
+	}
+	for {
+		select {
+		case <-s.jpegJobs:
+		default:
+			return
 		}
 	}
 }
@@ -622,6 +713,7 @@ func (s *ScreenshotService) resetPipelineStateLocked() {
 	s.paused.Store(true)
 	s.stats.encodedFrames.Store(0)
 	s.stats.broadcastedFrames.Store(0)
+	s.setOverlayState(ScreenshotOverlayStateDisconnected, "Controller disconnected")
 }
 
 // stopWithError marks the loop as stopped and invokes the onError callback.
@@ -632,6 +724,7 @@ func (s *ScreenshotService) stopWithError(reason string) {
 		s.running = false
 	}
 	s.mu.Unlock()
+	s.setOverlayState(ScreenshotOverlayStateFailed, reason)
 	fn, _ := s.onError.Load().(errorHandler)
 	if fn != nil {
 		fn(reason)
