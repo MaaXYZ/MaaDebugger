@@ -14,6 +14,10 @@
                             </span>
                             {{ statusLabel }}
                         </UBadge>
+
+                        <span class="font-medium text-muted" v-if="loadedInterface">
+                            Project: {{ loadedInterface.name || 'Unnamed interface' }}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -24,15 +28,6 @@
                 <UInput v-model="interfacePath" class="w-full" placeholder="Enter interface.json file path..."
                     icon="i-lucide-file-json" size="xl" :color="pathError ? 'error' : 'neutral'" @blur="onPathBlur" />
             </UFormField>
-
-            <div v-if="loadedInterface" class="rounded-lg border border-default bg-elevated/50 p-3 text-sm">
-                <div class="font-medium text-default">{{ loadedInterface.name || 'Unnamed interface' }}
-                </div>
-                <div class="mt-1 text-dimmed">Controllers: {{ loadedInterface.controller_candidates.length
-                }} · Resources: {{ loadedInterface.resource_candidates.length }} · Tasks: {{
-                        loadedInterface.task_candidates.length }} · Imports: {{ importCount }}</div>
-                <div class="mt-2 text-dimmed break-all">{{ loadedInterface.interface_path }}</div>
-            </div>
 
             <div class="flex justify-end">
                 <UButton color="primary" variant="soft" icon="i-lucide-folder-open" size="xl" :loading="loading"
@@ -79,7 +74,6 @@ const dotClass = computed(() => {
     if (loadedInterface.value) return 'bg-success'
     return 'bg-gray-400 dark:bg-gray-500'
 })
-const importCount = computed(() => loadedInterface.value?.imports?.length ?? 0)
 
 watch(interfacePath, () => {
     if (pathError.value) {
