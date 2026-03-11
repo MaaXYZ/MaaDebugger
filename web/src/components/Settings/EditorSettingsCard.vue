@@ -13,7 +13,7 @@ const editorSettingsStore = useEditorSettingsStore()
                     <span class="text-sm text-dimmed">Configure JSON editor size and readability.</span>
                 </div>
                 <UButton color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" label="Reset" size="xs"
-                    @click="editorSettingsStore.reset()" />
+                         @click="editorSettingsStore.reset()" />
             </div>
         </template>
 
@@ -25,7 +25,7 @@ const editorSettingsStore = useEditorSettingsStore()
                         px</span>
                 </div>
                 <USlider :model-value="editorSettingsStore.normalizedFontSize" :min="12" :max="24" :step="1"
-                    @update:model-value="editorSettingsStore.setFontSize(Number($event))" />
+                         @update:model-value="editorSettingsStore.setFontSize(Number($event))" />
             </div>
 
             <div class="flex flex-col gap-2">
@@ -35,7 +35,7 @@ const editorSettingsStore = useEditorSettingsStore()
                         px</span>
                 </div>
                 <USlider :model-value="editorSettingsStore.normalizedMinHeight" :min="360" :max="960" :step="20"
-                    @update:model-value="editorSettingsStore.setMinHeight(Number($event))" />
+                         @update:model-value="editorSettingsStore.setMinHeight(Number($event))" />
             </div>
 
             <div class="flex flex-col gap-2">
@@ -45,7 +45,7 @@ const editorSettingsStore = useEditorSettingsStore()
                         px</span>
                 </div>
                 <USlider :model-value="editorSettingsStore.normalizedMaxHeight" :min="420" :max="1200" :step="20"
-                    @update:model-value="editorSettingsStore.setMaxHeight(Number($event))" />
+                         @update:model-value="editorSettingsStore.setMaxHeight(Number($event))" />
             </div>
         </div>
     </UCard>

@@ -1,6 +1,6 @@
 <template>
     <UModal :open="open" title="Interface Task" :dismissible="false" :ui="{ content: 'sm:max-w-2xl' }"
-        @update:open="emit('update:open', $event)">
+            @update:open="emit('update:open', $event)">
         <template #body>
             <div class="w-full flex flex-col gap-3">
                 <div v-if="selectedTask" class="rounded-lg border border-default bg-elevated/50 p-3 space-y-3">
@@ -12,14 +12,14 @@
                             Entry: {{ selectedTask.entry || 'n/a' }}
                         </div>
                         <div v-if="selectedTask.description && !selectedTask.description?.startsWith('$')"
-                            class="mt-1 text-xs text-dimmed whitespace-pre-wrap">
+                             class="mt-1 text-xs text-dimmed whitespace-pre-wrap">
                             {{ selectedTask.description }}
                         </div>
                     </div>
                 </div>
 
                 <div v-if="selectedTask && optionDefs.length"
-                    class="rounded-lg border border-default bg-elevated/50 p-3 space-y-3">
+                     class="rounded-lg border border-default bg-elevated/50 p-3 space-y-3">
                     <div class="text-xs font-medium text-default">Options</div>
                     <div v-for="optionDef in optionDefs" :key="optionDef.name" class="space-y-2">
                         <div class="flex items-start justify-between gap-3">
@@ -28,7 +28,7 @@
                                     {{ optionDef.name }}
                                 </div>
                                 <div v-if="optionDef.description && !optionDef.description?.startsWith('$')"
-                                    class="text-xs text-dimmed whitespace-pre-wrap break-all">
+                                     class="text-xs text-dimmed whitespace-pre-wrap break-all">
                                     {{ optionDef.description }}
                                 </div>
                             </div>
@@ -38,9 +38,9 @@
                         </div>
 
                         <div v-if="optionDef.type === 'switch'"
-                            class="rounded-md border border-default bg-default/30 px-3 py-2">
+                             class="rounded-md border border-default bg-default/30 px-3 py-2">
                             <USwitch :model-value="isSwitchChecked(optionDef)"
-                                @update:model-value="(value) => onSwitchUpdated(optionDef, value)">
+                                     @update:model-value="(value) => onSwitchUpdated(optionDef, value)">
                                 <template #label>
                                     <div class="text-sm text-default">
                                         {{ getSwitchLabel(optionDef) }}
@@ -50,8 +50,8 @@
                         </div>
 
                         <USelectMenu v-else :model-value="selectedCaseMap[optionDef.name]"
-                            :items="buildOptionCaseItems(optionDef)" value-key="value" class="w-full" arrow
-                            @update:model-value="(value) => onCaseSelected(optionDef.name, value)" />
+                                     :items="buildOptionCaseItems(optionDef)" value-key="value" class="w-full" arrow
+                                     @update:model-value="(value) => onCaseSelected(optionDef.name, value)" />
                     </div>
                 </div>
             </div>

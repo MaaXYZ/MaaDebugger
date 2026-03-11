@@ -6,7 +6,7 @@
             <div class="flex flex-row items-center gap-2 flex-wrap px-1">
                 <span class="text-xs text-dimmed font-medium">Draw:</span>
                 <UTabs key="value" v-model="drawMode" :items="drawModeOptions" />
-                <span class="text-xs text-dimmed tabular-nums" v-if="drawMode !== 'best'">
+                <span v-if="drawMode !== 'best'" class="text-xs text-dimmed tabular-nums">
                     ({{ activeResults.length }})
                 </span>
             </div>
@@ -177,7 +177,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
-import { type TabsItem } from '@nuxt/ui'
+import type { TabsItem } from '@nuxt/ui'
 import { getTaskImageUrl } from '@/api/http'
 import type { RecoDetailResponse, RecoResultItem, RectResponse } from './types'
 

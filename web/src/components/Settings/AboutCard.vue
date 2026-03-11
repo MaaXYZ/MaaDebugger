@@ -11,15 +11,15 @@
                         <span>MaaDebugger Version: {{ maaDebuggerVersion }}</span>
                         <UTooltip text="Open on GitHub">
                             <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
-                                target="_blank" icon="i-simple-icons:github" aria-label="open-in-GitHub" />
+                                     target="_blank" icon="i-simple-icons:github" aria-label="open-in-GitHub" />
                         </UTooltip>
                         <UTooltip text="Open on npm">
                             <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
-                                target="_blank" icon="i-simple-icons:npm" aria-label="open-in-npm" />
+                                     target="_blank" icon="i-simple-icons:npm" aria-label="open-in-npm" />
                         </UTooltip>
                         <UTooltip text="Open on PyPI">
                             <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
-                                target="_blank" icon="i-simple-icons:pypi" aria-label="open-in-pypi" />
+                                     target="_blank" icon="i-simple-icons:pypi" aria-label="open-in-pypi" />
                         </UTooltip>
                     </div>
                     <div
@@ -27,7 +27,7 @@
                         <span class="font-medium text-default">Build Info</span>
                         <span class="truncate">Build Time: {{ buildTime }}</span>
                         <ULink v-if="commitSHA != 'dev'"
-                            :to="`https://github.com/MaaXYZ/MaaDebugger/commit/${commitSHA}`" target="_blank">
+                               :to="`https://github.com/MaaXYZ/MaaDebugger/commit/${commitSHA}`" target="_blank">
                             <span class="truncate">Commit SHA: {{ commitSHA }}</span>
                         </ULink>
                     </div>
@@ -36,20 +36,20 @@
                     <span>MaaFramework Version: {{ maaVersion }}</span>
                     <UTooltip text="Open on GitHub">
                         <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaFramework"
-                            target="_blank" icon="i-simple-icons:github" aria-label="open-in-GitHub" />
+                                 target="_blank" icon="i-simple-icons:github" aria-label="open-in-GitHub" />
                     </UTooltip>
                 </div>
                 <div class="flex items-center gap-1">
                     <span>Channel: {{ currentChannelLabel }}</span>
                     <UButton v-if="currentChannel == GITHUB" color="neutral" variant="ghost"
-                        to="https://github.com/MaaXYZ/MaaFramework/releases" target="_blank"
-                        icon="i-simple-icons:github" aria-label="open-in-GitHub" />
+                             to="https://github.com/MaaXYZ/MaaFramework/releases" target="_blank"
+                             icon="i-simple-icons:github" aria-label="open-in-GitHub" />
                     <UButton v-else-if="currentChannel == NPM" color="neutral" variant="ghost"
-                        to="https://github.com/MaaXYZ/MaaFramework/releases" target="_blank" icon="i-simple-icons:npm"
-                        aria-label="open-in-GitHub" />
+                             to="https://github.com/MaaXYZ/MaaFramework/releases" target="_blank" icon="i-simple-icons:npm"
+                             aria-label="open-in-GitHub" />
                     <UButton v-else-if="currentChannel == PYPI" color="neutral" variant="ghost"
-                        to="https://github.com/MaaXYZ/MaaFramework/releases" target="_blank" icon="i-simple-icons:pypi"
-                        aria-label="open-in-GitHub" />
+                             to="https://github.com/MaaXYZ/MaaFramework/releases" target="_blank" icon="i-simple-icons:pypi"
+                             aria-label="open-in-GitHub" />
                 </div>
 
                 <div class="flex flex-col gap-2">
@@ -61,18 +61,18 @@
                                 versions.</span>
                         </div>
                         <USwitch :model-value="updateSettingsStore.showPreRelease"
-                            @update:model-value="updateSettingsStore.setShowPreRelease(Boolean($event))" />
+                                 @update:model-value="updateSettingsStore.setShowPreRelease(Boolean($event))" />
                     </div>
 
                     <UButton label="Check for Updates" :loading="checking" block @click="handleCheckUpdate" />
 
                     <UAlert v-if="updateResult" :color="updateResult.has_update ? 'info' : 'success'"
-                        :icon="updateResult.has_update ? 'i-lucide-download' : 'i-lucide-check-circle'"
-                        :title="updateResult.has_update ? 'Update Available' : 'Up to Date'"
-                        :description="updateDescription" variant="subtle" />
+                            :icon="updateResult.has_update ? 'i-lucide-download' : 'i-lucide-check-circle'"
+                            :title="updateResult.has_update ? 'Update Available' : 'Up to Date'"
+                            :description="updateDescription" variant="subtle" />
 
                     <UAlert v-if="updateError" color="error" icon="i-lucide-alert-circle" title="Check Failed"
-                        :description="updateError" variant="subtle" />
+                            :description="updateError" variant="subtle" />
                 </div>
             </div>
         </template>
@@ -175,21 +175,21 @@ onMounted(async () => {
     buildTime.value = formatBuildTime(_maaDebuggerVersion.build_time)
 
     switch (_channel) {
-        case GITHUB:
-            currentChannel.value = GITHUB
-            currentChannelLabel.value = "Github"
-            break
-        case NPM:
-            currentChannel.value = NPM
-            currentChannelLabel.value = "npm"
-            break
-        case PYPI:
-            currentChannel.value = PYPI
-            currentChannelLabel.value = "PyPI"
-            break
-        default:
-            currentChannel.value = GITHUB
-            currentChannelLabel.value = "Github"
+    case GITHUB:
+        currentChannel.value = GITHUB
+        currentChannelLabel.value = "Github"
+        break
+    case NPM:
+        currentChannel.value = NPM
+        currentChannelLabel.value = "npm"
+        break
+    case PYPI:
+        currentChannel.value = PYPI
+        currentChannelLabel.value = "PyPI"
+        break
+    default:
+        currentChannel.value = GITHUB
+        currentChannelLabel.value = "Github"
     }
 })
 </script>

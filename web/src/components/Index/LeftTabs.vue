@@ -1,6 +1,6 @@
 <template>
     <div class="gap-2 flex flex-col">
-        <UTabs :items="tabs" key="value" v-model="tabsModel" />
+        <UTabs key="value" v-model="tabsModel" :items="tabs" />
         <div v-show="tabsModel === 'controller'" class="gap-2 flex flex-col">
             <ControllerCard />
         </div>
@@ -16,7 +16,7 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue';
-import { type TabsItem } from '@nuxt/ui';
+import type { TabsItem } from '@nuxt/ui';
 
 import InterfaceCard from './InterfaceCard.vue';
 import ControllerCard from './ControllerCard.vue';

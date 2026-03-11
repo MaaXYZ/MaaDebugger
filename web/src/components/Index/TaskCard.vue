@@ -38,13 +38,13 @@
 
                 <UTooltip :text="isPaused ? 'Resume' : 'Pause'">
                     <UButton color="neutral" variant="ghost" :icon="isPaused ? 'i-lucide-play' : 'i-lucide-pause'"
-                        size="sm" :disabled="!isStreaming" @click="togglePause" />
+                             size="sm" :disabled="!isStreaming" @click="togglePause" />
                 </UTooltip>
 
                 <UTooltip :text="isStreaming ? 'Stop streaming' : 'Start streaming'">
                     <UButton :color="isStreaming ? 'error' : 'primary'" variant="ghost"
-                        :icon="isStreaming ? 'i-lucide-video-off' : 'i-lucide-video'" size="sm"
-                        @click="toggleStreaming" />
+                             :icon="isStreaming ? 'i-lucide-video-off' : 'i-lucide-video'" size="sm"
+                             @click="toggleStreaming" />
                 </UTooltip>
 
                 <UTooltip :text="aspectMode === 'landscape' ? 'Switch to 9:16 portrait' : 'Switch to 16:9 landscape'">
@@ -58,19 +58,19 @@
         <template #default>
             <div class="flex flex-col gap-3">
                 <TaskLaunchPanel v-model:selected-entry="selectedEntry" v-model:entry-search-term="entrySearchTerm"
-                    v-model:task-launch-mode="taskLaunchMode" :entry-select-items="entrySelectItems"
-                    :is-running="isRunning" :can-start="canStart" :is-stopping="isStopping"
-                    :start-stop-keys="startStopKeys" :is-preparing-override-editor="isPreparingOverrideEditor"
-                    :has-interface-tasks="hasInterfaceTasks" :interface-task-items="interfaceTaskItems"
-                    :selected-interface-task="selectedInterfaceTask"
-                    :selected-task-option-selections="selectedTaskOptionSelections" :effective-entry="effectiveEntry"
-                    @interface-task-selected="onInterfaceTaskSelected"
-                    @open-interface-task-modal="openInterfaceTaskModal" @edit-override="onEditOverride" @start="onStart"
-                    @stop="onStop" />
+                                 v-model:task-launch-mode="taskLaunchMode" :entry-select-items="entrySelectItems"
+                                 :is-running="isRunning" :can-start="canStart" :is-stopping="isStopping"
+                                 :start-stop-keys="startStopKeys" :is-preparing-override-editor="isPreparingOverrideEditor"
+                                 :has-interface-tasks="hasInterfaceTasks" :interface-task-items="interfaceTaskItems"
+                                 :selected-interface-task="selectedInterfaceTask"
+                                 :selected-task-option-selections="selectedTaskOptionSelections" :effective-entry="effectiveEntry"
+                                 @interface-task-selected="onInterfaceTaskSelected"
+                                 @open-interface-task-modal="openInterfaceTaskModal" @edit-override="onEditOverride" @start="onStart"
+                                 @stop="onStop" />
 
                 <TaskScreenshotPanel :image-url="imageUrl || ''" :screenshot-error="screenshotError || ''"
-                    :is-dragging="isDragging" :container-style="containerStyle" :image-style="imageStyle"
-                    @wheel="onImageWheel" @drag-start="onDragStart" @drag-move="onDragMove" @drag-end="onDragEnd" />
+                                     :is-dragging="isDragging" :container-style="containerStyle" :image-style="imageStyle"
+                                     @wheel="onImageWheel" @drag-start="onDragStart" @drag-move="onDragMove" @drag-end="onDragEnd" />
             </div>
         </template>
 
@@ -79,14 +79,14 @@
                 <div class="flex items-center gap-1">
                     <UTooltip text="Zoom out">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-out" size="sm"
-                            :disabled="!imageUrl || zoomLevel <= MIN_ZOOM" @click="zoomOut" />
+                                 :disabled="!imageUrl || zoomLevel <= MIN_ZOOM" @click="zoomOut" />
                     </UTooltip>
                     <span class="text-xs text-muted min-w-10 text-center tabular-nums">
                         {{ zoomPercentage }}%
                     </span>
                     <UTooltip text="Zoom in">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-in" size="sm"
-                            :disabled="!imageUrl || zoomLevel >= MAX_ZOOM" @click="zoomIn" />
+                                 :disabled="!imageUrl || zoomLevel >= MAX_ZOOM" @click="zoomIn" />
                     </UTooltip>
                 </div>
 
@@ -94,38 +94,38 @@
 
                 <UTooltip text="Fit to view">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-maximize" size="sm" :disabled="!imageUrl"
-                        @click="resetZoom" />
+                             @click="resetZoom" />
                 </UTooltip>
 
                 <div class="flex-1"></div>
 
                 <UTooltip text="Fullscreen">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-fullscreen" size="sm" :disabled="!imageUrl"
-                        @click="isFullscreen = true" />
+                             @click="isFullscreen = true" />
                 </UTooltip>
 
                 <UTooltip text="Download">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-download" size="sm" :disabled="!imageUrl"
-                        @click="downloadImage" />
+                             @click="downloadImage" />
                 </UTooltip>
             </div>
         </template>
     </UCard>
 
     <TaskFullscreenModal v-model:open="isFullscreen" :image-url="imageUrl || ''" :is-dragging="isFullscreenDragging"
-        :image-style="fullscreenImageStyle" :zoom-level="fullscreenZoom" :zoom-percentage="fullscreenZoomPercentage"
-        :min-zoom="MIN_ZOOM" :max-zoom="MAX_ZOOM" @wheel="onFullscreenWheel" @drag-start="onFullscreenDragStart"
-        @drag-move="onFullscreenDragMove" @drag-end="onFullscreenDragEnd" @zoom-in="fullscreenZoomIn"
-        @zoom-out="fullscreenZoomOut" @reset-zoom="resetFullscreenZoom" @download="downloadImage" />
+                         :image-style="fullscreenImageStyle" :zoom-level="fullscreenZoom" :zoom-percentage="fullscreenZoomPercentage"
+                         :min-zoom="MIN_ZOOM" :max-zoom="MAX_ZOOM" @wheel="onFullscreenWheel" @drag-start="onFullscreenDragStart"
+                         @drag-move="onFullscreenDragMove" @drag-end="onFullscreenDragEnd" @zoom-in="fullscreenZoomIn"
+                         @zoom-out="fullscreenZoomOut" @reset-zoom="resetFullscreenZoom" @download="downloadImage" />
 
     <TaskInterfaceModal v-model:open="interfaceTaskModalOpen" :selected-task="draftSelectedTask"
-        :option-defs="draftTaskOptionDefs" :selected-case-map="draftSelectedCaseMap"
-        @select-case="onOptionCaseDraftSelected" @cancel="onInterfaceTaskCancel" @confirm="onInterfaceTaskConfirm" />
+                        :option-defs="draftTaskOptionDefs" :selected-case-map="draftSelectedCaseMap"
+                        @select-case="onOptionCaseDraftSelected" @cancel="onInterfaceTaskCancel" @confirm="onInterfaceTaskConfirm" />
 
     <component :is="jsonEditorModalComponent" v-if="jsonEditorModalComponent" v-model:open="overrideEditorOpen"
-        v-model="overrideEditorDraft" title="Pipeline Override"
-        description="Edit the effective override JSON. Interface-generated values remain synced until you change them manually."
-        :schema="editorSchema" :external-schemas="editorExternalSchemas" />
+               v-model="overrideEditorDraft" title="Pipeline Override"
+               description="Edit the effective override JSON. Interface-generated values remain synced until you change them manually."
+               :schema="editorSchema" :external-schemas="editorExternalSchemas" />
 </template>
 
 <script setup lang="ts">

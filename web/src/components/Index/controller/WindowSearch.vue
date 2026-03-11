@@ -4,18 +4,18 @@
         <div class="flex flex-row gap-2 min-w-0">
             <UFormField name="class_name" label="Class Name" class="flex-1 min-w-0">
                 <UInput v-model="searchFilter.className" placeholder="Window class name"
-                    icon="i-lucide-text-cursor-input" class="w-full" :ui="{ base: 'truncate' }" />
+                        icon="i-lucide-text-cursor-input" class="w-full" :ui="{ base: 'truncate' }" />
             </UFormField>
 
             <UFormField name="window_regex" label="Window Name Regex" class="flex-1 min-w-0">
                 <UInput v-model="searchFilter.windowRegex" placeholder=".*" icon="i-lucide-regex" class="w-full"
-                    :ui="{ base: 'truncate' }" />
+                        :ui="{ base: 'truncate' }" />
             </UFormField>
         </div>
 
         <!-- Window Select -->
         <USelectMenu v-model="selectedHwnd" value-key="value" :items="windowItems" placeholder="Select a window..."
-            icon="i-lucide-app-window" class="w-full min-w-0" size="xl" :loading="searching" />
+                     icon="i-lucide-app-window" class="w-full min-w-0" size="xl" :loading="searching" />
     </div>
 </template>
 

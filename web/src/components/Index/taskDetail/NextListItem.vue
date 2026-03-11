@@ -4,7 +4,7 @@
             <template v-if="entry.recos.length === 0">
                 <UTooltip :text="formatItemLabel(entry.item)">
                     <UButton size="sm" variant="outline" color="neutral" disabled
-                        class="max-w-full min-w-0 overflow-hidden">
+                             class="max-w-full min-w-0 overflow-hidden">
                         <span class="truncate block min-w-0">{{ formatItemLabel(entry.item) }}</span>
                     </UButton>
                 </UTooltip>
@@ -12,21 +12,21 @@
 
             <template v-else-if="entry.recos.length === 1 && entry.recos[0]?.msg.name === entry.item.name">
                 <RecoButton :reco="entry.recos[0]" :info="entry.item" :algorithm-type="entry.item.algorithm" use-warning
-                    @request-detail="$emit('requestDetail', $event)" />
+                            @request-detail="$emit('requestDetail', $event)" />
             </template>
 
             <div v-else
-                class="inline-flex max-w-full flex-wrap items-start gap-1.5 rounded-md border border-default px-2 py-1">
+                 class="inline-flex max-w-full flex-wrap items-start gap-1.5 rounded-md border border-default px-2 py-1">
                 <UTooltip :text="formatItemLabel(entry.item)">
                     <UButton size="sm" variant="soft" color="neutral" disabled
-                        class="max-w-full min-w-0 overflow-hidden">
+                             class="max-w-full min-w-0 overflow-hidden">
                         <span class="truncate block min-w-0">{{ formatItemLabel(entry.item) }}</span>
                     </UButton>
                 </UTooltip>
 
                 <template v-for="(reco, recoIdx) in entry.recos" :key="`entry-${idx}-reco-${recoIdx}`">
                     <RecoButton :reco="reco" :algorithm-type="entry.item.algorithm"
-                        @request-detail="$emit('requestDetail', $event)" />
+                                @request-detail="$emit('requestDetail', $event)" />
                 </template>
             </div>
         </template>

@@ -49,26 +49,26 @@ function resetBinding(action: ShortcutAction) {
             <div class="flex flex-row items-center justify-between">
                 <span class="font-bold">Keyboard Shortcuts</span>
                 <UButton color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" label="Reset All" size="xs"
-                    @click="shortcutsStore.resetAll()" />
+                         @click="shortcutsStore.resetAll()" />
             </div>
         </template>
 
         <div class="flex flex-col gap-3">
             <div v-for="item in shortcutsStore.allShortcuts" :key="item.action"
-                class="flex flex-row items-center justify-between gap-4 rounded-lg border border-default p-3">
+                 class="flex flex-row items-center justify-between gap-4 rounded-lg border border-default p-3">
                 <span class="text-sm font-medium">{{ item.label }}</span>
 
                 <div class="flex flex-row items-center gap-2">
                     <button v-if="recordingAction === item.action" autofocus
-                        class="flex animate-pulse items-center gap-1 rounded-md border-2 border-primary px-3 py-1.5 text-sm"
-                        @keydown="onRecordKeydown" @blur="stopRecording">
+                            class="flex animate-pulse items-center gap-1 rounded-md border-2 border-primary px-3 py-1.5 text-sm"
+                            @keydown="onRecordKeydown" @blur="stopRecording">
                         <UIcon name="i-lucide-keyboard" class="size-4" />
                         <span>Press a key...</span>
                     </button>
 
                     <button v-else
-                        class="cursor-pointer flex items-center gap-1 rounded-md border border-default px-3 py-1.5 text-sm transition-colors hover:bg-elevated"
-                        @click="startRecording(item.action)">
+                            class="cursor-pointer flex items-center gap-1 rounded-md border border-default px-3 py-1.5 text-sm transition-colors hover:bg-elevated"
+                            @click="startRecording(item.action)">
                         <template v-if="item.binding">
                             <UKbd v-for="k in formatShortcut(item.binding)" :key="k" :value="k" />
                         </template>
@@ -77,12 +77,12 @@ function resetBinding(action: ShortcutAction) {
 
                     <UTooltip text="Clear binding">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-x" size="xs" :disabled="!item.binding"
-                            @click="clearBinding(item.action)" />
+                                 @click="clearBinding(item.action)" />
                     </UTooltip>
 
                     <UTooltip text="Reset to default">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" size="xs"
-                            @click="resetBinding(item.action)" />
+                                 @click="resetBinding(item.action)" />
                     </UTooltip>
                 </div>
             </div>
