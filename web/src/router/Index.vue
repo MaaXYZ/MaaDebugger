@@ -7,6 +7,11 @@
         <!-- 第二列: Task (includes Screenshot) -->
         <div class="w-full flex flex-col gap-4 order-2 lg:order-0">
             <TaskCard />
+
+        </div>
+        <!-- 第三列: Task Detail -->
+        <div class="w-full flex flex-col gap-4 order-1 lg:order-0">
+            <TaskDetailCard />
             <!-- FocusCard 占位符 -->
             <UCard>
                 <template #header>
@@ -14,10 +19,6 @@
                 </template>
                 <p class="text-sm text-muted">Focus placeholder</p>
             </UCard>
-        </div>
-        <!-- 第三列: Task Detail -->
-        <div class="w-full min-h-screen flex flex-col gap-4 order-1 lg:order-0">
-            <TaskDetailCard />
         </div>
     </div>
 </template>
