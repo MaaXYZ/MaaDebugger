@@ -208,13 +208,14 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          npm dist-tag add @weinibuliu/maa-debugger@${{ needs.metadata.outputs.version }} latest
-          npm dist-tag add @weinibuliu/maa-debugger-win32-x64@${{ needs.metadata.outputs.version }} latest
-          npm dist-tag add @weinibuliu/maa-debugger-win32-arm64@${{ needs.metadata.outputs.version }} latest
-          npm dist-tag add @weinibuliu/maa-debugger-linux-x64@${{ needs.metadata.outputs.version }} latest
-          npm dist-tag add @weinibuliu/maa-debugger-linux-arm64@${{ needs.metadata.outputs.version }} latest
-          npm dist-tag add @weinibuliu/maa-debugger-darwin-x64@${{ needs.metadata.outputs.version }} latest
-          npm dist-tag add @weinibuliu/maa-debugger-darwin-arm64@${{ needs.metadata.outputs.version }} latest
+          VERSION='@0.1.0-nightly.${{ needs.metadata.outputs.version }}'
+          npm dist-tag add "@weinibuliu/maa-debugger@${VERSION}" latest
+          npm dist-tag add "@weinibuliu/maa-debugger-win32-x64@${VERSION}" latest
+          npm dist-tag add "@weinibuliu/maa-debugger-win32-arm64@${VERSION}" latest
+          npm dist-tag add "@weinibuliu/maa-debugger-linux-x64@${VERSION}" latest
+          npm dist-tag add "@weinibuliu/maa-debugger-linux-arm64@${VERSION}" latest
+          npm dist-tag add "@weinibuliu/maa-debugger-darwin-x64@${VERSION}" latest
+          npm dist-tag add "@weinibuliu/maa-debugger-darwin-arm64@${VERSION}" latest
 
       - name: Trigger MaaAPI
         uses: peter-evans/repository-dispatch@v4
