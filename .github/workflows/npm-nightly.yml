@@ -203,6 +203,19 @@ jobs:
           dry-run: false
           token: ${{ secrets.NPM_TOKEN }}
 
+      - name: Mark nightly as latest
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm dist-tag add @weinibuliu/maa-debugger@${{ needs.metadata.outputs.version }} latest
+          npm dist-tag add @weinibuliu/maa-debugger-win32-x64@${{ needs.metadata.outputs.version }} latest
+          npm dist-tag add @weinibuliu/maa-debugger-win32-arm64@${{ needs.metadata.outputs.version }} latest
+          npm dist-tag add @weinibuliu/maa-debugger-linux-x64@${{ needs.metadata.outputs.version }} latest
+          npm dist-tag add @weinibuliu/maa-debugger-linux-arm64@${{ needs.metadata.outputs.version }} latest
+          npm dist-tag add @weinibuliu/maa-debugger-darwin-x64@${{ needs.metadata.outputs.version }} latest
+          npm dist-tag add @weinibuliu/maa-debugger-darwin-arm64@${{ needs.metadata.outputs.version }} latest
+
       - name: Trigger MaaAPI
         uses: peter-evans/repository-dispatch@v4
         with:
