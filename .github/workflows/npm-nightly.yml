@@ -208,7 +208,7 @@ jobs:
         with:
           token: ${{ secrets.MAA_API_TOKEN }}
           repository: MaaXYZ/MaaFwAPI
-          event-type: nightly
+          event-type: MaaDebugger
           client-payload: |-
             {
               "nightly": {
