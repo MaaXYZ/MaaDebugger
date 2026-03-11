@@ -6,34 +6,33 @@
             <div class="flex flex-row items-center gap-2 flex-wrap px-1">
                 <span class="text-xs text-dimmed font-medium">Draw:</span>
                 <UTabs key="value" v-model="drawMode" :items="drawModeOptions" />
-                <span class="text-xs text-dimmed tabular-nums">
+                <span class="text-xs text-dimmed tabular-nums" v-if="drawMode !== 'best'">
                     ({{ activeResults.length }})
                 </span>
             </div>
 
-            <!-- Custom: search + select/deselect -->
-            <div v-if="drawMode === 'custom'" class="flex items-center gap-1.5 px-1">
-                <UInput v-model="customSearch" icon="i-lucide-search" size="xs" placeholder="Filter..."
-                        class="flex-1" />
-                <UTooltip text="Select all">
-                    <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-check-check"
-                             @click="selectAllCustom" />
-                </UTooltip>
-                <UTooltip text="Deselect all">
-                    <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-x" @click="deselectAllCustom" />
+            <!-- Selectable modes: search + toggle all -->
+            <div v-if="isSelectableMode" class="flex items-center gap-1.5 px-1">
+                <UInput v-model="selectionSearch" icon="i-lucide-search" size="xs" placeholder="Filter..."
+                    class="flex-1" />
+                <UTooltip :text="allSelectedInCurrentMode ? 'Deselect all' : 'Select all'">
+                    <UButton size="xs" variant="ghost" color="neutral"
+                        :icon="allSelectedInCurrentMode ? 'i-lucide-square' : 'i-lucide-check-check'"
+                        @click="toggleAllCurrentMode" />
                 </UTooltip>
             </div>
 
             <!-- Result list -->
             <div v-if="showResultList" class="reco-list">
-                <template v-if="drawMode === 'custom'">
-                    <label v-for="entry in filteredCustomEntries" :key="entry.idx" class="reco-list-item" :class="[
-                               focusedResultIndex === entry.idx ? 'bg-primary/10 text-primary' : 'hover:bg-muted',
-                               hoveredIndex === entry.idx ? 'ring-1 ring-primary/40' : ''
-                           ]" @mouseenter="hoveredIndex = entry.idx" @mouseleave="hoveredIndex = -1"
-                           @click.stop="setFocusedResultIndex(entry.idx)">
-                        <input type="checkbox" :checked="customSelection.has(entry.idx)" class="accent-primary shrink-0"
-                               @change.stop="toggleCustom(entry.idx)" @click.stop />
+                <template v-if="isSelectableMode">
+                    <label v-for="entry in filteredSelectableEntries" :key="`${drawMode}-${entry.idx}`"
+                        class="reco-list-item" :class="[
+                            focusedResultIndex === entry.idx ? 'bg-primary/10 text-primary' : 'hover:bg-muted',
+                            hoveredIndex === entry.idx ? 'ring-1 ring-primary/40' : ''
+                        ]" @mouseenter="hoveredIndex = entry.idx" @mouseleave="hoveredIndex = -1"
+                        @click.stop="setFocusedResultIndex(entry.idx)">
+                        <input type="checkbox" :checked="currentSelection.has(entry.idx)"
+                            class="accent-primary shrink-0" @change.stop="toggleSelection(entry.idx)" @click.stop />
                         <span class="tabular-nums text-dimmed shrink-0">#{{ entry.idx }}</span>
                         <span v-if="entry.item.extra && 'score' in entry.item.extra" class="tabular-nums shrink-0">
                             {{ Number(entry.item.extra.score).toFixed(3) }}
@@ -46,10 +45,10 @@
                 </template>
                 <template v-else>
                     <div v-for="(item, idx) in activeResults" :key="idx" class="reco-list-item" :class="[
-                             focusedResultIndex === idx ? 'bg-primary/10 text-primary' : 'hover:bg-muted',
-                             hoveredIndex === idx ? 'ring-1 ring-primary/40' : ''
-                         ]" @mouseenter="hoveredIndex = idx" @mouseleave="hoveredIndex = -1"
-                         @click.stop="setFocusedResultIndex(idx)">
+                        focusedResultIndex === idx ? 'bg-primary/10 text-primary' : 'hover:bg-muted',
+                        hoveredIndex === idx ? 'ring-1 ring-primary/40' : ''
+                    ]" @mouseenter="hoveredIndex = idx" @mouseleave="hoveredIndex = -1"
+                        @click.stop="setFocusedResultIndex(idx)">
                         <span class="tabular-nums text-dimmed shrink-0">#{{ idx }}</span>
                         <span v-if="item.extra && 'score' in item.extra" class="tabular-nums shrink-0">
                             {{ Number(item.extra.score).toFixed(3) }}
@@ -59,8 +58,8 @@
                         </span>
                     </div>
                 </template>
-                <div v-if="(drawMode === 'custom' ? filteredCustomEntries.length : activeResults.length) === 0"
-                     class="text-xs text-dimmed text-center py-3">
+                <div v-if="(isSelectableMode ? filteredSelectableEntries.length : activeResults.length) === 0"
+                    class="text-xs text-dimmed text-center py-3">
                     No results
                 </div>
             </div>
@@ -74,10 +73,10 @@
                             <span class="font-semibold text-sm tabular-nums">#{{ focusedResultIndex }}</span>
                         </div>
                         <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-copy"
-                                 @click="copyResultJson(focusedResultIndex)" />
+                            @click="copyResultJson(focusedResultIndex)" />
                     </div>
                     <div v-if="focusedDetailItem.box"
-                         class="flex gap-x-3 gap-y-1 flex-wrap tabular-nums text-default/70">
+                        class="flex gap-x-3 gap-y-1 flex-wrap tabular-nums text-default/70">
                         <span><span class="text-default/40">x:</span> {{ focusedDetailItem.box.x }}</span>
                         <span><span class="text-default/40">y:</span> {{ focusedDetailItem.box.y }}</span>
                         <span><span class="text-default/40">w:</span> {{ focusedDetailItem.box.w }}</span>
@@ -86,14 +85,14 @@
                     <template v-if="focusedDetailItem.extra">
                         <USeparator />
                         <div v-for="(val, key) in focusedDetailItem.extra" :key="String(key)"
-                             class="flex justify-between gap-2 text-default/70">
+                            class="flex justify-between gap-2 text-default/70">
                             <span class="text-default/40 shrink-0">{{ key }}</span>
                             <span class="text-right break-all">{{ formatExtraValue(val) }}</span>
                         </div>
                     </template>
                     <img v-if="croppedImageUrl" :src="croppedImageUrl"
-                         class="rounded border border-default bg-muted max-h-28 object-contain w-full mt-1"
-                         draggable="false" />
+                        class="rounded border border-default bg-muted max-h-28 object-contain w-full mt-1"
+                        draggable="false" />
                 </div>
                 <div v-else class="flex flex-col items-center justify-center h-full text-dimmed text-xs gap-1">
                     <UIcon name="i-lucide-pointer" class="size-5" />
@@ -106,9 +105,9 @@
         <div class="reco-right">
             <div ref="containerRef" class="reco-canvas-container" :style="containerStyle" @wheel.prevent="onWheel">
                 <div v-if="rawImage" class="absolute inset-0 flex items-center justify-center select-none"
-                     :class="[isDragging ? 'cursor-grabbing' : (hitTestCursor ? 'cursor-pointer' : 'cursor-grab')]"
-                     @mousedown="onMouseDown" @mousemove="onMouseMove" @mouseup="onMouseUp" @mouseleave="onMouseLeave"
-                     @click="onCanvasClick">
+                    :class="[isDragging ? 'cursor-grabbing' : (hitTestCursor ? 'cursor-pointer' : 'cursor-grab')]"
+                    @mousedown="onMouseDown" @mousemove="onMouseMove" @mouseup="onMouseUp" @mouseleave="onMouseLeave"
+                    @click="onCanvasClick">
                     <div class="relative" :style="canvasWrapperStyle">
                         <canvas ref="canvasRef" class="pointer-events-none block w-full h-full"></canvas>
                     </div>
@@ -132,7 +131,7 @@
                                 </div>
                                 <template v-if="tooltipData.extra">
                                     <div v-for="(val, key) in tooltipData.extra" :key="String(key)"
-                                         class="text-default/70">
+                                        class="text-default/70">
                                         <span class="text-default/50">{{ key }}:</span>
                                         {{ formatExtraValue(val) }}
                                     </div>
@@ -152,14 +151,14 @@
                 <div class="flex items-center gap-1">
                     <UTooltip text="Zoom out">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-out" size="xs"
-                                 :disabled="zoomLevel <= MIN_ZOOM" @click="zoomOut" />
+                            :disabled="zoomLevel <= MIN_ZOOM" @click="zoomOut" />
                     </UTooltip>
                     <span class="text-xs text-muted min-w-10 text-center tabular-nums">
                         {{ zoomPercentage }}%
                     </span>
                     <UTooltip text="Zoom in">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-in" size="xs"
-                                 :disabled="zoomLevel >= MAX_ZOOM" @click="zoomIn" />
+                            :disabled="zoomLevel >= MAX_ZOOM" @click="zoomIn" />
                     </UTooltip>
                 </div>
                 <USeparator orientation="vertical" class="h-4" />
@@ -169,7 +168,7 @@
                 <USeparator orientation="vertical" class="h-4" />
                 <UTooltip text="Download drawn image">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-download" size="xs"
-                             @click="downloadCanvas" />
+                        @click="downloadCanvas" />
                 </UTooltip>
             </div>
         </div>
@@ -178,6 +177,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { type TabsItem } from '@nuxt/ui'
 import { getTaskImageUrl } from '@/api/http'
 import type { RecoDetailResponse, RecoResultItem, RectResponse } from './types'
 
@@ -203,7 +203,7 @@ const props = defineProps<{
     fullscreen?: boolean
 }>()
 
-type DrawMode = 'best' | 'filtered' | 'custom'
+type DrawMode = 'best' | 'filtered' | 'all'
 
 interface LabelLayout {
     resultIdx: number
@@ -233,7 +233,12 @@ interface TooltipData {
 }
 
 const drawMode = ref<DrawMode>('best')
-const customSelection = ref<Set<number>>(new Set())
+const allSelection = ref<Set<number>>(new Set())
+const filteredSelection = ref<Set<number>>(new Set())
+const selectionInitialized = ref<Record<'all' | 'filtered', boolean>>({
+    all: false,
+    filtered: false,
+})
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const zoomLevel = ref(1)
 const isDragging = ref(false)
@@ -248,19 +253,33 @@ const tooltipData = ref<TooltipData | null>(null)
 const tooltipPos = ref({ x: 0, y: 0 })
 const toast = useToast()
 
-// Custom panel state
-const customSearch = ref('')
+// Selectable panel state
+const selectionSearch = ref('')
 const focusedResultIndex = ref(-1)
 
-const drawModeOptions = [
+const drawModeOptions: TabsItem[] = [
     { label: 'Best', value: 'best' },
     { label: 'Filtered', value: 'filtered' },
-    { label: 'Custom', value: 'custom' },
-] satisfies Array<{ label: string, value: DrawMode }>
+    { label: 'All', value: 'all' },
+]
 
-const filteredCustomEntries = computed(() => {
-    const q = customSearch.value.toLowerCase().trim()
-    return allResults.value
+const isSelectableMode = computed(() => drawMode.value === 'all' || drawMode.value === 'filtered')
+
+const selectableSourceResults = computed<RecoResultItem[]>(() => {
+    if (drawMode.value === 'all') return allResults.value
+    if (drawMode.value === 'filtered') return filteredResults.value
+    return []
+})
+
+const currentSelection = computed<Set<number>>(() => {
+    if (drawMode.value === 'all') return allSelection.value
+    if (drawMode.value === 'filtered') return filteredSelection.value
+    return new Set<number>()
+})
+
+const filteredSelectableEntries = computed(() => {
+    const q = selectionSearch.value.toLowerCase().trim()
+    return selectableSourceResults.value
         .map((item, idx) => ({ item, idx }))
         .filter(({ item, idx }) => {
             if (!q) return true
@@ -271,12 +290,18 @@ const filteredCustomEntries = computed(() => {
         })
 })
 
+const allSelectedInCurrentMode = computed(() => {
+    const source = selectableSourceResults.value
+    if (source.length === 0) return false
+    return source.every((_, idx) => currentSelection.value.has(idx))
+})
+
 const showResultList = computed(() => drawMode.value !== 'best')
 
 const activeModeLabel = computed(() => {
     if (drawMode.value === 'best') return 'Best'
     if (drawMode.value === 'filtered') return 'Filtered'
-    return 'Custom'
+    return 'All'
 })
 
 const focusedDetailItem = computed<RecoResultItem | null>(() => {
@@ -331,14 +356,33 @@ const croppedImageUrl = computed<string | null>(() => {
     return buildCroppedUrl(item, img, focusedResultIndex.value)
 })
 
-function selectAllCustom() {
+function buildFullSelection(size: number): Set<number> {
     const newSet = new Set<number>()
-    for (let i = 0; i < allResults.value.length; i++) newSet.add(i)
-    customSelection.value = newSet
+    for (let i = 0; i < size; i++) newSet.add(i)
+    return newSet
 }
 
-function deselectAllCustom() {
-    customSelection.value = new Set()
+function setSelectionForMode(mode: Extract<DrawMode, 'all' | 'filtered'>, selection: Set<number>) {
+    if (mode === 'all') {
+        allSelection.value = selection
+        return
+    }
+    filteredSelection.value = selection
+}
+
+function resetSelectionInitialization(mode: Extract<DrawMode, 'all' | 'filtered'>) {
+    selectionInitialized.value = {
+        ...selectionInitialized.value,
+        [mode]: false,
+    }
+}
+
+function toggleAllCurrentMode() {
+    if (drawMode.value !== 'all' && drawMode.value !== 'filtered') return
+    setSelectionForMode(
+        drawMode.value,
+        allSelectedInCurrentMode.value ? new Set() : buildFullSelection(selectableSourceResults.value.length),
+    )
 }
 
 const rawImage = computed(() => props.detail.raw_image)
@@ -379,10 +423,10 @@ const filteredResults = computed<RecoResultItem[]>(() => {
 
 const activeResults = computed<RecoResultItem[]>(() => {
     switch (drawMode.value) {
-    case 'best': return bestResults.value
-    case 'filtered': return filteredResults.value
-    case 'custom': return allResults.value.filter((_, idx) => customSelection.value.has(idx))
-    default: return []
+        case 'best': return bestResults.value
+        case 'all': return allResults.value.filter((_, idx) => allSelection.value.has(idx))
+        case 'filtered': return filteredResults.value.filter((_, idx) => filteredSelection.value.has(idx))
+        default: return []
     }
 })
 
@@ -392,11 +436,14 @@ const zoomPercentage = computed(() => Math.round(zoomLevel.value * 100))
 // Label rects from last draw, used for hit testing
 let lastLabelRects: LabelRect[] = []
 
-function ensureCustomSelection() {
-    if (customSelection.value.size > 0) return
-    const newSet = new Set<number>()
-    for (let i = 0; i < allResults.value.length; i++) newSet.add(i)
-    customSelection.value = newSet
+function initializeSelectionForMode(mode: Extract<DrawMode, 'all' | 'filtered'>) {
+    if (selectionInitialized.value[mode]) return
+    const source = mode === 'all' ? allResults.value : filteredResults.value
+    setSelectionForMode(mode, mode === 'all' ? new Set() : buildFullSelection(source.length))
+    selectionInitialized.value = {
+        ...selectionInitialized.value,
+        [mode]: true,
+    }
 }
 
 function setFocusedResultIndex(nextIndex: number) {
@@ -409,8 +456,8 @@ function syncFocusedResultIndex() {
         return
     }
 
-    if (drawMode.value === 'custom') {
-        ensureCustomSelection()
+    if (drawMode.value === 'all' || drawMode.value === 'filtered') {
+        initializeSelectionForMode(drawMode.value)
     }
 
     if (activeResults.value.length === 0) {
@@ -423,11 +470,12 @@ function syncFocusedResultIndex() {
     }
 }
 
-function toggleCustom(idx: number) {
-    const newSet = new Set(customSelection.value)
+function toggleSelection(idx: number) {
+    if (drawMode.value !== 'all' && drawMode.value !== 'filtered') return
+    const newSet = new Set(currentSelection.value)
     if (newSet.has(idx)) newSet.delete(idx)
     else newSet.add(idx)
-    customSelection.value = newSet
+    setSelectionForMode(drawMode.value, newSet)
 }
 
 function getExtraLabel(item: RecoResultItem): string {
@@ -604,16 +652,24 @@ const tooltipStyle = computed(() => {
 })
 
 watch(drawMode, (mode) => {
-    if (mode === 'custom') {
-        ensureCustomSelection()
+    if (mode === 'all' || mode === 'filtered') {
+        initializeSelectionForMode(mode)
     }
     syncFocusedResultIndex()
+})
+
+watch([allResults, filteredResults], ([nextAll, nextFiltered], [prevAll, prevFiltered]) => {
+    if (nextAll !== prevAll) resetSelectionInitialization('all')
+    if (nextFiltered !== prevFiltered) resetSelectionInitialization('filtered')
+    if (drawMode.value === 'all' || drawMode.value === 'filtered') {
+        initializeSelectionForMode(drawMode.value)
+    }
 })
 
 watch(activeResults, () => {
     syncFocusedResultIndex()
     nextTick(() => drawCanvas())
-}, { deep: true })
+})
 
 // --- Label detail level based on zoom and draw mode ---
 // all/filtered: canvas labels always show index only; detail via tooltip
