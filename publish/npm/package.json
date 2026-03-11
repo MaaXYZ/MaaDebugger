@@ -3,10 +3,10 @@
   "version": "0.0.0",
   "description": "Official desktop debugger for MaaFramework, with integrated web UI and real-time task inspection.",
   "bin": {
-    "maa-debugger": "./index.js"
+    "maa-debugger": "./index.cjs"
   },
   "files": [
-    "index.js",
+    "index.cjs",
     "README.md",
     "LICENSE"
   ],

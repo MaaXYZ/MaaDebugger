@@ -140,7 +140,7 @@ jobs:
           mkdir -p dist/main
 
           cp publish/npm/package.json dist/main/package.json
-          cp publish/npm/index.js dist/main/index.js
+          cp publish/npm/index.cjs dist/main/index.cjs
           cp README.md LICENSE dist/main/
 
           PACKAGE_JSON_PATH="dist/main/package.json" \

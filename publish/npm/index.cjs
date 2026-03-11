@@ -1,11 +1,8 @@
 #!/usr/bin/env node
 
-import { spawn } from "node:child_process";
-import { existsSync, readdirSync, rmSync, symlinkSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { createRequire } from "node:module";
-
-const require = createRequire(import.meta.url);
+const { spawn } = require("node:child_process");
+const { existsSync, readdirSync, rmSync, symlinkSync } = require("node:fs");
+const { dirname, join, resolve } = require("node:path");
 
 const platformPackageName = `@weinibuliu/maa-debugger-${process.platform}-${process.arch}`;
 
