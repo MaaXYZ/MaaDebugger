@@ -1,16 +1,19 @@
 {
-  "[json][jsonc][javascript][typescript]":{
+  "editor.formatOnSave": true,
+  "[json][jsonc][javascript][typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true,
     "editor.insertSpaces": true,
     "editor.tabSize": 4,
     "editor.indentSize": "tabSize"
   },
-  "[vue]":{
+  "[vue]": {
     "editor.defaultFormatter": "Vue.volar",
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    }
   },
-  "[markdown]":{
+  "[markdown]": {
     "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
     "editor.formatOnSave": true
   }
