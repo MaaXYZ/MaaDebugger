@@ -22,101 +22,79 @@
                             <UButton color="neutral" variant="ghost" icon="i-lucide-ellipsis-vertical" size="xs"
                                 :disabled="isCardDisabled" />
                         </UDropdownMenu>
-                        <UButton variant="outline" color="neutral" trailing-icon="i-lucide-chevron-down"
-                            :data-state="showFullCard ? 'open' : 'closed'" @click="showFullCard = !showFullCard" />
-                    </div>
-                </div>
-                <div class="grid transition-all duration-200 ease-out"
-                    :class="showFullCard ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'">
-                    <div class="overflow-hidden">
-                        <div class="text-sm text-dimmed truncate">
-                            {{ resourceStore.activeProfile.name }} · {{ resourceStore.activePaths.length }} paths
-                        </div>
                     </div>
                 </div>
             </div>
         </template>
 
-        <template #default>
-            <UCollapsible v-model:open="showFullCard" :unmount-on-hide="false">
-                <template #content>
-                    <div class="p-4 sm:p-6">
-                        <div class="resource-list flex flex-col gap-2 min-h-12"
-                            :class="resourceStore.activePaths.length > 3 ? 'max-h-48 overflow-y-auto pr-2' : ''">
-                            <div v-if="resourceStore.activePaths.length === 0"
-                                class="flex flex-row items-center justify-center rounded-lg border border-dashed border-default p-2 text-dimmed gap-2">
-                                <UIcon name="i-lucide-folder-open" class="size-5" />
-                                <span class="text-sm">No resource paths added</span>
-                            </div>
+        <div class="p-4 sm:p-6">
+            <div class="resource-list flex flex-col gap-2 min-h-12"
+                :class="resourceStore.activePaths.length > 3 ? 'max-h-48 overflow-y-auto pr-2' : ''">
+                <div v-if="resourceStore.activePaths.length === 0"
+                    class="flex flex-row items-center justify-center rounded-lg border border-dashed border-default p-2 text-dimmed gap-2">
+                    <UIcon name="i-lucide-folder-open" class="size-5" />
+                    <span class="text-sm">No resource paths added</span>
+                </div>
 
-                            <div v-for="(item, index) in resourceStore.activePaths" :key="item.id"
-                                class="group flex flex-col gap-1 rounded-lg border border-default p-2 transition-colors hover:bg-elevated"
-                                :class="{ 'opacity-50': !item.enabled }"
-                                :draggable="resourceStore.activePaths.length > 1" @dragstart="onDragStart(index)"
-                                @dragover.prevent="onDragOver(index)" @dragend="onDragEnd">
+                <div v-for="(item, index) in resourceStore.activePaths" :key="item.id"
+                    class="group flex flex-col gap-1 rounded-lg border border-default p-2 transition-colors hover:bg-elevated"
+                    :class="{ 'opacity-50': !item.enabled }" :draggable="resourceStore.activePaths.length > 1"
+                    @dragstart="onDragStart(index)" @dragover.prevent="onDragOver(index)" @dragend="onDragEnd">
 
-                                <div class="flex flex-row items-center gap-2">
-                                    <!-- Enable/Disable Checkbox -->
-                                    <UCheckbox v-model="item.enabled" />
+                    <div class="flex flex-row items-center gap-2">
+                        <!-- Enable/Disable Checkbox -->
+                        <UCheckbox v-model="item.enabled" />
 
-                                    <!-- Drag Handle -->
-                                    <div v-if="resourceStore.activePaths.length > 1"
-                                        class="cursor-grab text-dimmed hover:text-default active:cursor-grabbing">
-                                        <UIcon name="i-lucide-grip-vertical" class="size-5" />
-                                    </div>
-
-                                    <!-- Path Input -->
-                                    <UInput v-if="editingIndex === index" v-model="item.path"
-                                        placeholder="/path/to/resource" class="flex-1" size="md" autofocus
-                                        :color="pathErrors[item.id] ? 'error' : 'neutral'"
-                                        @keydown.enter="onFinishEdit(index)" @blur="onFinishEdit(index)" />
-
-                                    <!-- Path Display -->
-                                    <UTooltip v-else :text="item.path" :disabled="!item.path">
-                                        <div class="flex-1 flex items-center gap-2 min-w-0 cursor-pointer"
-                                            @click="onEdit(index)">
-                                            <span class="truncate text-md"
-                                                :class="item.path ? '' : 'text-dimmed italic'">
-                                                {{ item.path || 'Click to edit path...' }}
-                                            </span>
-                                        </div>
-                                    </UTooltip>
-
-                                    <!-- Action Buttons -->
-                                    <div
-                                        class="flex flex-row gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <UTooltip text="Edit">
-                                            <UButton color="neutral" variant="ghost" icon="i-lucide-square-pen"
-                                                size="xs" @click="onEdit(index)" />
-                                        </UTooltip>
-                                        <UTooltip text="Remove">
-                                            <UButton color="error" variant="ghost" icon="i-lucide-trash-2" size="xs"
-                                                @click="onRemovePath(index, item.id)" />
-                                        </UTooltip>
-                                    </div>
-                                </div>
-
-                                <div v-if="pathErrors[item.id]" class="pl-6 text-xs text-error truncate">
-                                    {{ pathErrors[item.id] }}
-                                </div>
-                            </div>
+                        <!-- Drag Handle -->
+                        <div v-if="resourceStore.activePaths.length > 1"
+                            class="cursor-grab text-dimmed hover:text-default active:cursor-grabbing">
+                            <UIcon name="i-lucide-grip-vertical" class="size-5" />
                         </div>
 
-                        <div class="p-2 sm:p-4">
-                            <UButton color="neutral" variant="ghost" icon="i-lucide-plus" label="Add path" block
-                                @click="onAddPath" />
-                        </div>
+                        <!-- Path Input -->
+                        <UInput v-if="editingIndex === index" v-model="item.path" placeholder="/path/to/resource"
+                            class="flex-1" size="md" autofocus :color="pathErrors[item.id] ? 'error' : 'neutral'"
+                            @keydown.enter="onFinishEdit(index)" @blur="onFinishEdit(index)" />
 
-                        <!-- Load Button -->
-                        <div class="px-2 sm:px-4 pb-2 sm:pb-4">
-                            <UButton color="primary" icon="i-lucide-download" label="Load Resource" block size="xl"
-                                :loading="isLoading" :disabled="enabledPaths.length === 0 || isLoading"
-                                @click="onLoadResource" />
+                        <!-- Path Display -->
+                        <UTooltip v-else :text="item.path" :disabled="!item.path">
+                            <div class="flex-1 flex items-center gap-2 min-w-0 cursor-pointer" @click="onEdit(index)">
+                                <span class="truncate text-md" :class="item.path ? '' : 'text-dimmed italic'">
+                                    {{ item.path || 'Click to edit path...' }}
+                                </span>
+                            </div>
+                        </UTooltip>
+
+                        <!-- Action Buttons -->
+                        <div class="flex flex-row gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <UTooltip text="Edit">
+                                <UButton color="neutral" variant="ghost" icon="i-lucide-square-pen" size="xs"
+                                    @click="onEdit(index)" />
+                            </UTooltip>
+                            <UTooltip text="Remove">
+                                <UButton color="error" variant="ghost" icon="i-lucide-trash-2" size="xs"
+                                    @click="onRemovePath(index, item.id)" />
+                            </UTooltip>
                         </div>
                     </div>
-                </template>
-            </UCollapsible>
-        </template>
+
+                    <div v-if="pathErrors[item.id]" class="pl-6 text-xs text-error truncate">
+                        {{ pathErrors[item.id] }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-2 sm:p-4">
+                <UButton color="neutral" variant="ghost" icon="i-lucide-plus" label="Add path" block
+                    @click="onAddPath" />
+            </div>
+
+            <!-- Load Button -->
+            <div class="px-2 sm:px-4 pb-2 sm:pb-4">
+                <UButton color="primary" icon="i-lucide-download" label="Load Resource" block size="xl"
+                    :loading="isLoading" :disabled="enabledPaths.length === 0 || isLoading" @click="onLoadResource" />
+            </div>
+        </div>
     </UCard>
 
     <!-- Rename Profile Modal -->
@@ -135,7 +113,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { checkPathExists } from '@/api/http'
 import { useResourceStore } from '@/stores/resource'
 import { useStatusStore } from '@/stores/status'
@@ -147,16 +125,8 @@ const statusStore = useStatusStore()
 const { enabledPaths, onLoadResource: triggerLoadResource } = useResourceControl()
 
 // --- UI State (not persisted) ---
-const showFullCard = ref(true)
 const editingIndex = ref<number | null>(null)
 const pathErrors = ref<Record<number, string>>({})
-
-// 任务开始运行时自动收起卡片
-watch(() => statusStore.taskStatus, (newStatus, oldStatus) => {
-    if (oldStatus !== 'running' && newStatus === 'running') {
-        showFullCard.value = false
-    }
-})
 
 // --- Resource Status ---
 const isLoading = computed(() => statusStore.resourceStatus === 'loading')

@@ -18,91 +18,72 @@
                     <div class="flex flex-row items-center gap-2">
                         <USelect v-model="controllerValue" value-key="value" :items="controllerItems"
                             :icon="controllerIcon" class="min-w-40" size="xl" arrow />
-                        <UButton variant="outline" color="neutral" trailing-icon="i-lucide-chevron-down"
-                            :data-state="showFullCard ? 'open' : 'closed'" @click="showFullCard = !showFullCard" />
-                    </div>
-                </div>
-                <div class="grid transition-all duration-200 ease-out"
-                    :class="showFullCard ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'">
-                    <div class="overflow-hidden">
-                        <div class="text-sm text-dimmed truncate">
-                            {{ summaryText }}
-                        </div>
                     </div>
                 </div>
             </div>
         </template>
 
-        <template #default>
-            <UCollapsible v-model:open="showFullCard" :unmount-on-hide="false">
-                <template #content>
-                    <div class="p-4 sm:p-6 min-h-36">
-                        <!-- ADB -->
-                        <ADB v-show="controllerValue === 'adb'" ref="adbRef" @connected="showFullCard = false" />
+        <div class="p-4 sm:p-6 min-h-36">
+            <!-- ADB -->
+            <ADB v-show="controllerValue === 'adb'" ref="adbRef" />
 
-                        <!-- PlayCover -->
-                        <PlayCover v-show="controllerValue === 'playcover'" ref="playcoverRef"
-                            @connected="showFullCard = false" />
+            <!-- PlayCover -->
+            <PlayCover v-show="controllerValue === 'playcover'" ref="playcoverRef" />
 
-                        <!-- Win32 / Gamepad: 共享 WindowSearch + screencap + 各自独有配置 -->
-                        <div v-show="isDesktopType" class="flex flex-col gap-3 h-full">
-                            <!-- Action Buttons Row -->
-                            <div class="flex flex-row gap-2">
-                                <UTooltip text="Search Windows">
-                                    <UButton color="success" variant="outline" icon="i-lucide-search" size="xl"
-                                        :loading="windowSearchRef?.searching" @click="windowSearchRef?.onSearch()" />
-                                </UTooltip>
+            <!-- Win32 / Gamepad: 共享 WindowSearch + screencap + 各自独有配置 -->
+            <div v-show="isDesktopType" class="flex flex-col gap-3 h-full">
+                <!-- Action Buttons Row -->
+                <div class="flex flex-row gap-2">
+                    <UTooltip text="Search Windows">
+                        <UButton color="success" variant="outline" icon="i-lucide-search" size="xl"
+                            :loading="windowSearchRef?.searching" @click="windowSearchRef?.onSearch()" />
+                    </UTooltip>
 
-                                <UTooltip text="Connect">
-                                    <UButton color="primary" variant="outline" icon="i-lucide-link" size="xl"
-                                        :loading="controllerStore.connecting"
-                                        :disabled="!windowSearchRef?.selectedHwnd || controllerStore.connecting"
-                                        @click="onConnect" />
-                                </UTooltip>
+                    <UTooltip text="Connect">
+                        <UButton color="primary" variant="outline" icon="i-lucide-link" size="xl"
+                            :loading="controllerStore.connecting"
+                            :disabled="!windowSearchRef?.selectedHwnd || controllerStore.connecting"
+                            @click="onConnect" />
+                    </UTooltip>
 
-                                <UTooltip text="Disconnect">
-                                    <UButton color="error" variant="outline" icon="i-lucide-unlink" size="xl"
-                                        @click="onDisconnect" />
-                                </UTooltip>
-                            </div>
+                    <UTooltip text="Disconnect">
+                        <UButton color="error" variant="outline" icon="i-lucide-unlink" size="xl"
+                            @click="onDisconnect" />
+                    </UTooltip>
+                </div>
 
-                            <!-- Shared WindowSearch -->
-                            <div class="flex flex-1 items-center gap-2">
-                                <WindowSearch ref="windowSearchRef" />
-                            </div>
+                <!-- Shared WindowSearch -->
+                <div class="flex flex-1 items-center gap-2">
+                    <WindowSearch ref="windowSearchRef" />
+                </div>
 
-                            <!-- Shared Screencap Method -->
-                            <UFormField name="screencap" label="Screencap Method">
-                                <USelect v-model="desktopScreencap" :items="screencapMethods" class="w-full" arrow />
-                            </UFormField>
+                <!-- Shared Screencap Method -->
+                <UFormField name="screencap" label="Screencap Method">
+                    <USelect v-model="desktopScreencap" :items="screencapMethods" class="w-full" arrow />
+                </UFormField>
 
-                            <!-- Win32 独有：Mouse + Keyboard -->
-                            <template v-if="controllerValue === 'win32'">
-                                <UFormField name="mouse" label="Mouse Method">
-                                    <USelect v-model="win32Config.mouse_method" :items="inputMethods" class="w-full"
-                                        arrow :ui="{
-                                            trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200'
-                                        }" />
-                                </UFormField>
+                <!-- Win32 独有：Mouse + Keyboard -->
+                <template v-if="controllerValue === 'win32'">
+                    <UFormField name="mouse" label="Mouse Method">
+                        <USelect v-model="win32Config.mouse_method" :items="inputMethods" class="w-full" arrow :ui="{
+                            trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200'
+                        }" />
+                    </UFormField>
 
-                                <UFormField name="keyboard" label="Keyboard Method">
-                                    <USelect v-model="win32Config.keyboard_method" :items="inputMethods" class="w-full"
-                                        arrow />
-                                </UFormField>
-                            </template>
-
-                            <!-- Gamepad 独有：Gamepad Type -->
-                            <template v-if="controllerValue === 'gamepad'">
-                                <UFormField name="gamepad_type" label="Gamepad Type">
-                                    <USelect v-model="gamepadConfig.gamepad_type" :items="gamepadTypes"
-                                        :icon="gamepadConfig.gamepad_icon" class="w-full" arrow />
-                                </UFormField>
-                            </template>
-                        </div>
-                    </div>
+                    <UFormField name="keyboard" label="Keyboard Method">
+                        <USelect v-model="win32Config.keyboard_method" :items="inputMethods" class="w-full" arrow />
+                    </UFormField>
                 </template>
-            </UCollapsible>
-        </template>
+
+                <!-- Gamepad 独有：Gamepad Type -->
+                <template v-if="controllerValue === 'gamepad'">
+                    <UFormField name="gamepad_type" label="Gamepad Type">
+                        <USelect v-model="gamepadConfig.gamepad_type" :items="gamepadTypes"
+                            :icon="gamepadConfig.gamepad_icon" class="w-full" arrow />
+                    </UFormField>
+                </template>
+            </div>
+        </div>
     </UCard>
 </template>
 
@@ -126,10 +107,7 @@ import { type MethodItems, type ConnectControllerRequest } from '@/types/api'
 const toast = useToast()
 const statusStore = useStatusStore()
 const controllerStore = useControllerStore()
-const showFullCard = ref(true)
 const isTaskRunning = computed(() => statusStore.taskStatus === 'running')
-const adbRef = ref<InstanceType<typeof ADB> | null>(null)
-const playcoverRef = ref<InstanceType<typeof PlayCover> | null>(null)
 const windowSearchRef = ref<InstanceType<typeof WindowSearch> | null>(null)
 
 function capitalize(s: string): string {
@@ -188,13 +166,6 @@ watch(() => statusStore.controllerStatus, (newStatus, oldStatus) => {
     }
 })
 
-// 任务开始运行时自动收起卡片
-watch(() => statusStore.taskStatus, (newStatus, oldStatus) => {
-    if (oldStatus !== 'running' && newStatus === 'running') {
-        showFullCard.value = false
-    }
-})
-
 interface ControllerItem {
     label: string
     value: string
@@ -235,10 +206,6 @@ watch(
 const controllerIcon = computed<string>(
     () => controllerItems.find((item) => item.value === controllerValue.value)?.icon ?? 'i-material-symbols:android'
 )
-const controllerLabel = computed<string>(
-    () => controllerItems.find((item) => item.value === controllerValue.value)?.label ?? 'ADB'
-)
-
 // --- 桌面共享配置 ---
 const desktopScreencap = ref(DEFAULT_DESKTOP_SCREENCAP)
 
@@ -449,37 +416,4 @@ async function onDisconnect() {
         console.error('[Desktop] Disconnect failed:', err)
     }
 }
-
-// --- 摘要文本 ---
-
-const selectedWindowLabel = computed(() => {
-    const hwnd = windowSearchRef.value?.selectedHwnd
-    if (!hwnd) return ''
-    const item = windowSearchRef.value?.windowItems?.find((w: { value: string }) => w.value === hwnd)
-    return item?.label ?? hwnd
-})
-
-/**
- * 折叠时显示的摘要文本
- */
-const summaryText = computed(() => {
-    if (controllerStore.interfaceControllerName) {
-        if (isDesktopType.value) {
-            const className = controllerStore.desktopClassFilter || '*'
-            const regex = controllerStore.desktopWindowRegex || '*'
-            return `${controllerStore.interfaceControllerName} · ${className} · ${regex}`
-        }
-        return controllerStore.interfaceControllerName
-    }
-    if (controllerValue.value === 'adb' && adbRef.value?.selectedDevice) {
-        return adbRef.value.selectedDevice
-    }
-    if (controllerValue.value === 'playcover' && playcoverRef.value?.config?.address) {
-        return playcoverRef.value.config.address
-    }
-    if (isDesktopType.value && selectedWindowLabel.value) {
-        return selectedWindowLabel.value
-    }
-    return controllerLabel.value
-})
 </script>
