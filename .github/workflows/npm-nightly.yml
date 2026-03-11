@@ -208,7 +208,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          VERSION='@0.1.0-nightly.${{ needs.metadata.outputs.version }}'
+          VERSION='0.1.0-nightly.${{ needs.metadata.outputs.commit_sha }}'
           npm dist-tag add "@weinibuliu/maa-debugger@${VERSION}" latest
           npm dist-tag add "@weinibuliu/maa-debugger-win32-x64@${VERSION}" latest
           npm dist-tag add "@weinibuliu/maa-debugger-win32-arm64@${VERSION}" latest
