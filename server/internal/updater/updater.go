@@ -18,6 +18,8 @@ import (
 )
 
 const (
+	npmPackageName = "@weinibuliu/maa-debugger" // TODO: When Release, this name will change.
+
 	baseURL    = "https://api.maafw.com/MaaDebugger"
 	latestURL  = baseURL + "/latest.json"
 	nightlyURL = baseURL + "/nightly.json"
@@ -62,6 +64,8 @@ type CheckResult struct {
 type CheckOptions struct {
 	Nightly           bool
 	IncludePreRelease bool
+	Channel           string
+	ChannelManager    string
 }
 
 func IsCommitHash(s string) bool {
@@ -302,8 +306,16 @@ func CheckUpdate(opts CheckOptions) (*CheckResult, error) {
 		console.Warnf("New version available! (%s)", track)
 		console.Infof("  Current: %s%s%s", console.Red, currentVersion, console.Reset)
 		console.Infof("  Latest:  %s%s%s", console.BrightGreen, latestVersion, console.Reset)
-		if note != "" {
-			console.Infof("  Note:    %s%s%s", console.BrightCyan, note, console.Reset)
+
+		if opts.Channel == "npm" {
+			switch opts.ChannelManager {
+			case "npm":
+				console.Infof("npx %s%s@%s%s", console.BrightBlue, npmPackageName, latestVersion, console.Reset)
+			case "pnpm":
+				console.Infof("pnpm dlx %s%s@%s%s", console.BrightBlue, npmPackageName, latestVersion, console.Reset)
+			case "yarn":
+				console.Infof("yarn dlx %s%s@%s%s", console.BrightBlue, npmPackageName, latestVersion, console.Reset)
+			}
 		}
 	}
 

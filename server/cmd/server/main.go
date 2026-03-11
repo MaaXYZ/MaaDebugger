@@ -138,7 +138,8 @@ func main() {
 	argPath, _ := parsed.String("lib-path")
 
 	// Set the release channel and channel path
-	channel := getenv("MAADBG_CHANNEL", "github") // npm | pypi | github TODO: const enum
+	channel := getenv("MAADBG_CHANNEL", "github")          // npm | pypi | github TODO: const enum
+	channelManager := getenv("MAADBG_CHANNEL_MANAGER", "") // like npm pnpm yarn pip and so on
 	channelLibPath := getenv("MAADBG_CHANNEL_LIB_PATH", "")
 
 	// Load Maa
@@ -205,6 +206,8 @@ func main() {
 		if _, err := updater.AutoCheckUpdate(cfgStore, updater.CheckOptions{
 			Nightly:           updater.IsNightlyBuild(channel, buildinfo.Version),
 			IncludePreRelease: updater.LoadIncludePreRelease(cfgStore),
+			Channel:           channel,
+			ChannelManager:    channelManager,
 		}); err != nil {
 			log.Warn().Err(err).Msg("startup update check failed")
 		}

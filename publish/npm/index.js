@@ -127,6 +127,15 @@ function cleanupJunctions() {
   }
 }
 
+// Get the Package Manager
+function getPackageManager() {
+  const ua = process.env.npm_config_user_agent || "";
+  if (ua.startsWith("pnpm/")) return "pnpm";
+  if (ua.startsWith("yarn/")) return "yarn";
+  if (ua.startsWith("npm/")) return "npm";
+  return "npm";
+}
+
 // Register cleanup for all exit paths
 process.on("exit", cleanupJunctions);
 
@@ -137,6 +146,7 @@ const launchPath = join(shortExeRoot, executableName);
 const childEnv = {
   ...process.env,
   MAADBG_CHANNEL: "npm",
+  MAADBG_CHANNEL_MANAGER: getPackageManager(),
   MAADBG_CHANNEL_LIB_PATH: shortChannelPath,
 };
 
