@@ -775,7 +775,6 @@ function drawCanvas() {
     if (!ctx) return
 
     ctx.drawImage(img, 0, 0)
-    drawRois(ctx, img)
 
     lastLabelRects = []
     const items = activeResults.value
@@ -802,6 +801,8 @@ function drawCanvas() {
         ctx.fillStyle = isThisHovered ? color + '35' : (dimmed ? color + '10' : color + '20')
         ctx.fillRect(x, y, w, h)
     })
+
+    drawRois(ctx, img)
 
     // Second pass: compute label layouts with collision detection
     const labelLayouts: LabelLayout[] = []
@@ -965,6 +966,14 @@ watch(rawImage, () => {
 watch(zoomLevel, () => {
     nextTick(() => drawCanvas())
 })
+
+watch(showRois, () => {
+    nextTick(() => drawCanvas())
+})
+
+watch(rois, () => {
+    nextTick(() => drawCanvas())
+}, { deep: true })
 
 onMounted(() => {
     syncFocusedResultIndex()

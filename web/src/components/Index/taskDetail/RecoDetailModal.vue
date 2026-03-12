@@ -99,8 +99,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { getNodeData, getRecoDetailById, getTaskImageUrl } from '@/api/http'
-import type { RecoDetailResponse, RectResponse, TaskImageRef } from './types'
+import { getNodeData, getRecoDetailById } from '@/api/http'
+import type { RecoDetailResponse, RectResponse } from './types'
 import RecoDetailItem from './RecoDetailItem.vue'
 import RecognitionDrawCanvas from './RecognitionDrawCanvas.vue'
 import NodeDataModal from './NodeDataModal.vue'
@@ -146,10 +146,6 @@ const previewImageStyle = computed(() => ({
     maxHeight: '85vh',
     objectFit: 'contain' as const,
 }))
-
-function resolveImageUrl(image: TaskImageRef): string {
-    return image.url || getTaskImageUrl(image.id)
-}
 
 function isFiniteNumber(value: unknown): value is number {
     return typeof value === 'number' && Number.isFinite(value)
@@ -225,11 +221,6 @@ const parsedRois = computed<RectResponse[]>(() => {
     collectRecognitionRois(recognitionNodeJson.value, rois)
     return dedupeRois(rois)
 })
-
-function openImagePreview(image: TaskImageRef) {
-    previewImageSrc.value = resolveImageUrl(image)
-    imagePreviewOpen.value = true
-}
 
 // --- Preview zoom ---
 function previewZoomIn() {
