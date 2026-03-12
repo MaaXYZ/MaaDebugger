@@ -504,7 +504,7 @@ func (s *TaskerService) convertRecoDetail(detail *maa.RecognitionDetail) *RecoDe
 	}
 
 	if detail.Raw != nil {
-		resp.RawImage = storeTaskImage(&s.taskImages, fmt.Sprintf("reco-%d-raw", detail.ID), detail.Raw)
+		resp.RawImage = storeTaskImage(&s.taskImages, fmt.Sprintf("reco:raw-%d", detail.ID), detail.Raw)
 	}
 
 	if detail.Results != nil {
@@ -852,7 +852,7 @@ func (s *TaskerService) captureActionScreenshot(actionID uint64) {
 		log.Warn().Err(err).Uint64("action_id", actionID).Msg("[MaaService] action screenshot: CacheImage failed")
 		return
 	}
-	id := fmt.Sprintf("action-%d-raw", actionID)
+	id := fmt.Sprintf("action:raw-%d", actionID)
 	if ref := storeTaskImage(&s.taskImages, id, img); ref == nil {
 		log.Warn().Uint64("action_id", actionID).Msg("[MaaService] action screenshot: JPEG encode failed")
 		return
@@ -905,8 +905,8 @@ func (s *TaskerService) GetActionDetailByID(actionID int64) (*ActionDetailResp, 
 		return nil, fmt.Errorf("get action detail failed: %w", err)
 	}
 	resp := convertActionDetail(detail, s.controllerSvc.ControllerType())
-	if item, ok := s.GetTaskImage(fmt.Sprintf("action-%d-raw", actionID)); ok {
-		resp.RawImage = buildTaskImageRef(fmt.Sprintf("action-%d-raw", actionID), item)
+	if item, ok := s.GetTaskImage(fmt.Sprintf("action:raw-%d", actionID)); ok {
+		resp.RawImage = buildTaskImageRef(fmt.Sprintf("action:raw-%d", actionID), item)
 	}
 	return resp, nil
 }
