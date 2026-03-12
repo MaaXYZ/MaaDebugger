@@ -30,6 +30,8 @@ export interface MonacoEditorProps {
     minHeight?: number
     /** Maximum height in px (default: 400) */
     maxHeight?: number
+    /** Whether to apply global editor height settings from the store */
+    useGlobalHeightSettings?: boolean
     /** Additional monaco editor options */
     options?: MonacoEditor.IStandaloneEditorConstructionOptions
 }
@@ -41,6 +43,7 @@ const props = withDefaults(defineProps<MonacoEditorProps>(), {
     theme: 'auto',
     minHeight: 100,
     maxHeight: 400,
+    useGlobalHeightSettings: true,
     options: () => ({}),
 })
 
@@ -106,8 +109,18 @@ async function copyContent() {
 }
 
 const effectiveFontSize = computed(() => editorSettingsStore.normalizedFontSize)
-const effectiveMinHeight = computed(() => Math.max(props.minHeight, editorSettingsStore.normalizedMinHeight))
-const effectiveMaxHeight = computed(() => Math.max(props.maxHeight, editorSettingsStore.normalizedMaxHeight, effectiveMinHeight.value))
+const effectiveMinHeight = computed(() => {
+    if (!props.useGlobalHeightSettings) {
+        return props.minHeight
+    }
+    return Math.max(props.minHeight, editorSettingsStore.normalizedMinHeight)
+})
+const effectiveMaxHeight = computed(() => {
+    if (!props.useGlobalHeightSettings) {
+        return Math.max(props.maxHeight, effectiveMinHeight.value)
+    }
+    return Math.max(props.maxHeight, editorSettingsStore.normalizedMaxHeight, effectiveMinHeight.value)
+})
 
 const containerStyle = computed<CSSProperties>(() => ({
     minHeight: `${effectiveMinHeight.value}px`,
