@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, computed } from 'vue'
+import type { NavigationMenuItem } from '@nuxt/ui'
 import { wsClient } from '@/api/ws'
 import { getStatusSnapshot, getScreenshotStatus } from '@/api/http'
 import { useStatusStore } from '@/stores/status'
@@ -11,6 +12,19 @@ const BACKEND_DISCONNECT_TOAST_ID = 'backend-disconnected'
 const PING_INTERVAL_MS = 5000
 
 const selectTheme = { trailingIcon: 'transition-transform ease-in-out duration-200 group-data-[state=open]:rotate-180' }
+
+const headerNavigationMenuItems = computed<NavigationMenuItem[]>(() => [
+    {
+        label: 'Home',
+        icon: "i-lucide:home",
+        to: '/',
+    },
+    {
+        label: 'Running',
+        icon: "i-lucide:loader",
+        to: '/running',
+    }
+])
 
 const statusStore = useStatusStore()
 const toast = useToast()
@@ -132,22 +146,27 @@ onUnmounted(() => {
         <UTheme :ui="{
             select: selectTheme,
         }">
+            <UHeader title="MaaDebugger" :ui="{ toggle: 'hidden' }">
+                <template #default>
+                    <UNavigationMenu :items="headerNavigationMenuItems" highlight />
+                </template>
+
+                <template #right>
+                    <UColorModeButton />
+
+                    <UTooltip text="Settings">
+                        <UButton color="neutral" variant="ghost" to="/settings" icon="i-lucide-settings"
+                            aria-label="Settings" />
+                    </UTooltip>
+
+                    <UTooltip text="Open on GitHub">
+                        <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
+                            target="_blank" icon="i-simple-icons:github" aria-label="GitHub" />
+                    </UTooltip>
+                </template>
+            </UHeader>
+
             <UMain>
-                <UHeader title="MaaDebugger" :ui="{ toggle: 'hidden' }">
-                    <template #right>
-                        <UColorModeButton />
-
-                        <UTooltip text="Settings">
-                            <UButton color="neutral" variant="ghost" to="/settings" icon="i-lucide-settings"
-                                aria-label="Settings" />
-                        </UTooltip>
-
-                        <UTooltip text="Open on GitHub">
-                            <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
-                                target="_blank" icon="i-simple-icons:github" aria-label="GitHub" />
-                        </UTooltip>
-                    </template>
-                </UHeader>
                 <RouterView />
             </UMain>
         </UTheme>

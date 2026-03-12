@@ -1,8 +1,11 @@
 <template>
-    <div class="flex flex-col lg:grid lg:grid-cols-2 items-start w-full gap-4 p-4 lg:p-6">
-        <!-- 第一列(原第二列): Task (includes Screenshot) -->
-        <div class="w-full flex flex-col gap-4 order-2 lg:order-0">
+    <div class="w-full h-full flex flex-row items-start gap-4 p-4">
+        <div class="w-1/2 h-full flex flex-col gap-4">
             <TaskCard />
+        </div>
+
+        <div class="w-1/2 h-full flex flex-col gap-4">
+            <TaskDetailCard />
             <!-- FocusCard 占位符 -->
             <UCard>
                 <template #header>
@@ -10,11 +13,6 @@
                 </template>
                 <p class="text-sm text-muted">Focus placeholder</p>
             </UCard>
-        </div>
-
-        <!-- 第二列(原第三列): Task Detail -->
-        <div class="w-full min-h-screen flex flex-col gap-4 order-1 lg:order-0">
-            <TaskDetailCard />
         </div>
     </div>
 </template>
