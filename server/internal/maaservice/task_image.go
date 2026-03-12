@@ -24,13 +24,15 @@ type ImageRef struct {
 	ContentSize int    `json:"content_size,omitempty"`
 }
 
-// taskImageItem 是缓存中的图片二进制数据。
+// taskImageItem 是缓存中的图片项。
 type taskImageItem struct {
+	Source      image.Image
 	ContentType string
 	Data        []byte
 	Width       int
 	Height      int
 	CreatedAt   time.Time
+	mu          sync.Mutex
 }
 
 func buildTaskImageURL(id string) string {
@@ -41,10 +43,14 @@ func buildTaskImageRef(id string, item *taskImageItem) *ImageRef {
 	if item == nil {
 		return nil
 	}
+	mime := item.ContentType
+	if mime == "" {
+		mime = "image/jpeg"
+	}
 	return &ImageRef{
 		ID:          id,
 		URL:         buildTaskImageURL(id),
-		MIME:        item.ContentType,
+		MIME:        mime,
 		Width:       item.Width,
 		Height:      item.Height,
 		ContentSize: len(item.Data),
@@ -89,6 +95,45 @@ func encodeJPEGImage(img image.Image) (*taskImageItem, error) {
 	}, nil
 }
 
+func newTaskImageItem(img image.Image) *taskImageItem {
+	if img == nil {
+		return nil
+	}
+	width, height := imageBoundsSize(img)
+	return &taskImageItem{
+		Source: img,
+		Width:  width,
+		Height: height,
+	}
+}
+
+func (item *taskImageItem) ensureEncoded() error {
+	if item == nil {
+		return fmt.Errorf("image item is nil")
+	}
+	if len(item.Data) > 0 {
+		return nil
+	}
+
+	item.mu.Lock()
+	defer item.mu.Unlock()
+
+	if len(item.Data) > 0 {
+		return nil
+	}
+
+	encoded, err := encodeJPEGImage(item.Source)
+	if err != nil {
+		return err
+	}
+	item.ContentType = encoded.ContentType
+	item.Data = encoded.Data
+	item.Width = encoded.Width
+	item.Height = encoded.Height
+	item.CreatedAt = encoded.CreatedAt
+	return nil
+}
+
 func taskImageETag(item *taskImageItem) string {
 	if item == nil {
 		return ""
@@ -99,6 +144,10 @@ func taskImageETag(item *taskImageItem) string {
 func WriteTaskImageResponse(w http.ResponseWriter, req *http.Request, item *taskImageItem) {
 	if item == nil {
 		http.NotFound(w, req)
+		return
+	}
+	if err := item.ensureEncoded(); err != nil {
+		http.Error(w, "encode image failed", http.StatusInternalServerError)
 		return
 	}
 	etag := taskImageETag(item)
@@ -116,8 +165,8 @@ func WriteTaskImageResponse(w http.ResponseWriter, req *http.Request, item *task
 }
 
 func storeTaskImage(m *sync.Map, id string, img image.Image) *ImageRef {
-	item, err := encodeJPEGImage(img)
-	if err != nil {
+	item := newTaskImageItem(img)
+	if item == nil {
 		return nil
 	}
 	m.Store(id, item)
