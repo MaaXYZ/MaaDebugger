@@ -488,12 +488,7 @@ func (s *TaskerService) convertRecoDetail(detail *maa.RecognitionDetail) *RecoDe
 	}
 
 	if detail.DetailJson != "" {
-		var parsed any
-		if err := json.Unmarshal([]byte(detail.DetailJson), &parsed); err == nil {
-			resp.DetailJSON = parsed
-		} else {
-			resp.DetailJSON = detail.DetailJson
-		}
+		resp.DetailJSON = detail.DetailJson
 	}
 
 	if len(detail.CombinedResult) > 0 {
