@@ -32,30 +32,9 @@
                     </div>
                 </div>
 
-                <!-- Canvas draw (raw image) or fallback draw images -->
                 <div v-if="detail.raw_image && detail.results">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="text-xs text-dimmed font-medium">Recognition Draw:</span>
-                        <UTooltip text="Fullscreen">
-                            <UButton color="neutral" variant="ghost" icon="i-lucide-fullscreen" size="xs"
-                                @click="isFullscreen = true" />
-                        </UTooltip>
-                    </div>
-                    <RecognitionDrawCanvas :detail="detail" :rois="parsedRois" />
-                </div>
-                <div v-else-if="detail.draw_images && detail.draw_images.length > 0" class="flex flex-col gap-2">
-                    <span class="text-xs text-dimmed font-medium">Draw:</span>
-                    <div class="flex flex-col gap-2">
-                        <div v-for="(img, idx) in detail.draw_images" :key="idx" class="relative group">
-                            <img :src="resolveImageUrl(img)"
-                                class="max-w-full rounded-lg border border-default cursor-pointer hover:opacity-80 transition-opacity"
-                                @click="openImagePreview(img)" />
-                            <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <UButton color="neutral" variant="solid" icon="i-lucide-fullscreen" size="xs"
-                                    @click="openImagePreview(img)" />
-                            </div>
-                        </div>
-                    </div>
+                    <RecognitionDrawCanvas :detail="detail" :rois="parsedRois"
+                        :on-toggle-fullscreen="() => { isFullscreen = true }" />
                 </div>
             </div>
             <div v-else class="text-sm text-dimmed p-4 text-center">
@@ -69,7 +48,8 @@
         <template #body>
             <div v-if="detail?.raw_image && detail?.results"
                 class="w-full h-full flex flex-col overflow-hidden bg-muted p-4">
-                <RecognitionDrawCanvas :detail="detail" :rois="parsedRois" fullscreen />
+                <RecognitionDrawCanvas :detail="detail" :rois="parsedRois"
+                    :on-toggle-fullscreen="() => { isFullscreen = false }" fullscreen />
             </div>
         </template>
     </UModal>

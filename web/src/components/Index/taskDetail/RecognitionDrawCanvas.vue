@@ -4,8 +4,7 @@
         <div class="reco-left">
             <!-- Draw mode selector -->
             <div class="flex flex-row items-center gap-2 flex-wrap px-1">
-                <span class="text-xs text-dimmed font-medium">Draw:</span>
-                <UTabs key="value" v-model="drawMode" :items="drawModeOptions" />
+                <UTabs key="value" v-model="drawMode" :items="drawModeOptions" class="w-full" />
                 <span v-if="drawMode !== 'best'" class="text-xs text-dimmed tabular-nums">
                     ({{ activeResults.length }})
                 </span>
@@ -162,6 +161,10 @@
                     </UTooltip>
                 </div>
                 <USeparator orientation="vertical" class="h-4" />
+                <UTooltip :text="fullscreen ? 'Exit fullscreen' : 'Open fullscreen'">
+                    <UButton color="neutral" variant="ghost" icon="i-lucide-fullscreen" size="xs"
+                        @click="toggleFullscreen" />
+                </UTooltip>
                 <UTooltip text="Fit to view">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-maximize" size="xs" @click="resetView" />
                 </UTooltip>
@@ -208,6 +211,7 @@ const ZOOM_LEVEL_MEDIUM = 3.0    // below: "#N score"
 const props = defineProps<{
     detail: RecoDetailResponse
     rois?: RectResponse[]
+    onToggleFullscreen?: () => void
     fullscreen?: boolean
 }>()
 
@@ -392,6 +396,10 @@ function toggleAllCurrentMode() {
         drawMode.value,
         allSelectedInCurrentMode.value ? new Set() : buildFullSelection(selectableSourceResults.value.length),
     )
+}
+
+function toggleFullscreen() {
+    props.onToggleFullscreen?.()
 }
 
 const rawImage = computed(() => props.detail.raw_image)
