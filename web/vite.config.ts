@@ -14,11 +14,17 @@ export default defineConfig({
       },
       {
         find: /^monaco-editor$/,
-        replacement: path.resolve(__dirname, "node_modules/monaco-editor/esm/vs/editor/editor.api.js"),
+        replacement: path.resolve(
+          __dirname,
+          "node_modules/monaco-editor/esm/vs/editor/editor.api.js",
+        ),
       },
       {
         find: "monaco-editor/esm/vs/editor/editor.main.js",
-        replacement: path.resolve(__dirname, "node_modules/monaco-editor/esm/vs/editor/editor.api.js"),
+        replacement: path.resolve(
+          __dirname,
+          "node_modules/monaco-editor/esm/vs/editor/editor.api.js",
+        ),
       },
     ],
   },
