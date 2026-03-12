@@ -10,15 +10,15 @@
                 </div>
 
                 <div v-if="loading"
-                     class="flex flex-1 items-center justify-center rounded-lg border border-default bg-muted/30">
+                    class="flex flex-1 items-center justify-center rounded-lg border border-default bg-muted/30">
                     <UIcon name="i-lucide-loader" class="size-6 animate-spin text-dimmed" />
                 </div>
 
                 <UAlert v-else-if="errorMessage" color="error" variant="soft" icon="i-lucide-circle-alert"
-                        :title="errorMessage" />
+                    :title="errorMessage" />
 
                 <MonacoEditor v-else :model-value="editorValue" language="json" :read-only="true" :min-height="420"
-                              :max-height="720" />
+                    :max-height="720" />
             </div>
         </template>
     </UModal>
@@ -33,6 +33,7 @@ const props = defineProps<{
     nodeName: string | null
     recoId?: number | null
     actionId?: number | null
+    initialNodeJson?: string | null
 }>()
 
 const open = defineModel<boolean>('open', { default: false })
@@ -57,6 +58,13 @@ async function loadNodeData() {
     if (!open.value || !props.nodeName) {
         editorValue.value = '{}'
         errorMessage.value = ''
+        return
+    }
+
+    if (props.initialNodeJson?.trim()) {
+        editorValue.value = formatNodeJson(props.initialNodeJson)
+        errorMessage.value = ''
+        loading.value = false
         return
     }
 

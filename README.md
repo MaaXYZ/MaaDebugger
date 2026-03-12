@@ -13,13 +13,13 @@ MaaDebugger 暂时以 `@weinibuliu/maa-debugger` 的名称发布于 [npm](https:
 #### npm
 
 ```bash
-npx @weinibuliu/maa-debugger
+npx @weinibuliu/maa-debugger@latest
 ```
 
 #### pnpm
 
 ```bash
-pnpm dlx @weinibuliu/maa-debugger
+pnpm dlx @weinibuliu/maa-debugger@latest
 ```
 
 MaaDebugger 支持命令行参数，你可以通过 `--help` / `-H` 命令来获取帮助。

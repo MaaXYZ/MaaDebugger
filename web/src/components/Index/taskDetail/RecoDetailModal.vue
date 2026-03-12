@@ -13,7 +13,7 @@
                     <UBadge color="info" variant="subtle">{{ detail.algorithm }}</UBadge>
                     <span class="text-sm font-medium">{{ detail.name }}</span>
                     <UButton color="neutral" variant="ghost" size="xs" icon="i-lucide-file-json"
-                             @click="nodeDataOpen = true">
+                        @click="nodeDataOpen = true">
                         NodeData
                     </UButton>
                 </div>
@@ -28,7 +28,7 @@
                     <span class="text-sm font-medium text-dimmed">Combined ({{ detail.algorithm }}):</span>
                     <div class="pl-3 border-l-2 border-default flex flex-col gap-2">
                         <RecoDetailItem v-for="(sub, idx) in detail.combined_result" :key="idx" :detail="sub"
-                                        :depth="1" />
+                            :depth="1" />
                     </div>
                 </div>
 
@@ -38,21 +38,21 @@
                         <span class="text-xs text-dimmed font-medium">Recognition Draw:</span>
                         <UTooltip text="Fullscreen">
                             <UButton color="neutral" variant="ghost" icon="i-lucide-fullscreen" size="xs"
-                                     @click="isFullscreen = true" />
+                                @click="isFullscreen = true" />
                         </UTooltip>
                     </div>
-                    <RecognitionDrawCanvas :detail="detail" />
+                    <RecognitionDrawCanvas :detail="detail" :rois="parsedRois" />
                 </div>
                 <div v-else-if="detail.draw_images && detail.draw_images.length > 0" class="flex flex-col gap-2">
                     <span class="text-xs text-dimmed font-medium">Draw:</span>
                     <div class="flex flex-col gap-2">
                         <div v-for="(img, idx) in detail.draw_images" :key="idx" class="relative group">
                             <img :src="resolveImageUrl(img)"
-                                 class="max-w-full rounded-lg border border-default cursor-pointer hover:opacity-80 transition-opacity"
-                                 @click="openImagePreview(img)" />
+                                class="max-w-full rounded-lg border border-default cursor-pointer hover:opacity-80 transition-opacity"
+                                @click="openImagePreview(img)" />
                             <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <UButton color="neutral" variant="solid" icon="i-lucide-fullscreen" size="xs"
-                                         @click="openImagePreview(img)" />
+                                    @click="openImagePreview(img)" />
                             </div>
                         </div>
                     </div>
@@ -68,8 +68,8 @@
     <UModal v-model:open="isFullscreen" title="Recognition Draw" fullscreen>
         <template #body>
             <div v-if="detail?.raw_image && detail?.results"
-                 class="w-full h-full flex flex-col overflow-hidden bg-muted p-4">
-                <RecognitionDrawCanvas :detail="detail" fullscreen />
+                class="w-full h-full flex flex-col overflow-hidden bg-muted p-4">
+                <RecognitionDrawCanvas :detail="detail" :rois="parsedRois" fullscreen />
             </div>
         </template>
     </UModal>
@@ -78,48 +78,49 @@
     <UModal v-model:open="imagePreviewOpen" title="Image Preview" fullscreen>
         <template #body>
             <div class="relative w-full h-full flex items-center justify-center overflow-hidden bg-muted"
-                 @wheel.prevent="onPreviewWheel">
+                @wheel.prevent="onPreviewWheel">
                 <div class="flex items-center justify-center cursor-grab select-none"
-                     :class="{ 'cursor-grabbing': isPreviewDragging }" @mousedown="onPreviewDragStart"
-                     @mousemove="onPreviewDragMove" @mouseup="onPreviewDragEnd" @mouseleave="onPreviewDragEnd">
+                    :class="{ 'cursor-grabbing': isPreviewDragging }" @mousedown="onPreviewDragStart"
+                    @mousemove="onPreviewDragMove" @mouseup="onPreviewDragEnd" @mouseleave="onPreviewDragEnd">
                     <img v-if="previewImageSrc" :src="previewImageSrc" alt="Preview" draggable="false"
-                         class="pointer-events-none max-w-none" :style="previewImageStyle" />
+                        class="pointer-events-none max-w-none" :style="previewImageStyle" />
                 </div>
                 <!-- Fullscreen toolbar -->
                 <div
                     class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-elevated/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-default shadow-lg">
                     <UTooltip text="Zoom out">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-out" size="sm"
-                                 :disabled="previewZoom <= MIN_ZOOM" @click="previewZoomOut" />
+                            :disabled="previewZoom <= MIN_ZOOM" @click="previewZoomOut" />
                     </UTooltip>
                     <span class="text-xs text-muted min-w-10 text-center tabular-nums">
                         {{ previewZoomPercentage }}%
                     </span>
                     <UTooltip text="Zoom in">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-in" size="sm"
-                                 :disabled="previewZoom >= MAX_ZOOM" @click="previewZoomIn" />
+                            :disabled="previewZoom >= MAX_ZOOM" @click="previewZoomIn" />
                     </UTooltip>
                     <USeparator orientation="vertical" class="h-5" />
                     <UTooltip text="Fit to view">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-maximize" size="sm"
-                                 @click="resetPreviewZoom" />
+                            @click="resetPreviewZoom" />
                     </UTooltip>
                     <USeparator orientation="vertical" class="h-5" />
                     <UTooltip text="Download">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-download" size="sm"
-                                 @click="downloadPreviewImage" />
+                            @click="downloadPreviewImage" />
                     </UTooltip>
                 </div>
             </div>
         </template>
     </UModal>
-    <NodeDataModal v-model:open="nodeDataOpen" :node-name="props.nodeName ?? detail?.name ?? null" :reco-id="props.recoId" />
+    <NodeDataModal v-model:open="nodeDataOpen" :node-name="props.nodeName ?? detail?.name ?? null"
+        :reco-id="props.recoId" :initial-node-json="cachedNodeJson" />
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { getRecoDetailById, getTaskImageUrl } from '@/api/http'
-import type { RecoDetailResponse, TaskImageRef } from './types'
+import { getNodeData, getRecoDetailById, getTaskImageUrl } from '@/api/http'
+import type { RecoDetailResponse, RectResponse, TaskImageRef } from './types'
 import RecoDetailItem from './RecoDetailItem.vue'
 import RecognitionDrawCanvas from './RecognitionDrawCanvas.vue'
 import NodeDataModal from './NodeDataModal.vue'
@@ -138,6 +139,8 @@ const open = defineModel<boolean>('open', { default: false })
 const loading = ref(false)
 const detail = ref<RecoDetailResponse | null>(null)
 const nodeDataOpen = ref(false)
+const recognitionNodeJson = ref<unknown>(null)
+const cachedNodeJson = ref<string | null>(null)
 
 // Fullscreen canvas draw
 const isFullscreen = ref(false)
@@ -167,6 +170,81 @@ const previewImageStyle = computed(() => ({
 function resolveImageUrl(image: TaskImageRef): string {
     return image.url || getTaskImageUrl(image.id)
 }
+
+function isFiniteNumber(value: unknown): value is number {
+    return typeof value === 'number' && Number.isFinite(value)
+}
+
+function toRectResponse(value: unknown): RectResponse | null {
+    if (!Array.isArray(value) || value.length < 4) return null
+
+    const [x, y, w, h] = value
+    if (!isFiniteNumber(x) || !isFiniteNumber(y) || !isFiniteNumber(w) || !isFiniteNumber(h)) {
+        return null
+    }
+
+    return { x, y, w, h }
+}
+
+function mergeRectWithOffset(base: RectResponse | null, offset: RectResponse | null): RectResponse | null {
+    if (!base && !offset) return null
+    if (!base) return offset
+    if (!offset) return base
+    return {
+        x: base.x + offset.x,
+        y: base.y + offset.y,
+        w: base.w + offset.w,
+        h: base.h + offset.h,
+    }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+
+function collectRecognitionRois(source: unknown, bucket: RectResponse[]) {
+    if (!source) return
+
+    if (Array.isArray(source)) {
+        source.forEach(item => collectRecognitionRois(item, bucket))
+        return
+    }
+
+    if (!isRecord(source)) return
+
+    const directRoi = toRectResponse(source.roi)
+    const roiOffset = toRectResponse(source.roi_offset)
+    const mergedRoi = mergeRectWithOffset(directRoi, roiOffset)
+    if (mergedRoi && mergedRoi.w > 0 && mergedRoi.h > 0) {
+        bucket.push(mergedRoi)
+    }
+
+    if (Array.isArray(source.all_of)) {
+        source.all_of.forEach(item => collectRecognitionRois(item, bucket))
+    }
+    if (Array.isArray(source.any_of)) {
+        source.any_of.forEach(item => collectRecognitionRois(item, bucket))
+    }
+    if (isRecord(source.param)) {
+        collectRecognitionRois(source.param, bucket)
+    }
+}
+
+function dedupeRois(rois: RectResponse[]): RectResponse[] {
+    const seen = new Set<string>()
+    return rois.filter((roi) => {
+        const key = `${roi.x},${roi.y},${roi.w},${roi.h}`
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+    })
+}
+
+const parsedRois = computed<RectResponse[]>(() => {
+    const rois: RectResponse[] = []
+    collectRecognitionRois(recognitionNodeJson.value, rois)
+    return dedupeRois(rois)
+})
 
 function openImagePreview(image: TaskImageRef) {
     previewImageSrc.value = resolveImageUrl(image)
@@ -253,13 +331,34 @@ watch(open, (isOpen) => {
 watch([() => props.recoId, open], async ([id, isOpen]) => {
     if (!isOpen || id == null) {
         detail.value = null
+        recognitionNodeJson.value = null
+        cachedNodeJson.value = null
         return
     }
     loading.value = true
     try {
-        detail.value = await getRecoDetailById(id)
+        const [recoDetail, nodeData] = await Promise.all([
+            getRecoDetailById(id),
+            props.nodeName ? getNodeData(props.nodeName, { recoId: id }) : Promise.resolve(null),
+        ])
+        detail.value = recoDetail
+
+        cachedNodeJson.value = nodeData?.node_json ?? null
+
+        if (nodeData?.node_json) {
+            try {
+                const parsedNodeData = JSON.parse(nodeData.node_json) as Record<string, unknown>
+                recognitionNodeJson.value = parsedNodeData.recognition ?? null
+            } catch {
+                recognitionNodeJson.value = null
+            }
+        } else {
+            recognitionNodeJson.value = null
+        }
     } catch {
         detail.value = null
+        recognitionNodeJson.value = null
+        cachedNodeJson.value = null
     } finally {
         loading.value = false
     }

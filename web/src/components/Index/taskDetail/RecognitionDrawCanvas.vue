@@ -147,7 +147,7 @@
             </div>
 
             <!-- Toolbar -->
-            <div v-if="rawImage" class="flex flex-row items-center gap-2 pt-1">
+            <div v-if="rawImage" class="flex flex-row items-center gap-2 pt-1 flex-wrap">
                 <div class="flex items-center gap-1">
                     <UTooltip text="Zoom out">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-out" size="xs"
@@ -164,6 +164,13 @@
                 <USeparator orientation="vertical" class="h-4" />
                 <UTooltip text="Fit to view">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-maximize" size="xs" @click="resetView" />
+                </UTooltip>
+                <USeparator orientation="vertical" class="h-4" />
+                <UTooltip :text="showRois ? 'Hide ROI overlay' : 'Show ROI overlay'">
+                    <UButton color="neutral" variant="ghost" size="xs"
+                        :icon="showRois ? 'i-lucide-eye-off' : 'i-lucide-eye'" @click="showRois = !showRois">
+                        ROI
+                    </UButton>
                 </UTooltip>
                 <USeparator orientation="vertical" class="h-4" />
                 <UTooltip text="Download drawn image">
@@ -200,6 +207,7 @@ const ZOOM_LEVEL_MEDIUM = 3.0    // below: "#N score"
 
 const props = defineProps<{
     detail: RecoDetailResponse
+    rois?: RectResponse[]
     fullscreen?: boolean
 }>()
 
@@ -246,6 +254,7 @@ const dragStart = ref({ x: 0, y: 0 })
 const dragOffset = ref({ x: 0, y: 0 })
 const panOffset = ref({ x: 0, y: 0 })
 const rawImageObj = ref<HTMLImageElement | null>(null)
+const showRois = ref(true)
 
 const hoveredIndex = ref(-1)
 const tooltipVisible = ref(false)
@@ -387,6 +396,7 @@ function toggleAllCurrentMode() {
 
 const rawImage = computed(() => props.detail.raw_image)
 const results = computed(() => props.detail.results)
+const rois = computed<RectResponse[]>(() => props.rois ?? [])
 
 const imgWidth = computed(() => rawImageObj.value?.naturalWidth ?? 0)
 const imgHeight = computed(() => rawImageObj.value?.naturalHeight ?? 0)
@@ -721,6 +731,29 @@ function buildLabelByLevel(item: RecoResultItem, idx: number, level: string): st
     return parts.join(' ')
 }
 
+function drawRois(ctx: CanvasRenderingContext2D, img: HTMLImageElement) {
+    if (!showRois.value || rois.value.length === 0) return
+
+    const baseLineWidth = Math.max(2, Math.min(img.naturalWidth, img.naturalHeight) / 320)
+    const hoverLineWidth = Math.max(3, Math.min(img.naturalWidth, img.naturalHeight) / 220)
+    const isHoveringResult = hoveredIndex.value >= 0
+
+    rois.value.forEach((roi) => {
+        const lineWidth = isHoveringResult ? hoverLineWidth : baseLineWidth
+        const stroke = isHoveringResult ? '#67e8f9' : '#22d3ee'
+        const fill = isHoveringResult ? 'rgba(34, 211, 238, 0.14)' : 'rgba(34, 211, 238, 0.08)'
+
+        ctx.save()
+        ctx.strokeStyle = stroke
+        ctx.fillStyle = fill
+        ctx.lineWidth = lineWidth
+        ctx.setLineDash([8, 6])
+        ctx.strokeRect(roi.x, roi.y, roi.w, roi.h)
+        ctx.fillRect(roi.x, roi.y, roi.w, roi.h)
+        ctx.restore()
+    })
+}
+
 // --- Canvas drawing ---
 function drawCanvas() {
     const canvas = canvasRef.value
@@ -734,6 +767,7 @@ function drawCanvas() {
     if (!ctx) return
 
     ctx.drawImage(img, 0, 0)
+    drawRois(ctx, img)
 
     lastLabelRects = []
     const items = activeResults.value
