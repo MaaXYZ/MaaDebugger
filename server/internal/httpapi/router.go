@@ -22,6 +22,7 @@ import (
 	"github.com/MaaXYZ/MaaDebugger/internal/buildinfo"
 	"github.com/MaaXYZ/MaaDebugger/internal/configstore"
 	"github.com/MaaXYZ/MaaDebugger/internal/maaservice"
+	"github.com/MaaXYZ/MaaDebugger/internal/platform"
 	"github.com/MaaXYZ/MaaDebugger/internal/response"
 	"github.com/MaaXYZ/MaaDebugger/internal/state"
 	"github.com/MaaXYZ/MaaDebugger/internal/updater"
@@ -66,6 +67,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.HandleFunc("GET /api/fw/version", r.handleMaaFrameworkVersion)
 	mux.HandleFunc("GET /api/channel", r.handleChannel)
 	mux.HandleFunc("GET /api/config", r.handleConfigAll)
+	mux.HandleFunc("GET /api/system/uac", r.handleSystemUAC)
 	mux.HandleFunc("GET /api/config/{key}", r.handleConfigGet)
 	mux.HandleFunc("PUT /api/config/{key}", r.handleConfigSet)
 	mux.HandleFunc("PUT /api/config", r.handleConfigMerge)
@@ -151,6 +153,17 @@ func (r *router) handleInfoStatus(w http.ResponseWriter, _ *http.Request) {
 
 func (r *router) handleConfigAll(w http.ResponseWriter, _ *http.Request) {
 	response.OK(w, r.deps.ConfigStore.GetAll())
+}
+
+func (r *router) handleSystemUAC(w http.ResponseWriter, _ *http.Request) {
+	enabled, err := platform.UACEnabled()
+	if err != nil {
+		log.Error().Err(err).Msg("read windows UAC status failed")
+		response.Fail(w, http.StatusInternalServerError, "read windows UAC status failed")
+		return
+	}
+
+	response.OK(w, enabled)
 }
 
 func (r *router) handleConfigGet(w http.ResponseWriter, req *http.Request) {
