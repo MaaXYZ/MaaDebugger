@@ -2,7 +2,7 @@
 import { onMounted, onUnmounted, ref, computed } from 'vue'
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { wsClient } from '@/api/ws'
-import { getStatusSnapshot, getScreenshotStatus } from '@/api/http'
+import { getStatusSnapshot, getScreenshotStatus, getUACStatus } from '@/api/http'
 import { useStatusStore } from '@/stores/status'
 import { handleTaskEvent } from '@/stores/launchGraph'
 import { latestAgentUpdate } from '@/api/agentEvents'
@@ -39,6 +39,7 @@ const headerNavigationMenuItems = computed<NavigationMenuItem[]>(() => [
 const statusStore = useStatusStore()
 const toast = useToast()
 const backendConnected = ref(true)
+const isUAC = ref(false)
 let pingTimer: ReturnType<typeof setInterval> | null = null
 
 async function syncScreenshotStatus() {
@@ -73,10 +74,14 @@ async function pingBackend() {
 }
 
 onMounted(async () => {
-    const snapshot = await getStatusSnapshot()
-    if (snapshot) {
-        statusStore.updateStatus(snapshot)
-    }
+    await (Promise.all([getStatusSnapshot(), getUACStatus()])).then(
+        ([snapshotStatus, uacStatus]) => {
+            if (snapshotStatus) {
+                statusStore.updateStatus(snapshotStatus)
+            }
+            isUAC.value = uacStatus
+        }
+    )
     await syncScreenshotStatus()
 
     wsClient.connect({
@@ -156,7 +161,18 @@ onUnmounted(() => {
         <UTheme :ui="{
             select: selectTheme,
         }">
-            <UHeader title="MaaDebugger" :ui="{ toggle: 'hidden' }">
+            <UHeader :ui="{ toggle: 'hidden' }">
+                <template #left>
+                    <div class="flex items-end gap-2">
+                        <a href="/" aria-label="MaaDebugger"
+                            class="group inline-flex items-end gap-0.5 shrink-0 text-2xl font-black tracking-tight transition-all duration-200 hover:opacity-90 focus-visible:outline-primary">
+                            <span class="text-primary">Maa</span>
+                            <span class="text-highlighted">Debugger</span>
+                        </a>
+                        <UBadge v-if="isUAC" label="UAC" color="warning" variant="subtle" size="xs" class="mb-1" />
+                    </div>
+                </template>
+
                 <template #default>
                     <UNavigationMenu :items="headerNavigationMenuItems" class="w-full justify-center"
                         content-orientation="vertical" highlight />

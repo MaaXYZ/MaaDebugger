@@ -487,6 +487,14 @@ export async function getStatusSnapshot(): Promise<StatusSnapshot | null> {
   return result.data ?? null;
 }
 
+/**
+ * 获取 UAC 状态
+ */
+export async function getUACStatus(): Promise<boolean> {
+  const result = await request<boolean>("/info/uac");
+  return result.data ?? false;
+}
+
 // ============================================================
 // Config 持久化 API
 // ============================================================

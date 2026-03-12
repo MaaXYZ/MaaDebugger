@@ -64,10 +64,10 @@ func NewRouter(deps Dependencies) http.Handler {
 	// API routes
 	mux.HandleFunc("GET /api/info/all", r.handleMaaDebuggerInfo)
 	mux.HandleFunc("GET /api/info/status", r.handleInfoStatus)
+	mux.HandleFunc("GET /api/info/uac", r.handleSystemUAC)
 	mux.HandleFunc("GET /api/fw/version", r.handleMaaFrameworkVersion)
 	mux.HandleFunc("GET /api/channel", r.handleChannel)
 	mux.HandleFunc("GET /api/config", r.handleConfigAll)
-	mux.HandleFunc("GET /api/system/uac", r.handleSystemUAC)
 	mux.HandleFunc("GET /api/config/{key}", r.handleConfigGet)
 	mux.HandleFunc("PUT /api/config/{key}", r.handleConfigSet)
 	mux.HandleFunc("PUT /api/config", r.handleConfigMerge)

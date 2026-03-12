@@ -1,31 +1,31 @@
 <template>
-    <UCard class="w-full max-h-screen flex-1" size="xl">
+    <UCard class="w-full flex-1" size="xl">
         <template #header>
             <div class="flex flex-row items-center gap-2 min-h-10">
                 <span class="font-bold">Task Detail</span>
                 <div class="flex-1"></div>
                 <template v-if="allTasks.length > 1">
                     <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-chevron-left"
-                             :disabled="activeIndex <= 0" @click="activeIndex--" />
+                        :disabled="activeIndex <= 0" @click="activeIndex--" />
                     <span class="text-xs tabular-nums text-dimmed min-w-12 text-center">
                         {{ activeIndex + 1 }} / {{ allTasks.length }}
                     </span>
                     <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-chevron-right"
-                             :disabled="activeIndex >= allTasks.length - 1" @click="activeIndex++" />
+                        :disabled="activeIndex >= allTasks.length - 1" @click="activeIndex++" />
                 </template>
                 <UTooltip v-if="showOpenAsPage" text="Open as page">
                     <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-arrow-up-right" to="/TaskDetail"
-                             aria-label="Open Task Detail as page" />
+                        aria-label="Open Task Detail as page" />
                 </UTooltip>
                 <UButton v-if="allTasks.length > 0" size="xs" variant="ghost" color="neutral" icon="i-lucide-trash-2"
-                         @click="resetGraph" />
+                    @click="resetGraph" />
             </div>
         </template>
 
         <template #default>
             <div class="flex flex-col gap-3">
                 <UEmpty v-if="allTasks.length === 0" icon="i-material-symbols:checklist-rounded"
-                        title="No Task Details" />
+                    title="No Task Details" />
 
                 <template v-else-if="activeTask">
                     <div class="flex flex-wrap items-center gap-2 text-sm min-w-0">
@@ -58,35 +58,35 @@
                         </div>
                         <div class="flex flex-wrap items-center justify-end gap-2">
                             <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-chevrons-left"
-                                     :disabled="currentPage <= 1" @click="goToPage(1)">
+                                :disabled="currentPage <= 1" @click="goToPage(1)">
                                 First
                             </UButton>
                             <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-chevron-left"
-                                     :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">
+                                :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">
                                 Prev
                             </UButton>
                             <UButton v-if="isHistoryMode" size="xs" color="primary" variant="soft"
-                                     icon="i-lucide-arrow-down-to-line" @click="goToLatestPage">
+                                icon="i-lucide-arrow-down-to-line" @click="goToLatestPage">
                                 Latest
                             </UButton>
                             <UButton size="xs" variant="ghost" color="neutral" trailing-icon="i-lucide-chevron-right"
-                                     :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">
+                                :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">
                                 Next
                             </UButton>
                             <UButton size="xs" variant="ghost" color="neutral" trailing-icon="i-lucide-chevrons-right"
-                                     :disabled="currentPage >= totalPages" @click="goToPage(totalPages)">
+                                :disabled="currentPage >= totalPages" @click="goToPage(totalPages)">
                                 Last
                             </UButton>
                         </div>
                     </div>
 
                     <div v-if="displayedNodes.length > 0" ref="scrollContainerRef"
-                         class="node-list max-h-screen overflow-y-auto pr-1">
+                        class="node-list max-h-screen overflow-y-auto pr-1">
                         <div class="flex flex-col gap-2">
                             <PipelineNodeItem v-for="(node, idx) in displayedNodes"
-                                              :key="`${node.msg.name}-${node.msg.node_id}`" :node="node"
-                                              :default-expanded="defaultExpandedIndex === idx" @request-detail="onRequestDetail"
-                                              @request-action-detail="onRequestActionDetail" />
+                                :key="`${node.msg.name}-${node.msg.node_id}`" :node="node"
+                                :default-expanded="defaultExpandedIndex === idx" @request-detail="onRequestDetail"
+                                @request-action-detail="onRequestActionDetail" />
                         </div>
                     </div>
                     <div v-else class="text-xs text-dimmed italic pl-2">
