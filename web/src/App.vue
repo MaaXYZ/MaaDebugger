@@ -23,6 +23,16 @@ const headerNavigationMenuItems = computed<NavigationMenuItem[]>(() => [
         label: 'Running',
         icon: "i-lucide:loader",
         to: '/running',
+    },
+    {
+        label: "Tools",
+        icon: "i-lucide:box",
+        children: [
+            {
+                label: "Screenshot",
+                icon: "i-lucide:camera",
+                description: "Placeholder"
+            }]
     }
 ])
 
@@ -148,7 +158,8 @@ onUnmounted(() => {
         }">
             <UHeader title="MaaDebugger" :ui="{ toggle: 'hidden' }">
                 <template #default>
-                    <UNavigationMenu :items="headerNavigationMenuItems" highlight />
+                    <UNavigationMenu :items="headerNavigationMenuItems" class="w-full justify-center"
+                        content-orientation="vertical" highlight />
                 </template>
 
                 <template #right>
