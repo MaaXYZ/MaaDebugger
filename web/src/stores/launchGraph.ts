@@ -33,6 +33,22 @@ function iterateTracker(tracker: AllScope): AllScope | undefined {
   }
 }
 
+function pushPipelineNode(task: TaskScope, target: PipelineNodeScope[], msg: TaskEvent) {
+  const pipelineMsg = msg as PipelineNodeScope["msg"];
+  target.push({
+    type: "pipeline_node",
+    msg: pipelineMsg,
+    status: "running",
+    reco: [],
+    action: null,
+  } as PipelineNodeScope);
+
+  // Resolve entry node exactly once when the first matching pipeline node starts.
+  if (task.entryNodeId === null && pipelineMsg.name === task.msg.entry) {
+    task.entryNodeId = pipelineMsg.node_id;
+  }
+}
+
 /**
  * 全局 LaunchGraph 响应式状态 (使用深层 ref 保证所有属性修改都能触发更新)
  */
@@ -58,6 +74,7 @@ export function reduceLaunchGraph(graph: LaunchGraph, msg: TaskEvent) {
         type: "task",
         msg,
         status: "running",
+        entryNodeId: null,
         childs: [],
       } as TaskScope);
       graph.depth = 0;
@@ -89,13 +106,7 @@ export function reduceLaunchGraph(graph: LaunchGraph, msg: TaskEvent) {
   if (graph.depth === 0) {
     switch (msg.msg) {
       case "PipelineNode.Starting":
-        task.childs.push({
-          type: "pipeline_node",
-          msg,
-          status: "running",
-          reco: [],
-          action: null,
-        } as PipelineNodeScope);
+        pushPipelineNode(task, task.childs, msg);
         graph.depth++;
         return;
       default:
@@ -123,13 +134,7 @@ export function reduceLaunchGraph(graph: LaunchGraph, msg: TaskEvent) {
   switch (msg.msg) {
     case "PipelineNode.Starting":
       if (tracker.type === "reco" || tracker.type === "act") {
-        tracker.childs.push({
-          type: "pipeline_node",
-          msg,
-          status: "running",
-          reco: [],
-          action: null,
-        } as PipelineNodeScope);
+        pushPipelineNode(task, tracker.childs, msg);
         graph.depth++;
         return;
       }

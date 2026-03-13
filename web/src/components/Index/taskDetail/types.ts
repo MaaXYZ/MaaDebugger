@@ -15,6 +15,7 @@ export interface TaskScope {
   type: "task";
   msg: TaskEventMsg;
   status: GeneralStatus;
+  entryNodeId: number | null;
   childs: PipelineNodeScope[];
 }
 

@@ -85,6 +85,7 @@
                         <div class="flex flex-col gap-2">
                             <PipelineNodeItem v-for="(node, idx) in displayedNodes"
                                 :key="`${node.msg.name}-${node.msg.node_id}`" :node="node"
+                                :is-entry="node.msg.node_id === entryNodeId"
                                 :default-expanded="defaultExpandedIndex === idx" @request-detail="onRequestDetail"
                                 @request-action-detail="onRequestActionDetail" />
                         </div>
@@ -156,6 +157,8 @@ const displayedNodes = computed(() => {
     const end = start + nodePageSize.value
     return effectiveOrderedNodes.value.slice(start, end)
 })
+
+const entryNodeId = computed(() => activeTask.value?.entryNodeId ?? null)
 
 const defaultExpandedIndex = computed(() => {
     if (displayedNodes.value.length === 0) return -1
