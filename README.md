@@ -74,9 +74,10 @@ node build.mjs --os linux          # 交叉编译 Linux
 node build.mjs --os windows        # 交叉编译 Windows
 node build.mjs --os darwin         # 交叉编译 macOS
 node build.mjs --skip-frontend     # 跳过前端构建（仅编译 Go）
+node build.mjs --skip-go           # 跳过 Go 编译（仅构建前端）
 ```
 
-构建完成后，启动 `./MaaDebugger`（Windows 下为 `MaaDebugger.exe`），程序会自动选择可用端口（默认从 8011 开始）并打开浏览器。
+构建完成后，启动 `./MaaDebugger`（Windows 下为 `./MaaDebugger.exe`），程序会自动选择可用端口（默认从 8011 开始）并打开浏览器。
 
 > [!NOTE]
 > 需要注意的是 `MaaDebugger` 将寻找 `./bin` 下的 MaaFramework 动态库。
