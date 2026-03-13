@@ -33,7 +33,11 @@ function iterateTracker(tracker: AllScope): AllScope | undefined {
   }
 }
 
-function pushPipelineNode(task: TaskScope, target: PipelineNodeScope[], msg: TaskEvent) {
+function pushPipelineNode(
+  task: TaskScope,
+  target: PipelineNodeScope[],
+  msg: TaskEvent,
+) {
   const pipelineMsg = msg as PipelineNodeScope["msg"];
   target.push({
     type: "pipeline_node",
@@ -134,7 +138,7 @@ export function reduceLaunchGraph(graph: LaunchGraph, msg: TaskEvent) {
   switch (msg.msg) {
     case "PipelineNode.Starting":
       if (tracker.type === "reco" || tracker.type === "act") {
-        pushPipelineNode(task, tracker.childs, msg);
+        pushPipelineNode(task, tracker.childs as PipelineNodeScope[], msg);
         graph.depth++;
         return;
       }
