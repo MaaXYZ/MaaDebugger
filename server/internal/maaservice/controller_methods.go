@@ -66,8 +66,8 @@ var win32InputMethods = []ControllerMethod{
 	{Label: win32.InputPostThreadMessage.String(), Value: toUint64String(uint64(win32.InputPostThreadMessage))},
 	{Label: win32.InputSendMessageWithCursorPos.String(), Value: toUint64String(uint64(win32.InputSendMessageWithCursorPos))},
 	{Label: win32.InputPostMessageWithCursorPos.String(), Value: toUint64String(uint64(win32.InputPostMessageWithCursorPos))},
-	{Label: win32.InputSendMessageWithCursorPosAndBlockInput.String(), Value: toUint64String(uint64(win32.InputSendMessageWithCursorPosAndBlockInput))},
-	{Label: win32.InputPostMessageWithCursorPosAndBlockInput.String(), Value: toUint64String(uint64(win32.InputPostMessageWithCursorPosAndBlockInput))},
+	{Label: win32.InputSendMessageWithCursorPos.String(), Value: toUint64String(uint64(win32.InputSendMessageWithCursorPos))},
+	{Label: win32.InputPostMessageWithCursorPos.String(), Value: toUint64String(uint64(win32.InputPostMessageWithCursorPos))},
 }
 
 var gamepadInputMethods = []ControllerMethod{
