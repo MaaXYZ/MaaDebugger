@@ -1,1 +1,1 @@
-MAAFW_VERSION=v5.9.0.alpha.7
+MAAFW_VERSION=v5.9.0-alpha.7

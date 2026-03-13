@@ -14,7 +14,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@maaxyz/maa-node": "v5.9.0.alpha.7"
+    "@maaxyz/maa-node": "v5.9.0-alpha.7"
   },
   "optionalDependencies": {
     "@weinibuliu/maa-debugger-win32-x64": "0.0.0",
