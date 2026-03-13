@@ -1,23 +1,21 @@
 <template>
-    <UModal v-model:open="open" title="Recognition Detail" :ui="{ content: 'sm:max-w-[85vw] sm:w-[85vw]' }">
+    <UModal v-model:open="open" :ui="{ content: 'sm:max-w-[85vw] sm:w-[85vw]' }">
+        <template #header>
+            <div v-if="detail" class="flex flex-row items-center gap-2 flex-wrap">
+                <span class="text-sm text-highlighted font-semibold">{{ detail.name }}</span>
+                <UBadge :color="detail.hit ? 'success' : 'error'" variant="subtle"
+                    :label="detail.hit ? 'Hit' : 'Miss'" />
+                <UBadge color="info" variant="subtle" :label="detail.algorithm" />
+                <UButton color="neutral" variant="ghost" size="xs" icon="i-lucide-file-json"
+                    @click="nodeDataOpen = true" label="NodeData" />
+            </div>
+        </template>
+
         <template #body>
             <div v-if="loading" class="flex items-center justify-center p-8">
                 <UIcon name="i-lucide-loader" class="size-6 animate-spin text-dimmed" />
             </div>
             <div v-else-if="detail" class="flex flex-col gap-4">
-                <!-- Header info -->
-                <div class="flex flex-row items-center gap-2 flex-wrap">
-                    <UBadge :color="detail.hit ? 'success' : 'error'" variant="subtle">
-                        {{ detail.hit ? 'Hit' : 'Miss' }}
-                    </UBadge>
-                    <UBadge color="info" variant="subtle">{{ detail.algorithm }}</UBadge>
-                    <span class="text-sm font-medium">{{ detail.name }}</span>
-                    <UButton color="neutral" variant="ghost" size="xs" icon="i-lucide-file-json"
-                        @click="nodeDataOpen = true">
-                        NodeData
-                    </UButton>
-                </div>
-
                 <!-- Box -->
                 <div v-if="detail.box" class="text-xs text-dimmed">
                     Box: [{{ detail.box.x }}, {{ detail.box.y }}, {{ detail.box.w }}, {{ detail.box.h }}]

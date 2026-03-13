@@ -5,9 +5,6 @@
             <!-- Draw mode selector -->
             <div class="flex flex-row items-center gap-2 flex-wrap px-1">
                 <UTabs key="value" v-model="drawMode" :items="drawModeOptions" class="w-full" />
-                <span v-if="drawMode !== 'best'" class="text-xs text-dimmed tabular-nums">
-                    ({{ activeResults.length }})
-                </span>
             </div>
 
             <!-- Selectable modes: search + toggle all -->

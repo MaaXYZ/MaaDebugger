@@ -1,14 +1,5 @@
 <template>
     <div class="flex flex-col gap-2 rounded-lg border border-default p-3">
-        <!-- Header: action type + success/fail -->
-        <div class="flex flex-row items-center gap-2 flex-wrap">
-            <UBadge :color="detail.success ? 'success' : 'error'" variant="subtle">
-                {{ detail.success ? 'Success' : 'Failed' }}
-            </UBadge>
-            <UBadge color="info" variant="subtle">{{ detail.action }}</UBadge>
-            <span class="text-sm font-medium">{{ detail.name }}</span>
-        </div>
-
         <!-- Box -->
         <div v-if="detail.box" class="text-xs text-dimmed">
             Box: [{{ detail.box.x }}, {{ detail.box.y }}, {{ detail.box.w }}, {{ detail.box.h }}]
