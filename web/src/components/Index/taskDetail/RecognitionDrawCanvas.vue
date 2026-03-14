@@ -1,14 +1,14 @@
 <template>
     <div :class="['reco-root', fullscreen ? 'h-full' : '']">
         <!-- LEFT PANEL: controls + result list + detail -->
-        <div class="reco-left">
+        <div v-if="!showOriginalDraw" class="reco-left">
             <!-- Draw mode selector -->
-            <div class="flex flex-row items-center gap-2 flex-wrap px-1">
-                <UTabs key="value" v-model="drawMode" :items="drawModeOptions" class="w-full" />
+            <div v-if="!showOriginalDraw" class="flex items-center gap-2 px-1">
+                <UTabs key="value" v-model="drawMode" :items="drawModeOptions" class="flex-1" />
             </div>
 
             <!-- Selectable modes: search + toggle all -->
-            <div v-if="isSelectableMode" class="flex items-center gap-1.5 px-1">
+            <div v-if="!showOriginalDraw && isSelectableMode" class="flex items-center gap-1.5 px-1">
                 <UInput v-model="selectionSearch" icon="i-lucide-search" size="xs" placeholder="Filter..."
                     class="flex-1" />
                 <UTooltip :text="allSelectedInCurrentMode ? 'Deselect all' : 'Select all'">
@@ -19,7 +19,7 @@
             </div>
 
             <!-- Result list -->
-            <div v-if="showResultList" class="reco-list">
+            <div v-if="!showOriginalDraw && showResultList" class="reco-list">
                 <template v-if="isSelectableMode">
                     <label v-for="entry in filteredSelectableEntries" :key="`${drawMode}-${entry.idx}`"
                         class="reco-list-item" :class="[
@@ -61,7 +61,7 @@
             </div>
 
             <!-- Detail panel -->
-            <div class="reco-detail">
+            <div v-if="!showOriginalDraw" class="reco-detail">
                 <div v-if="focusedDetailItem" class="flex flex-col gap-2 text-xs">
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0">
@@ -98,8 +98,24 @@
         </div>
 
         <!-- RIGHT PANEL: canvas + toolbar -->
-        <div class="reco-right">
-            <div ref="containerRef" class="reco-canvas-container" :style="containerStyle" @wheel.prevent="onWheel">
+        <div class="reco-right" :class="showOriginalDraw ? 'w-full' : ''">
+            <div v-if="showOriginalDraw" ref="containerRef" class="reco-canvas-container w-full"
+                :style="rawDrawContainerStyle" @wheel.prevent="onWheel">
+                <div v-if="activeDrawImageObj" class="absolute inset-0 flex items-center justify-center select-none"
+                    :class="[isDragging ? 'cursor-grabbing' : 'cursor-grab']" @mousedown="onMouseDown"
+                    @mousemove="onMouseMove" @mouseup="onMouseUp" @mouseleave="onMouseLeave">
+                    <div class="relative w-full h-full flex items-center justify-center" :style="rawDrawWrapperStyle">
+                        <img :src="activeDrawImageUrl || undefined" alt="Raw Draw" class="reco-original-draw-image"
+                            draggable="false" />
+                    </div>
+                </div>
+                <div v-else class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted">
+                    <UIcon name="i-lucide-image-off" class="size-10" />
+                    <span class="text-xs">No raw draw available</span>
+                </div>
+            </div>
+            <div v-else ref="containerRef" class="reco-canvas-container" :style="containerStyle"
+                @wheel.prevent="onWheel">
                 <div v-if="rawImage" class="absolute inset-0 flex items-center justify-center select-none"
                     :class="[isDragging ? 'cursor-grabbing' : (hitTestCursor ? 'cursor-pointer' : 'cursor-grab')]"
                     @mousedown="onMouseDown" @mousemove="onMouseMove" @mouseup="onMouseUp" @mouseleave="onMouseLeave"
@@ -177,6 +193,15 @@
                     <UButton color="neutral" variant="ghost" icon="i-lucide-download" size="xs"
                         @click="downloadCanvas" />
                 </UTooltip>
+                <template v-if="hasOriginalDrawImages">
+                    <USeparator orientation="vertical" class="h-4" />
+                    <UTooltip :text="showOriginalDraw ? 'Hide raw draw' : 'Show raw draw'">
+                        <UButton color="neutral" :variant="showOriginalDraw ? 'soft' : 'ghost'" size="xs"
+                            icon="i-lucide-images" @click="showOriginalDraw = !showOriginalDraw">
+                            Raw Draw
+                        </UButton>
+                    </UTooltip>
+                </template>
             </div>
         </div>
     </div>
@@ -400,11 +425,20 @@ function toggleFullscreen() {
 }
 
 const rawImage = computed(() => props.detail.raw_image)
+const drawImages = computed(() => props.detail.draw_images ?? [])
+const drawImageUrls = computed(() => drawImages.value
+    .map((item) => item.url || getTaskImageUrl(item.id))
+    .filter((url): url is string => !!url))
+const hasOriginalDrawImages = computed(() => drawImageUrls.value.length > 0)
+const activeDrawImageUrl = computed(() => drawImageUrls.value[0] ?? null)
+const activeDrawImageObj = ref<HTMLImageElement | null>(null)
+const showOriginalDraw = ref(false)
 const results = computed(() => props.detail.results)
 const rois = computed<RectResponse[]>(() => props.rois ?? [])
 
-const imgWidth = computed(() => rawImageObj.value?.naturalWidth ?? 0)
-const imgHeight = computed(() => rawImageObj.value?.naturalHeight ?? 0)
+const activeImageObj = computed(() => showOriginalDraw.value ? activeDrawImageObj.value : rawImageObj.value)
+const imgWidth = computed(() => activeImageObj.value?.naturalWidth ?? 0)
+const imgHeight = computed(() => activeImageObj.value?.naturalHeight ?? 0)
 const containerStyle = computed(() => {
     if (props.fullscreen) {
         return { flex: '1 1 0', minHeight: '0' }
@@ -416,6 +450,21 @@ const canvasWrapperStyle = computed(() => ({
     maxWidth: '100%',
     maxHeight: '100%',
     aspectRatio: `${imgWidth.value} / ${imgHeight.value}`,
+    transform: `translate(${panOffset.value.x}px, ${panOffset.value.y}px) scale(${zoomLevel.value})`,
+    transformOrigin: 'center center',
+    transition: isDragging.value ? 'none' : 'transform 0.15s ease-out',
+}))
+
+const rawDrawContainerStyle = computed(() => {
+    if (props.fullscreen) {
+        return { flex: '1 1 0', minHeight: '0', width: '100%' }
+    }
+    return { maxHeight: '60vh', width: '100%' }
+})
+
+const rawDrawWrapperStyle = computed(() => ({
+    width: '100%',
+    height: '100%',
     transform: `translate(${panOffset.value.x}px, ${panOffset.value.y}px) scale(${zoomLevel.value})`,
     transformOrigin: 'center center',
     transition: isDragging.value ? 'none' : 'transform 0.15s ease-out',
@@ -591,6 +640,8 @@ function onMouseMove(e: MouseEvent) {
         return
     }
 
+    if (showOriginalDraw.value) return
+
     // Hit test for hover
     const coords = mouseToImageCoords(e)
     if (!coords) return
@@ -626,6 +677,7 @@ function onMouseUp() {
 function onMouseLeave() {
     isDragging.value = false
     mouseDownPos.value = null
+    if (showOriginalDraw.value) return
     if (hoveredIndex.value >= 0) {
         hoveredIndex.value = -1
         tooltipVisible.value = false
@@ -910,6 +962,18 @@ function loadRawImage() {
     img.src = rawImage.value.url || getTaskImageUrl(rawImage.value.id)
 }
 
+function loadActiveDrawImage() {
+    if (!activeDrawImageUrl.value) {
+        activeDrawImageObj.value = null
+        return
+    }
+    const img = new Image()
+    img.onload = () => {
+        activeDrawImageObj.value = img
+    }
+    img.src = activeDrawImageUrl.value
+}
+
 // --- Zoom ---
 function zoomIn() {
     zoomLevel.value = Math.min(MAX_ZOOM, +(zoomLevel.value + ZOOM_STEP).toFixed(2))
@@ -926,10 +990,14 @@ function resetView() {
 }
 
 function onWheel(e: WheelEvent) {
-    if (!rawImage.value) return
+    if (!activeImageObj.value) return
     if (e.deltaY < 0) zoomIn()
     else zoomOut()
 }
+
+watch(activeDrawImageUrl, () => {
+    loadActiveDrawImage()
+}, { immediate: true })
 
 // --- Download ---
 function downloadCanvas() {
@@ -957,8 +1025,23 @@ function downloadCanvas() {
 watch(rawImage, () => {
     cropCache.clear()
     loadRawImage()
+    if (!showOriginalDraw.value) resetView()
+})
+
+watch(activeDrawImageUrl, () => {
+    loadActiveDrawImage()
+    if (showOriginalDraw.value) resetView()
+})
+
+watch(showOriginalDraw, () => {
     resetView()
 })
+
+watch(hasOriginalDrawImages, (enabled) => {
+    if (!enabled) {
+        showOriginalDraw.value = false
+    }
+}, { immediate: true })
 
 watch(zoomLevel, () => {
     nextTick(() => drawCanvas())
@@ -1046,6 +1129,15 @@ onMounted(() => {
     overflow-y: auto;
     max-height: 220px;
     flex-shrink: 0;
+}
+
+.reco-original-draw-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+    background: var(--ui-bg-muted);
 }
 
 /* Tooltip */

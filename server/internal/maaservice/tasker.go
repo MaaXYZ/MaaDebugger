@@ -502,6 +502,21 @@ func (s *TaskerService) convertRecoDetail(detail *maa.RecognitionDetail) *RecoDe
 		resp.RawImage = storeTaskImage(&s.taskImages, fmt.Sprintf("reco:raw-%d", detail.ID), detail.Raw)
 	}
 
+	if len(detail.Draws) > 0 {
+		resp.DrawImages = make([]*ImageRef, 0, len(detail.Draws))
+		for idx, drawImg := range detail.Draws {
+			if drawImg == nil {
+				continue
+			}
+			if ref := storeTaskImage(&s.taskImages, fmt.Sprintf("reco:draw-%d-%d", detail.ID, idx), drawImg); ref != nil {
+				resp.DrawImages = append(resp.DrawImages, ref)
+			}
+		}
+		if len(resp.DrawImages) == 0 {
+			resp.DrawImages = nil
+		}
+	}
+
 	if detail.Results != nil {
 		var best []*RecoResultItem
 		if detail.Results.Best != nil {
