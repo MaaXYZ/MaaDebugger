@@ -255,8 +255,8 @@ export async function getAgentList(): Promise<AgentInfo[]> {
 export async function checkPathExists(
   path: string,
   pathType?: "file" | "dir",
-): Promise<ApiResponse<{ exists: boolean }>> {
-  return request<{ exists: boolean }>("/path/exists", {
+): Promise<ApiResponse<{ exists: boolean; msg: string }>> {
+  return request<{ exists: boolean; msg: string }>("/path/exists", {
     method: "POST",
     body: JSON.stringify({ path, type: pathType }),
   });

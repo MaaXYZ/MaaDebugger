@@ -26,6 +26,14 @@ func OK(w http.ResponseWriter, data any) {
 	})
 }
 
+func Done(w http.ResponseWriter, data any, msg string) {
+	JSON(w, http.StatusOK, Envelope{
+		Succeed: true,
+		Msg:     msg,
+		Data:    data,
+	})
+}
+
 func Fail(w http.ResponseWriter, status int, msg string) {
 	JSON(w, status, Envelope{
 		Succeed: false,

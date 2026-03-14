@@ -109,7 +109,7 @@ async function validatePath(): Promise<boolean> {
     const exists = Boolean(result.succeed && result.data?.exists)
 
     if (!exists) {
-        pathError.value = result.succeed ? 'File does not exist' : (result.msg || 'Path validation failed')
+        pathError.value = result.msg || 'Path validation failed'
         return false
     }
 
