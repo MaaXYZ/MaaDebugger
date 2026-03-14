@@ -638,11 +638,11 @@ def run_task_control():
             GlobalStatus.task_running = Status.FAILED
             return
 
-        # 重新加载资源 / 连接 Agent(如果有)
+        # 重新加载资源
         res_status = await on_click_resource_load(STORAGE.get("resource_dir"))
-        agent_status = await on_click_agent() if maafw.agent_connected else True
+        # agent_status = await on_click_agent() if maafw.agent_connected else True
 
-        if not (res_status and agent_status):
+        if not res_status:
             GlobalStatus.task_running = Status.FAILED
             return
 
