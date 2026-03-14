@@ -22,6 +22,7 @@ type rawInterfaceFile struct {
 	Name       string             `json:"name"`
 	Version    string             `json:"version"`
 	Import     []string           `json:"import"`
+	Languages  map[string]string  `json:"languages"`
 	Controller []rawInterfaceCtrl `json:"controller"`
 	Resource   []rawInterfaceRes  `json:"resource"`
 	Task       []rawInterfaceTask `json:"task"`
@@ -88,14 +89,16 @@ type rawImportedOptionCase struct {
 }
 
 type interfaceParseResponse struct {
-	InterfacePath        string                    `json:"interface_path"`
-	BaseDir              string                    `json:"base_dir"`
-	Name                 string                    `json:"name"`
-	Version              string                    `json:"version"`
-	Imports              []interfaceResolvedRef    `json:"imports,omitempty"`
-	ControllerCandidates []interfaceControllerItem `json:"controller_candidates"`
-	ResourceCandidates   []interfaceResourceItem   `json:"resource_candidates"`
-	TaskCandidates       []interfaceTaskItem       `json:"task_candidates"`
+	InterfacePath        string                              `json:"interface_path"`
+	BaseDir              string                              `json:"base_dir"`
+	Name                 string                              `json:"name"`
+	Version              string                              `json:"version"`
+	Languages            map[string]string                   `json:"languages,omitempty"`
+	LocaleValues         map[string]map[string]string        `json:"locale_values,omitempty"`
+	Imports              []interfaceResolvedRef              `json:"imports,omitempty"`
+	ControllerCandidates []interfaceControllerItem           `json:"controller_candidates"`
+	ResourceCandidates   []interfaceResourceItem             `json:"resource_candidates"`
+	TaskCandidates       []interfaceTaskItem                 `json:"task_candidates"`
 }
 
 type interfaceControllerItem struct {
@@ -207,11 +210,18 @@ func parseInterfaceFile(interfacePath string) (*interfaceParseResponse, error) {
 		BaseDir:              filepath.Clean(baseDir),
 		Name:                 raw.Name,
 		Version:              raw.Version,
+		Languages:            compactStringMap(raw.Languages),
+		LocaleValues:         map[string]map[string]string{},
 		Imports:              make([]interfaceResolvedRef, 0, len(raw.Import)),
 		ControllerCandidates: make([]interfaceControllerItem, 0, len(raw.Controller)),
 		ResourceCandidates:   make([]interfaceResourceItem, 0, len(raw.Resource)),
 		TaskCandidates:       make([]interfaceTaskItem, 0, len(raw.Task)),
 	}
+	localeValues, err := parseInterfaceLocales(baseDir, result.Languages)
+	if err != nil {
+		return nil, err
+	}
+	result.LocaleValues = localeValues
 
 	for _, item := range raw.Controller {
 		candidate := interfaceControllerItem{
@@ -418,6 +428,86 @@ func stringifyText(value any) string {
 		return strings.Join(parts, "\n")
 	default:
 		return strings.TrimSpace(fmt.Sprint(v))
+	}
+}
+
+func compactStringMap(values map[string]string) map[string]string {
+	if len(values) == 0 {
+		return nil
+	}
+	result := make(map[string]string, len(values))
+	for key, value := range values {
+		trimmedKey := strings.TrimSpace(key)
+		trimmedValue := strings.TrimSpace(value)
+		if trimmedKey == "" || trimmedValue == "" {
+			continue
+		}
+		result[trimmedKey] = trimmedValue
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
+func parseInterfaceLocales(baseDir string, languages map[string]string) (map[string]map[string]string, error) {
+	if len(languages) == 0 {
+		return nil, nil
+	}
+
+	result := make(map[string]map[string]string, len(languages))
+	for language, relativePath := range languages {
+		resolved := resolvePath(baseDir, relativePath)
+		content, err := os.ReadFile(resolved)
+		if err != nil {
+			return nil, fmt.Errorf("read locale %s: %w", resolved, err)
+		}
+
+		var raw any
+		if err := unmarshalLenientJSON(content, &raw); err != nil {
+			return nil, fmt.Errorf("parse locale %s: %w", resolved, err)
+		}
+
+		flattened := map[string]string{}
+		flattenLocaleMap("", raw, flattened)
+		result[language] = flattened
+	}
+
+	return result, nil
+}
+
+func flattenLocaleMap(prefix string, value any, out map[string]string) {
+	switch v := value.(type) {
+	case map[string]any:
+		for key, nested := range v {
+			nextPrefix := key
+			if prefix != "" {
+				nextPrefix = prefix + "." + key
+			}
+			flattenLocaleMap(nextPrefix, nested, out)
+		}
+	case []any:
+		parts := make([]string, 0, len(v))
+		for _, item := range v {
+			text := stringifyText(item)
+			if text != "" {
+				parts = append(parts, text)
+			}
+		}
+		if prefix != "" && len(parts) > 0 {
+			out[prefix] = strings.Join(parts, "\n")
+		}
+	case string:
+		if prefix != "" {
+			out[prefix] = strings.TrimSpace(v)
+		}
+	default:
+		if prefix != "" {
+			text := stringifyText(v)
+			if text != "" {
+				out[prefix] = text
+			}
+		}
 	}
 }
 

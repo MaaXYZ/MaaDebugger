@@ -1,6 +1,6 @@
 <template>
     <UCard class="w-full max-w-xl transition-opacity duration-200"
-           :class="{ 'opacity-50 pointer-events-none': isTaskRunning }" size="xl" :ui="{ body: 'p-0 sm:p-0' }">
+        :class="{ 'opacity-50 pointer-events-none': isTaskRunning }" size="xl" :ui="{ body: 'p-0 sm:p-0' }">
         <template #header>
             <div class="flex flex-col gap-2">
                 <div class="flex flex-row items-center justify-between gap-4">
@@ -9,7 +9,7 @@
                         <UBadge :color="statusColor" variant="subtle" size="sm" class="gap-1.5">
                             <span class="relative flex size-2">
                                 <span v-if="loading"
-                                      class="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-75"></span>
+                                    class="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-75"></span>
                                 <span class="relative inline-flex size-2 rounded-full" :class="dotClass"></span>
                             </span>
                             {{ statusLabel }}
@@ -26,12 +26,17 @@
         <div class="p-4 sm:p-6 min-h-36 flex flex-col gap-3">
             <UFormField name="interfacePath" label="File Path" :error="pathError || undefined">
                 <UInput v-model="interfacePath" class="w-full" placeholder="Enter interface.json file path..."
-                        icon="i-lucide-file-json" size="xl" :color="pathError ? 'error' : 'neutral'" @blur="onPathBlur" />
+                    icon="i-lucide-file-json" size="xl" :color="pathError ? 'error' : 'neutral'" @blur="onPathBlur" />
+            </UFormField>
+
+            <UFormField v-if="taskStore.hasInterfaceLanguages" name="interfaceLanguage" label="Language">
+                <USelect v-model="selectedInterfaceLanguage" :items="interfaceLanguageItems" value-key="value"
+                    class="w-full" size="xl" arrow />
             </UFormField>
 
             <div class="flex justify-end">
                 <UButton color="primary" variant="soft" icon="i-lucide-folder-open" size="xl" :loading="loading"
-                         :disabled="!canLoad" label="Load" @click="onLoad" />
+                    :disabled="!canLoad" label="Load" @click="onLoad" />
             </div>
         </div>
     </UCard>
@@ -59,6 +64,18 @@ const pathError = ref('')
 
 const canLoad = computed(() => interfacePath.value.trim().length > 0 && !loading.value && !pathError.value)
 const loadedInterface = ref<InterfaceParseResult | null>(null)
+const selectedInterfaceLanguage = computed({
+    get: () => taskStore.selectedInterfaceLanguage,
+    set: (value: string) => {
+        taskStore.setInterfaceLanguage(value)
+    },
+})
+const interfaceLanguageItems = computed(() =>
+    taskStore.availableInterfaceLanguages.map((item) => ({
+        label: item.label,
+        value: item.value,
+    })),
+)
 const statusLabel = computed(() => {
     if (loading.value) return 'Loading'
     if (loadedInterface.value) return 'Loaded'
@@ -185,7 +202,10 @@ async function onLoad() {
             console.log('[Interface] resource store after patch:', resourceStore.activePaths)
         }
 
-        taskStore.applyInterfaceTasks(parsed.task_candidates)
+        taskStore.applyInterfaceTasks(parsed.task_candidates, {
+            languages: parsed.languages,
+            localeValues: parsed.locale_values,
+        })
 
         await Promise.all([
             saveStoreConfig('controller', JSON.parse(JSON.stringify(controllerStore.$state))),

@@ -56,6 +56,8 @@ export interface InterfaceParseResult {
   base_dir: string;
   name: string;
   version: string;
+  languages?: Record<string, string>;
+  locale_values?: Record<string, Record<string, string>>;
   imports?: InterfaceResolvedPath[];
   controller_candidates: InterfaceControllerCandidate[];
   resource_candidates: InterfaceResourceCandidate[];

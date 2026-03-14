@@ -15,6 +15,15 @@ function cloneTasks(tasks: InterfaceTaskCandidate[]): InterfaceTaskCandidate[] {
   return JSON.parse(JSON.stringify(tasks)) as InterfaceTaskCandidate[];
 }
 
+function cloneLocaleValues(
+  values: Record<string, Record<string, string>>,
+): Record<string, Record<string, string>> {
+  return JSON.parse(JSON.stringify(values)) as Record<
+    string,
+    Record<string, string>
+  >;
+}
+
 function cloneObject<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
@@ -141,8 +150,29 @@ export const useTaskStore = defineStore(
     const manualOverrideJson = ref("{}");
 
     const interfaceTasks = ref<InterfaceTaskCandidate[]>([]);
+    const interfaceLanguages = ref<Record<string, string>>({});
+    const interfaceLocaleValues = ref<Record<string, Record<string, string>>>(
+      {},
+    );
+    const selectedInterfaceLanguage = ref("");
     const selectedInterfaceTaskName = ref("");
     const selectedOptionCases = ref<InterfaceTaskOptionSelection[]>([]);
+
+    const availableInterfaceLanguages = computed(() =>
+      Object.entries(interfaceLanguages.value).map(([value, path]) => ({
+        value,
+        label: value,
+        path,
+      })),
+    );
+
+    const hasInterfaceLanguages = computed(
+      () => availableInterfaceLanguages.value.length > 0,
+    );
+
+    const activeLocaleMap = computed<Record<string, string>>(
+      () => interfaceLocaleValues.value[selectedInterfaceLanguage.value] ?? {},
+    );
 
     const selectedInterfaceTask = computed(
       () =>
@@ -276,8 +306,48 @@ export const useTaskStore = defineStore(
       selectedOptionCases.value = nextSelections;
     }
 
-    function applyInterfaceTasks(tasks: InterfaceTaskCandidate[]) {
+    function setInterfaceLanguage(language: string) {
+      if (!language || !interfaceLanguages.value[language]) {
+        const fallback = availableInterfaceLanguages.value[0]?.value ?? "";
+        selectedInterfaceLanguage.value = fallback;
+        return;
+      }
+      selectedInterfaceLanguage.value = language;
+    }
+
+    function resolveInterfaceText(value?: string | null): string {
+      const trimmed = (value ?? "").trim();
+      if (!trimmed) return "";
+      if (!trimmed.startsWith("$")) return trimmed;
+      const localeKey = trimmed.slice(1);
+      return activeLocaleMap.value[localeKey] ?? trimmed;
+    }
+
+    function getDisplayName(
+      name?: string | null,
+      label?: string | null,
+    ): string {
+      const fallbackName = (name ?? "").trim();
+      const resolvedLabel = resolveInterfaceText(label);
+      if (resolvedLabel && resolvedLabel !== (label ?? "").trim()) {
+        return resolvedLabel;
+      }
+      return fallbackName;
+    }
+
+    function applyInterfaceTasks(
+      tasks: InterfaceTaskCandidate[],
+      options?: {
+        languages?: Record<string, string>;
+        localeValues?: Record<string, Record<string, string>>;
+      },
+    ) {
       interfaceTasks.value = cloneTasks(tasks);
+      interfaceLanguages.value = { ...(options?.languages ?? {}) };
+      interfaceLocaleValues.value = cloneLocaleValues(
+        options?.localeValues ?? {},
+      );
+      setInterfaceLanguage(selectedInterfaceLanguage.value);
 
       const matchedTask = interfaceTasks.value.find(
         (task) => task.name === selectedInterfaceTaskName.value,
@@ -298,6 +368,9 @@ export const useTaskStore = defineStore(
 
     function clearInterfaceTasks() {
       interfaceTasks.value = [];
+      interfaceLanguages.value = {};
+      interfaceLocaleValues.value = {};
+      selectedInterfaceLanguage.value = "";
       selectedInterfaceTaskName.value = "";
       selectedOptionCases.value = [];
       if (taskLaunchMode.value === "interface") {
@@ -308,6 +381,9 @@ export const useTaskStore = defineStore(
 
     function onRestore() {
       interfaceTasks.value = cloneTasks(interfaceTasks.value);
+      interfaceLocaleValues.value = cloneLocaleValues(
+        interfaceLocaleValues.value,
+      );
       syncOverrideJson();
     }
 
@@ -317,11 +393,17 @@ export const useTaskStore = defineStore(
       overrideJson,
       manualOverrideJson,
       interfaceTasks,
+      interfaceLanguages,
+      interfaceLocaleValues,
+      selectedInterfaceLanguage,
+      availableInterfaceLanguages,
+      hasInterfaceLanguages,
       selectedInterfaceTaskName,
       selectedOptionCases,
       selectedInterfaceTask,
       selectedTaskOptionDefs,
       selectedTaskOptionSelections,
+      activeLocaleMap,
       derivedInterfaceOverride,
       usingInterfaceTask,
       effectiveEntry,
@@ -330,6 +412,9 @@ export const useTaskStore = defineStore(
       setManualOverrideJson,
       setTaskLaunchMode,
       setSelectedOptionCase,
+      setInterfaceLanguage,
+      resolveInterfaceText,
+      getDisplayName,
       applyInterfaceTasks,
       selectInterfaceTask,
       clearInterfaceTasks,

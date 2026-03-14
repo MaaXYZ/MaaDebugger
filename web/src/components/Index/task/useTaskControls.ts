@@ -70,9 +70,9 @@ export default function useTaskControls(toast: ToastApi) {
 
   const interfaceTaskItems = computed(() =>
     taskStore.interfaceTasks.map((task) => ({
-      label: task.name,
+      label: taskStore.getDisplayName(task.name, task.label),
       value: task.name,
-      // description: task.entry || task.description || task.name,
+      name: task.name,
     })),
   );
   const hasInterfaceTasks = computed(() => interfaceTaskItems.value.length > 0);
