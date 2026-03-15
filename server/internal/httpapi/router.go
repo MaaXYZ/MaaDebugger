@@ -408,6 +408,26 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		result = r.deps.ControllerService.ConnectPlayCover(address, uuid)
 		r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
 
+	case "wlroot":
+		wlrSocketPath := getString("wlroot_socket_path")
+		if wlrSocketPath == "" {
+			log.Warn().Msg("[Controller] connect wlroot: socket path is empty")
+			r.deps.StatusStore.SetController("disconnected")
+			r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
+			response.Fail(w, http.StatusBadRequest, "socket path is required for WlRoot controller")
+			return
+		}
+
+		log.Info().
+			Str("socket_path", wlrSocketPath).
+			Msg("[Controller] connecting WlRoot")
+
+		result = r.deps.ControllerService.ConnectWlRoot(wlrSocketPath)
+		r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
+
+	case "custom":
+		// TODO
+
 	default:
 		log.Warn().Str("type", ctrlType).Msg("[Controller] unsupported controller type")
 		r.deps.StatusStore.SetController("disconnected")

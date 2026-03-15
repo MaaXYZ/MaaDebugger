@@ -19,6 +19,7 @@ const (
 	Win32     ControllerType = "win32"
 	Gamepad   ControllerType = "gamepad"
 	PlayCover ControllerType = "playcover"
+	WlRoot    ControllerType = "wlroot"
 	Custom    ControllerType = "custom"
 )
 
@@ -85,8 +86,7 @@ func (s *ControllerService) ConnectAdb(
 	}
 
 	log.Info().Msg("[MaaService] ADB controller created, posting connection...")
-	job := ctrl.PostConnect()
-	job.Wait()
+	ctrl.PostConnect().Wait()
 
 	connected := ctrl.Connected()
 	log.Info().Bool("connected", connected).Msg("[MaaService] ADB PostConnect completed")
@@ -165,8 +165,7 @@ func (s *ControllerService) ConnectWin32(
 	}
 
 	log.Info().Msg("[MaaService] Win32 controller created, posting connection...")
-	job := ctrl.PostConnect()
-	job.Wait()
+	ctrl.PostConnect().Wait()
 
 	connected := ctrl.Connected()
 	log.Info().Bool("connected", connected).Msg("[MaaService] Win32 PostConnect completed")
@@ -230,8 +229,7 @@ func (s *ControllerService) ConnectGamepad(
 	}
 
 	log.Info().Msg("[MaaService] Gamepad controller created, posting connection...")
-	job := ctrl.PostConnect()
-	job.Wait()
+	ctrl.PostConnect().Wait()
 
 	connected := ctrl.Connected()
 	log.Info().Bool("connected", connected).Msg("[MaaService] Gamepad PostConnect completed")
@@ -275,8 +273,7 @@ func (s *ControllerService) ConnectPlayCover(
 	}
 
 	log.Info().Msg("[MaaService] PlayCover controller created, posting connection...")
-	job := ctrl.PostConnect()
-	job.Wait()
+	ctrl.PostConnect().Wait()
 
 	connected := ctrl.Connected()
 	log.Info().Bool("connected", connected).Msg("[MaaService] PlayCover PostConnect completed")
@@ -295,6 +292,39 @@ func (s *ControllerService) ConnectPlayCover(
 	}
 
 	log.Info().Str("address", address).Str("uuid", uuid).Msg("[MaaService] PlayCover controller connected successfully")
+	return ConnectControllerResult{Success: true}
+}
+
+func (s *ControllerService) ConnectWlRoot(wlrSocketPath string) ConnectControllerResult {
+	log.Info().Str("socket_path", wlrSocketPath).Msg("[MaaService] ConnectWlRoot called")
+
+	log.Info().Msg("[MaaService] creating WlRoot controller...")
+	ctrl, err := maa.NewWlRootsController(wlrSocketPath)
+	if err != nil {
+		log.Error().Err(err).Str("socket_path", wlrSocketPath).Msg("[MaaService] create WlRoot controller failed")
+		return ConnectControllerResult{Error: fmt.Sprintf("create WlRoot controller failed: %v", err)}
+	}
+
+	log.Info().Msg("[MaaService] WlRoot controller created, posting connection...")
+	ctrl.PostConnect().Wait()
+
+	connected := ctrl.Connected()
+	log.Info().Bool("connected", connected).Msg("[MaaService] WlRoot PostConnect completed")
+
+	if !connected {
+		ctrl.Destroy()
+		errMsg := fmt.Sprintf("failed to connect WlRoot: %s", wlrSocketPath)
+		log.Warn().Str("socket_path", wlrSocketPath).Msg("[MaaService] " + errMsg)
+		return ConnectControllerResult{Error: errMsg}
+	}
+
+	// 替换旧实例
+	if old := s.controller.Swap(ctrl); old != nil {
+		log.Info().Msg("[MaaService] destroying previous controller")
+		old.Destroy()
+	}
+
+	log.Info().Str("socket_path", wlrSocketPath).Msg("[MaaService] WlRoot controller connected successfully")
 	return ConnectControllerResult{Success: true}
 }
 
