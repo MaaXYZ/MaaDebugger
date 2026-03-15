@@ -10,6 +10,7 @@ import (
 	maa "github.com/MaaXYZ/maa-framework-go/v4"
 	"github.com/MaaXYZ/maa-framework-go/v4/controller/adb"
 	"github.com/MaaXYZ/maa-framework-go/v4/controller/win32"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -97,15 +98,7 @@ func (s *ControllerService) ConnectAdb(
 		return ConnectControllerResult{Error: errMsg}
 	}
 
-	// 替换旧实例
-	if old := s.controller.Swap(ctrl); old != nil {
-		log.Info().Msg("[MaaService] destroying previous controller")
-		old.Destroy()
-	}
-
-	s.controllerType = ADB
-	log.Info().Str("address", address).Msg("[MaaService] ADB controller connected successfully")
-	return ConnectControllerResult{Success: true}
+	return s.finishConnect(ctrl, ADB, log.Info().Str("address", address), "[MaaService] ADB controller connected successfully")
 }
 
 // ConnectWin32 连接 Win32 控制器。
@@ -175,15 +168,7 @@ func (s *ControllerService) ConnectWin32(
 		return ConnectControllerResult{Error: errMsg}
 	}
 
-	// 替换旧实例
-	if old := s.controller.Swap(ctrl); old != nil {
-		log.Info().Msg("[MaaService] destroying previous controller")
-		old.Destroy()
-	}
-
-	s.controllerType = Win32
-	log.Info().Str("hwnd", hwndStr).Msg("[MaaService] Win32 controller connected successfully")
-	return ConnectControllerResult{Success: true}
+	return s.finishConnect(ctrl, Win32, log.Info().Str("hwnd", hwndStr), "[MaaService] Win32 controller connected successfully")
 }
 
 // ConnectGamepad 连接 Gamepad 控制器。
@@ -238,15 +223,7 @@ func (s *ControllerService) ConnectGamepad(
 		return ConnectControllerResult{Error: errMsg}
 	}
 
-	// 替换旧实例
-	if old := s.controller.Swap(ctrl); old != nil {
-		log.Info().Msg("[MaaService] destroying previous controller")
-		old.Destroy()
-	}
-
-	s.controllerType = Gamepad
-	log.Info().Str("hwnd", hwndStr).Msg("[MaaService] Gamepad controller connected successfully")
-	return ConnectControllerResult{Success: true}
+	return s.finishConnect(ctrl, Gamepad, log.Info().Str("hwnd", hwndStr), "[MaaService] Gamepad controller connected successfully")
 }
 
 // ConnectPlayCover 连接 PlayCover 控制器。
@@ -281,15 +258,7 @@ func (s *ControllerService) ConnectPlayCover(
 		return ConnectControllerResult{Error: errMsg}
 	}
 
-	// 替换旧实例
-	if old := s.controller.Swap(ctrl); old != nil {
-		log.Info().Msg("[MaaService] destroying previous controller")
-		old.Destroy()
-	}
-
-	s.controllerType = PlayCover
-	log.Info().Str("address", address).Str("uuid", uuid).Msg("[MaaService] PlayCover controller connected successfully")
-	return ConnectControllerResult{Success: true}
+	return s.finishConnect(ctrl, PlayCover, log.Info().Str("address", address).Str("uuid", uuid), "[MaaService] PlayCover controller connected successfully")
 }
 
 func (s *ControllerService) ConnectWlRoot(wlrSocketPath string) ConnectControllerResult {
@@ -320,14 +289,22 @@ func (s *ControllerService) ConnectWlRoot(wlrSocketPath string) ConnectControlle
 		return ConnectControllerResult{Error: errMsg}
 	}
 
-	// 替换旧实例
+	return s.finishConnect(ctrl, WlRoot, log.Info().Str("socket_path", wlrSocketPath), "[MaaService] WlRoot controller connected successfully")
+}
+
+func (s *ControllerService) finishConnect(
+	ctrl *maa.Controller,
+	controllerType ControllerType,
+	event *zerolog.Event,
+	successMsg string,
+) ConnectControllerResult {
 	if old := s.controller.Swap(ctrl); old != nil {
 		log.Info().Msg("[MaaService] destroying previous controller")
 		old.Destroy()
 	}
 
-	s.controllerType = WlRoot
-	log.Info().Str("socket_path", wlrSocketPath).Msg("[MaaService] WlRoot controller connected successfully")
+	s.controllerType = controllerType
+	event.Msg(successMsg)
 	return ConnectControllerResult{Success: true}
 }
 
