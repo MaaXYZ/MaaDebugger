@@ -179,7 +179,7 @@ const controllerItems: ControllerItem[] = [
     { label: 'Win32', value: 'win32', icon: 'i-simple-icons:windows' },
     { label: 'Gamepad', value: 'gamepad', icon: 'i-lucide:gamepad-directional' },
     { label: "PlayCover", value: "playcover", icon: "i-simple-icons:apple" },
-    { label: "WlRoot", value: "wlroot", icon: "i-simple-icons:linux" },
+    { label: "WlRoot", value: "wlroot", icon: "i-simple-icons:wayland" },
     { label: 'Custom', value: 'custom', icon: 'i-lucide:upload' },
 ]
 
