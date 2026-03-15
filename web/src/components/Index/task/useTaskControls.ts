@@ -5,7 +5,6 @@ import { useStatusStore } from "@/stores/status";
 import { useTaskStore } from "@/stores/task";
 import { useAgentStore } from "@/stores/agent";
 import type { TaskStatus } from "./types";
-import useAgentControl from "../useAgentControl";
 import useResourceControl from "../useResourceControl";
 
 interface TaskEntry {
@@ -39,7 +38,6 @@ export default function useTaskControls(toast: ToastApi) {
   const taskStore = useTaskStore();
   const agentStore = useAgentStore();
 
-  const { connectAgents } = useAgentControl();
   const { tryLoadResource } = useResourceControl();
 
   const entries = ref<TaskEntry[]>([]);
@@ -199,11 +197,6 @@ export default function useTaskControls(toast: ToastApi) {
         icon: "i-lucide-circle-x",
         color: "error",
       });
-      return;
-    }
-
-    const connectResult = await connectAgents();
-    if (!connectResult.success) {
       return;
     }
 

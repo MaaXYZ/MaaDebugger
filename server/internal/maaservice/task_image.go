@@ -7,6 +7,7 @@ import (
 	"image/color"
 	"image/draw"
 	"image/jpeg"
+	"image/png"
 	"net/http"
 	"sync"
 	"time"
@@ -95,7 +96,25 @@ func encodeJPEGImage(img image.Image) (*taskImageItem, error) {
 	}
 	width, height := imageBoundsSize(flattened)
 	return &taskImageItem{
-		ContentType: "image/jpeg",
+		ContentType: JPEG,
+		Data:        buf.Bytes(),
+		Width:       width,
+		Height:      height,
+		CreatedAt:   time.Now(),
+	}, nil
+}
+
+func encodePNGImage(img image.Image) (*taskImageItem, error) {
+	if img == nil {
+		return nil, fmt.Errorf("image is nil")
+	}
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		return nil, err
+	}
+	width, height := imageBoundsSize(img)
+	return &taskImageItem{
+		ContentType: PNG,
 		Data:        buf.Bytes(),
 		Width:       width,
 		Height:      height,

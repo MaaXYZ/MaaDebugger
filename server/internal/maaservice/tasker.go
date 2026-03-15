@@ -840,6 +840,7 @@ func (s *TaskerService) actionNeedsScreenshot(node *maa.Node) bool {
 		maa.ActionTypeCommand,
 		maa.ActionTypeShell:
 		return false
+
 	default:
 		return true
 	}
