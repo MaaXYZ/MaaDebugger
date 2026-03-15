@@ -24,8 +24,7 @@
 
         <template #default>
             <div class="flex flex-col gap-3">
-                <UEmpty v-if="allTasks.length === 0" icon="i-material-symbols:checklist-rounded"
-                    title="No Task Details" />
+                <UEmpty v-if="allTasks.length === 0" icon="i-lucide:list-checks" title="No Task Details" />
 
                 <template v-else-if="activeTask">
                     <div class="flex flex-wrap items-center gap-2 text-sm min-w-0">

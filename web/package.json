@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.93",
-    "@iconify-json/material-symbols": "^1.2.57",
     "@iconify-json/simple-icons": "^1.2.71",
     "@nuxt/ui": "^4.5.1",
     "@tanstack/vue-virtual": "^3.13.19",
