@@ -14,25 +14,30 @@ import (
 
 const taskImageJPEGQuality = 80
 
-// ImageRef 是提供给前端的图片引用信息。
-type ImageRef struct {
-	ID          string `json:"id"`
-	URL         string `json:"url"`
-	MIME        string `json:"mime"`
-	Width       int    `json:"width,omitempty"`
-	Height      int    `json:"height,omitempty"`
-	ContentSize int    `json:"content_size,omitempty"`
-}
+type ContentType string
+
+const JPEG ContentType = "image/jpeg"
+const PNG ContentType = "image/png"
 
 // taskImageItem 是缓存中的图片项。
 type taskImageItem struct {
 	Source      image.Image
-	ContentType string
+	ContentType ContentType
 	Data        []byte
 	Width       int
 	Height      int
 	CreatedAt   time.Time
 	mu          sync.Mutex
+}
+
+// ImageRef 是提供给前端的图片引用信息。
+type ImageRef struct {
+	ID          string      `json:"id"`
+	URL         string      `json:"url"`
+	MIME        ContentType `json:"mime"`
+	Width       int         `json:"width,omitempty"`
+	Height      int         `json:"height,omitempty"`
+	ContentSize int         `json:"content_size,omitempty"`
 }
 
 func buildTaskImageURL(id string) string {
@@ -44,9 +49,12 @@ func buildTaskImageRef(id string, item *taskImageItem) *ImageRef {
 		return nil
 	}
 	mime := item.ContentType
+
+	// 兼容性处理
 	if mime == "" {
-		mime = "image/jpeg"
+		mime = JPEG
 	}
+
 	return &ImageRef{
 		ID:          id,
 		URL:         buildTaskImageURL(id),
@@ -155,7 +163,7 @@ func WriteTaskImageResponse(w http.ResponseWriter, req *http.Request, item *task
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
-	w.Header().Set("Content-Type", item.ContentType)
+	w.Header().Set("Content-Type", string(item.ContentType))
 	w.Header().Set("Cache-Control", "private, max-age=300")
 	if etag != "" {
 		w.Header().Set("ETag", etag)
