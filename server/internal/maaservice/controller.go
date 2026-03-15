@@ -45,8 +45,6 @@ type ConnectControllerResult struct {
 func (s *ControllerService) ConnectAdb(
 	adbPath, address, screencapMethod, inputMethod, config string,
 ) ConnectControllerResult {
-	s.controllerType = ADB
-
 	log.Info().
 		Str("adb_path", adbPath).
 		Str("address", address).
@@ -105,6 +103,7 @@ func (s *ControllerService) ConnectAdb(
 		old.Destroy()
 	}
 
+	s.controllerType = ADB
 	log.Info().Str("address", address).Msg("[MaaService] ADB controller connected successfully")
 	return ConnectControllerResult{Success: true}
 }
@@ -113,8 +112,6 @@ func (s *ControllerService) ConnectAdb(
 func (s *ControllerService) ConnectWin32(
 	hwndStr, screencapMethod, mouseMethod, keyboardMethod string,
 ) ConnectControllerResult {
-	s.controllerType = Win32
-
 	log.Info().
 		Str("hwnd", hwndStr).
 		Str("screencap_method", screencapMethod).
@@ -184,6 +181,7 @@ func (s *ControllerService) ConnectWin32(
 		old.Destroy()
 	}
 
+	s.controllerType = Win32
 	log.Info().Str("hwnd", hwndStr).Msg("[MaaService] Win32 controller connected successfully")
 	return ConnectControllerResult{Success: true}
 }
@@ -192,8 +190,6 @@ func (s *ControllerService) ConnectWin32(
 func (s *ControllerService) ConnectGamepad(
 	hwndStr, screencapMethod, gamepadTypeStr string,
 ) ConnectControllerResult {
-	s.controllerType = Gamepad
-
 	log.Info().
 		Str("hwnd", hwndStr).
 		Str("screencap_method", screencapMethod).
@@ -248,6 +244,7 @@ func (s *ControllerService) ConnectGamepad(
 		old.Destroy()
 	}
 
+	s.controllerType = Gamepad
 	log.Info().Str("hwnd", hwndStr).Msg("[MaaService] Gamepad controller connected successfully")
 	return ConnectControllerResult{Success: true}
 }
@@ -256,8 +253,6 @@ func (s *ControllerService) ConnectGamepad(
 func (s *ControllerService) ConnectPlayCover(
 	address, uuid string,
 ) ConnectControllerResult {
-	s.controllerType = PlayCover
-
 	log.Info().
 		Str("address", address).
 		Str("uuid", uuid).
@@ -292,6 +287,7 @@ func (s *ControllerService) ConnectPlayCover(
 		old.Destroy()
 	}
 
+	s.controllerType = PlayCover
 	log.Info().Str("address", address).Str("uuid", uuid).Msg("[MaaService] PlayCover controller connected successfully")
 	return ConnectControllerResult{Success: true}
 }
@@ -329,8 +325,8 @@ func (s *ControllerService) ConnectWlRoot(wlrSocketPath string) ConnectControlle
 		log.Info().Msg("[MaaService] destroying previous controller")
 		old.Destroy()
 	}
-	s.controllerType = WlRoot
 
+	s.controllerType = WlRoot
 	log.Info().Str("socket_path", wlrSocketPath).Msg("[MaaService] WlRoot controller connected successfully")
 	return ConnectControllerResult{Success: true}
 }
