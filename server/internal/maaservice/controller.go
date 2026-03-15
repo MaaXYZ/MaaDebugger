@@ -33,8 +33,8 @@ func NewControllerService() *ControllerService {
 	return &ControllerService{}
 }
 
-// ConnectAdbResult 表示 ADB 连接结果。
-type ConnectAdbResult struct {
+// ConnectControllerResult 表示连接结果。
+type ConnectControllerResult struct {
 	Success bool   `json:"success"`
 	Error   string `json:"error,omitempty"`
 }
@@ -42,7 +42,7 @@ type ConnectAdbResult struct {
 // ConnectAdb 连接 ADB 设备。
 func (s *ControllerService) ConnectAdb(
 	adbPath, address, screencapMethod, inputMethod, config string,
-) ConnectAdbResult {
+) ConnectControllerResult {
 	s.controllerType = ADB
 
 	log.Info().
@@ -59,7 +59,7 @@ func (s *ControllerService) ConnectAdb(
 		v, parseErr := strconv.ParseUint(screencapMethod, 10, 64)
 		if parseErr != nil {
 			log.Error().Err(parseErr).Str("value", screencapMethod).Msg("[MaaService] invalid screencap method")
-			return ConnectAdbResult{Error: fmt.Sprintf("invalid screencap method: %s", screencapMethod)}
+			return ConnectControllerResult{Error: fmt.Sprintf("invalid screencap method: %s", screencapMethod)}
 		}
 		scMethod = adb.ScreencapMethod(v)
 	}
@@ -71,7 +71,7 @@ func (s *ControllerService) ConnectAdb(
 		v, parseErr := strconv.ParseUint(inputMethod, 10, 64)
 		if parseErr != nil {
 			log.Error().Err(parseErr).Str("value", inputMethod).Msg("[MaaService] invalid input method")
-			return ConnectAdbResult{Error: fmt.Sprintf("invalid input method: %s", inputMethod)}
+			return ConnectControllerResult{Error: fmt.Sprintf("invalid input method: %s", inputMethod)}
 		}
 		inMethod = adb.InputMethod(v)
 	}
@@ -81,7 +81,7 @@ func (s *ControllerService) ConnectAdb(
 	ctrl, err := maa.NewAdbController(adbPath, address, scMethod, inMethod, config, "")
 	if err != nil {
 		log.Error().Err(err).Str("address", address).Msg("[MaaService] create adb controller failed")
-		return ConnectAdbResult{Error: fmt.Sprintf("create adb controller failed: %v", err)}
+		return ConnectControllerResult{Error: fmt.Sprintf("create adb controller failed: %v", err)}
 	}
 
 	log.Info().Msg("[MaaService] ADB controller created, posting connection...")
@@ -95,7 +95,7 @@ func (s *ControllerService) ConnectAdb(
 		ctrl.Destroy()
 		errMsg := fmt.Sprintf("failed to connect ADB: %s", address)
 		log.Warn().Str("address", address).Msg("[MaaService] " + errMsg)
-		return ConnectAdbResult{Error: errMsg}
+		return ConnectControllerResult{Error: errMsg}
 	}
 
 	// 替换旧实例
@@ -105,13 +105,13 @@ func (s *ControllerService) ConnectAdb(
 	}
 
 	log.Info().Str("address", address).Msg("[MaaService] ADB controller connected successfully")
-	return ConnectAdbResult{Success: true}
+	return ConnectControllerResult{Success: true}
 }
 
 // ConnectWin32 连接 Win32 控制器。
 func (s *ControllerService) ConnectWin32(
 	hwndStr, screencapMethod, mouseMethod, keyboardMethod string,
-) ConnectAdbResult {
+) ConnectControllerResult {
 	s.controllerType = Win32
 
 	log.Info().
@@ -124,7 +124,7 @@ func (s *ControllerService) ConnectWin32(
 	hwnd, err := parseHwnd(hwndStr)
 	if err != nil {
 		log.Error().Err(err).Str("hwnd", hwndStr).Msg("[MaaService] invalid hwnd")
-		return ConnectAdbResult{Error: fmt.Sprintf("invalid hwnd: %s", hwndStr)}
+		return ConnectControllerResult{Error: fmt.Sprintf("invalid hwnd: %s", hwndStr)}
 	}
 
 	scMethod, err := win32.ParseScreencapMethod(screencapMethod)
@@ -132,7 +132,7 @@ func (s *ControllerService) ConnectWin32(
 		v, parseErr := strconv.ParseUint(screencapMethod, 10, 64)
 		if parseErr != nil {
 			log.Error().Err(parseErr).Str("value", screencapMethod).Msg("[MaaService] invalid win32 screencap method")
-			return ConnectAdbResult{Error: fmt.Sprintf("invalid screencap method: %s", screencapMethod)}
+			return ConnectControllerResult{Error: fmt.Sprintf("invalid screencap method: %s", screencapMethod)}
 		}
 		scMethod = win32.ScreencapMethod(v)
 	}
@@ -142,7 +142,7 @@ func (s *ControllerService) ConnectWin32(
 		v, parseErr := strconv.ParseUint(mouseMethod, 10, 64)
 		if parseErr != nil {
 			log.Error().Err(parseErr).Str("value", mouseMethod).Msg("[MaaService] invalid win32 mouse method")
-			return ConnectAdbResult{Error: fmt.Sprintf("invalid mouse method: %s", mouseMethod)}
+			return ConnectControllerResult{Error: fmt.Sprintf("invalid mouse method: %s", mouseMethod)}
 		}
 		mouseM = win32.InputMethod(v)
 	}
@@ -152,7 +152,7 @@ func (s *ControllerService) ConnectWin32(
 		v, parseErr := strconv.ParseUint(keyboardMethod, 10, 64)
 		if parseErr != nil {
 			log.Error().Err(parseErr).Str("value", keyboardMethod).Msg("[MaaService] invalid win32 keyboard method")
-			return ConnectAdbResult{Error: fmt.Sprintf("invalid keyboard method: %s", keyboardMethod)}
+			return ConnectControllerResult{Error: fmt.Sprintf("invalid keyboard method: %s", keyboardMethod)}
 		}
 		keyboardM = win32.InputMethod(v)
 	}
@@ -161,7 +161,7 @@ func (s *ControllerService) ConnectWin32(
 	ctrl, err := maa.NewWin32Controller(hwnd, scMethod, mouseM, keyboardM)
 	if err != nil {
 		log.Error().Err(err).Str("hwnd", hwndStr).Msg("[MaaService] create win32 controller failed")
-		return ConnectAdbResult{Error: fmt.Sprintf("create win32 controller failed: %v", err)}
+		return ConnectControllerResult{Error: fmt.Sprintf("create win32 controller failed: %v", err)}
 	}
 
 	log.Info().Msg("[MaaService] Win32 controller created, posting connection...")
@@ -175,7 +175,7 @@ func (s *ControllerService) ConnectWin32(
 		ctrl.Destroy()
 		errMsg := fmt.Sprintf("failed to connect Win32 hwnd: %s", hwndStr)
 		log.Warn().Str("hwnd", hwndStr).Msg("[MaaService] " + errMsg)
-		return ConnectAdbResult{Error: errMsg}
+		return ConnectControllerResult{Error: errMsg}
 	}
 
 	// 替换旧实例
@@ -185,13 +185,13 @@ func (s *ControllerService) ConnectWin32(
 	}
 
 	log.Info().Str("hwnd", hwndStr).Msg("[MaaService] Win32 controller connected successfully")
-	return ConnectAdbResult{Success: true}
+	return ConnectControllerResult{Success: true}
 }
 
 // ConnectGamepad 连接 Gamepad 控制器。
 func (s *ControllerService) ConnectGamepad(
 	hwndStr, screencapMethod, gamepadTypeStr string,
-) ConnectAdbResult {
+) ConnectControllerResult {
 	s.controllerType = Gamepad
 
 	log.Info().
@@ -203,7 +203,7 @@ func (s *ControllerService) ConnectGamepad(
 	hwnd, err := parseHwnd(hwndStr)
 	if err != nil {
 		log.Error().Err(err).Str("hwnd", hwndStr).Msg("[MaaService] invalid hwnd")
-		return ConnectAdbResult{Error: fmt.Sprintf("invalid hwnd: %s", hwndStr)}
+		return ConnectControllerResult{Error: fmt.Sprintf("invalid hwnd: %s", hwndStr)}
 	}
 
 	scMethod, err := win32.ParseScreencapMethod(screencapMethod)
@@ -211,7 +211,7 @@ func (s *ControllerService) ConnectGamepad(
 		v, parseErr := strconv.ParseUint(screencapMethod, 10, 64)
 		if parseErr != nil {
 			log.Error().Err(parseErr).Str("value", screencapMethod).Msg("[MaaService] invalid gamepad screencap method")
-			return ConnectAdbResult{Error: fmt.Sprintf("invalid screencap method: %s", screencapMethod)}
+			return ConnectControllerResult{Error: fmt.Sprintf("invalid screencap method: %s", screencapMethod)}
 		}
 		scMethod = win32.ScreencapMethod(v)
 	}
@@ -219,14 +219,14 @@ func (s *ControllerService) ConnectGamepad(
 	gamepadType, err := strconv.ParseInt(gamepadTypeStr, 10, 32)
 	if err != nil {
 		log.Error().Err(err).Str("value", gamepadTypeStr).Msg("[MaaService] invalid gamepad type")
-		return ConnectAdbResult{Error: fmt.Sprintf("invalid gamepad type: %s", gamepadTypeStr)}
+		return ConnectControllerResult{Error: fmt.Sprintf("invalid gamepad type: %s", gamepadTypeStr)}
 	}
 
 	log.Info().Msg("[MaaService] creating Gamepad controller...")
 	ctrl, err := maa.NewGamepadController(hwnd, maa.GamepadType(int32(gamepadType)), scMethod)
 	if err != nil {
 		log.Error().Err(err).Str("hwnd", hwndStr).Msg("[MaaService] create gamepad controller failed")
-		return ConnectAdbResult{Error: fmt.Sprintf("create gamepad controller failed: %v", err)}
+		return ConnectControllerResult{Error: fmt.Sprintf("create gamepad controller failed: %v", err)}
 	}
 
 	log.Info().Msg("[MaaService] Gamepad controller created, posting connection...")
@@ -240,7 +240,7 @@ func (s *ControllerService) ConnectGamepad(
 		ctrl.Destroy()
 		errMsg := fmt.Sprintf("failed to connect Gamepad hwnd: %s", hwndStr)
 		log.Warn().Str("hwnd", hwndStr).Msg("[MaaService] " + errMsg)
-		return ConnectAdbResult{Error: errMsg}
+		return ConnectControllerResult{Error: errMsg}
 	}
 
 	// 替换旧实例
@@ -250,13 +250,13 @@ func (s *ControllerService) ConnectGamepad(
 	}
 
 	log.Info().Str("hwnd", hwndStr).Msg("[MaaService] Gamepad controller connected successfully")
-	return ConnectAdbResult{Success: true}
+	return ConnectControllerResult{Success: true}
 }
 
 // ConnectPlayCover 连接 PlayCover 控制器。
 func (s *ControllerService) ConnectPlayCover(
 	address, uuid string,
-) ConnectAdbResult {
+) ConnectControllerResult {
 	s.controllerType = PlayCover
 
 	log.Info().
@@ -271,7 +271,7 @@ func (s *ControllerService) ConnectPlayCover(
 			Str("address", address).
 			Str("uuid", uuid).
 			Msg("[MaaService] create PlayCover controller failed")
-		return ConnectAdbResult{Error: fmt.Sprintf("create PlayCover controller failed: %v", err)}
+		return ConnectControllerResult{Error: fmt.Sprintf("create PlayCover controller failed: %v", err)}
 	}
 
 	log.Info().Msg("[MaaService] PlayCover controller created, posting connection...")
@@ -285,7 +285,7 @@ func (s *ControllerService) ConnectPlayCover(
 		ctrl.Destroy()
 		errMsg := fmt.Sprintf("failed to connect PlayCover: %s", address)
 		log.Warn().Str("address", address).Msg("[MaaService] " + errMsg)
-		return ConnectAdbResult{Error: errMsg}
+		return ConnectControllerResult{Error: errMsg}
 	}
 
 	// 替换旧实例
@@ -295,7 +295,7 @@ func (s *ControllerService) ConnectPlayCover(
 	}
 
 	log.Info().Str("address", address).Str("uuid", uuid).Msg("[MaaService] PlayCover controller connected successfully")
-	return ConnectAdbResult{Success: true}
+	return ConnectControllerResult{Success: true}
 }
 
 // Disconnect 断开当前 Controller 连接。
@@ -323,7 +323,7 @@ func (s *ControllerService) Controller() *maa.Controller {
 	return s.controller.Load()
 }
 
-// ControllerType 返回当前 Controller 的类型（如 "adb"、"win32"、"gamepad"、"playcover"）。
+// ControllerType 返回当前 Controller 的类型
 func (s *ControllerService) ControllerType() ControllerType {
 	return s.controllerType
 }

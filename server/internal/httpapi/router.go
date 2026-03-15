@@ -318,7 +318,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		return v
 	}
 
-	var result maaservice.ConnectAdbResult
+	var result maaservice.ConnectControllerResult
 
 	switch ctrlType {
 	case "adb":
