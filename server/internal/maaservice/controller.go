@@ -3,6 +3,7 @@ package maaservice
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"unsafe"
 
@@ -296,6 +297,11 @@ func (s *ControllerService) ConnectPlayCover(
 }
 
 func (s *ControllerService) ConnectWlRoot(wlrSocketPath string) ConnectControllerResult {
+	wlrSocketPath = strings.TrimSpace(wlrSocketPath)
+	if wlrSocketPath == "" {
+		return ConnectControllerResult{Error: "socket path is required"}
+	}
+
 	log.Info().Str("socket_path", wlrSocketPath).Msg("[MaaService] ConnectWlRoot called")
 
 	log.Info().Msg("[MaaService] creating WlRoot controller...")
@@ -323,6 +329,7 @@ func (s *ControllerService) ConnectWlRoot(wlrSocketPath string) ConnectControlle
 		log.Info().Msg("[MaaService] destroying previous controller")
 		old.Destroy()
 	}
+	s.controllerType = WlRoot
 
 	log.Info().Str("socket_path", wlrSocketPath).Msg("[MaaService] WlRoot controller connected successfully")
 	return ConnectControllerResult{Success: true}
@@ -333,8 +340,10 @@ func (s *ControllerService) Disconnect() {
 	if old := s.controller.Swap(nil); old != nil {
 		log.Info().Msg("[MaaService] disconnecting controller...")
 		old.Destroy()
+		s.controllerType = ""
 		log.Info().Msg("[MaaService] controller disconnected")
 	} else {
+		s.controllerType = ""
 		log.Info().Msg("[MaaService] disconnect called but no active controller")
 	}
 }

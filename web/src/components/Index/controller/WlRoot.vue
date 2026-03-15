@@ -4,7 +4,7 @@
         <div class="flex flex-row gap-2">
             <UTooltip text="Connect">
                 <UButton color="primary" variant="outline" icon="i-lucide-link" size="xl" :loading="connecting"
-                    :disabled="!socketPath || connecting" @click="onConnect" />
+                    :disabled="!socketPath.trim() || connecting" @click="onConnect" />
             </UTooltip>
 
             <UTooltip text="Disconnect">
@@ -44,8 +44,8 @@ const socketPath = ref("")
 // 持久化异步恢复后，同步到本地 UI 状态
 watch(
     () => [controllerStore.wlrootSocketPath],
-    ([socketPath]) => {
-        socketPath = socketPath ?? ''
+    ([storedSocketPath]) => {
+        socketPath.value = storedSocketPath ?? ''
     },
     { immediate: true },
 )
@@ -61,13 +61,23 @@ watch(
  * 连接 WlRoot 设备
  */
 async function onConnect() {
-    if (!socketPath) return
+    const normalizedSocketPath = socketPath.value.trim()
+    if (!normalizedSocketPath) {
+        toast.add({
+            id: 'ctrl-toast',
+            title: 'Controller Connect Failed',
+            description: 'Socket Path is required',
+            icon: 'i-lucide-circle-x',
+            color: 'error',
+        })
+        return
+    }
 
     connecting.value = true
     try {
         const params: ConnectControllerRequest = {
             type: 'wlroot',
-            wlroot_socket_path: socketPath.value,
+            wlroot_socket_path: normalizedSocketPath,
         }
 
         const result = await connectController(params)
@@ -94,10 +104,17 @@ async function onConnect() {
 
         // 连接成功 → 持久化
         controllerStore.updateWlRootConfig({
-            socketPath: socketPath.value,
+            socketPath: normalizedSocketPath,
         })
     } catch (err) {
         console.error('[WlRoot] Connect failed:', err)
+        toast.add({
+            id: 'ctrl-toast',
+            title: 'Controller Connect Failed',
+            description: err instanceof Error ? err.message : 'Unknown error',
+            icon: 'i-lucide-circle-x',
+            color: 'error',
+        })
     } finally {
         connecting.value = false
     }
@@ -127,6 +144,13 @@ async function onDisconnect() {
         }
     } catch (err) {
         console.error('[WlRoot] Disconnect failed:', err)
+        toast.add({
+            id: 'ctrl-toast',
+            title: 'Controller Disconnect Failed',
+            description: err instanceof Error ? err.message : 'Unknown error',
+            icon: 'i-lucide-circle-x',
+            color: 'error',
+        })
     }
 }
 
