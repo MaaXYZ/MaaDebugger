@@ -20,7 +20,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, computed } from 'vue'
+import { computed } from 'vue'
 import { connectController, disconnectController } from '@/api/http'
 import type { ConnectControllerRequest } from '@/types/api'
 import { useControllerStore } from '@/stores/controller'
@@ -38,25 +38,12 @@ const connecting = computed({
     set: (v: boolean) => { controllerStore.connecting = v },
 })
 
-// 编辑状态
-const socketPath = ref("")
-
-// 持久化异步恢复后，同步到本地 UI 状态
-watch(
-    () => [controllerStore.wlrootSocketPath],
-    ([storedSocketPath]) => {
-        socketPath.value = storedSocketPath ?? ''
+const socketPath = computed({
+    get: () => controllerStore.wlrootSocketPath ?? '',
+    set: (value: string) => {
+        controllerStore.updateWlRootConfig({ socketPath: value })
     },
-    { immediate: true },
-)
-
-// config 变化时自动保存到 store
-watch(
-    () => [socketPath.value] as const,
-    ([newSocketPath]) => {
-        controllerStore.updateWlRootConfig({ socketPath: newSocketPath })
-    },
-)
+})
 /**
  * 连接 WlRoot 设备
  */

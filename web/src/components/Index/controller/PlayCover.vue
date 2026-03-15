@@ -4,7 +4,7 @@
         <div class="flex flex-row gap-2">
             <UTooltip text="Connect">
                 <UButton color="primary" variant="outline" icon="i-lucide-link" size="xl" :loading="connecting"
-                    :disabled="!config.address || connecting" @click="onConnect" />
+                    :disabled="!playcoverAddress.trim() || connecting" @click="onConnect" />
             </UTooltip>
 
             <UTooltip text="Disconnect">
@@ -14,18 +14,18 @@
 
         <!-- PlayCover Configuration -->
         <UFormField name="playcover_address" label="Address">
-            <UInput v-model="config.address" placeholder="192.168.1.100" icon="i-lucide-network" class="w-full" />
+            <UInput v-model="playcoverAddress" placeholder="192.168.1.100" icon="i-lucide-network" class="w-full" />
         </UFormField>
 
         <UFormField name="playcover_uuid" label="UUID (Optional)">
-            <UInput v-model="config.uuid" placeholder="Device UUID (optional)" icon="i-lucide-fingerprint"
+            <UInput v-model="playcoverUuid" placeholder="Device UUID (optional)" icon="i-lucide-fingerprint"
                 class="w-full" />
         </UFormField>
     </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, watch, computed } from 'vue'
+import { computed } from 'vue'
 import { connectController, disconnectController } from '@/api/http'
 import type { ConnectControllerRequest } from '@/types/api'
 import { useControllerStore } from '@/stores/controller'
@@ -43,42 +43,52 @@ const connecting = computed({
     set: (v: boolean) => { controllerStore.connecting = v },
 })
 
-// 编辑状态
-const config = reactive({
-    address: '',
-    uuid: '',
+const config = computed({
+    get: () => ({
+        address: controllerStore.playcoverAddress ?? '',
+        uuid: controllerStore.playcoverUuid ?? '',
+    }),
+    set: (value: { address: string, uuid: string }) => {
+        controllerStore.updatePlayCoverConfig({
+            address: value.address,
+            uuid: value.uuid,
+        })
+    },
 })
 
-// 持久化异步恢复后，同步到本地 UI 状态
-watch(
-    () => [controllerStore.playcoverAddress, controllerStore.playcoverUuid],
-    ([address, uuid]) => {
-        config.address = address ?? ''
-        config.uuid = uuid ?? ''
+const playcoverAddress = computed({
+    get: () => config.value.address,
+    set: (value: string) => {
+        config.value = {
+            ...config.value,
+            address: value,
+        }
     },
-    { immediate: true },
-)
+})
 
-// config 变化时自动保存到 store
-watch(
-    () => [config.address, config.uuid] as const,
-    ([address, uuid]) => {
-        controllerStore.updatePlayCoverConfig({ address, uuid })
+const playcoverUuid = computed({
+    get: () => config.value.uuid,
+    set: (value: string) => {
+        config.value = {
+            ...config.value,
+            uuid: value,
+        }
     },
-)
+})
 
 /**
  * 连接 PlayCover 设备
  */
 async function onConnect() {
-    if (!config.address) return
+    const normalizedAddress = playcoverAddress.value.trim()
+    if (!normalizedAddress) return
 
     connecting.value = true
     try {
         const params: ConnectControllerRequest = {
             type: 'playcover',
-            playcover_address: config.address,
-            playcover_uuid: config.uuid,
+            playcover_address: normalizedAddress,
+            playcover_uuid: playcoverUuid.value.trim(),
         }
 
         const result = await connectController(params)
@@ -105,8 +115,8 @@ async function onConnect() {
 
         // 连接成功 → 持久化
         controllerStore.updatePlayCoverConfig({
-            address: config.address,
-            uuid: config.uuid,
+            address: normalizedAddress,
+            uuid: playcoverUuid.value.trim(),
         })
     } catch (err) {
         console.error('[PlayCover] Connect failed:', err)

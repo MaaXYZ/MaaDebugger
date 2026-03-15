@@ -67,21 +67,20 @@
                 <!-- Win32 独有：Mouse + Keyboard -->
                 <template v-if="controllerValue === 'win32'">
                     <UFormField name="mouse" label="Mouse Method">
-                        <USelect v-model="win32Config.mouse_method" :items="inputMethods" class="w-full" arrow :ui="{
+                        <USelect v-model="win32MouseMethod" :items="inputMethods" class="w-full" arrow :ui="{
                             trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200'
                         }" />
                     </UFormField>
 
                     <UFormField name="keyboard" label="Keyboard Method">
-                        <USelect v-model="win32Config.keyboard_method" :items="inputMethods" class="w-full" arrow />
+                        <USelect v-model="win32KeyboardMethod" :items="inputMethods" class="w-full" arrow />
                     </UFormField>
                 </template>
 
                 <!-- Gamepad 独有：Gamepad Type -->
                 <template v-if="controllerValue === 'gamepad'">
                     <UFormField name="gamepad_type" label="Gamepad Type">
-                        <USelect v-model="gamepadConfig.gamepad_type" :items="gamepadTypes"
-                            :icon="gamepadConfig.gamepad_icon" class="w-full" arrow />
+                        <USelect v-model="gamepadType" :items="gamepadTypes" :icon="gamepadIcon" class="w-full" arrow />
                     </UFormField>
                 </template>
             </div>
@@ -184,45 +183,34 @@ const controllerItems: ControllerItem[] = [
     { label: 'Custom', value: 'custom', icon: 'i-lucide:upload' },
 ]
 
-// 双向同步 store.controllerType ↔ controllerValue
-const controllerValue = ref<string>(controllerStore.controllerType)
+const controllerValue = computed({
+    get: () => controllerStore.controllerType,
+    set: (value: string) => {
+        const oldValue = controllerStore.controllerType
+        controllerStore.controllerType = value
+        // 切换控制器类型时，如果当前已连接则自动断连
+        if (oldValue && value !== oldValue && statusStore.controllerStatus !== 'disconnected') {
+            disconnectController().catch((err) => {
+                console.error('[Controller] Auto-disconnect on type switch failed:', err)
+            })
+        }
+    },
+})
 
 // 是否为桌面类型（Win32 / Gamepad）
 const isDesktopType = computed(() =>
     controllerValue.value === 'win32' || controllerValue.value === 'gamepad'
 )
 
-watch(controllerValue, (v, oldV) => {
-    controllerStore.controllerType = v
-    // 切换控制器类型时，如果当前已连接则自动断连
-    if (oldV && v !== oldV && statusStore.controllerStatus !== 'disconnected') {
-        disconnectController().catch((err) => {
-            console.error('[Controller] Auto-disconnect on type switch failed:', err)
-        })
-    }
-})
-watch(
-    () => controllerStore.controllerType,
-    (v) => { if (v !== controllerValue.value) controllerValue.value = v },
-    { immediate: true },
-)
-
 const controllerIcon = computed<string>(
     () => controllerItems.find((item) => item.value === controllerValue.value)?.icon ?? 'i-simple-icons:android'
 )
 // --- 桌面共享配置 ---
-const desktopScreencap = ref(DEFAULT_DESKTOP_SCREENCAP)
-
-// 从 store 恢复截图方法
-watch(
-    () => controllerStore.desktopScreencapMethod,
-    (v) => { desktopScreencap.value = v ?? DEFAULT_DESKTOP_SCREENCAP },
-    { immediate: true },
-)
-
-// 截图方法变化时保存到 store
-watch(desktopScreencap, (v) => {
-    controllerStore.desktopScreencapMethod = v
+const desktopScreencap = computed({
+    get: () => controllerStore.desktopScreencapMethod ?? DEFAULT_DESKTOP_SCREENCAP,
+    set: (value: string) => {
+        controllerStore.desktopScreencapMethod = value
+    },
 })
 
 // 从后端获取 Methods
@@ -249,59 +237,44 @@ onMounted(async () => {
 
 
 // --- Win独有配置 ---
-const win32Config = reactive({
-    mouse_method: DEFAULT_WIN32_MOUSE,
-    keyboard_method: DEFAULT_WIN32_KEYBOARD,
+const win32MouseMethod = computed({
+    get: () => controllerStore.win32MouseMethod ?? DEFAULT_WIN32_MOUSE,
+    set: (value: string) => {
+        controllerStore.updateWin32Input({
+            mouse_method: value,
+            keyboard_method: controllerStore.win32KeyboardMethod ?? DEFAULT_WIN32_KEYBOARD,
+        })
+    },
 })
 
-watch(
-    () => [controllerStore.win32MouseMethod, controllerStore.win32KeyboardMethod],
-    ([mouse, keyboard]) => {
-        win32Config.mouse_method = mouse ?? DEFAULT_WIN32_MOUSE
-        win32Config.keyboard_method = keyboard ?? DEFAULT_WIN32_KEYBOARD
+const win32KeyboardMethod = computed({
+    get: () => controllerStore.win32KeyboardMethod ?? DEFAULT_WIN32_KEYBOARD,
+    set: (value: string) => {
+        controllerStore.updateWin32Input({
+            mouse_method: controllerStore.win32MouseMethod ?? DEFAULT_WIN32_MOUSE,
+            keyboard_method: value,
+        })
     },
-    { immediate: true },
-)
-
-// Win32 config 变化时保存到 store
-watch(
-    () => [win32Config.mouse_method, win32Config.keyboard_method] as const,
-    ([mouse, keyboard]) => {
-        controllerStore.updateWin32Input({ mouse_method: mouse, keyboard_method: keyboard })
-    },
-)
+})
 
 // --- Gamepad 独有配置 ---
-const gamepadConfig = reactive({
-    gamepad_type: DEFAULT_GAMEPAD_TYPE,
-    gamepad_icon: DEFAULT_GAMEPAD_ICON
+const gamepadType = computed({
+    get: () => controllerStore.gamepadType ?? DEFAULT_GAMEPAD_TYPE,
+    set: (value: string) => {
+        controllerStore.updateGamepadInput({ gamepad_type: value })
+    },
 })
 
-watch(
-    () => controllerStore.gamepadType,
-    (gamepadType) => {
-        gamepadConfig.gamepad_type = gamepadType ?? DEFAULT_GAMEPAD_TYPE
-        switch (gamepadType) {
-            case "0":
-                gamepadConfig.gamepad_icon = "i-simple-icons:xbox"
-                break
-            case "1":
-                gamepadConfig.gamepad_icon = "i-simple-icons:playstation"
-                break
-            default:
-                gamepadConfig.gamepad_icon = ""
-        }
-    },
-    { immediate: true },
-)
-
-// Gamepad config 变化时保存到 store
-watch(
-    () => gamepadConfig.gamepad_type,
-    (gamepadType) => {
-        controllerStore.updateGamepadInput({ gamepad_type: gamepadType })
-    },
-)
+const gamepadIcon = computed(() => {
+    switch (gamepadType.value) {
+        case '0':
+            return 'i-simple-icons:xbox'
+        case '1':
+            return 'i-simple-icons:playstation'
+        default:
+            return DEFAULT_GAMEPAD_ICON
+    }
+})
 
 // --- 恢复持久化 / 导入的窗口选项 ---
 watch(
@@ -350,14 +323,14 @@ async function onConnect() {
                 type,
                 hwnd,
                 win32_screencap_method: desktopScreencap.value,
-                win32_mouse_method: win32Config.mouse_method,
-                win32_keyboard_method: win32Config.keyboard_method,
+                win32_mouse_method: win32MouseMethod.value,
+                win32_keyboard_method: win32KeyboardMethod.value,
             }
             : {
                 type,
                 hwnd,
                 gamepad_screencap_method: desktopScreencap.value,
-                gamepad_type: gamepadConfig.gamepad_type,
+                gamepad_type: gamepadType.value,
             }
 
         const result = await connectController(params)
