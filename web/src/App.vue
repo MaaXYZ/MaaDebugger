@@ -161,7 +161,13 @@ onUnmounted(() => {
         <UTheme :ui="{
             select: selectTheme,
         }">
-            <UHeader :ui="{ toggle: 'hidden' }">
+            <UHeader :ui="{
+                toggle: 'hidden',
+                container: 'max-w-none w-full px-6 sm:px-8 lg:px-10 xl:px-12',
+                left: 'flex flex-1 items-center gap-1.5 min-w-0',
+                center: 'hidden lg:flex flex-none items-center justify-center',
+                right: 'flex flex-1 items-center justify-end gap-1.5 min-w-0'
+            }">
                 <template #left>
                     <div class="flex items-end gap-2">
                         <a href="/" aria-label="MaaDebugger"
