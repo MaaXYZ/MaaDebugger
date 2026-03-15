@@ -47,7 +47,7 @@ export interface Win32WindowInfo {
  * @see server/internal/httpapi/router.go — handleControllerConnect
  */
 export interface ConnectControllerRequest {
-  type: "adb" | "win32" | "gamepad" | "playcover";
+  type: "adb" | "win32" | "gamepad" | "playcover" | "wlroot" | "custom";
 
   // ADB 参数
   adb_path?: string;
@@ -69,6 +69,9 @@ export interface ConnectControllerRequest {
   // PlayCover 参数
   playcover_address?: string;
   playcover_uuid?: string;
+
+  // WlRoot 参数
+  wlroot_socket_path?: string;
 }
 
 /**

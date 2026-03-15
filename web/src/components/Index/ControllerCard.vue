@@ -30,6 +30,8 @@
             <!-- PlayCover -->
             <PlayCover v-show="controllerValue === 'playcover'" ref="playcoverRef" />
 
+            <WlRoot v-show="controllerValue === 'wlroot'" ref="wlrootRef" />
+
             <!-- Win32 / Gamepad: 共享 WindowSearch + screencap + 各自独有配置 -->
             <div v-show="isDesktopType" class="flex flex-col gap-3 h-full">
                 <!-- Action Buttons Row -->
@@ -91,6 +93,7 @@
 import { computed, ref, reactive, watch, onMounted } from 'vue'
 import ADB from './controller/ADB.vue'
 import PlayCover from './controller/PlayCover.vue'
+import WlRoot from './controller/WlRoot.vue'
 import WindowSearch from './controller/WindowSearch.vue'
 import { useStatusStore } from '@/stores/status'
 import {
@@ -177,6 +180,7 @@ const controllerItems: ControllerItem[] = [
     { label: 'Win32', value: 'win32', icon: 'i-simple-icons:windows' },
     { label: 'Gamepad', value: 'gamepad', icon: 'i-lucide:gamepad-directional' },
     { label: "PlayCover", value: "playcover", icon: "i-simple-icons:apple" },
+    { label: "WlRoot", value: "wlroot", icon: "i-simple-icons:linux" },
     { label: 'Custom', value: 'custom', icon: 'i-lucide:upload' },
 ]
 

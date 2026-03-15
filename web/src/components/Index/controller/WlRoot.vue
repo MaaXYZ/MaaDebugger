@@ -4,7 +4,7 @@
         <div class="flex flex-row gap-2">
             <UTooltip text="Connect">
                 <UButton color="primary" variant="outline" icon="i-lucide-link" size="xl" :loading="connecting"
-                    :disabled="!config.address || connecting" @click="onConnect" />
+                    :disabled="!socketPath || connecting" @click="onConnect" />
             </UTooltip>
 
             <UTooltip text="Disconnect">
@@ -12,20 +12,15 @@
             </UTooltip>
         </div>
 
-        <!-- PlayCover Configuration -->
-        <UFormField name="playcover_address" label="Address">
-            <UInput v-model="config.address" placeholder="192.168.1.100" icon="i-lucide-network" class="w-full" />
-        </UFormField>
-
-        <UFormField name="playcover_uuid" label="UUID (Optional)">
-            <UInput v-model="config.uuid" placeholder="Device UUID (optional)" icon="i-lucide-fingerprint"
-                class="w-full" />
+        <!-- WlRoot Configuration -->
+        <UFormField name="wlroot_socket_path" label="Socket Path">
+            <UInput v-model="socketPath" placeholder="/tmp/wlroot.sock" icon="i-lucide-server" class="w-full" />
         </UFormField>
     </div>
 </template>
 
-<script setup lang="ts">
-import { reactive, watch, computed } from 'vue'
+<script lang="ts" setup>
+import { ref, watch, computed } from 'vue'
 import { connectController, disconnectController } from '@/api/http'
 import type { ConnectControllerRequest } from '@/types/api'
 import { useControllerStore } from '@/stores/controller'
@@ -44,46 +39,40 @@ const connecting = computed({
 })
 
 // 编辑状态
-const config = reactive({
-    address: '',
-    uuid: '',
-})
+const socketPath = ref("")
 
 // 持久化异步恢复后，同步到本地 UI 状态
 watch(
-    () => [controllerStore.playcoverAddress, controllerStore.playcoverUuid],
-    ([address, uuid]) => {
-        config.address = address ?? ''
-        config.uuid = uuid ?? ''
+    () => [controllerStore.wlrootSocketPath],
+    ([socketPath]) => {
+        socketPath = socketPath ?? ''
     },
     { immediate: true },
 )
 
 // config 变化时自动保存到 store
 watch(
-    () => [config.address, config.uuid] as const,
-    ([address, uuid]) => {
-        controllerStore.updatePlayCoverConfig({ address, uuid })
+    () => [socketPath.value] as const,
+    ([newSocketPath]) => {
+        controllerStore.updateWlRootConfig({ socketPath: newSocketPath })
     },
 )
-
 /**
- * 连接 PlayCover 设备
+ * 连接 WlRoot 设备
  */
 async function onConnect() {
-    if (!config.address) return
+    if (!socketPath) return
 
     connecting.value = true
     try {
         const params: ConnectControllerRequest = {
-            type: 'playcover',
-            playcover_address: config.address,
-            playcover_uuid: config.uuid,
+            type: 'wlroot',
+            wlroot_socket_path: socketPath.value,
         }
 
         const result = await connectController(params)
         if (!result.succeed) {
-            console.error('[PlayCover] Connect failed:', result.msg)
+            console.error('[WlRoot] Connect failed:', result.msg)
             toast.add({
                 id: 'ctrl-toast',
                 title: 'Controller Connect Failed',
@@ -104,12 +93,11 @@ async function onConnect() {
         emit('connected')
 
         // 连接成功 → 持久化
-        controllerStore.updatePlayCoverConfig({
-            address: config.address,
-            uuid: config.uuid,
+        controllerStore.updateWlRootConfig({
+            socketPath: socketPath.value,
         })
     } catch (err) {
-        console.error('[PlayCover] Connect failed:', err)
+        console.error('[WlRoot] Connect failed:', err)
     } finally {
         connecting.value = false
     }
@@ -138,12 +126,12 @@ async function onDisconnect() {
             })
         }
     } catch (err) {
-        console.error('[PlayCover] Disconnect failed:', err)
+        console.error('[WlRoot] Disconnect failed:', err)
     }
 }
 
 // Expose for parent component
 defineExpose({
-    config,
+    socketPath
 })
 </script>

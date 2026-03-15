@@ -61,6 +61,9 @@ export const useControllerStore = defineStore(
     const playcoverAddress = ref("");
     const playcoverUuid = ref("");
 
+    // --- WlRoot 独有配置 ---
+    const wlrootSocketPath = ref("");
+
     // 连接中状态（瞬态，不持久化，但全局可访问）
     const connecting = ref(false);
 
@@ -122,6 +125,13 @@ export const useControllerStore = defineStore(
       playcoverUuid.value = config.uuid;
     }
 
+    /**
+     * 更新 WlRoot 配置
+     */
+    function updateWlRootConfig(config: { socketPath: string }) {
+      wlrootSocketPath.value = config.socketPath;
+    }
+
     function applyInterfaceController(candidate: {
       name: string;
       type: string;
@@ -181,6 +191,8 @@ export const useControllerStore = defineStore(
       // PlayCover
       playcoverAddress,
       playcoverUuid,
+      // WlRoot
+      wlrootSocketPath,
       // Shared
       connecting,
       updateAdbConfig,
@@ -188,6 +200,7 @@ export const useControllerStore = defineStore(
       updateWin32Input,
       updateGamepadInput,
       updatePlayCoverConfig,
+      updateWlRootConfig,
       applyInterfaceController,
     };
   },
