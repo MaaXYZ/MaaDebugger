@@ -7,7 +7,7 @@
                     :label="detail.hit ? 'Hit' : 'Miss'" />
                 <UBadge color="info" variant="subtle" :label="detail.algorithm" />
                 <UButton color="neutral" variant="ghost" size="xs" icon="i-lucide-file-json"
-                    @click="nodeDataOpen = true" label="NodeData" />
+                    label="NodeData" @click="nodeDataOpen = true" />
             </div>
         </template>
 

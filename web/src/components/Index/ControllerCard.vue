@@ -89,7 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, reactive, watch, onMounted } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import ADB from './controller/ADB.vue'
 import PlayCover from './controller/PlayCover.vue'
 import WlRoot from './controller/WlRoot.vue'

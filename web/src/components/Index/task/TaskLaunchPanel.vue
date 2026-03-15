@@ -65,7 +65,7 @@
                             value-key="value" placeholder="Select interface task..." class="w-full" size="xl" arrow
                             :disabled="isRunning" @update:model-value="onInterfaceTaskSelected">
                             <template #default="{ modelValue }">
-                                <div class="flex min-w-0 items-center gap-2" v-if="findTaskItem(modelValue)">
+                                <div v-if="findTaskItem(modelValue)" class="flex min-w-0 items-center gap-2">
                                     <span class="truncate">{{ findTaskItem(modelValue)?.label }}</span>
                                     <span v-if="findTaskItem(modelValue)?.muted" class="truncate text-xs text-muted">{{
                                         findTaskItem(modelValue)?.muted }}</span>
