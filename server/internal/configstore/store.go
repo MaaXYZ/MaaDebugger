@@ -12,8 +12,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rs/zerolog/log"
+	"github.com/MaaXYZ/MaaDebugger/internal/logger"
 )
+
+var configStoreLog = logger.For(logger.ComponentConfigStore)
 
 const (
 	dirName  = ".maa"
@@ -100,10 +102,10 @@ func (s *Store) loadFromDisk() {
 	raw, err := os.ReadFile(s.filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			log.Info().Str("path", s.filePath).Msg("[ConfigStore] no existing config file, starting fresh")
+			configStoreLog.Debug().Str("path", s.filePath).Msg("no existing config file, starting fresh")
 			return
 		}
-		log.Error().Err(err).Str("path", s.filePath).Msg("[ConfigStore] failed to read config file")
+		configStoreLog.Error().Err(err).Str("path", s.filePath).Msg("failed to read config file")
 		return
 	}
 
@@ -113,12 +115,12 @@ func (s *Store) loadFromDisk() {
 
 	var loaded map[string]any
 	if err := json.Unmarshal(raw, &loaded); err != nil {
-		log.Error().Err(err).Str("path", s.filePath).Msg("[ConfigStore] failed to parse config file")
+		configStoreLog.Error().Err(err).Str("path", s.filePath).Msg("failed to parse config file")
 		return
 	}
 
 	s.data = loaded
-	log.Info().Int("keys", len(loaded)).Str("path", s.filePath).Msg("[ConfigStore] loaded config from disk")
+	configStoreLog.Info().Int("keys", len(loaded)).Str("path", s.filePath).Msg("loaded config from disk")
 }
 
 // scheduleSave 通知后台 goroutine 需要写盘（非阻塞）。
@@ -164,28 +166,28 @@ func (s *Store) writeToDisk() {
 	s.mu.RUnlock()
 
 	if err != nil {
-		log.Error().Err(err).Msg("[ConfigStore] failed to marshal config data")
+		configStoreLog.Error().Err(err).Msg("failed to marshal config data")
 		return
 	}
 
 	// 确保目录存在
 	dir := filepath.Dir(s.filePath)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
-		log.Error().Err(err).Str("dir", dir).Msg("[ConfigStore] failed to create config directory")
+		configStoreLog.Error().Err(err).Str("dir", dir).Msg("failed to create config directory")
 		return
 	}
 
 	// 原子写入：先写临时文件再重命名
 	tmpPath := s.filePath + ".tmp"
 	if err := os.WriteFile(tmpPath, raw, 0o644); err != nil {
-		log.Error().Err(err).Str("path", tmpPath).Msg("[ConfigStore] failed to write temp file")
+		configStoreLog.Error().Err(err).Str("path", tmpPath).Msg("failed to write temp file")
 		return
 	}
 
 	if err := os.Rename(tmpPath, s.filePath); err != nil {
-		log.Error().Err(err).Str("from", tmpPath).Str("to", s.filePath).Msg("[ConfigStore] failed to rename temp file")
+		configStoreLog.Error().Err(err).Str("from", tmpPath).Str("to", s.filePath).Msg("failed to rename temp file")
 		return
 	}
 
-	log.Debug().Str("path", s.filePath).Msg("[ConfigStore] config saved to disk")
+	configStoreLog.Debug().Str("path", s.filePath).Msg("config saved to disk")
 }

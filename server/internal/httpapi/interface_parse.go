@@ -9,10 +9,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rs/zerolog/log"
-
+	"github.com/MaaXYZ/MaaDebugger/internal/logger"
 	"github.com/MaaXYZ/MaaDebugger/internal/response"
 )
+
+var interfaceParseLog = logger.For(logger.ComponentInterface)
 
 type parseInterfaceRequest struct {
 	Path string `json:"path"`
@@ -89,16 +90,16 @@ type rawImportedOptionCase struct {
 }
 
 type interfaceParseResponse struct {
-	InterfacePath        string                              `json:"interface_path"`
-	BaseDir              string                              `json:"base_dir"`
-	Name                 string                              `json:"name"`
-	Version              string                              `json:"version"`
-	Languages            map[string]string                   `json:"languages,omitempty"`
-	LocaleValues         map[string]map[string]string        `json:"locale_values,omitempty"`
-	Imports              []interfaceResolvedRef              `json:"imports,omitempty"`
-	ControllerCandidates []interfaceControllerItem           `json:"controller_candidates"`
-	ResourceCandidates   []interfaceResourceItem             `json:"resource_candidates"`
-	TaskCandidates       []interfaceTaskItem                 `json:"task_candidates"`
+	InterfacePath        string                       `json:"interface_path"`
+	BaseDir              string                       `json:"base_dir"`
+	Name                 string                       `json:"name"`
+	Version              string                       `json:"version"`
+	Languages            map[string]string            `json:"languages,omitempty"`
+	LocaleValues         map[string]map[string]string `json:"locale_values,omitempty"`
+	Imports              []interfaceResolvedRef       `json:"imports,omitempty"`
+	ControllerCandidates []interfaceControllerItem    `json:"controller_candidates"`
+	ResourceCandidates   []interfaceResourceItem      `json:"resource_candidates"`
+	TaskCandidates       []interfaceTaskItem          `json:"task_candidates"`
 }
 
 type interfaceControllerItem struct {
@@ -173,18 +174,18 @@ func (r *router) handleInterfaceParse(w http.ResponseWriter, req *http.Request) 
 
 	result, err := parseInterfaceFile(interfacePath)
 	if err != nil {
-		log.Warn().Err(err).Str("path", interfacePath).Msg("[Interface] parse failed")
+		interfaceParseLog.Warn().Err(err).Str("path", interfacePath).Msg("parse failed")
 		response.Fail(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	log.Info().
+	interfaceParseLog.Info().
 		Str("path", result.InterfacePath).
 		Int("controllers", len(result.ControllerCandidates)).
 		Int("resources", len(result.ResourceCandidates)).
 		Int("tasks", len(result.TaskCandidates)).
 		Int("imports", len(result.Imports)).
-		Msg("[Interface] parse succeeded")
+		Msg("parse succeeded")
 	response.OK(w, result)
 }
 

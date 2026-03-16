@@ -11,8 +11,11 @@ import (
 	"github.com/MaaXYZ/maa-framework-go/v4/controller/adb"
 	"github.com/MaaXYZ/maa-framework-go/v4/controller/win32"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+
+	"github.com/MaaXYZ/MaaDebugger/internal/logger"
 )
+
+var maaServiceLog = logger.For(logger.ComponentMaaService)
 
 type ControllerType string
 
@@ -46,75 +49,75 @@ type ConnectControllerResult struct {
 func (s *ControllerService) ConnectAdb(
 	adbPath, address, screencapMethod, inputMethod, config string,
 ) ConnectControllerResult {
-	log.Info().
+	maaServiceLog.Info().
 		Str("adb_path", adbPath).
 		Str("address", address).
 		Str("screencap_method", screencapMethod).
 		Str("input_method", inputMethod).
 		Str("config", config).
-		Msg("[MaaService] ConnectAdb called")
+		Msg("connect adb request")
 
 	scMethod, err := adb.ParseScreencapMethod(screencapMethod)
 	if err != nil {
-		log.Warn().Err(err).Str("raw", screencapMethod).Msg("[MaaService] parse adb screencap method failed, using raw uint64")
+		maaServiceLog.Warn().Err(err).Str("raw", screencapMethod).Msg("parse adb screencap method failed, using raw uint64")
 		v, parseErr := strconv.ParseUint(screencapMethod, 10, 64)
 		if parseErr != nil {
-			log.Error().Err(parseErr).Str("value", screencapMethod).Msg("[MaaService] invalid screencap method")
+			maaServiceLog.Error().Err(parseErr).Str("value", screencapMethod).Msg("invalid screencap method")
 			return ConnectControllerResult{Error: fmt.Sprintf("invalid screencap method: %s", screencapMethod)}
 		}
 		scMethod = adb.ScreencapMethod(v)
 	}
-	log.Debug().Uint64("screencap_method_parsed", uint64(scMethod)).Msg("[MaaService] screencap method resolved")
+	maaServiceLog.Debug().Uint64("screencap_method_parsed", uint64(scMethod)).Msg("screencap method resolved")
 
 	inMethod, err := adb.ParseInputMethod(inputMethod)
 	if err != nil {
-		log.Warn().Err(err).Str("raw", inputMethod).Msg("[MaaService] parse adb input method failed, using raw uint64")
+		maaServiceLog.Warn().Err(err).Str("raw", inputMethod).Msg("parse adb input method failed, using raw uint64")
 		v, parseErr := strconv.ParseUint(inputMethod, 10, 64)
 		if parseErr != nil {
-			log.Error().Err(parseErr).Str("value", inputMethod).Msg("[MaaService] invalid input method")
+			maaServiceLog.Error().Err(parseErr).Str("value", inputMethod).Msg("invalid input method")
 			return ConnectControllerResult{Error: fmt.Sprintf("invalid input method: %s", inputMethod)}
 		}
 		inMethod = adb.InputMethod(v)
 	}
-	log.Debug().Uint64("input_method_parsed", uint64(inMethod)).Msg("[MaaService] input method resolved")
+	maaServiceLog.Debug().Uint64("input_method_parsed", uint64(inMethod)).Msg("input method resolved")
 
-	log.Info().Msg("[MaaService] creating ADB controller...")
+	maaServiceLog.Info().Msg("creating adb controller")
 	ctrl, err := maa.NewAdbController(adbPath, address, scMethod, inMethod, config, "")
 	if err != nil {
-		log.Error().Err(err).Str("address", address).Msg("[MaaService] create adb controller failed")
+		maaServiceLog.Error().Err(err).Str("address", address).Msg("create adb controller failed")
 		return ConnectControllerResult{Error: fmt.Sprintf("create adb controller failed: %v", err)}
 	}
 
-	log.Info().Msg("[MaaService] ADB controller created, posting connection...")
+	maaServiceLog.Info().Msg("adb controller created, posting connection")
 	ctrl.PostConnect().Wait()
 
 	connected := ctrl.Connected()
-	log.Info().Bool("connected", connected).Msg("[MaaService] ADB PostConnect completed")
+	maaServiceLog.Info().Bool("connected", connected).Msg("adb post-connect completed")
 
 	if !connected {
 		ctrl.Destroy()
 		errMsg := fmt.Sprintf("failed to connect ADB: %s", address)
-		log.Warn().Str("address", address).Msg("[MaaService] " + errMsg)
+		maaServiceLog.Warn().Str("address", address).Msg("adb connect returned disconnected")
 		return ConnectControllerResult{Error: errMsg}
 	}
 
-	return s.finishConnect(ctrl, ADB, log.Info().Str("address", address), "[MaaService] ADB controller connected successfully")
+	return s.finishConnect(ctrl, ADB, maaServiceLog.Info().Str("address", address), "adb controller connected")
 }
 
 // ConnectWin32 连接 Win32 控制器。
 func (s *ControllerService) ConnectWin32(
 	hwndStr, screencapMethod, mouseMethod, keyboardMethod string,
 ) ConnectControllerResult {
-	log.Info().
+	maaServiceLog.Info().
 		Str("hwnd", hwndStr).
 		Str("screencap_method", screencapMethod).
 		Str("mouse_method", mouseMethod).
 		Str("keyboard_method", keyboardMethod).
-		Msg("[MaaService] ConnectWin32 called")
+		Msg("connect win32 request")
 
 	hwnd, err := parseHwnd(hwndStr)
 	if err != nil {
-		log.Error().Err(err).Str("hwnd", hwndStr).Msg("[MaaService] invalid hwnd")
+		maaServiceLog.Error().Err(err).Str("hwnd", hwndStr).Msg("invalid hwnd")
 		return ConnectControllerResult{Error: fmt.Sprintf("invalid hwnd: %s", hwndStr)}
 	}
 
@@ -122,7 +125,7 @@ func (s *ControllerService) ConnectWin32(
 	if err != nil {
 		v, parseErr := strconv.ParseUint(screencapMethod, 10, 64)
 		if parseErr != nil {
-			log.Error().Err(parseErr).Str("value", screencapMethod).Msg("[MaaService] invalid win32 screencap method")
+			maaServiceLog.Error().Err(parseErr).Str("value", screencapMethod).Msg("invalid win32 screencap method")
 			return ConnectControllerResult{Error: fmt.Sprintf("invalid screencap method: %s", screencapMethod)}
 		}
 		scMethod = win32.ScreencapMethod(v)
@@ -132,7 +135,7 @@ func (s *ControllerService) ConnectWin32(
 	if err != nil {
 		v, parseErr := strconv.ParseUint(mouseMethod, 10, 64)
 		if parseErr != nil {
-			log.Error().Err(parseErr).Str("value", mouseMethod).Msg("[MaaService] invalid win32 mouse method")
+			maaServiceLog.Error().Err(parseErr).Str("value", mouseMethod).Msg("invalid win32 mouse method")
 			return ConnectControllerResult{Error: fmt.Sprintf("invalid mouse method: %s", mouseMethod)}
 		}
 		mouseM = win32.InputMethod(v)
@@ -142,48 +145,48 @@ func (s *ControllerService) ConnectWin32(
 	if err != nil {
 		v, parseErr := strconv.ParseUint(keyboardMethod, 10, 64)
 		if parseErr != nil {
-			log.Error().Err(parseErr).Str("value", keyboardMethod).Msg("[MaaService] invalid win32 keyboard method")
+			maaServiceLog.Error().Err(parseErr).Str("value", keyboardMethod).Msg("invalid win32 keyboard method")
 			return ConnectControllerResult{Error: fmt.Sprintf("invalid keyboard method: %s", keyboardMethod)}
 		}
 		keyboardM = win32.InputMethod(v)
 	}
 
-	log.Info().Msg("[MaaService] creating Win32 controller...")
+	maaServiceLog.Info().Msg("creating win32 controller")
 	ctrl, err := maa.NewWin32Controller(hwnd, scMethod, mouseM, keyboardM)
 	if err != nil {
-		log.Error().Err(err).Str("hwnd", hwndStr).Msg("[MaaService] create win32 controller failed")
+		maaServiceLog.Error().Err(err).Str("hwnd", hwndStr).Msg("create win32 controller failed")
 		return ConnectControllerResult{Error: fmt.Sprintf("create win32 controller failed: %v", err)}
 	}
 
-	log.Info().Msg("[MaaService] Win32 controller created, posting connection...")
+	maaServiceLog.Info().Msg("win32 controller created, posting connection")
 	ctrl.PostConnect().Wait()
 
 	connected := ctrl.Connected()
-	log.Info().Bool("connected", connected).Msg("[MaaService] Win32 PostConnect completed")
+	maaServiceLog.Info().Bool("connected", connected).Msg("win32 post-connect completed")
 
 	if !connected {
 		ctrl.Destroy()
 		errMsg := fmt.Sprintf("failed to connect Win32 hwnd: %s", hwndStr)
-		log.Warn().Str("hwnd", hwndStr).Msg("[MaaService] " + errMsg)
+		maaServiceLog.Warn().Str("hwnd", hwndStr).Msg("win32 connect returned disconnected")
 		return ConnectControllerResult{Error: errMsg}
 	}
 
-	return s.finishConnect(ctrl, Win32, log.Info().Str("hwnd", hwndStr), "[MaaService] Win32 controller connected successfully")
+	return s.finishConnect(ctrl, Win32, maaServiceLog.Info().Str("hwnd", hwndStr), "win32 controller connected")
 }
 
 // ConnectGamepad 连接 Gamepad 控制器。
 func (s *ControllerService) ConnectGamepad(
 	hwndStr, screencapMethod, gamepadTypeStr string,
 ) ConnectControllerResult {
-	log.Info().
+	maaServiceLog.Info().
 		Str("hwnd", hwndStr).
 		Str("screencap_method", screencapMethod).
 		Str("gamepad_type", gamepadTypeStr).
-		Msg("[MaaService] ConnectGamepad called")
+		Msg("connect gamepad request")
 
 	hwnd, err := parseHwnd(hwndStr)
 	if err != nil {
-		log.Error().Err(err).Str("hwnd", hwndStr).Msg("[MaaService] invalid hwnd")
+		maaServiceLog.Error().Err(err).Str("hwnd", hwndStr).Msg("invalid hwnd")
 		return ConnectControllerResult{Error: fmt.Sprintf("invalid hwnd: %s", hwndStr)}
 	}
 
@@ -191,7 +194,7 @@ func (s *ControllerService) ConnectGamepad(
 	if err != nil {
 		v, parseErr := strconv.ParseUint(screencapMethod, 10, 64)
 		if parseErr != nil {
-			log.Error().Err(parseErr).Str("value", screencapMethod).Msg("[MaaService] invalid gamepad screencap method")
+			maaServiceLog.Error().Err(parseErr).Str("value", screencapMethod).Msg("invalid gamepad screencap method")
 			return ConnectControllerResult{Error: fmt.Sprintf("invalid screencap method: %s", screencapMethod)}
 		}
 		scMethod = win32.ScreencapMethod(v)
@@ -199,66 +202,66 @@ func (s *ControllerService) ConnectGamepad(
 
 	gamepadType, err := strconv.ParseInt(gamepadTypeStr, 10, 32)
 	if err != nil {
-		log.Error().Err(err).Str("value", gamepadTypeStr).Msg("[MaaService] invalid gamepad type")
+		maaServiceLog.Error().Err(err).Str("value", gamepadTypeStr).Msg("invalid gamepad type")
 		return ConnectControllerResult{Error: fmt.Sprintf("invalid gamepad type: %s", gamepadTypeStr)}
 	}
 
-	log.Info().Msg("[MaaService] creating Gamepad controller...")
+	maaServiceLog.Info().Msg("creating gamepad controller")
 	ctrl, err := maa.NewGamepadController(hwnd, maa.GamepadType(int32(gamepadType)), scMethod)
 	if err != nil {
-		log.Error().Err(err).Str("hwnd", hwndStr).Msg("[MaaService] create gamepad controller failed")
+		maaServiceLog.Error().Err(err).Str("hwnd", hwndStr).Msg("create gamepad controller failed")
 		return ConnectControllerResult{Error: fmt.Sprintf("create gamepad controller failed: %v", err)}
 	}
 
-	log.Info().Msg("[MaaService] Gamepad controller created, posting connection...")
+	maaServiceLog.Info().Msg("gamepad controller created, posting connection")
 	ctrl.PostConnect().Wait()
 
 	connected := ctrl.Connected()
-	log.Info().Bool("connected", connected).Msg("[MaaService] Gamepad PostConnect completed")
+	maaServiceLog.Info().Bool("connected", connected).Msg("gamepad post-connect completed")
 
 	if !connected {
 		ctrl.Destroy()
 		errMsg := fmt.Sprintf("failed to connect Gamepad hwnd: %s", hwndStr)
-		log.Warn().Str("hwnd", hwndStr).Msg("[MaaService] " + errMsg)
+		maaServiceLog.Warn().Str("hwnd", hwndStr).Msg("gamepad connect returned disconnected")
 		return ConnectControllerResult{Error: errMsg}
 	}
 
-	return s.finishConnect(ctrl, Gamepad, log.Info().Str("hwnd", hwndStr), "[MaaService] Gamepad controller connected successfully")
+	return s.finishConnect(ctrl, Gamepad, maaServiceLog.Info().Str("hwnd", hwndStr), "gamepad controller connected")
 }
 
 // ConnectPlayCover 连接 PlayCover 控制器。
 func (s *ControllerService) ConnectPlayCover(
 	address, uuid string,
 ) ConnectControllerResult {
-	log.Info().
+	maaServiceLog.Info().
 		Str("address", address).
 		Str("uuid", uuid).
-		Msg("[MaaService] ConnectPlayCover called")
+		Msg("connect playcover request")
 
-	log.Info().Msg("[MaaService] creating PlayCover controller...")
+	maaServiceLog.Info().Msg("creating playcover controller")
 	ctrl, err := maa.NewPlayCoverController(address, uuid)
 	if err != nil {
-		log.Error().Err(err).
+		maaServiceLog.Error().Err(err).
 			Str("address", address).
 			Str("uuid", uuid).
-			Msg("[MaaService] create PlayCover controller failed")
+			Msg("create playcover controller failed")
 		return ConnectControllerResult{Error: fmt.Sprintf("create PlayCover controller failed: %v", err)}
 	}
 
-	log.Info().Msg("[MaaService] PlayCover controller created, posting connection...")
+	maaServiceLog.Info().Msg("playcover controller created, posting connection")
 	ctrl.PostConnect().Wait()
 
 	connected := ctrl.Connected()
-	log.Info().Bool("connected", connected).Msg("[MaaService] PlayCover PostConnect completed")
+	maaServiceLog.Info().Bool("connected", connected).Msg("playcover post-connect completed")
 
 	if !connected {
 		ctrl.Destroy()
 		errMsg := fmt.Sprintf("failed to connect PlayCover: %s", address)
-		log.Warn().Str("address", address).Msg("[MaaService] " + errMsg)
+		maaServiceLog.Warn().Str("address", address).Msg("playcover connect returned disconnected")
 		return ConnectControllerResult{Error: errMsg}
 	}
 
-	return s.finishConnect(ctrl, PlayCover, log.Info().Str("address", address).Str("uuid", uuid), "[MaaService] PlayCover controller connected successfully")
+	return s.finishConnect(ctrl, PlayCover, maaServiceLog.Info().Str("address", address).Str("uuid", uuid), "playcover controller connected")
 }
 
 func (s *ControllerService) ConnectWlRoot(wlrSocketPath string) ConnectControllerResult {
@@ -267,29 +270,29 @@ func (s *ControllerService) ConnectWlRoot(wlrSocketPath string) ConnectControlle
 		return ConnectControllerResult{Error: "socket path is required"}
 	}
 
-	log.Info().Str("socket_path", wlrSocketPath).Msg("[MaaService] ConnectWlRoot called")
+	maaServiceLog.Info().Str("socket_path", wlrSocketPath).Msg("connect wlroot request")
 
-	log.Info().Msg("[MaaService] creating WlRoot controller...")
+	maaServiceLog.Info().Msg("creating wlroot controller")
 	ctrl, err := maa.NewWlRootsController(wlrSocketPath)
 	if err != nil {
-		log.Error().Err(err).Str("socket_path", wlrSocketPath).Msg("[MaaService] create WlRoot controller failed")
+		maaServiceLog.Error().Err(err).Str("socket_path", wlrSocketPath).Msg("create wlroot controller failed")
 		return ConnectControllerResult{Error: fmt.Sprintf("create WlRoot controller failed: %v", err)}
 	}
 
-	log.Info().Msg("[MaaService] WlRoot controller created, posting connection...")
+	maaServiceLog.Info().Msg("wlroot controller created, posting connection")
 	ctrl.PostConnect().Wait()
 
 	connected := ctrl.Connected()
-	log.Info().Bool("connected", connected).Msg("[MaaService] WlRoot PostConnect completed")
+	maaServiceLog.Info().Bool("connected", connected).Msg("wlroot post-connect completed")
 
 	if !connected {
 		ctrl.Destroy()
 		errMsg := fmt.Sprintf("failed to connect WlRoot: %s", wlrSocketPath)
-		log.Warn().Str("socket_path", wlrSocketPath).Msg("[MaaService] " + errMsg)
+		maaServiceLog.Warn().Str("socket_path", wlrSocketPath).Msg("wlroot connect returned disconnected")
 		return ConnectControllerResult{Error: errMsg}
 	}
 
-	return s.finishConnect(ctrl, WlRoot, log.Info().Str("socket_path", wlrSocketPath), "[MaaService] WlRoot controller connected successfully")
+	return s.finishConnect(ctrl, WlRoot, maaServiceLog.Info().Str("socket_path", wlrSocketPath), "wlroot controller connected")
 }
 
 func (s *ControllerService) finishConnect(
@@ -299,7 +302,7 @@ func (s *ControllerService) finishConnect(
 	successMsg string,
 ) ConnectControllerResult {
 	if old := s.controller.Swap(ctrl); old != nil {
-		log.Info().Msg("[MaaService] destroying previous controller")
+		maaServiceLog.Info().Str("type", string(controllerType)).Msg("destroying previous controller")
 		old.Destroy()
 	}
 
@@ -311,13 +314,13 @@ func (s *ControllerService) finishConnect(
 // Disconnect 断开当前 Controller 连接。
 func (s *ControllerService) Disconnect() {
 	if old := s.controller.Swap(nil); old != nil {
-		log.Info().Msg("[MaaService] disconnecting controller...")
+		maaServiceLog.Info().Str("type", string(s.controllerType)).Msg("disconnecting controller")
 		old.Destroy()
 		s.controllerType = ""
-		log.Info().Msg("[MaaService] controller disconnected")
+		maaServiceLog.Info().Msg("controller disconnected")
 	} else {
 		s.controllerType = ""
-		log.Info().Msg("[MaaService] disconnect called but no active controller")
+		maaServiceLog.Debug().Msg("disconnect called with no active controller")
 	}
 }
 

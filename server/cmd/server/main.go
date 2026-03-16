@@ -22,6 +22,7 @@ import (
 	"github.com/MaaXYZ/MaaDebugger/internal/configstore"
 	"github.com/MaaXYZ/MaaDebugger/internal/console"
 	"github.com/MaaXYZ/MaaDebugger/internal/httpapi"
+	"github.com/MaaXYZ/MaaDebugger/internal/logger"
 	"github.com/MaaXYZ/MaaDebugger/internal/maaservice"
 	"github.com/MaaXYZ/MaaDebugger/internal/state"
 	"github.com/MaaXYZ/MaaDebugger/internal/updater"
@@ -105,7 +106,7 @@ func main() {
 		stdout:    zerolog.MultiLevelWriter(errorConsoleWriter),
 		stdoutMin: stdoutMinLevel,
 	}
-	log.Logger = zerolog.New(splitWriter).With().Timestamp().Logger()
+	logger.Init(splitWriter)
 	if parsed.HelpRequested {
 		fmt.Println(parser.Help())
 		return

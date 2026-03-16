@@ -9,13 +9,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rs/zerolog/log"
 	"golang.org/x/mod/semver"
 
 	"github.com/MaaXYZ/MaaDebugger/internal/buildinfo"
 	"github.com/MaaXYZ/MaaDebugger/internal/configstore"
 	"github.com/MaaXYZ/MaaDebugger/internal/console"
+	"github.com/MaaXYZ/MaaDebugger/internal/logger"
 )
+
+var updaterLog = logger.For(logger.ComponentUpdater)
 
 const (
 	npmPackageName = "@weinibuliu/maa-debugger" // TODO: When Release, this name will change.
@@ -297,11 +299,11 @@ func CheckUpdate(opts CheckOptions) (*CheckResult, error) {
 
 	// Log to console when an update is available
 	if hasUpdate {
-		log.Info().
+		updaterLog.Info().
 			Str("current", currentVersion).
 			Str("latest", latestVersion).
 			Str("channel", track).
-			Msg("New version available!")
+			Msg("new version available")
 
 		console.Warnf("New version available! (%s)", track)
 		console.Infof("  Current: %s%s%s", console.Red, currentVersion, console.Reset)
@@ -336,7 +338,7 @@ func AutoCheckUpdate(store *configstore.Store, opts CheckOptions) (*CheckResult,
 		if ts, ok := v.(float64); ok {
 			lastCheck := time.Unix(int64(ts), 0)
 			if time.Since(lastCheck) < cooldown {
-				log.Debug().
+				updaterLog.Debug().
 					Time("lastCheck", lastCheck).
 					Dur("cooldown", cooldown).
 					Msg("skipping auto update check (cooldown)")

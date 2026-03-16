@@ -16,17 +16,26 @@ import (
 
 	maa "github.com/MaaXYZ/maa-framework-go/v4"
 	"github.com/gorilla/websocket"
-	"github.com/rs/zerolog/log"
 
 	"github.com/MaaXYZ/MaaDebugger/frontend"
 	"github.com/MaaXYZ/MaaDebugger/internal/buildinfo"
 	"github.com/MaaXYZ/MaaDebugger/internal/configstore"
+	"github.com/MaaXYZ/MaaDebugger/internal/logger"
 	"github.com/MaaXYZ/MaaDebugger/internal/maaservice"
 	"github.com/MaaXYZ/MaaDebugger/internal/platform"
 	"github.com/MaaXYZ/MaaDebugger/internal/response"
 	"github.com/MaaXYZ/MaaDebugger/internal/state"
 	"github.com/MaaXYZ/MaaDebugger/internal/updater"
 	"github.com/MaaXYZ/MaaDebugger/internal/ws"
+)
+
+var (
+	httpLog       = logger.For(logger.ComponentHTTP)
+	controllerLog = logger.For(logger.ComponentController)
+	agentLog      = logger.For(logger.ComponentAgent)
+	resourceLog   = logger.For(logger.ComponentResource)
+	taskLog       = logger.For(logger.ComponentTask)
+	interfaceLog  = logger.For(logger.ComponentInterface)
 )
 
 type Dependencies struct {
@@ -123,7 +132,7 @@ func (r *router) handleCheckUpdate(w http.ResponseWriter, req *http.Request) {
 		IncludePreRelease: showPre,
 	})
 	if err != nil {
-		log.Error().Err(err).Msg("check update failed")
+		httpLog.Error().Err(err).Msg("check update failed")
 		response.Fail(w, http.StatusInternalServerError, "check update failed: "+err.Error())
 		return
 	}
@@ -158,7 +167,7 @@ func (r *router) handleConfigAll(w http.ResponseWriter, _ *http.Request) {
 func (r *router) handleSystemUAC(w http.ResponseWriter, _ *http.Request) {
 	enabled, err := platform.UACEnabled()
 	if err != nil {
-		log.Error().Err(err).Msg("read windows UAC status failed")
+		httpLog.Error().Err(err).Msg("read windows UAC status failed")
 		response.Fail(w, http.StatusInternalServerError, "read windows UAC status failed")
 		return
 	}
@@ -210,10 +219,10 @@ type adbDeviceInfo struct {
 }
 
 func (r *router) handleDetectAdb(w http.ResponseWriter, _ *http.Request) {
-	log.Info().Msg("[Controller] detect ADB devices request")
+	controllerLog.Info().Msg("detect adb devices request")
 	devices, err := maa.FindAdbDevices()
 	if err != nil {
-		log.Error().Err(err).Msg("[Controller] find adb devices failed")
+		controllerLog.Error().Err(err).Msg("find adb devices failed")
 		response.Fail(w, http.StatusBadRequest, fmt.Sprintf("find adb devices failed: %v", err))
 		return
 	}
@@ -233,7 +242,7 @@ func (r *router) handleDetectAdb(w http.ResponseWriter, _ *http.Request) {
 		})
 	}
 
-	log.Info().Int("count", len(result)).Msg("[Controller] detect ADB devices result")
+	controllerLog.Info().Int("count", len(result)).Msg("detect adb devices result")
 	response.OK(w, result)
 }
 
@@ -246,11 +255,11 @@ type desktopWindowInfo struct {
 func (r *router) handleDetectDesktop(w http.ResponseWriter, req *http.Request) {
 	classRegex := req.URL.Query().Get("class_regex")
 	windowRegex := req.URL.Query().Get("window_regex")
-	log.Info().Str("class_regex", classRegex).Str("window_regex", windowRegex).Msg("[Controller] detect desktop windows request")
+	controllerLog.Info().Str("class_regex", classRegex).Str("window_regex", windowRegex).Msg("detect desktop windows request")
 
 	windows, err := maa.FindDesktopWindows()
 	if err != nil {
-		log.Error().Err(err).Msg("[Controller] find desktop windows failed")
+		controllerLog.Error().Err(err).Msg("find desktop windows failed")
 		response.Fail(w, http.StatusBadRequest, fmt.Sprintf("find desktop windows failed: %v", err))
 		return
 	}
@@ -286,24 +295,24 @@ func (r *router) handleDetectDesktop(w http.ResponseWriter, req *http.Request) {
 		result = filtered
 	}
 
-	log.Info().Int("total", len(windows)).Int("filtered", len(result)).Msg("[Controller] detect desktop windows result")
+	controllerLog.Info().Int("total", len(windows)).Int("filtered", len(result)).Msg("detect desktop windows result")
 	response.OK(w, result)
 }
 
 func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Request) {
 	var payload map[string]any
 	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
-		log.Warn().Err(err).Msg("[Controller] connect: invalid json body")
+		controllerLog.Warn().Err(err).Msg("connect request: invalid json body")
 		response.Fail(w, http.StatusBadRequest, "invalid json body")
 		return
 	}
 
 	// 记录请求参数
-	log.Info().Interface("params", payload).Msg("[Controller] connect request")
+	controllerLog.Info().Interface("params", payload).Msg("connect request")
 
 	ctrlType, _ := payload["type"].(string)
 	if ctrlType == "" {
-		log.Warn().Msg("[Controller] connect: missing controller type")
+		controllerLog.Warn().Msg("connect request: missing controller type")
 		response.Fail(w, http.StatusBadRequest, "missing controller type")
 		return
 	}
@@ -311,7 +320,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 	// 设置 connecting 状态并广播
 	r.deps.StatusStore.SetController("connecting")
 	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
-	log.Info().Str("type", ctrlType).Msg("[Controller] status → connecting")
+	controllerLog.Info().Str("type", ctrlType).Str("status", "connecting").Msg("controller status updated")
 
 	getString := func(key string) string {
 		v, _ := payload[key].(string)
@@ -328,13 +337,14 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		inputMethod := orDefault(getString("adb_input_method"), "18446744073709551607")
 		adbConfig := getString("adb_config")
 
-		log.Info().
+		controllerLog.Info().
+			Str("type", ctrlType).
 			Str("adb_path", adbPath).
 			Str("adb_address", adbAddress).
 			Str("screencap_method", screencapMethod).
 			Str("input_method", inputMethod).
 			Str("adb_config", adbConfig).
-			Msg("[Controller] connecting ADB")
+			Msg("connecting controller")
 
 		result = r.deps.ControllerService.ConnectAdb(
 			adbPath, adbAddress, screencapMethod, inputMethod, adbConfig,
@@ -344,7 +354,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 	case "win32":
 		hwnd := getString("hwnd")
 		if hwnd == "" {
-			log.Warn().Msg("[Controller] connect win32: hwnd is empty")
+			controllerLog.Warn().Str("type", ctrlType).Msg("connect request: hwnd is empty")
 			r.deps.StatusStore.SetController("disconnected")
 			r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 			response.Fail(w, http.StatusBadRequest, "hwnd is required for Win32 controller")
@@ -354,12 +364,13 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		mouseMethod := orDefault(getString("win32_mouse_method"), "1")
 		keyboardMethod := orDefault(getString("win32_keyboard_method"), "1")
 
-		log.Info().
+		controllerLog.Info().
+			Str("type", ctrlType).
 			Str("hwnd", hwnd).
 			Str("screencap_method", screencapMethod).
 			Str("mouse_method", mouseMethod).
 			Str("keyboard_method", keyboardMethod).
-			Msg("[Controller] connecting Win32")
+			Msg("connecting controller")
 
 		result = r.deps.ControllerService.ConnectWin32(
 			hwnd, screencapMethod, mouseMethod, keyboardMethod,
@@ -369,7 +380,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 	case "gamepad":
 		hwnd := getString("hwnd")
 		if hwnd == "" {
-			log.Warn().Msg("[Controller] connect gamepad: hwnd is empty")
+			controllerLog.Warn().Str("type", ctrlType).Msg("connect request: hwnd is empty")
 			r.deps.StatusStore.SetController("disconnected")
 			r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 			response.Fail(w, http.StatusBadRequest, "hwnd is required for Gamepad controller")
@@ -378,11 +389,12 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		screencapMethod := orDefault(getString("gamepad_screencap_method"), "1")
 		gamepadType := orDefault(getString("gamepad_type"), "0")
 
-		log.Info().
+		controllerLog.Info().
+			Str("type", ctrlType).
 			Str("hwnd", hwnd).
 			Str("screencap_method", screencapMethod).
 			Str("gamepad_type", gamepadType).
-			Msg("[Controller] connecting Gamepad")
+			Msg("connecting controller")
 
 		result = r.deps.ControllerService.ConnectGamepad(
 			hwnd, screencapMethod, gamepadType,
@@ -393,17 +405,18 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		address := getString("playcover_address")
 		uuid := getString("playcover_uuid")
 		if address == "" {
-			log.Warn().Msg("[Controller] connect playcover: address is empty")
+			controllerLog.Warn().Str("type", ctrlType).Msg("connect request: address is empty")
 			r.deps.StatusStore.SetController("disconnected")
 			r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 			response.Fail(w, http.StatusBadRequest, "address is required for PlayCover controller")
 			return
 		}
 
-		log.Info().
+		controllerLog.Info().
+			Str("type", ctrlType).
 			Str("address", address).
 			Str("uuid", uuid).
-			Msg("[Controller] connecting PlayCover")
+			Msg("connecting controller")
 
 		result = r.deps.ControllerService.ConnectPlayCover(address, uuid)
 		// r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
@@ -411,16 +424,17 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 	case "wlroot":
 		wlrSocketPath := getString("wlroot_socket_path")
 		if wlrSocketPath == "" {
-			log.Warn().Msg("[Controller] connect wlroot: socket path is empty")
+			controllerLog.Warn().Str("type", ctrlType).Msg("connect request: socket path is empty")
 			r.deps.StatusStore.SetController("disconnected")
 			r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 			response.Fail(w, http.StatusBadRequest, "socket path is required for WlRoot controller")
 			return
 		}
 
-		log.Info().
+		controllerLog.Info().
+			Str("type", ctrlType).
 			Str("socket_path", wlrSocketPath).
-			Msg("[Controller] connecting WlRoot")
+			Msg("connecting controller")
 
 		result = r.deps.ControllerService.ConnectWlRoot(wlrSocketPath)
 		// r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
@@ -429,7 +443,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		// TODO
 
 	default:
-		log.Warn().Str("type", ctrlType).Msg("[Controller] unsupported controller type")
+		controllerLog.Warn().Str("type", ctrlType).Msg("unsupported controller type")
 		r.deps.StatusStore.SetController("disconnected")
 		r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 		response.Fail(w, http.StatusBadRequest, fmt.Sprintf("unsupported controller type: %s", ctrlType))
@@ -440,11 +454,11 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 	// 记录连接结果
 	if result.Success {
 		r.deps.StatusStore.SetController("connected")
-		log.Info().Str("type", ctrlType).Msg("[Controller] connect succeeded, status → connected")
+		controllerLog.Info().Str("type", ctrlType).Str("status", "connected").Msg("connect succeeded")
 		r.deps.ScreenshotService.OnConnected()
 	} else {
 		r.deps.StatusStore.SetController("disconnected")
-		log.Warn().Str("type", ctrlType).Str("error", result.Error).Msg("[Controller] connect failed, status → disconnected")
+		controllerLog.Warn().Str("type", ctrlType).Str("status", "disconnected").Str("error", result.Error).Msg("connect failed")
 	}
 	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 
@@ -457,13 +471,13 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 }
 
 func (r *router) handleControllerDisconnect(w http.ResponseWriter, _ *http.Request) {
-	log.Info().Msg("[Controller] disconnect request")
+	controllerLog.Info().Msg("disconnect request")
 	r.deps.ScreenshotService.Stop()
 	r.deps.ControllerService.Disconnect()
 	r.deps.ScreenshotService.OnDisconnected()
 	r.deps.StatusStore.SetController("disconnected")
 	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
-	log.Info().Msg("[Controller] disconnected, status → disconnected")
+	controllerLog.Info().Str("status", "disconnected").Msg("controller disconnected")
 	response.OK(w, nil)
 }
 
@@ -480,19 +494,19 @@ func (r *router) handleAgentConnect(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Info().Str("identifier", payload.Identifier).Msg("[Agent] connect request")
+	agentLog.Info().Str("identifier", payload.Identifier).Msg("connect request")
 
 	result := r.deps.AgentService.Connect(payload.Identifier)
 
 	r.deps.Hub.BroadcastJSON(ws.Message{Type: "agent.update", Payload: r.deps.AgentService.List()})
 
 	if !result.Success {
-		log.Warn().Str("identifier", payload.Identifier).Str("error", result.Error).Msg("[Agent] connect failed")
+		agentLog.Warn().Str("identifier", payload.Identifier).Str("error", result.Error).Msg("connect failed")
 		response.Fail(w, http.StatusBadRequest, result.Error)
 		return
 	}
 
-	log.Info().Str("identifier", payload.Identifier).Msg("[Agent] connect succeeded")
+	agentLog.Info().Str("identifier", payload.Identifier).Msg("connect succeeded")
 	response.OK(w, nil)
 }
 
@@ -509,7 +523,7 @@ func (r *router) handleAgentDisconnect(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	log.Info().Str("identifier", payload.Identifier).Msg("[Agent] disconnect request")
+	agentLog.Info().Str("identifier", payload.Identifier).Msg("disconnect request")
 	r.deps.AgentService.Disconnect(payload.Identifier)
 
 	r.deps.Hub.BroadcastJSON(ws.Message{Type: "agent.update", Payload: r.deps.AgentService.List()})
@@ -587,17 +601,17 @@ func (r *router) handleResourceLoad(w http.ResponseWriter, req *http.Request) {
 		Paths []string `json:"paths"`
 	}
 	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
-		log.Warn().Err(err).Msg("[Resource] load: invalid json body")
+		resourceLog.Warn().Err(err).Msg("load request: invalid json body")
 		response.Fail(w, http.StatusBadRequest, "invalid json body")
 		return
 	}
 	if len(payload.Paths) == 0 {
-		log.Warn().Msg("[Resource] load: no paths provided")
+		resourceLog.Warn().Msg("load request: no paths provided")
 		response.Fail(w, http.StatusBadRequest, "No resource paths provided")
 		return
 	}
 
-	log.Info().Strs("paths", payload.Paths).Msg("[Resource] load request")
+	resourceLog.Info().Strs("paths", payload.Paths).Msg("load request")
 
 	// 设置 loading 状态并广播
 	r.deps.StatusStore.SetResource("loading")
@@ -607,10 +621,10 @@ func (r *router) handleResourceLoad(w http.ResponseWriter, req *http.Request) {
 
 	if result.Success {
 		r.deps.StatusStore.SetResource("loaded")
-		log.Info().Msg("[Resource] load succeeded, status → loaded")
+		resourceLog.Info().Str("status", "loaded").Msg("load succeeded")
 	} else {
 		r.deps.StatusStore.SetResource("failed")
-		log.Warn().Str("failed_path", result.FailedPath).Msg("[Resource] load failed, status → failed")
+		resourceLog.Warn().Str("status", "failed").Str("failed_path", result.FailedPath).Msg("load failed")
 	}
 	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 
@@ -634,7 +648,7 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 		PipelineOverride json.RawMessage `json:"pipeline_override"`
 	}
 	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
-		log.Warn().Err(err).Msg("[Task] run: invalid json body")
+		taskLog.Warn().Err(err).Msg("run request: invalid json body")
 		response.Fail(w, http.StatusBadRequest, "Invalid json body")
 		return
 	}
@@ -643,7 +657,7 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Info().Str("entry", payload.Entry).Msg("[Task] run request")
+	taskLog.Info().Str("entry", payload.Entry).Msg("run request")
 	r.deps.ScreenshotService.OnTaskStarted()
 	r.deps.StatusStore.SetTask("running")
 	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
@@ -652,10 +666,10 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 	go func() {
 		defer func() {
 			if rv := recover(); rv != nil {
-				log.Error().
+				taskLog.Error().
 					Interface("panic", rv).
 					Str("stack", string(debug.Stack())).
-					Msg("[Task] run panic in goroutine")
+					Msg("run panic in goroutine")
 				r.deps.ScreenshotService.OnTaskEnded()
 				r.deps.StatusStore.SetTask("failed")
 				r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
@@ -671,7 +685,7 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 		if result.Success {
 			r.deps.ScreenshotService.OnTaskEnded()
 			r.deps.StatusStore.SetTask("success")
-			log.Info().Str("entry", payload.Entry).Msg("[Task] run succeeded, status → success")
+			taskLog.Info().Str("entry", payload.Entry).Str("status", "success").Msg("run succeeded")
 			r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 			r.deps.Hub.BroadcastJSON(ws.Message{
 				Type:    "task.completed",
@@ -684,7 +698,7 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 		// 不应覆盖为 failed。
 		if r.deps.StatusStore.GetTask() == "stopped" {
 			r.deps.ScreenshotService.OnTaskEnded()
-			log.Info().Str("entry", payload.Entry).Msg("[Task] run ended after user stop, keeping stopped status")
+			taskLog.Info().Str("entry", payload.Entry).Str("status", "stopped").Msg("run ended after user stop")
 			r.deps.Hub.BroadcastJSON(ws.Message{
 				Type:    "task.completed",
 				Payload: map[string]any{"success": false, "stopped": true, "entry": payload.Entry},
@@ -694,7 +708,7 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 
 		r.deps.ScreenshotService.OnTaskEnded()
 		r.deps.StatusStore.SetTask("failed")
-		log.Warn().Str("entry", payload.Entry).Str("error", result.Error).Msg("[Task] run failed, status → failed")
+		taskLog.Warn().Str("entry", payload.Entry).Str("status", "failed").Str("error", result.Error).Msg("run failed")
 		r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 		r.deps.Hub.BroadcastJSON(ws.Message{
 			Type:    "task.completed",
@@ -707,7 +721,7 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 }
 
 func (r *router) handleTaskStop(w http.ResponseWriter, _ *http.Request) {
-	log.Info().Msg("[Task] stop request")
+	taskLog.Info().Msg("stop request")
 	r.deps.StatusStore.SetTask("stopped")
 	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 	r.deps.TaskerService.StopTask()
@@ -928,7 +942,7 @@ func recoverer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Error().
+				httpLog.Error().
 					Any("panic", r).
 					Bytes("stack", debug.Stack()).
 					Str("path", req.URL.Path).
@@ -948,7 +962,7 @@ func logging(next http.Handler) http.Handler {
 		// 包装器可能丢失该接口，导致 /ws 返回 500。
 		if req.URL.Path == "/ws" {
 			next.ServeHTTP(w, req)
-			log.Info().
+			httpLog.Info().
 				Str("method", req.Method).
 				Str("path", req.URL.Path).
 				Int("status", http.StatusSwitchingProtocols).
@@ -968,7 +982,7 @@ func logging(next http.Handler) http.Handler {
 			}
 		}
 
-		recvEvt := log.Info().
+		recvEvt := httpLog.Info().
 			Str("method", req.Method).
 			Str("path", req.URL.Path)
 		if req.URL.RawQuery != "" {
@@ -986,7 +1000,7 @@ func logging(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(rw, req)
 
-		respEvt := log.Info().
+		respEvt := httpLog.Info().
 			Str("method", req.Method).
 			Str("path", req.URL.Path).
 			Int("status", rw.status).
@@ -1116,7 +1130,7 @@ func containsOrRegexMatch(value, pattern string) bool {
 
 	matcher, err := compileDesktopFilter(pattern)
 	if err != nil {
-		log.Warn().Err(err).Str("pattern", pattern).Msg("[Controller] invalid desktop filter pattern, fallback to plain contains")
+		controllerLog.Warn().Err(err).Str("pattern", pattern).Msg("invalid desktop filter pattern, fallback to plain contains")
 		return value == pattern || strings.Contains(value, pattern)
 	}
 

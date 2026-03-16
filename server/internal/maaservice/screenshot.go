@@ -10,8 +10,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/rs/zerolog/log"
+	"github.com/MaaXYZ/MaaDebugger/internal/logger"
 )
+
+var screenshotLog = logger.For(logger.ComponentScreenshot)
 
 const maxConsecutiveFailures = 10
 const defaultScreenshotFPS = 15
@@ -193,13 +195,13 @@ func (s *ScreenshotService) SetOnError(fn func(reason string)) {
 func (s *ScreenshotService) EnableOutputDelivery() {
 	s.outputActive.Store(true)
 	s.updateOverlayState()
-	log.Info().Msg("[Screenshot] output delivery enabled")
+	screenshotLog.Info().Msg("output delivery enabled")
 }
 
 func (s *ScreenshotService) DisableOutputDelivery() {
 	s.outputActive.Store(false)
 	s.updateOverlayState()
-	log.Info().Msg("[Screenshot] output delivery disabled")
+	screenshotLog.Info().Msg("output delivery disabled")
 }
 
 // Start begins the screenshot loop. Safe to call multiple times; only one loop runs.
@@ -217,7 +219,7 @@ func (s *ScreenshotService) Start() {
 	s.resetPipelineStateLocked()
 	go s.captureLoop(s.stopCh)
 	go s.jpegLoop(s.stopCh)
-	log.Info().Int32("fps", s.fps.Load()).Msg("[Screenshot] loops started")
+	screenshotLog.Info().Int32("fps", s.fps.Load()).Msg("loops started")
 }
 
 // Stop halts the screenshot loop.
@@ -231,7 +233,7 @@ func (s *ScreenshotService) Stop() {
 	s.running = false
 	s.mu.Unlock()
 	s.updateOverlayState()
-	log.Info().Msg("[Screenshot] loops stopped")
+	screenshotLog.Info().Msg("loops stopped")
 }
 
 func (s *ScreenshotService) Running() bool {
@@ -261,7 +263,7 @@ func (s *ScreenshotService) Pause() {
 	s.drainJPEGJobs()
 	s.notifyStateChanged()
 	s.updateOverlayState()
-	log.Info().Msg("[Screenshot] paused")
+	screenshotLog.Info().Msg("paused")
 }
 
 func (s *ScreenshotService) Resume() {
@@ -288,14 +290,14 @@ func (s *ScreenshotService) OnTaskStarted() {
 	s.taskRunning.Store(true)
 	s.drainCacheChangedNotify()
 	s.notifyStateChanged()
-	log.Info().Msg("[Screenshot] task running, waiting for cache-changed notifications")
+	screenshotLog.Info().Msg("task running, waiting for cache-changed notifications")
 }
 
 func (s *ScreenshotService) OnTaskEnded() {
 	s.taskRunning.Store(false)
 	s.drainCacheChangedNotify()
 	s.notifyStateChanged()
-	log.Info().Msg("[Screenshot] task ended, attempting to resume FPS-driven PostScreencap")
+	screenshotLog.Info().Msg("task ended, attempting to resume fps-driven post-screencap")
 	if s.manualPaused.Load() {
 		return
 	}
@@ -358,13 +360,13 @@ func (s *ScreenshotService) resumeIfAllowed() {
 	if s.manualPaused.Load() {
 		s.paused.Store(true)
 		s.updateOverlayState()
-		log.Info().Msg("[Screenshot] resume skipped: manually paused")
+		screenshotLog.Info().Msg("resume skipped: manually paused")
 		return
 	}
 	if !s.outputActive.Load() {
 		s.paused.Store(true)
 		s.updateOverlayState()
-		log.Info().Msg("[Screenshot] resume skipped: output delivery disabled")
+		screenshotLog.Info().Msg("resume skipped: output delivery disabled")
 		return
 	}
 
@@ -372,10 +374,10 @@ func (s *ScreenshotService) resumeIfAllowed() {
 	s.notifyStateChanged()
 	s.updateOverlayState()
 	if s.taskRunning.Load() {
-		log.Info().Msg("[Screenshot] resumed cache polling with PostScreencap disabled by task state")
+		screenshotLog.Info().Msg("resumed cache polling with post-screencap disabled by task state")
 		return
 	}
-	log.Info().Msg("[Screenshot] resumed")
+	screenshotLog.Info().Msg("resumed")
 }
 
 func (s *ScreenshotService) captureLoop(stop <-chan struct{}) {
@@ -394,9 +396,9 @@ func (s *ScreenshotService) captureLoop(stop <-chan struct{}) {
 		seq := s.frameSeq.Add(1)
 		if err := s.refreshCacheSnapshot(); err != nil {
 			consecutiveFailures++
-			log.Warn().Err(err).Uint64("seq", seq).Int("failures", consecutiveFailures).Msg("[Screenshot] screencap stage failed")
+			screenshotLog.Warn().Err(err).Uint64("seq", seq).Int("failures", consecutiveFailures).Msg("screencap stage failed")
 			if consecutiveFailures >= maxConsecutiveFailures {
-				log.Error().Int("failures", consecutiveFailures).Msg("[Screenshot] too many consecutive failures, stopping")
+				screenshotLog.Error().Int("failures", consecutiveFailures).Msg("too many consecutive failures, stopping")
 				s.stopWithError("Screenshot capture failed repeatedly")
 				return
 			}
@@ -406,9 +408,9 @@ func (s *ScreenshotService) captureLoop(stop <-chan struct{}) {
 		job, err := s.prepareJPEGJob(seq)
 		if err != nil {
 			consecutiveFailures++
-			log.Warn().Err(err).Uint64("seq", seq).Int("failures", consecutiveFailures).Msg("[Screenshot] cache snapshot stage failed")
+			screenshotLog.Warn().Err(err).Uint64("seq", seq).Int("failures", consecutiveFailures).Msg("cache snapshot stage failed")
 			if consecutiveFailures >= maxConsecutiveFailures {
-				log.Error().Int("failures", consecutiveFailures).Msg("[Screenshot] too many consecutive failures, stopping")
+				screenshotLog.Error().Int("failures", consecutiveFailures).Msg("too many consecutive failures, stopping")
 				s.stopWithError("Screenshot capture failed repeatedly")
 				return
 			}
@@ -501,9 +503,9 @@ func (s *ScreenshotService) jpegLoop(stop <-chan struct{}) {
 		case result := <-results:
 			if result.err != nil {
 				consecutiveFailures++
-				log.Warn().Err(result.err).Uint64("seq", result.seq).Int("failures", consecutiveFailures).Msg("[Screenshot] encode stage failed")
+				screenshotLog.Warn().Err(result.err).Uint64("seq", result.seq).Int("failures", consecutiveFailures).Msg("encode stage failed")
 				if consecutiveFailures >= maxConsecutiveFailures {
-					log.Error().Int("failures", consecutiveFailures).Msg("[Screenshot] too many consecutive failures, stopping")
+					screenshotLog.Error().Int("failures", consecutiveFailures).Msg("too many consecutive failures, stopping")
 					s.stopWithError("Screenshot encode failed repeatedly")
 					return
 				}

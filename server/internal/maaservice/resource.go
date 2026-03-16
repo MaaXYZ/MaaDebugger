@@ -5,8 +5,11 @@ import (
 	"sync/atomic"
 
 	maa "github.com/MaaXYZ/maa-framework-go/v4"
-	"github.com/rs/zerolog/log"
+
+	"github.com/MaaXYZ/MaaDebugger/internal/logger"
 )
+
+var resourceServiceLog = logger.For(logger.ComponentResource)
 
 // ResourceService 管理 MaaFW Resource 实例的生命周期。
 type ResourceService struct {
@@ -26,34 +29,34 @@ type LoadResult struct {
 
 // LoadBundles 逐个加载资源路径，遇到失败立即返回失败路径。
 func (s *ResourceService) LoadBundles(paths []string) LoadResult {
-	log.Info().Strs("paths", paths).Int("count", len(paths)).Msg("[MaaService] LoadBundles called")
+	resourceServiceLog.Info().Strs("paths", paths).Int("count", len(paths)).Msg("load bundles request")
 
 	res, err := maa.NewResource()
 	if err != nil {
-		log.Error().Err(err).Msg("[MaaService] create resource failed")
+		resourceServiceLog.Error().Err(err).Msg("create resource failed")
 		return LoadResult{Success: false, FailedPath: "failed to create resource"}
 	}
 
 	for _, p := range paths {
-		log.Info().Str("path", p).Msg("[MaaService] loading bundle...")
+		resourceServiceLog.Info().Str("path", p).Msg("loading bundle")
 		job := res.PostBundle(p)
 		job.Wait()
 
 		if !job.Success() {
-			log.Warn().Str("path", p).Str("status", fmt.Sprintf("%v", job.Status())).Msg("[MaaService] bundle load failed")
+			resourceServiceLog.Warn().Str("path", p).Str("status", fmt.Sprintf("%v", job.Status())).Msg("bundle load failed")
 			res.Destroy()
 			return LoadResult{Success: false, FailedPath: p}
 		}
-		log.Info().Str("path", p).Msg("[MaaService] bundle loaded successfully")
+		resourceServiceLog.Info().Str("path", p).Msg("bundle loaded")
 	}
 
 	// 替换旧实例
 	if old := s.resource.Swap(res); old != nil {
 		old.Destroy()
-		log.Info().Msg("[MaaService] previous resource destroyed")
+		resourceServiceLog.Info().Msg("previous resource destroyed")
 	}
 
-	log.Info().Int("count", len(paths)).Msg("[MaaService] all bundles loaded successfully")
+	resourceServiceLog.Info().Int("count", len(paths)).Msg("all bundles loaded")
 	return LoadResult{Success: true}
 }
 
@@ -73,5 +76,8 @@ func (s *ResourceService) Loaded() bool {
 
 // Destroy 销毁当前 Resource 实例。
 func (s *ResourceService) Destroy() {
-	s.resource.Load().Destroy()
+	if res := s.resource.Swap(nil); res != nil {
+		res.Destroy()
+		resourceServiceLog.Info().Msg("resource destroyed")
+	}
 }

@@ -8,8 +8,11 @@ import (
 	"sync/atomic"
 
 	maa "github.com/MaaXYZ/maa-framework-go/v4"
-	"github.com/rs/zerolog/log"
+
+	"github.com/MaaXYZ/MaaDebugger/internal/logger"
 )
+
+var taskerLog = logger.For(logger.ComponentTask)
 
 // TaskerService 管理 MaaFW Tasker 实例的生命周期。
 // 参考 maa-js server 中的状态机：idle → running → success/failed
@@ -45,7 +48,7 @@ func (s *TaskerService) SetEventCallback(fn func(msg map[string]any)) {
 }
 
 func (s *TaskerService) emitEvent(msg map[string]any) {
-	log.Info().Interface("event", msg).Msg("[MaaService] emitEvent")
+	taskerLog.Debug().Interface("event", msg).Msg("emit event")
 	if fn := s.onEvent.Load(); fn != nil {
 		(*fn)(msg)
 	}
@@ -192,7 +195,7 @@ func (s *TaskerService) registerSinks(tasker *maa.Tasker) {
 		if event == maa.EventStatusStarting {
 			node, err := ctx.GetNode(detail.Name)
 			if err != nil {
-				log.Error().Err(err).Msg("[MaaService] get node failed")
+				taskerLog.Error().Err(err).Msg("get node failed")
 			} else if s.actionNeedsScreenshot(node) {
 				s.captureActionScreenshot(detail.ActionID)
 			}
@@ -217,17 +220,17 @@ type RunTaskResult struct {
 // 状态机：idle → running → success/failed
 // 不在 sink 中做任何渲染/回调，避免影响运行速度。
 func (s *TaskerService) RunTask(entry string, pipelineOverride json.RawMessage) RunTaskResult {
-	log.Info().Str("entry", entry).Msg("[MaaService] RunTask called")
+	taskerLog.Info().Str("entry", entry).Msg("run task request")
 
 	ctrl := s.controllerSvc.Controller()
 	if ctrl == nil {
-		log.Warn().Msg("[MaaService] RunTask: controller is not connected")
+		taskerLog.Warn().Msg("run task aborted: controller is not connected")
 		return RunTaskResult{Error: "Controller is not connected"}
 	}
 
 	res := s.resourceSvc.Resource()
 	if res == nil {
-		log.Warn().Msg("[MaaService] RunTask: resource is not loaded")
+		taskerLog.Warn().Msg("run task aborted: resource is not loaded")
 		return RunTaskResult{Error: "Resource is not loaded"}
 	}
 
@@ -236,7 +239,7 @@ func (s *TaskerService) RunTask(entry string, pipelineOverride json.RawMessage) 
 	if tasker == nil {
 		newTasker, err := maa.NewTasker()
 		if err != nil {
-			log.Error().Err(err).Msg("[MaaService] create tasker failed")
+			taskerLog.Error().Err(err).Msg("create tasker failed")
 			return RunTaskResult{Error: fmt.Sprintf("Failed to create tasker: %v", err)}
 		}
 		// 尝试原子设置，如果其他 goroutine 已经设置了，使用已有的
@@ -252,17 +255,17 @@ func (s *TaskerService) RunTask(entry string, pipelineOverride json.RawMessage) 
 	}
 
 	if err := tasker.BindController(ctrl); err != nil {
-		log.Error().Err(err).Msg("[MaaService] bind controller failed")
+		taskerLog.Error().Err(err).Msg("bind controller failed")
 		return RunTaskResult{Error: fmt.Sprintf("Failed to bind controller: %v", err)}
 	}
 
 	if err := tasker.BindResource(res); err != nil {
-		log.Error().Err(err).Msg("[MaaService] bind resource failed")
+		taskerLog.Error().Err(err).Msg("bind resource failed")
 		return RunTaskResult{Error: fmt.Sprintf("Failed to bind resource: %v", err)}
 	}
 
 	if !tasker.Initialized() {
-		log.Warn().Msg("[MaaService] RunTask: tasker not initialized")
+		taskerLog.Warn().Msg("run task aborted: tasker not initialized")
 		return RunTaskResult{Error: "Failed to initialize tasker"}
 	}
 
@@ -270,12 +273,12 @@ func (s *TaskerService) RunTask(entry string, pipelineOverride json.RawMessage) 
 	var override any
 	if len(pipelineOverride) > 0 {
 		if err := json.Unmarshal(pipelineOverride, &override); err != nil {
-			log.Warn().Err(err).Msg("[MaaService] invalid pipeline override JSON")
+			taskerLog.Warn().Err(err).Msg("invalid pipeline override json")
 			override = nil
 		}
 	}
 
-	log.Info().Str("entry", entry).Msg("[MaaService] posting task...")
+	taskerLog.Info().Str("entry", entry).Msg("posting task")
 	var job *maa.TaskJob
 	if override != nil {
 		job = tasker.PostTask(entry, override)
@@ -286,7 +289,7 @@ func (s *TaskerService) RunTask(entry string, pipelineOverride json.RawMessage) 
 	job.Wait()
 
 	succeeded := job.Success()
-	log.Info().Bool("succeeded", succeeded).Str("entry", entry).Msg("[MaaService] task completed")
+	taskerLog.Info().Bool("succeeded", succeeded).Str("entry", entry).Msg("task completed")
 
 	if !succeeded {
 		return RunTaskResult{Error: fmt.Sprintf("Task '%s' failed", entry)}
@@ -299,16 +302,16 @@ func (s *TaskerService) RunTask(entry string, pipelineOverride json.RawMessage) 
 func (s *TaskerService) StopTask() bool {
 	tasker := s.tasker.Load()
 	if tasker == nil {
-		log.Info().Msg("[MaaService] StopTask: no active tasker")
+		taskerLog.Debug().Msg("stop task skipped: no active tasker")
 		return true
 	}
 
-	log.Info().Msg("[MaaService] stopping task...")
+	taskerLog.Info().Msg("stopping task")
 	job := tasker.PostStop()
 	job.Wait()
 
 	if job.Success() {
-		log.Info().Msg("[MaaService] task stopped")
+		taskerLog.Info().Msg("task stopped")
 		return true
 	} else {
 		return false
@@ -324,7 +327,7 @@ func (s *TaskerService) GetNodeList() []string {
 
 	nodes, err := res.GetNodeList()
 	if err != nil {
-		log.Warn().Err(err).Msg("[MaaService] get node list failed")
+		taskerLog.Warn().Err(err).Msg("get node list failed")
 		return []string{}
 	}
 
@@ -793,7 +796,7 @@ func (s *TaskerService) cacheRuntimeNodeData(ctx *maa.Context, name string, id i
 
 	nodeJSON, err := ctx.GetNodeJSON(name)
 	if err != nil {
-		log.Warn().Err(err).Str("name", name).Int64("id", id).Msg("[MaaService] get runtime node data failed")
+		taskerLog.Warn().Err(err).Str("name", name).Int64("id", id).Msg("get runtime node data failed")
 		return
 	}
 
@@ -880,20 +883,20 @@ func (s *TaskerService) captureActionScreenshot(actionID uint64) {
 	job := ctrl.PostScreencap()
 	job.Wait()
 	if !job.Success() {
-		log.Warn().Uint64("action_id", actionID).Msg("[MaaService] action screenshot: PostScreencap failed")
+		taskerLog.Warn().Uint64("action_id", actionID).Msg("action screenshot: post-screencap failed")
 		return
 	}
 	img, err := ctrl.CacheImage()
 	if err != nil || img == nil {
-		log.Warn().Err(err).Uint64("action_id", actionID).Msg("[MaaService] action screenshot: CacheImage failed")
+		taskerLog.Warn().Err(err).Uint64("action_id", actionID).Msg("action screenshot: cache image failed")
 		return
 	}
 	id := fmt.Sprintf("action:raw-%d", actionID)
 	if ref := storeTaskImage(&s.taskImages, id, img); ref == nil {
-		log.Warn().Uint64("action_id", actionID).Msg("[MaaService] action screenshot: JPEG encode failed")
+		taskerLog.Warn().Uint64("action_id", actionID).Msg("action screenshot: jpeg encode failed")
 		return
 	}
-	log.Debug().Uint64("action_id", actionID).Msg("[MaaService] action screenshot captured")
+	taskerLog.Debug().Uint64("action_id", actionID).Msg("action screenshot captured")
 }
 
 // ClearTaskImages 清除所有缓存的详情图片。
@@ -960,6 +963,6 @@ func (s *TaskerService) Running() bool {
 func (s *TaskerService) Destroy() {
 	if old := s.tasker.Swap(nil); old != nil {
 		old.Destroy()
-		log.Info().Msg("[MaaService] tasker destroyed")
+		taskerLog.Info().Msg("tasker destroyed")
 	}
 }
