@@ -1,5 +1,6 @@
 <template>
-    <div class="flex flex-col gap-1.5 rounded-lg border border-default p-2">
+    <div class="flex flex-col gap-1.5 rounded-lg border border-default p-2 transition-colors"
+        :class="isClickable ? 'cursor-pointer hover:bg-elevated/60' : ''" @click="handleOpenDetail">
         <!-- Header -->
         <div class="flex flex-row items-center gap-2 flex-wrap">
             <UBadge :color="detail.hit ? 'success' : 'error'" variant="subtle" size="xs">
@@ -16,11 +17,11 @@
 
         <!-- Nested Combined Result (recursive And/Or) -->
         <div v-if="detail.combined_result && detail.combined_result.length > 0 && depth < 10"
-             class="flex flex-col gap-1.5 mt-1">
+            class="flex flex-col gap-1.5 mt-1" @click.stop>
             <span class="text-xs text-dimmed">Combined ({{ detail.algorithm }}):</span>
             <div class="pl-2 border-l-2 border-default flex flex-col gap-1.5">
-                <RecoDetailItem v-for="(sub, idx) in detail.combined_result" :key="idx" :detail="sub"
-                                :depth="depth + 1" />
+                <RecoDetailItem v-for="(sub, idx) in detail.combined_result" :key="idx" :detail="sub" :depth="depth + 1"
+                    @request-detail="$emit('requestDetail', $event)" />
             </div>
         </div>
 
@@ -28,10 +29,25 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { RecoDetailResponse } from './types'
 
-defineProps<{
+const props = defineProps<{
     detail: RecoDetailResponse
     depth: number
 }>()
+
+const emit = defineEmits<{
+    requestDetail: [payload: { recoId: number, name: string }]
+}>()
+
+const isClickable = computed(() => !!props.detail.reco_id)
+
+function handleOpenDetail() {
+    if (!props.detail.reco_id) return
+    emit('requestDetail', {
+        recoId: props.detail.reco_id,
+        name: props.detail.name,
+    })
+}
 </script>

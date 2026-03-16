@@ -347,6 +347,7 @@ type RecoResultsResponse struct {
 
 // RecoDetailResponse 是返回给前端的识别详情。
 type RecoDetailResponse struct {
+	RecoID         int64                 `json:"reco_id,omitempty"`
 	Name           string                `json:"name"`
 	Algorithm      string                `json:"algorithm"`
 	Hit            bool                  `json:"hit"`
@@ -473,6 +474,7 @@ func (s *TaskerService) convertRecoDetail(detail *maa.RecognitionDetail) *RecoDe
 	}
 
 	resp := &RecoDetailResponse{
+		RecoID:    int64(detail.ID),
 		Name:      detail.Name,
 		Algorithm: detail.Algorithm,
 		Hit:       detail.Hit,

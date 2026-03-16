@@ -166,6 +166,7 @@ export interface TaskImageRef {
 }
 
 export interface RecoDetailResponse {
+  reco_id?: number;
   name: string;
   algorithm: string;
   hit: boolean;

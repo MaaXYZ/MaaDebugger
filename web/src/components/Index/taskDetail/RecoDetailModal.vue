@@ -1,13 +1,25 @@
 <template>
     <UModal v-model:open="open" :ui="{ content: 'sm:max-w-[85vw] sm:w-[85vw]' }">
         <template #header>
-            <div v-if="detail" class="flex flex-row items-center gap-2 flex-wrap">
-                <span class="text-sm text-highlighted font-semibold">{{ detail.name }}</span>
-                <UBadge :color="detail.hit ? 'success' : 'error'" variant="subtle"
-                    :label="detail.hit ? 'Hit' : 'Miss'" />
-                <UBadge color="info" variant="subtle" :label="detail.algorithm" />
-                <UButton color="neutral" variant="ghost" size="xs" icon="i-lucide-file-json"
-                    label="NodeData" @click="nodeDataOpen = true" />
+            <div v-if="detail" class="flex flex-col gap-2 min-w-0">
+                <UBreadcrumb v-if="breadcrumbItems.length > 0" :items="breadcrumbItems">
+                    <template #item-label="{ item, active, index }">
+                        <button v-if="!active" type="button"
+                            class="cursor-pointer text-left hover:text-highlighted transition-colors"
+                            @click="openRecoFromBreadcrumb(index)">
+                            {{ item.label }}
+                        </button>
+                        <span v-else class="font-semibold">{{ item.label }}</span>
+                    </template>
+                </UBreadcrumb>
+                <div class="flex flex-row items-center gap-2 flex-wrap min-w-0">
+                    <span class="text-sm text-highlighted font-semibold truncate">{{ detail.name }}</span>
+                    <UBadge :color="detail.hit ? 'success' : 'error'" variant="subtle"
+                        :label="detail.hit ? 'Hit' : 'Miss'" />
+                    <UBadge color="info" variant="subtle" :label="detail.algorithm" />
+                    <UButton color="neutral" variant="ghost" size="xs" icon="i-lucide-file-json" label="NodeData"
+                        @click="nodeDataOpen = true" />
+                </div>
             </div>
         </template>
 
@@ -25,8 +37,8 @@
                 <div v-if="detail.combined_result && detail.combined_result.length > 0" class="flex flex-col gap-2">
                     <span class="text-sm font-medium text-dimmed">Combined ({{ detail.algorithm }}):</span>
                     <div class="pl-3 border-l-2 border-default flex flex-col gap-2">
-                        <RecoDetailItem v-for="(sub, idx) in detail.combined_result" :key="idx" :detail="sub"
-                            :depth="1" />
+                        <RecoDetailItem v-for="(sub, idx) in detail.combined_result" :key="idx" :detail="sub" :depth="1"
+                            @request-detail="openSubRecoDetail" />
                     </div>
                 </div>
 
@@ -92,7 +104,7 @@
         </template>
     </UModal>
     <NodeDataModal v-model:open="nodeDataOpen" :node-name="props.nodeName ?? detail?.name ?? null"
-        :reco-id="props.recoId" :initial-node-json="cachedNodeJson" />
+        :reco-id="selectedRecoId" :initial-node-json="cachedNodeJson" />
 </template>
 
 <script setup lang="ts">
@@ -119,6 +131,8 @@ const detail = ref<RecoDetailResponse | null>(null)
 const nodeDataOpen = ref(false)
 const recognitionNodeJson = ref<unknown>(null)
 const cachedNodeJson = ref<string | null>(null)
+const selectedRecoId = ref<number | null>(null)
+const detailPath = ref<Array<{ recoId: number, name: string }>>([])
 
 // Fullscreen canvas draw
 const isFullscreen = ref(false)
@@ -220,6 +234,12 @@ const parsedRois = computed<RectResponse[]>(() => {
     return dedupeRois(rois)
 })
 
+const breadcrumbItems = computed(() => detailPath.value.map((item, index) => ({
+    label: item.name,
+    icon: index === 0 ? 'i-lucide-house' : undefined,
+    active: index === detailPath.value.length - 1,
+})))
+
 // --- Preview zoom ---
 function previewZoomIn() {
     previewZoom.value = Math.min(MAX_ZOOM, previewZoom.value + ZOOM_STEP)
@@ -291,13 +311,50 @@ watch(imagePreviewOpen, (val) => {
     }
 })
 
+function resetRecoDetailState() {
+    detail.value = null
+    recognitionNodeJson.value = null
+    cachedNodeJson.value = null
+    nodeDataOpen.value = false
+    isFullscreen.value = false
+    imagePreviewOpen.value = false
+    previewImageSrc.value = ''
+    resetPreviewZoom()
+}
+
+function openSubRecoDetail(payload: { recoId: number, name: string }) {
+    if (!payload.recoId) return
+    resetRecoDetailState()
+    selectedRecoId.value = payload.recoId
+
+    const existsIndex = detailPath.value.findIndex(item => item.recoId === payload.recoId)
+    if (existsIndex >= 0) {
+        detailPath.value = detailPath.value.slice(0, existsIndex + 1)
+        return
+    }
+    detailPath.value = [...detailPath.value, payload]
+}
+
+function openRecoFromBreadcrumb(index: number) {
+    const target = detailPath.value[index]
+    if (!target) return
+    resetRecoDetailState()
+    detailPath.value = detailPath.value.slice(0, index + 1)
+    selectedRecoId.value = target.recoId
+}
+
+watch(() => props.recoId, (id) => {
+    selectedRecoId.value = id
+    detailPath.value = id == null ? [] : [{ recoId: id, name: props.nodeName ?? 'Loading' }]
+}, { immediate: true })
+
 watch(open, (isOpen) => {
     if (!isOpen) {
         nodeDataOpen.value = false
     }
 })
 
-watch([() => props.recoId, open], async ([id, isOpen]) => {
+watch([selectedRecoId, open], async ([id, isOpen]) => {
     if (!isOpen || id == null) {
         detail.value = null
         recognitionNodeJson.value = null
@@ -311,6 +368,16 @@ watch([() => props.recoId, open], async ([id, isOpen]) => {
             props.nodeName ? getNodeData(props.nodeName, { recoId: id }) : Promise.resolve(null),
         ])
         detail.value = recoDetail
+
+        if (recoDetail && detailPath.value.length > 0 && detailPath.value[detailPath.value.length - 1]?.recoId === id) {
+            detailPath.value = detailPath.value.map((item, index, arr) => {
+                if (index !== arr.length - 1) return item
+                return {
+                    ...item,
+                    name: recoDetail.name,
+                }
+            })
+        }
 
         cachedNodeJson.value = nodeData?.node_json ?? null
 
