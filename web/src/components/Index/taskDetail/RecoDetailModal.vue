@@ -342,6 +342,11 @@ function openRecoFromBreadcrumb(index: number) {
     selectedRecoId.value = target.recoId
 }
 
+function resetBreadcrumbToRoot() {
+    selectedRecoId.value = props.recoId
+    detailPath.value = props.recoId == null ? [] : [{ recoId: props.recoId, name: props.nodeName ?? 'Loading' }]
+}
+
 watch(() => props.recoId, (id) => {
     selectedRecoId.value = id
     detailPath.value = id == null ? [] : [{ recoId: id, name: props.nodeName ?? 'Loading' }]
@@ -350,6 +355,7 @@ watch(() => props.recoId, (id) => {
 watch(open, (isOpen) => {
     if (!isOpen) {
         nodeDataOpen.value = false
+        resetBreadcrumbToRoot()
     }
 })
 
