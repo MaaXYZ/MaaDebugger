@@ -15,6 +15,9 @@ import (
 
 const taskImageJPEGQuality = 80
 
+const taskImageFormatJPEG = "jpeg"
+const taskImageFormatPNG = "png"
+
 type ContentType string
 
 const JPEG ContentType = "image/jpeg"
@@ -161,34 +164,60 @@ func (item *taskImageItem) ensureEncoded() error {
 	return nil
 }
 
-func taskImageETag(item *taskImageItem) string {
+func (item *taskImageItem) encodeByFormat(format string) (ContentType, []byte, time.Time, error) {
 	if item == nil {
-		return ""
+		return "", nil, time.Time{}, fmt.Errorf("image item is nil")
 	}
-	return fmt.Sprintf("W/\"%d-%d\"", len(item.Data), item.CreatedAt.UnixNano())
+
+	switch format {
+	case "", taskImageFormatJPEG:
+		if err := item.ensureEncoded(); err != nil {
+			return "", nil, time.Time{}, err
+		}
+		return item.ContentType, item.Data, item.CreatedAt, nil
+	case taskImageFormatPNG:
+		encoded, err := encodePNGImage(item.Source)
+		if err != nil {
+			return "", nil, time.Time{}, err
+		}
+		return encoded.ContentType, encoded.Data, encoded.CreatedAt, nil
+	default:
+		return "", nil, time.Time{}, fmt.Errorf("unsupported image format: %s", format)
+	}
 }
 
-func WriteTaskImageResponse(w http.ResponseWriter, req *http.Request, item *taskImageItem) {
+func taskImageETag(data []byte, createdAt time.Time, format string) string {
+	if len(data) == 0 || createdAt.IsZero() {
+		return ""
+	}
+	return fmt.Sprintf("W/\"%s-%d-%d\"", format, len(data), createdAt.UnixNano())
+}
+
+func WriteTaskImageResponse(w http.ResponseWriter, req *http.Request, item *taskImageItem) error {
 	if item == nil {
 		http.NotFound(w, req)
-		return
+		return nil
 	}
-	if err := item.ensureEncoded(); err != nil {
-		http.Error(w, "encode image failed", http.StatusInternalServerError)
-		return
+
+	format := req.URL.Query().Get("format")
+	contentType, data, createdAt, err := item.encodeByFormat(format)
+	if err != nil {
+		return err
 	}
-	etag := taskImageETag(item)
+
+	etag := taskImageETag(data, createdAt, format)
 	if etag != "" && req.Header.Get("If-None-Match") == etag {
 		w.WriteHeader(http.StatusNotModified)
-		return
+		return nil
 	}
-	w.Header().Set("Content-Type", string(item.ContentType))
+	w.Header().Set("Content-Type", string(contentType))
 	w.Header().Set("Cache-Control", "private, max-age=300")
 	if etag != "" {
 		w.Header().Set("ETag", etag)
 	}
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(item.Data)
+	w.Write(data)
+	return nil
 }
 
 func storeTaskImage(m *sync.Map, id string, img image.Image) *ImageRef {

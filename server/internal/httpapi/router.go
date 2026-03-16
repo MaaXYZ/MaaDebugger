@@ -896,7 +896,10 @@ func (r *router) handleTaskImage(w http.ResponseWriter, req *http.Request) {
 		response.Fail(w, http.StatusNotFound, "image not found")
 		return
 	}
-	maaservice.WriteTaskImageResponse(w, req, item)
+	if err := maaservice.WriteTaskImageResponse(w, req, item); err != nil {
+		response.Fail(w, http.StatusBadRequest, err.Error())
+		return
+	}
 }
 
 // --- Clear ---
