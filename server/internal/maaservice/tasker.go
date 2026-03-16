@@ -750,6 +750,27 @@ func (s *TaskerService) GetLatestNodeDetail(name string) (*NodeDetailResponse, e
 	return resp, nil
 }
 
+func (s *TaskerService) hydrateCombinedRecoDetails(tasker *maa.Tasker, resp *RecoDetailResponse) {
+	if tasker == nil || resp == nil || len(resp.CombinedResult) == 0 {
+		return
+	}
+
+	for i, sub := range resp.CombinedResult {
+		if sub == nil {
+			continue
+		}
+
+		if sub.RecoID > 0 {
+			if detail, err := tasker.GetRecognitionDetail(sub.RecoID); err == nil && detail != nil {
+				resp.CombinedResult[i] = s.convertRecoDetail(detail)
+				sub = resp.CombinedResult[i]
+			}
+		}
+
+		s.hydrateCombinedRecoDetails(tasker, sub)
+	}
+}
+
 // GetRecognitionDetailByID 通过 reco_id 获取识别详情。
 func (s *TaskerService) GetRecognitionDetailByID(recoID int64) (*RecoDetailResponse, error) {
 	tasker := s.tasker.Load()
@@ -760,7 +781,9 @@ func (s *TaskerService) GetRecognitionDetailByID(recoID int64) (*RecoDetailRespo
 	if err != nil {
 		return nil, fmt.Errorf("get recognition detail failed: %w", err)
 	}
-	return s.convertRecoDetail(detail), nil
+	resp := s.convertRecoDetail(detail)
+	s.hydrateCombinedRecoDetails(tasker, resp)
+	return resp, nil
 }
 
 func (s *TaskerService) cacheRuntimeNodeData(ctx *maa.Context, name string, id int64) {
