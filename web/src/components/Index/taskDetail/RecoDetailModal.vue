@@ -236,7 +236,6 @@ const parsedRois = computed<RectResponse[]>(() => {
 
 const breadcrumbItems = computed(() => detailPath.value.map((item, index) => ({
     label: item.name,
-    icon: index === 0 ? 'i-lucide-house' : undefined,
     active: index === detailPath.value.length - 1,
 })))
 

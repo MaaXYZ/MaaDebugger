@@ -3,10 +3,9 @@
         :class="isClickable ? 'cursor-pointer hover:bg-elevated/60' : ''" @click="handleOpenDetail">
         <!-- Header -->
         <div class="flex flex-row items-center gap-2 flex-wrap">
-            <UBadge :color="detail.hit ? 'success' : 'error'" variant="subtle" size="xs">
-                {{ detail.hit ? 'Hit' : 'Miss' }}
-            </UBadge>
-            <UBadge color="info" variant="subtle" size="xs">{{ detail.algorithm }}</UBadge>
+            <UBadge :color="detail.hit ? 'success' : 'error'" variant="subtle" size="xs"
+                :label="detail.hit ? 'Hit' : 'Miss'" />
+            <UBadge color="info" variant="subtle" size="xs" :label="detail.algorithm" />
             <span class="text-xs font-medium">{{ detail.name }}</span>
         </div>
 
