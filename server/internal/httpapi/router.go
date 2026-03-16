@@ -188,25 +188,115 @@ func (r *router) handleConfigGet(w http.ResponseWriter, req *http.Request) {
 
 func (r *router) handleConfigSet(w http.ResponseWriter, req *http.Request) {
 	key := req.PathValue("key")
-	var payload any
+	var payload json.RawMessage
 	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
 		response.Fail(w, http.StatusBadRequest, "invalid json body")
 		return
 	}
 
-	r.deps.ConfigStore.Set(key, payload)
+	var value any
+	if len(payload) > 0 {
+		if err := json.Unmarshal(payload, &value); err != nil {
+			response.Fail(w, http.StatusBadRequest, "invalid json body")
+			return
+		}
+	}
+
+	r.deps.ConfigStore.Set(key, value)
 	response.OK(w, nil)
 }
 
 func (r *router) handleConfigMerge(w http.ResponseWriter, req *http.Request) {
-	var payload map[string]any
+	var payload configMergePayload
 	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
 		response.Fail(w, http.StatusBadRequest, "invalid json body")
 		return
 	}
 
-	r.deps.ConfigStore.Merge(payload)
+	entries := make(map[string]any, len(payload))
+	for key, raw := range payload {
+		if len(raw) == 0 {
+			entries[key] = nil
+			continue
+		}
+		var value any
+		if err := json.Unmarshal(raw, &value); err != nil {
+			response.Fail(w, http.StatusBadRequest, fmt.Sprintf("invalid json body at key %q", key))
+			return
+		}
+		entries[key] = value
+	}
+
+	r.deps.ConfigStore.Merge(entries)
 	response.OK(w, nil)
+}
+
+type configMergePayload map[string]json.RawMessage
+
+type controllerConnectRequest struct {
+	Type                 string `json:"type"`
+	AdbPath              string `json:"adb_path"`
+	AdbAddress           string `json:"adb_address"`
+	AdbScreencapMethod   string `json:"adb_screencap_method"`
+	AdbInputMethod       string `json:"adb_input_method"`
+	AdbConfig            string `json:"adb_config"`
+	Hwnd                 string `json:"hwnd"`
+	Win32ScreencapMethod string `json:"win32_screencap_method"`
+	Win32MouseMethod     string `json:"win32_mouse_method"`
+	Win32KeyboardMethod  string `json:"win32_keyboard_method"`
+	GamepadScreencap     string `json:"gamepad_screencap_method"`
+	GamepadType          string `json:"gamepad_type"`
+	PlayCoverAddress     string `json:"playcover_address"`
+	PlayCoverUUID        string `json:"playcover_uuid"`
+	WlrootSocketPath     string `json:"wlroot_socket_path"`
+}
+
+type controllerConnectResponse struct {
+	Type string `json:"type"`
+}
+
+type taskRunRequest struct {
+	Entry            string          `json:"entry"`
+	PipelineOverride json.RawMessage `json:"pipeline_override"`
+}
+
+type taskCompletedPayload struct {
+	Success bool   `json:"success"`
+	Error   string `json:"error,omitempty"`
+	Entry   string `json:"entry,omitempty"`
+	Stopped bool   `json:"stopped,omitempty"`
+}
+
+type screenshotSetFPSRequest struct {
+	FPS int32 `json:"fps"`
+}
+
+type screenshotSetFPSResponse struct {
+	FPS int32 `json:"fps"`
+}
+
+type screenshotSetOutputRequest struct {
+	Output maaservice.ScreenshotOutput `json:"output"`
+}
+
+type screenshotOutputStatusResponse struct {
+	Output maaservice.ScreenshotOutput `json:"output"`
+	JPEG   bool                        `json:"jpeg"`
+	H264   bool                        `json:"h264"`
+	H265   bool                        `json:"h265"`
+}
+
+type screenshotStatusResponse struct {
+	Running        bool                              `json:"running"`
+	Paused         bool                              `json:"paused"`
+	OutputActive   bool                              `json:"output_active"`
+	FPS            int32                             `json:"fps"`
+	Output         maaservice.ScreenshotOutput       `json:"output"`
+	JPEG           bool                              `json:"jpeg"`
+	H264           bool                              `json:"h264"`
+	H265           bool                              `json:"h265"`
+	OverlayState   maaservice.ScreenshotOverlayState `json:"overlay_state"`
+	OverlayMessage string                            `json:"overlay_message"`
 }
 
 type adbDeviceInfo struct {
@@ -300,17 +390,14 @@ func (r *router) handleDetectDesktop(w http.ResponseWriter, req *http.Request) {
 }
 
 func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Request) {
-	var payload map[string]any
+	var payload controllerConnectRequest
 	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
 		controllerLog.Warn().Err(err).Msg("connect request: invalid json body")
 		response.Fail(w, http.StatusBadRequest, "invalid json body")
 		return
 	}
 
-	// 记录请求参数
-	controllerLog.Info().Interface("params", payload).Msg("connect request")
-
-	ctrlType, _ := payload["type"].(string)
+	ctrlType := strings.TrimSpace(payload.Type)
 	if ctrlType == "" {
 		controllerLog.Warn().Msg("connect request: missing controller type")
 		response.Fail(w, http.StatusBadRequest, "missing controller type")
@@ -322,20 +409,15 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 	r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 	controllerLog.Info().Str("type", ctrlType).Str("status", "connecting").Msg("controller status updated")
 
-	getString := func(key string) string {
-		v, _ := payload[key].(string)
-		return v
-	}
-
 	var result maaservice.ConnectControllerResult
 
 	switch ctrlType {
 	case "adb":
-		adbPath := getString("adb_path")
-		adbAddress := getString("adb_address")
-		screencapMethod := orDefault(getString("adb_screencap_method"), "18446744073709551559")
-		inputMethod := orDefault(getString("adb_input_method"), "18446744073709551607")
-		adbConfig := getString("adb_config")
+		adbPath := strings.TrimSpace(payload.AdbPath)
+		adbAddress := strings.TrimSpace(payload.AdbAddress)
+		screencapMethod := orDefault(strings.TrimSpace(payload.AdbScreencapMethod), maaservice.ADBScreencapDefault)
+		inputMethod := orDefault(strings.TrimSpace(payload.AdbInputMethod), maaservice.ADBInputDefault)
+		adbConfig := strings.TrimSpace(payload.AdbConfig)
 
 		controllerLog.Info().
 			Str("type", ctrlType).
@@ -352,7 +434,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		// r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
 
 	case "win32":
-		hwnd := getString("hwnd")
+		hwnd := strings.TrimSpace(payload.Hwnd)
 		if hwnd == "" {
 			controllerLog.Warn().Str("type", ctrlType).Msg("connect request: hwnd is empty")
 			r.deps.StatusStore.SetController("disconnected")
@@ -360,9 +442,9 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 			response.Fail(w, http.StatusBadRequest, "hwnd is required for Win32 controller")
 			return
 		}
-		screencapMethod := orDefault(getString("win32_screencap_method"), "1")
-		mouseMethod := orDefault(getString("win32_mouse_method"), "1")
-		keyboardMethod := orDefault(getString("win32_keyboard_method"), "1")
+		screencapMethod := orDefault(strings.TrimSpace(payload.Win32ScreencapMethod), maaservice.WindowScreencapGDI)
+		mouseMethod := orDefault(strings.TrimSpace(payload.Win32MouseMethod), maaservice.Win32InputSeize)
+		keyboardMethod := orDefault(strings.TrimSpace(payload.Win32KeyboardMethod), maaservice.Win32InputSeize)
 
 		controllerLog.Info().
 			Str("type", ctrlType).
@@ -378,7 +460,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		// r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
 
 	case "gamepad":
-		hwnd := getString("hwnd")
+		hwnd := strings.TrimSpace(payload.Hwnd)
 		if hwnd == "" {
 			controllerLog.Warn().Str("type", ctrlType).Msg("connect request: hwnd is empty")
 			r.deps.StatusStore.SetController("disconnected")
@@ -386,8 +468,8 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 			response.Fail(w, http.StatusBadRequest, "hwnd is required for Gamepad controller")
 			return
 		}
-		screencapMethod := orDefault(getString("gamepad_screencap_method"), "1")
-		gamepadType := orDefault(getString("gamepad_type"), "0")
+		screencapMethod := orDefault(strings.TrimSpace(payload.GamepadScreencap), maaservice.WindowScreencapGDI)
+		gamepadType := orDefault(strings.TrimSpace(payload.GamepadType), maaservice.GamepadTypeXbox360)
 
 		controllerLog.Info().
 			Str("type", ctrlType).
@@ -402,8 +484,8 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		// r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
 
 	case "playcover":
-		address := getString("playcover_address")
-		uuid := getString("playcover_uuid")
+		address := strings.TrimSpace(payload.PlayCoverAddress)
+		uuid := strings.TrimSpace(payload.PlayCoverUUID)
 		if address == "" {
 			controllerLog.Warn().Str("type", ctrlType).Msg("connect request: address is empty")
 			r.deps.StatusStore.SetController("disconnected")
@@ -422,7 +504,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		// r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
 
 	case "wlroot":
-		wlrSocketPath := getString("wlroot_socket_path")
+		wlrSocketPath := strings.TrimSpace(payload.WlrootSocketPath)
 		if wlrSocketPath == "" {
 			controllerLog.Warn().Str("type", ctrlType).Msg("connect request: socket path is empty")
 			r.deps.StatusStore.SetController("disconnected")
@@ -467,7 +549,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	response.OK(w, map[string]any{"type": ctrlType})
+	response.OK(w, controllerConnectResponse{Type: ctrlType})
 }
 
 func (r *router) handleControllerDisconnect(w http.ResponseWriter, _ *http.Request) {
@@ -643,10 +725,7 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var payload struct {
-		Entry            string          `json:"entry"`
-		PipelineOverride json.RawMessage `json:"pipeline_override"`
-	}
+	var payload taskRunRequest
 	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
 		taskLog.Warn().Err(err).Msg("run request: invalid json body")
 		response.Fail(w, http.StatusBadRequest, "Invalid json body")
@@ -675,7 +754,7 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 				r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 				r.deps.Hub.BroadcastJSON(ws.Message{
 					Type:    "task.completed",
-					Payload: map[string]any{"success": false, "error": fmt.Sprintf("internal panic: %v", rv)},
+					Payload: taskCompletedPayload{Success: false, Error: fmt.Sprintf("internal panic: %v", rv)},
 				})
 			}
 		}()
@@ -689,7 +768,7 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 			r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 			r.deps.Hub.BroadcastJSON(ws.Message{
 				Type:    "task.completed",
-				Payload: map[string]any{"success": true, "entry": payload.Entry},
+				Payload: taskCompletedPayload{Success: true, Entry: payload.Entry},
 			})
 			return
 		}
@@ -701,7 +780,7 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 			taskLog.Info().Str("entry", payload.Entry).Str("status", "stopped").Msg("run ended after user stop")
 			r.deps.Hub.BroadcastJSON(ws.Message{
 				Type:    "task.completed",
-				Payload: map[string]any{"success": false, "stopped": true, "entry": payload.Entry},
+				Payload: taskCompletedPayload{Success: false, Stopped: true, Entry: payload.Entry},
 			})
 			return
 		}
@@ -712,7 +791,7 @@ func (r *router) handleTaskRun(w http.ResponseWriter, req *http.Request) {
 		r.deps.Hub.BroadcastJSON(ws.Message{Type: "status.update", Payload: r.deps.StatusStore.Get()})
 		r.deps.Hub.BroadcastJSON(ws.Message{
 			Type:    "task.completed",
-			Payload: map[string]any{"success": false, "error": result.Error, "entry": payload.Entry},
+			Payload: taskCompletedPayload{Success: false, Error: result.Error, Entry: payload.Entry},
 		})
 	}()
 
@@ -857,47 +936,43 @@ func (r *router) handleScreenshotResume(w http.ResponseWriter, _ *http.Request) 
 }
 
 func (r *router) handleScreenshotSetFPS(w http.ResponseWriter, req *http.Request) {
-	var payload struct {
-		FPS int32 `json:"fps"`
-	}
+	var payload screenshotSetFPSRequest
 	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
 		response.Fail(w, http.StatusBadRequest, "invalid json body")
 		return
 	}
 	r.deps.ScreenshotService.SetFPS(payload.FPS)
-	response.OK(w, map[string]any{"fps": r.deps.ScreenshotService.GetFPS()})
+	response.OK(w, screenshotSetFPSResponse{FPS: r.deps.ScreenshotService.GetFPS()})
 }
 
 func (r *router) handleScreenshotSetOutput(w http.ResponseWriter, req *http.Request) {
-	var payload struct {
-		Output maaservice.ScreenshotOutput `json:"output"`
-	}
+	var payload screenshotSetOutputRequest
 	if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
 		response.Fail(w, http.StatusBadRequest, "invalid json body")
 		return
 	}
 
 	outputs := r.deps.ScreenshotService.SetOutputDemand(payload.Output)
-	response.OK(w, map[string]any{
-		"output": outputs,
-		"jpeg":   r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputJPEG),
-		"h264":   r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH264),
-		"h265":   r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH265),
+	response.OK(w, screenshotOutputStatusResponse{
+		Output: outputs,
+		JPEG:   r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputJPEG),
+		H264:   r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH264),
+		H265:   r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH265),
 	})
 }
 
 func (r *router) handleScreenshotStatus(w http.ResponseWriter, _ *http.Request) {
-	response.OK(w, map[string]any{
-		"running":         r.deps.ScreenshotService.Running(),
-		"paused":          r.deps.ScreenshotService.Paused(),
-		"output_active":   r.deps.ScreenshotService.OutputActive(),
-		"fps":             r.deps.ScreenshotService.GetFPS(),
-		"output":          r.deps.ScreenshotService.OutputDemand(),
-		"jpeg":            r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputJPEG),
-		"h264":            r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH264),
-		"h265":            r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH265),
-		"overlay_state":   r.deps.ScreenshotService.OverlayState(),
-		"overlay_message": r.deps.ScreenshotService.OverlayMessage(),
+	response.OK(w, screenshotStatusResponse{
+		Running:        r.deps.ScreenshotService.Running(),
+		Paused:         r.deps.ScreenshotService.Paused(),
+		OutputActive:   r.deps.ScreenshotService.OutputActive(),
+		FPS:            r.deps.ScreenshotService.GetFPS(),
+		Output:         r.deps.ScreenshotService.OutputDemand(),
+		JPEG:           r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputJPEG),
+		H264:           r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH264),
+		H265:           r.deps.ScreenshotService.OutputEnabled(maaservice.ScreenshotOutputH265),
+		OverlayState:   r.deps.ScreenshotService.OverlayState(),
+		OverlayMessage: r.deps.ScreenshotService.OverlayMessage(),
 	})
 }
 
@@ -975,7 +1050,7 @@ func logging(next http.Handler) http.Handler {
 		if isAPIPath(req.URL.Path) && req.Body != nil {
 			body, err := io.ReadAll(req.Body)
 			if err == nil {
-				requestBody = normalizeLogBody(body)
+				requestBody = formatLogBody(req.URL.Path, body)
 				req.Body = io.NopCloser(bytes.NewReader(body))
 			} else {
 				requestBody = fmt.Sprintf("[read body failed: %v]", err)
@@ -1006,7 +1081,7 @@ func logging(next http.Handler) http.Handler {
 			Int("status", rw.status).
 			Dur("latency", time.Since(start))
 		if rw.captureBody && rw.body.Len() > 0 {
-			respEvt = respEvt.Str("response_body", truncateLogField(normalizeLogBody(rw.body.Bytes()), 4096))
+			respEvt = respEvt.Str("response_body", truncateLogField(formatLogBody(req.URL.Path, rw.body.Bytes()), 4096))
 		}
 		respEvt.Msg("http request completed")
 	})
@@ -1058,36 +1133,41 @@ func shouldCaptureResponseBody(path string) bool {
 	return !strings.HasPrefix(path, "/api/task/image/")
 }
 
-func normalizeLogBody(body []byte) string {
+func formatLogBody(path string, body []byte) string {
 	trimmed := bytes.TrimSpace(body)
 	if len(trimmed) == 0 {
 		return ""
 	}
-
-	sanitized := sanitizeLogBody(trimmed)
-	if json.Valid(sanitized) {
-		var compacted bytes.Buffer
-		if err := json.Compact(&compacted, sanitized); err == nil {
-			return compacted.String()
-		}
+	if !looksLikeJSONBody(trimmed) {
+		return string(trimmed)
 	}
-
-	return string(sanitized)
+	if shouldSanitizeLogBody(path) && bytes.Contains(bytes.ToLower(trimmed), []byte("raw_image")) {
+		return sanitizeAndCompactLogJSON(trimmed)
+	}
+	return compactLogJSON(trimmed)
 }
 
-func sanitizeLogBody(body []byte) []byte {
+func compactLogJSON(body []byte) string {
+	var compacted bytes.Buffer
+	if err := json.Compact(&compacted, body); err == nil {
+		return compacted.String()
+	}
+	return string(body)
+}
+
+func sanitizeAndCompactLogJSON(body []byte) string {
 	var payload any
 	if err := json.Unmarshal(body, &payload); err != nil {
-		return body
+		return string(body)
 	}
 
 	sanitizeLogValue(payload)
 
 	sanitized, err := json.Marshal(payload)
 	if err != nil {
-		return body
+		return string(body)
 	}
-	return sanitized
+	return compactLogJSON(sanitized)
 }
 
 func sanitizeLogValue(v any) {
@@ -1105,6 +1185,17 @@ func sanitizeLogValue(v any) {
 			sanitizeLogValue(item)
 		}
 	}
+}
+
+func looksLikeJSONBody(body []byte) bool {
+	if len(body) < 2 {
+		return false
+	}
+	return (body[0] == '{' && body[len(body)-1] == '}') || (body[0] == '[' && body[len(body)-1] == ']')
+}
+
+func shouldSanitizeLogBody(path string) bool {
+	return strings.Contains(path, "/controller/connect") || strings.Contains(path, "/task/")
 }
 
 func truncateLogField(v string, max int) string {

@@ -24,53 +24,104 @@ type ControllerMethod struct {
 	Icon  string `json:"icon"`
 }
 
-func toUint64String(v uint64) string {
-	return strconv.FormatUint(v, 10)
+func toUint64String[T ~uint64](v T) string {
+	return strconv.FormatUint(uint64(v), 10)
 }
 
+func method[T interface {
+	~uint64
+	String() string
+}](v T) ControllerMethod {
+	return ControllerMethod{
+		Label: v.String(),
+		Value: toUint64String(v),
+	}
+}
+
+func methodWithIcon[T interface {
+	~uint64
+}](label string, v T, icon string) ControllerMethod {
+	return ControllerMethod{
+		Label: label,
+		Value: toUint64String(v),
+		Icon:  icon,
+	}
+}
+
+var (
+	ADBScreencapDefault                 = toUint64String(adb.ScreencapDefault)
+	ADBScreenCapEncodeToFileAndPull     = toUint64String(adb.ScreencapEncodeToFileAndPull)
+	ADBScreencapEncode                  = toUint64String(adb.ScreencapEncode)
+	ADBScreencapRawWithGzip             = toUint64String(adb.ScreencapRawWithGzip)
+	ADBScreencapRawByNetcat             = toUint64String(adb.ScreencapRawByNetcat)
+	ADBScreencapMinicapDirect           = toUint64String(adb.ScreencapMinicapDirect)
+	ADBScreencapMinicapStream           = toUint64String(adb.ScreencapMinicapStream)
+	ADBScreencapEmulatorExtras          = toUint64String(adb.ScreencapEmulatorExtras)
+	ADBScreencapAll                     = toUint64String(adb.ScreencapAll)
+	ADBInputDefault                     = toUint64String(adb.InputDefault)
+	ADBInputAdbShell                    = toUint64String(adb.InputAdbShell)
+	ADBInputMinitouchAndAdbKey          = toUint64String(adb.InputMinitouchAndAdbKey)
+	ADBInputMaatouch                    = toUint64String(adb.InputMaatouch)
+	ADBInputEmulatorExtras              = toUint64String(adb.InputEmulatorExtras)
+	ADBInputAll                         = toUint64String(adb.InputAll)
+	WindowScreencapGDI                  = toUint64String(win32.ScreencapGDI)
+	WindowScreencapFramePool            = toUint64String(win32.ScreencapFramePool)
+	WindowScreencapDXGIDesktopDup       = toUint64String(win32.ScreencapDXGIDesktopDup)
+	WindowScreencapDXGIDesktopDupWindow = toUint64String(win32.ScreencapDXGIDesktopDupWindow)
+	WindowScreencapPrintWindow          = toUint64String(win32.ScreencapPrintWindow)
+	WindowScreencapScreenDC             = toUint64String(win32.ScreencapScreenDC)
+	Win32InputSeize                     = toUint64String(win32.InputSeize)
+	Win32InputSendMessage               = toUint64String(win32.InputSendMessage)
+	Win32InputPostMessage               = toUint64String(win32.InputPostMessage)
+	Win32InputLegacyEvent               = toUint64String(win32.InputLegacyEvent)
+	Win32InputPostThreadMessage         = toUint64String(win32.InputPostThreadMessage)
+	Win32InputSendMessageWithCursorPos  = toUint64String(win32.InputSendMessageWithCursorPos)
+	Win32InputPostMessageWithCursorPos  = toUint64String(win32.InputPostMessageWithCursorPos)
+	GamepadTypeXbox360                  = toUint64String(maa.GamepadTypeXbox360)
+	GamepadTypeDualShock4               = toUint64String(maa.GamepadTypeDualShock4)
+)
+
 var adbScreencapMethods = []ControllerMethod{
-	{Label: adb.ScreencapDefault.String(), Value: toUint64String(uint64(adb.ScreencapDefault))},
-	{Label: adb.ScreencapEncodeToFileAndPull.String(), Value: toUint64String(uint64(adb.ScreencapEncodeToFileAndPull))},
-	{Label: adb.ScreencapEncode.String(), Value: toUint64String(uint64(adb.ScreencapEncode))},
-	{Label: adb.ScreencapRawWithGzip.String(), Value: toUint64String(uint64(adb.ScreencapRawWithGzip))},
-	{Label: adb.ScreencapRawByNetcat.String(), Value: toUint64String(uint64(adb.ScreencapRawByNetcat))},
-	{Label: adb.ScreencapMinicapDirect.String(), Value: toUint64String(uint64(adb.ScreencapMinicapDirect))},
-	{Label: adb.ScreencapMinicapStream.String(), Value: toUint64String(uint64(adb.ScreencapMinicapStream))},
-	{Label: adb.ScreencapEmulatorExtras.String(), Value: toUint64String(uint64(adb.ScreencapEmulatorExtras))},
-	{Label: adb.ScreencapAll.String(), Value: toUint64String(uint64(adb.ScreencapAll))},
+	method(adb.ScreencapDefault),
+	method(adb.ScreencapEncodeToFileAndPull),
+	method(adb.ScreencapEncode),
+	method(adb.ScreencapRawWithGzip),
+	method(adb.ScreencapRawByNetcat),
+	method(adb.ScreencapMinicapDirect),
+	method(adb.ScreencapMinicapStream),
+	method(adb.ScreencapEmulatorExtras),
+	method(adb.ScreencapAll),
 }
 
 var adbInputMethods = []ControllerMethod{
-	{Label: adb.InputDefault.String(), Value: toUint64String(uint64(adb.InputDefault))},
-	{Label: adb.InputAdbShell.String(), Value: toUint64String(uint64(adb.InputAdbShell))},
-	{Label: adb.InputMinitouchAndAdbKey.String(), Value: toUint64String(uint64(adb.InputMinitouchAndAdbKey))},
-	{Label: adb.InputMaatouch.String(), Value: toUint64String(uint64(adb.InputMaatouch))},
-	{Label: adb.InputEmulatorExtras.String(), Value: toUint64String(uint64(adb.InputEmulatorExtras))},
-	{Label: adb.InputAll.String(), Value: toUint64String(uint64(adb.InputAll))},
+	method(adb.InputDefault),
+	method(adb.InputAdbShell),
+	method(adb.InputMinitouchAndAdbKey),
+	method(adb.InputMaatouch),
+	method(adb.InputEmulatorExtras),
+	method(adb.InputAll),
 }
 
 var windowScreencapMethods = []ControllerMethod{
-	{Label: win32.ScreencapGDI.String(), Value: toUint64String(uint64(win32.ScreencapGDI))},
-	{Label: win32.ScreencapFramePool.String(), Value: toUint64String(uint64(win32.ScreencapFramePool))},
-	{Label: win32.ScreencapDXGIDesktopDup.String(), Value: toUint64String(uint64(win32.ScreencapDXGIDesktopDup))},
-	{Label: win32.ScreencapDXGIDesktopDupWindow.String(), Value: toUint64String(uint64(win32.ScreencapDXGIDesktopDupWindow))},
-	{Label: win32.ScreencapPrintWindow.String(), Value: toUint64String(uint64(win32.ScreencapPrintWindow))},
-	{Label: win32.ScreencapScreenDC.String(), Value: toUint64String(uint64(win32.ScreencapScreenDC))},
+	method(win32.ScreencapGDI),
+	method(win32.ScreencapFramePool),
+	method(win32.ScreencapDXGIDesktopDup),
+	method(win32.ScreencapDXGIDesktopDupWindow),
+	method(win32.ScreencapPrintWindow),
+	method(win32.ScreencapScreenDC),
 }
 
 var win32InputMethods = []ControllerMethod{
-	{Label: win32.InputSeize.String(), Value: toUint64String(uint64(win32.InputSeize))},
-	{Label: win32.InputSendMessage.String(), Value: toUint64String(uint64(win32.InputSendMessage))},
-	{Label: win32.InputPostMessage.String(), Value: toUint64String(uint64(win32.InputPostMessage))},
-	{Label: win32.InputLegacyEvent.String(), Value: toUint64String(uint64(win32.InputLegacyEvent))},
-	{Label: win32.InputPostThreadMessage.String(), Value: toUint64String(uint64(win32.InputPostThreadMessage))},
-	{Label: win32.InputSendMessageWithCursorPos.String(), Value: toUint64String(uint64(win32.InputSendMessageWithCursorPos))},
-	{Label: win32.InputPostMessageWithCursorPos.String(), Value: toUint64String(uint64(win32.InputPostMessageWithCursorPos))},
-	{Label: win32.InputSendMessageWithCursorPos.String(), Value: toUint64String(uint64(win32.InputSendMessageWithCursorPos))},
-	{Label: win32.InputPostMessageWithCursorPos.String(), Value: toUint64String(uint64(win32.InputPostMessageWithCursorPos))},
+	method(win32.InputSeize),
+	method(win32.InputSendMessage),
+	method(win32.InputPostMessage),
+	method(win32.InputLegacyEvent),
+	method(win32.InputPostThreadMessage),
+	method(win32.InputSendMessageWithCursorPos),
+	method(win32.InputPostMessageWithCursorPos),
 }
 
 var gamepadInputMethods = []ControllerMethod{
-	{Label: "Xbox 360", Value: toUint64String(uint64(maa.GamepadTypeXbox360)), Icon: "i-simple-icons:xbox"},
-	{Label: "DualShock 4", Value: toUint64String(uint64(maa.GamepadTypeDualShock4)), Icon: "i-simple-icons:playstation"},
+	methodWithIcon("Xbox 360", maa.GamepadTypeXbox360, "i-simple-icons:xbox"),
+	methodWithIcon("DualShock 4", maa.GamepadTypeDualShock4, "i-simple-icons:playstation"),
 }
