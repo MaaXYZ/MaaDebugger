@@ -2,7 +2,7 @@
     <UModal v-model:open="open" :ui="{ content: 'sm:max-w-[85vw] sm:w-[85vw]' }">
         <template #header>
             <div v-if="detail" class="flex flex-col gap-2 min-w-0">
-                <UBreadcrumb v-if="breadcrumbItems.length > 0" :items="breadcrumbItems">
+                <UBreadcrumb v-if="breadcrumbItems.length > 1" :items="breadcrumbItems">
                     <template #item-label="{ item, active, index }">
                         <button v-if="!active" type="button"
                             class="cursor-pointer text-left hover:text-highlighted transition-colors"
