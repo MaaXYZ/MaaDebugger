@@ -21,74 +21,80 @@
         </template>
         <div class="p-4 sm:p-6">
             <div class="agent-list flex flex-col gap-2 min-h-12"
-                :class="store.agents.length > 1 ? 'max-h-24 overflow-y-auto pr-2' : ''">
+                :class="store.agents.length > 3 ? 'max-h-48 overflow-y-auto pr-2' : ''">
                 <div v-if="store.agents.length === 0"
-                    class="flex flex-row items-center justify-center rounded-lg border border-dashed border-default p-3 text-dimmed gap-2">
+                    class="flex flex-row items-center justify-center rounded-lg border border-dashed border-default p-2 text-dimmed gap-2">
                     <UIcon name="i-lucide-terminal" class="size-5" />
                     <span class="text-sm">No agents added</span>
                 </div>
 
                 <div v-for="(agent, index) in store.agents" :key="index"
-                    class="group flex flex-col gap-2 rounded-lg border border-default p-3 transition-colors hover:bg-elevated"
-                    :class="{ 'opacity-60': !agent.enabled }">
+                    class="group flex flex-col gap-1 rounded-lg border border-default p-2 transition-colors hover:bg-elevated"
+                    :class="{ 'opacity-50': !agent.enabled }">
 
-                    <!-- Row 1: Enable + Name + Status + Actions -->
-                    <div class="flex flex-row items-center gap-2">
+                    <div class="flex flex-row items-start gap-2">
                         <UTooltip :text="agent.enabled ? 'Disable agent' : 'Enable agent'">
-                            <UCheckbox v-model="agent.enabled" />
+                            <UCheckbox v-model="agent.enabled" class="pt-0.5" />
                         </UTooltip>
 
-                        <UIcon name="i-lucide-tag" class="size-4 shrink-0 text-dimmed" />
+                        <div class="flex min-w-0 flex-1 flex-col gap-1">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <UIcon name="i-lucide-tag" class="size-4 shrink-0 text-dimmed" />
 
-                        <UInput v-if="editingNameIndex === index" v-model="agent.name" placeholder="Agent name..."
-                            class="flex-1" size="md" autofocus @keydown.enter="editingNameIndex = -1"
-                            @blur="editingNameIndex = -1" />
+                                <UInput v-if="editingNameIndex === index" v-model="agent.name"
+                                    placeholder="Agent name..." class="flex-1" size="md" autofocus
+                                    @keydown.enter="editingNameIndex = -1" @blur="editingNameIndex = -1" />
 
-                        <div v-else class="flex-1 flex items-center min-w-0 cursor-pointer"
-                            :class="{ 'pointer-events-none': isAgentBusy(agent) }" @click="editingNameIndex = index">
-                            <span class="truncate text-sm font-medium" :class="agent.name ? '' : 'text-dimmed italic'">
-                                {{ agent.name || agent.identifier || 'Unnamed agent' }}
-                            </span>
-                        </div>
-
-                        <StatusBadge :status="agent.status" />
-
-                        <div class="flex flex-row gap-1 shrink-0">
-                            <UTooltip :text="agent.status === 'connected' ? 'Disconnect' : 'Connect'">
-                                <UButton :color="agent.status === 'connected' ? 'error' : 'success'" variant="soft"
-                                    :icon="getAgentButtonIcon(agent)" :loading="agent.status === 'connecting'"
-                                    :disabled="!agent.enabled || isAgentBusy(agent) || (!agent.identifier.trim() && agent.status !== 'connected')"
-                                    size="xs" @click="onToggleConnection(agent)" />
-                            </UTooltip>
-
-                            <UTooltip text="Remove">
-                                <UButton color="error" variant="ghost" icon="i-lucide-trash-2" size="xs"
-                                    :disabled="isAgentBusy(agent)" @click="onRemove(agent, index)" />
-                            </UTooltip>
-                        </div>
-                    </div>
-
-                    <!-- Row 2: Identifier -->
-                    <div class="flex flex-row items-center gap-2">
-                        <UIcon name="i-lucide-fingerprint" class="size-4 shrink-0 text-dimmed" />
-
-                        <UInput v-if="editingIdIndex === index" v-model="agent.identifier"
-                            placeholder="Enter agent identifier..." class="flex-1" size="md" autofocus
-                            @keydown.enter="onFinishEditId(agent, index)" @blur="onFinishEditId(agent, index)" />
-
-                        <UTooltip v-else :text="agent.identifier" :disabled="!agent.identifier">
-                            <div class="flex-1 flex items-center min-w-0 cursor-pointer"
-                                :class="{ 'pointer-events-none': isAgentBusy(agent) }" @click="editingIdIndex = index">
-                                <span class="truncate text-xs font-mono text-dimmed">
-                                    {{ agent.identifier || 'Click to set identifier...' }}
-                                </span>
+                                <div v-else class="flex min-w-0 flex-1 items-center cursor-pointer"
+                                    :class="{ 'pointer-events-none': isAgentBusy(agent) }"
+                                    @click="editingNameIndex = index">
+                                    <span class="truncate text-md" :class="agent.name ? '' : 'text-dimmed italic'">
+                                        {{ agent.name || agent.identifier || 'Unnamed agent' }}
+                                    </span>
+                                </div>
                             </div>
-                        </UTooltip>
+
+                            <div class="flex items-center gap-2 min-w-0">
+                                <UIcon name="i-lucide-key" class="size-4 shrink-0 text-dimmed" />
+
+                                <UInput v-if="editingIdIndex === index" v-model="agent.identifier"
+                                    placeholder="Enter agent identifier..." class="flex-1" size="md" autofocus
+                                    @keydown.enter="onFinishEditId(agent, index)"
+                                    @blur="onFinishEditId(agent, index)" />
+
+                                <UTooltip v-else :text="agent.identifier" :disabled="!agent.identifier">
+                                    <div class="flex min-w-0 flex-1 items-center cursor-pointer"
+                                        :class="{ 'pointer-events-none': isAgentBusy(agent) }"
+                                        @click="editingIdIndex = index">
+                                        <span class="truncate text-xs font-mono text-dimmed">
+                                            {{ agent.identifier || 'Click to set identifier...' }}
+                                        </span>
+                                    </div>
+                                </UTooltip>
+                            </div>
+                        </div>
+
+                        <div class="flex shrink-0 items-start gap-1">
+                            <StatusBadge :status="agent.status" />
+
+                            <div class="flex flex-row gap-1 shrink-0">
+                                <UTooltip :text="agent.status === 'connected' ? 'Disconnect' : 'Connect'">
+                                    <UButton :color="agent.status === 'connected' ? 'error' : 'success'" variant="soft"
+                                        :icon="getAgentButtonIcon(agent)" :loading="agent.status === 'connecting'"
+                                        :disabled="!agent.enabled || isAgentBusy(agent) || (!agent.identifier.trim() && agent.status !== 'connected')"
+                                        size="xs" @click="onToggleConnection(agent)" />
+                                </UTooltip>
+
+                                <UTooltip text="Remove">
+                                    <UButton color="error" variant="ghost" icon="i-lucide-trash-2" size="xs"
+                                        :disabled="isAgentBusy(agent)" @click="onRemove(agent, index)" />
+                                </UTooltip>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Row 3: Error message -->
-                    <div v-if="agent.errorMsg" class="flex flex-row items-start gap-2 pl-6">
-                        <span class="text-xs text-error truncate">{{ agent.errorMsg }}</span>
+                    <div v-if="agent.errorMsg" class="pl-6 text-xs text-error truncate">
+                        {{ agent.errorMsg }}
                     </div>
                 </div>
             </div>

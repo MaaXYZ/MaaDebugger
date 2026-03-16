@@ -66,7 +66,7 @@
                         </UTooltip>
 
                         <!-- Action Buttons -->
-                        <div class="flex flex-row gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div class="flex flex-row gap-1 shrink-0">
                             <UTooltip text="Edit">
                                 <UButton color="neutral" variant="ghost" icon="i-lucide-square-pen" size="xs"
                                     @click="onEdit(index)" />
