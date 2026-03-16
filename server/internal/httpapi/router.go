@@ -339,7 +339,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		result = r.deps.ControllerService.ConnectAdb(
 			adbPath, adbAddress, screencapMethod, inputMethod, adbConfig,
 		)
-		r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
+		// r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
 
 	case "win32":
 		hwnd := getString("hwnd")
@@ -364,7 +364,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		result = r.deps.ControllerService.ConnectWin32(
 			hwnd, screencapMethod, mouseMethod, keyboardMethod,
 		)
-		r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
+		// r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
 
 	case "gamepad":
 		hwnd := getString("hwnd")
@@ -387,7 +387,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 		result = r.deps.ControllerService.ConnectGamepad(
 			hwnd, screencapMethod, gamepadType,
 		)
-		r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
+		// r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
 
 	case "playcover":
 		address := getString("playcover_address")
@@ -406,7 +406,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 			Msg("[Controller] connecting PlayCover")
 
 		result = r.deps.ControllerService.ConnectPlayCover(address, uuid)
-		r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
+		// r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
 
 	case "wlroot":
 		wlrSocketPath := getString("wlroot_socket_path")
@@ -423,7 +423,7 @@ func (r *router) handleControllerConnect(w http.ResponseWriter, req *http.Reques
 			Msg("[Controller] connecting WlRoot")
 
 		result = r.deps.ControllerService.ConnectWlRoot(wlrSocketPath)
-		r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
+		// r.deps.ControllerService.Controller().SetScreenshot(maa.WithScreenshotUseRawSize(true))
 
 	case "custom":
 		// TODO
