@@ -31,10 +31,20 @@ type LoadResult struct {
 func (s *ResourceService) LoadBundles(paths []string) LoadResult {
 	resourceServiceLog.Info().Strs("paths", paths).Int("count", len(paths)).Msg("load bundles request")
 
-	res, err := maa.NewResource()
-	if err != nil {
-		resourceServiceLog.Error().Err(err).Msg("create resource failed")
-		return LoadResult{Success: false, FailedPath: "failed to create resource"}
+	res := s.resource.Load()
+	if res == nil {
+		var err error
+		res, err = maa.NewResource()
+		if err != nil {
+			resourceServiceLog.Error().Err(err).Msg("create resource failed")
+			return LoadResult{Success: false, FailedPath: "failed to create resource"}
+		}
+		s.resource.Store(res)
+	}
+
+	if err := res.Clear(); err != nil {
+		resourceServiceLog.Error().Err(err).Msg("clear resource failed")
+		return LoadResult{Success: false, FailedPath: "failed to clear resource"}
 	}
 
 	for _, p := range paths {
@@ -44,16 +54,9 @@ func (s *ResourceService) LoadBundles(paths []string) LoadResult {
 
 		if !job.Success() {
 			resourceServiceLog.Warn().Str("path", p).Str("status", fmt.Sprintf("%v", job.Status())).Msg("bundle load failed")
-			res.Destroy()
 			return LoadResult{Success: false, FailedPath: p}
 		}
 		resourceServiceLog.Info().Str("path", p).Msg("bundle loaded")
-	}
-
-	// 替换旧实例
-	if old := s.resource.Swap(res); old != nil {
-		old.Destroy()
-		resourceServiceLog.Info().Msg("previous resource destroyed")
 	}
 
 	resourceServiceLog.Info().Int("count", len(paths)).Msg("all bundles loaded")
