@@ -41,6 +41,9 @@ func NewAgentService(resSvc *ResourceService) *AgentService {
 
 func (s *AgentService) Connect(identifier string) AgentConnectResult {
 	agentServiceLog.Info().Str("identifier", identifier).Msg("connect request")
+	if identifier == "" {
+		return AgentConnectResult{Error: "identifier is empty"}
+	}
 
 	s.Disconnect(identifier)
 
@@ -55,12 +58,7 @@ func (s *AgentService) Connect(identifier string) AgentConnectResult {
 		}
 	}
 
-	var opts []maa.AgentClientOption
-	if identifier != "" {
-		opts = append(opts, maa.WithIdentifier(identifier))
-	}
-
-	client, err := maa.NewAgentClient(opts...)
+	client, err := maa.NewAgentClient(maa.WithIdentifier(identifier))
 	if err != nil {
 		agentServiceLog.Error().Err(err).Str("identifier", identifier).Msg("create agent client failed")
 		return AgentConnectResult{Error: fmt.Sprintf("create agent client failed: %v", err)}
@@ -102,6 +100,9 @@ func (s *AgentService) Disconnect(identifier string) {
 
 	if entry.client != nil {
 		agentServiceLog.Info().Str("identifier", identifier).Msg("disconnecting agent")
+		if err := entry.client.Disconnect(); err != nil {
+			agentServiceLog.Warn().Err(err).Str("identifier", identifier).Msg("agent disconnect failed")
+		}
 		entry.client.Destroy()
 	}
 }
@@ -110,6 +111,9 @@ func (s *AgentService) DisconnectAll() {
 	for identifier, entry := range s.clients {
 		if entry.client != nil {
 			agentServiceLog.Info().Str("identifier", identifier).Msg("disconnecting agent during cleanup")
+			if err := entry.client.Disconnect(); err != nil {
+				agentServiceLog.Warn().Err(err).Str("identifier", identifier).Msg("agent disconnect during cleanup failed")
+			}
 			entry.client.Destroy()
 		}
 	}
