@@ -66,7 +66,7 @@ func (s *AgentService) Connect(identifier string) AgentConnectResult {
 
 	if err := client.BindResource(res); err != nil {
 		agentServiceLog.Error().Err(err).Str("identifier", identifier).Msg("bind resource failed")
-		client.Destroy()
+		client = nil
 		return AgentConnectResult{Error: fmt.Sprintf("bind resource failed: %v", err)}
 	}
 
@@ -98,24 +98,30 @@ func (s *AgentService) Disconnect(identifier string) {
 	}
 	delete(s.clients, identifier)
 
-	if entry.client != nil {
-		agentServiceLog.Info().Str("identifier", identifier).Msg("disconnecting agent")
-		if err := entry.client.Disconnect(); err != nil {
-			agentServiceLog.Warn().Err(err).Str("identifier", identifier).Msg("agent disconnect failed")
-		}
-		entry.client.Destroy()
+	if entry == nil || entry.client == nil {
+		return
 	}
+
+	agentServiceLog.Info().Str("identifier", identifier).Msg("disconnecting agent")
+	if err := entry.client.Disconnect(); err != nil {
+		agentServiceLog.Warn().Err(err).Str("identifier", identifier).Msg("agent disconnect failed")
+	}
+	entry.status = "failed"
+	entry.client = nil
 }
 
 func (s *AgentService) DisconnectAll() {
 	for identifier, entry := range s.clients {
-		if entry.client != nil {
-			agentServiceLog.Info().Str("identifier", identifier).Msg("disconnecting agent during cleanup")
-			if err := entry.client.Disconnect(); err != nil {
-				agentServiceLog.Warn().Err(err).Str("identifier", identifier).Msg("agent disconnect during cleanup failed")
-			}
-			entry.client.Destroy()
+		if entry == nil || entry.client == nil {
+			continue
 		}
+
+		agentServiceLog.Info().Str("identifier", identifier).Msg("disconnecting agent during cleanup")
+		if err := entry.client.Disconnect(); err != nil {
+			agentServiceLog.Warn().Err(err).Str("identifier", identifier).Msg("agent disconnect during cleanup failed")
+		}
+		entry.status = "failed"
+		entry.client = nil
 	}
 	s.clients = make(map[string]*agentEntry)
 }
