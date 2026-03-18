@@ -116,9 +116,9 @@ func main() {
 	hub := ws.NewHub()
 	ctrlService := maaservice.NewControllerService()
 	resService := maaservice.NewResourceService()
-	screenshotService := maaservice.NewScreenshotService(ctrlService)
-	taskerService := maaservice.NewTaskerService(ctrlService, resService, screenshotService)
 	agentService := maaservice.NewAgentService(resService)
+	screenshotService := maaservice.NewScreenshotService(ctrlService)
+	taskerService := maaservice.NewTaskerService(ctrlService, resService, screenshotService, agentService)
 	screenshotService.SetOnFrame(func(data []byte) {
 		hub.BroadcastBinary(data)
 	})

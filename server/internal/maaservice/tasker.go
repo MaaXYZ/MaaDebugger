@@ -22,6 +22,7 @@ type TaskerService struct {
 	controllerSvc *ControllerService
 	resourceSvc   *ResourceService
 	screenshotSvc *ScreenshotService
+	agentSvc      *AgentService
 
 	// onEvent 广播回调，由 router 设置，用于将事件通过 WS 广播。
 	// 不在 sink 中渲染/处理，只做消息转发。
@@ -34,11 +35,12 @@ type TaskerService struct {
 }
 
 // NewTaskerService 创建一个新的 TaskerService。
-func NewTaskerService(ctrlSvc *ControllerService, resSvc *ResourceService, screenshotSvc *ScreenshotService) *TaskerService {
+func NewTaskerService(ctrlSvc *ControllerService, resSvc *ResourceService, screenshotSvc *ScreenshotService, agentSvc *AgentService) *TaskerService {
 	return &TaskerService{
 		controllerSvc: ctrlSvc,
 		resourceSvc:   resSvc,
 		screenshotSvc: screenshotSvc,
+		agentSvc:      agentSvc,
 	}
 }
 
@@ -268,6 +270,7 @@ func (s *TaskerService) RunTask(entry string, pipelineOverride json.RawMessage) 
 		taskerLog.Warn().Msg("run task aborted: tasker not initialized")
 		return RunTaskResult{Error: "Failed to initialize tasker"}
 	}
+
 
 	// 解析 pipeline override
 	var override any

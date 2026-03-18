@@ -143,6 +143,21 @@ func (s *AgentService) GetClient(identifier string) *maa.AgentClient {
 	return nil
 }
 
+func (s *AgentService) ConnectedClients() map[string]*maa.AgentClient {
+	out := make(map[string]*maa.AgentClient)
+	for identifier, entry := range s.clients {
+		if entry == nil || entry.client == nil || entry.status != "connected" {
+			continue
+		}
+		if !entry.client.Alive() {
+			entry.status = "failed"
+			continue
+		}
+		out[identifier] = entry.client
+	}
+	return out
+}
+
 func (s *AgentService) ConnectedCount() int {
 	n := 0
 	for _, entry := range s.clients {
