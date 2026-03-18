@@ -2,6 +2,7 @@ package logger
 
 import (
 	"io"
+	"sync"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -25,8 +26,49 @@ const (
 	ComponentUpdater     Component = "updater"
 )
 
+type switchableLevelWriter struct {
+	mu     sync.RWMutex
+	target zerolog.LevelWriter
+}
+
+func newSwitchableLevelWriter() *switchableLevelWriter {
+	return &switchableLevelWriter{target: zerolog.MultiLevelWriter(io.Discard)}
+}
+
+func (w *switchableLevelWriter) Set(target io.Writer) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.target = toLevelWriter(target)
+}
+
+func (w *switchableLevelWriter) Write(p []byte) (int, error) {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+	return w.target.Write(p)
+}
+
+func (w *switchableLevelWriter) WriteLevel(level zerolog.Level, p []byte) (int, error) {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+	return w.target.WriteLevel(level, p)
+}
+
+func toLevelWriter(w io.Writer) zerolog.LevelWriter {
+	if lw, ok := w.(zerolog.LevelWriter); ok {
+		return lw
+	}
+	return zerolog.MultiLevelWriter(w)
+}
+
+var rootWriter = newSwitchableLevelWriter()
+
+func init() {
+	log.Logger = zerolog.New(rootWriter).With().Timestamp().Logger()
+}
+
 func Init(w io.Writer) {
-	log.Logger = zerolog.New(w).With().Timestamp().Logger()
+	rootWriter.Set(w)
+	log.Logger = zerolog.New(rootWriter).With().Timestamp().Logger()
 }
 
 func For(component Component) zerolog.Logger {
