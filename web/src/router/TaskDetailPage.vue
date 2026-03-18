@@ -5,7 +5,6 @@
                 <UButton to="/" color="neutral" variant="ghost" icon="i-lucide-arrow-left" aria-label="Back" />
             </UTooltip>
         </div>
-
         <TaskDetailCard />
     </UContainer>
 </template>

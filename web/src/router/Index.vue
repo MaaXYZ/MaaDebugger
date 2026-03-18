@@ -1,7 +1,7 @@
 <template>
     <div class="w-full min-h-full flex flex-col items-start gap-4 p-4 lg:p-6 lg:grid lg:grid-cols-3 ">
         <!-- 第一列: Interface / Controller / Resource / Agent -->
-        <div class="w-full flex flex-col gap-4 order-4 lg:order-0">
+        <div class="w-full flex flex-col gap-4 order-3 lg:order-0">
             <LeftTabs />
         </div>
         <!-- 第二列: Task (includes Screenshot) -->
@@ -10,15 +10,8 @@
 
         </div>
         <!-- 第三列: Task Detail -->
-        <div class="w-full flex flex-col gap-4 order-1 lg:order-0">
+        <div class="w-full h-full flex flex-col gap-4 order-1 lg:order-0">
             <TaskDetailCard />
-            <!-- FocusCard 占位符 -->
-            <UCard>
-                <template #header>
-                    <h3 class="text-sm font-semibold">Focus</h3>
-                </template>
-                <p class="text-sm text-muted">Focus placeholder</p>
-            </UCard>
         </div>
     </div>
 </template>

@@ -1,18 +1,13 @@
 <template>
-    <div class="w-full h-full flex flex-row items-start gap-4 p-4">
-        <div class="w-1/2 h-full flex flex-col gap-4">
+    <div class="w-full min-h-full flex flex-col items-start gap-4 p-2 lg:p-2 lg:grid lg:grid-cols-2">
+        <!-- 第一列: Task (includes Screenshot) -->
+        <div class="w-full h-full flex flex-col gap-4 order-2 lg:order-0">
             <TaskCard />
-        </div>
 
-        <div class="w-1/2 h-full flex flex-col gap-4">
+        </div>
+        <!-- 第二列: Task Detail -->
+        <div class="w-full h-full flex flex-col gap-4 order-1 lg:order-0">
             <TaskDetailCard />
-            <!-- FocusCard 占位符 -->
-            <UCard>
-                <template #header>
-                    <h3 class="text-sm font-semibold">Focus</h3>
-                </template>
-                <p class="text-sm text-muted">Focus placeholder</p>
-            </UCard>
         </div>
     </div>
 </template>
