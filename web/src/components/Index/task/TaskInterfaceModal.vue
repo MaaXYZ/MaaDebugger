@@ -38,7 +38,7 @@
                                 </div>
                             </div>
                             <UBadge color="neutral" variant="subtle" size="md">
-                                {{ optionDef.type || 'option' }}
+                                {{ getOptionTypeLabel(optionDef) }}
                             </UBadge>
                         </div>
 
@@ -149,6 +149,12 @@ function getOptionDescription(optionDef: InterfaceTaskOptionDefinition) {
 
 function getCaseTitle(item: InterfaceTaskOptionCase) {
     return buildDisplayTitle(item.name, item.label)
+}
+
+function getOptionTypeLabel(optionDef: InterfaceTaskOptionDefinition) {
+    const optionType = optionDef.type?.trim()
+    if (!optionType) return 'Option'
+    return optionType.charAt(0).toUpperCase() + optionType.slice(1)
 }
 
 function buildOptionCaseItems(optionDef: InterfaceTaskOptionDefinition) {
