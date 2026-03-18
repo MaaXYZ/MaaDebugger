@@ -75,17 +75,68 @@ type rawImportedTaskFile struct {
 }
 
 type rawImportedTaskOption struct {
-	Type        string                  `json:"type"`
-	Label       string                  `json:"label"`
-	Description any                     `json:"description"`
-	DefaultCase string                  `json:"default_case"`
-	Cases       []rawImportedOptionCase `json:"cases"`
+	Type        string                   `json:"type"`
+	Label       string                   `json:"label"`
+	Description any                      `json:"description"`
+	DefaultCase rawImportedDefaultCase   `json:"default_case"`
+	Cases       []rawImportedOptionCase  `json:"cases"`
+}
+
+type rawImportedDefaultCase struct {
+	Single string
+	Multi  []string
+}
+
+func (d *rawImportedDefaultCase) UnmarshalJSON(data []byte) error {
+	trimmed := strings.TrimSpace(string(data))
+	if trimmed == "" || trimmed == "null" {
+		d.Single = ""
+		d.Multi = nil
+		return nil
+	}
+
+	var single string
+	if err := json.Unmarshal(data, &single); err == nil {
+		d.Single = strings.TrimSpace(single)
+		d.Multi = nil
+		return nil
+	}
+
+	var multi []string
+	if err := json.Unmarshal(data, &multi); err == nil {
+		d.Single = ""
+		d.Multi = compactStrings(multi)
+		return nil
+	}
+
+	return fmt.Errorf("default_case must be string or string array")
+}
+
+func (d rawImportedDefaultCase) Primary() string {
+	if d.Single != "" {
+		return d.Single
+	}
+	if len(d.Multi) > 0 {
+		return d.Multi[0]
+	}
+	return ""
+}
+
+func (d rawImportedDefaultCase) All() []string {
+	if len(d.Multi) > 0 {
+		return append([]string(nil), d.Multi...)
+	}
+	if d.Single != "" {
+		return []string{d.Single}
+	}
+	return nil
 }
 
 type rawImportedOptionCase struct {
 	Name             string         `json:"name"`
 	Label            string         `json:"label"`
 	Description      any            `json:"description"`
+	Option           []string       `json:"option"`
 	PipelineOverride map[string]any `json:"pipeline_override"`
 }
 
@@ -142,6 +193,7 @@ type interfaceTaskOptionItem struct {
 	Label        string                    `json:"label,omitempty"`
 	Description  string                    `json:"description,omitempty"`
 	DefaultCase  string                    `json:"default_case,omitempty"`
+	DefaultCases []string                  `json:"default_cases,omitempty"`
 	Cases        []interfaceTaskOptionCase `json:"cases,omitempty"`
 	Source       string                    `json:"source,omitempty"`
 	ResolvedFrom string                    `json:"resolved_from,omitempty"`
@@ -151,6 +203,7 @@ type interfaceTaskOptionCase struct {
 	Name                 string         `json:"name"`
 	Label                string         `json:"label,omitempty"`
 	Description          string         `json:"description,omitempty"`
+	Options              []string       `json:"options,omitempty"`
 	PipelineOverrideKeys []string       `json:"pipeline_override_keys,omitempty"`
 	PipelineOverride     map[string]any `json:"pipeline_override,omitempty"`
 }
@@ -371,7 +424,8 @@ func buildTaskOptionCandidate(name string, raw rawImportedTaskOption, sourceInte
 		Type:         strings.TrimSpace(raw.Type),
 		Label:        raw.Label,
 		Description:  stringifyText(raw.Description),
-		DefaultCase:  raw.DefaultCase,
+		DefaultCase:  raw.DefaultCase.Primary(),
+		DefaultCases: raw.DefaultCase.All(),
 		Cases:        make([]interfaceTaskOptionCase, 0, len(raw.Cases)),
 		Source:       sourceInterface,
 		ResolvedFrom: sourceInterface,
@@ -386,6 +440,7 @@ func buildTaskOptionCandidate(name string, raw rawImportedTaskOption, sourceInte
 			Name:                 rawCase.Name,
 			Label:                rawCase.Label,
 			Description:          stringifyText(rawCase.Description),
+			Options:              compactStrings(rawCase.Option),
 			PipelineOverrideKeys: keys,
 			PipelineOverride:     rawCase.PipelineOverride,
 		})
