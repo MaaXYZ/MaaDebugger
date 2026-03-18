@@ -15,7 +15,7 @@ import (
 var taskerLog = logger.For(logger.ComponentTask)
 
 // TaskerService 管理 MaaFW Tasker 实例的生命周期。
-// 参考 maa-js server 中的状态机：idle → running → success/failed
+// 参考 neko-para/maa-support-extension 中的状态机：idle → running → success/failed
 type TaskerService struct {
 	tasker atomic.Pointer[maa.Tasker]
 
@@ -270,7 +270,6 @@ func (s *TaskerService) RunTask(entry string, pipelineOverride json.RawMessage) 
 		taskerLog.Warn().Msg("run task aborted: tasker not initialized")
 		return RunTaskResult{Error: "Failed to initialize tasker"}
 	}
-
 
 	// 解析 pipeline override
 	var override any
