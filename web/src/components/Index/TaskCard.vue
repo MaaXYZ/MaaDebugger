@@ -21,7 +21,7 @@
                             <div class="flex items-center justify-between gap-3">
                                 <span class="text-xs text-muted">Actual FPS</span>
                                 <span class="text-xs tabular-nums font-medium" :class="actualFpsTone">{{ actualFpsLabel
-                                }}</span>
+                                    }}</span>
                             </div>
                             <USeparator />
                             <div class="flex flex-col gap-2">
@@ -57,7 +57,8 @@
                     :start-stop-keys="startStopKeys" :is-preparing-override-editor="isPreparingOverrideEditor"
                     :has-interface-tasks="hasInterfaceTasks" :interface-task-items="interfaceTaskItems"
                     :selected-interface-task="selectedInterfaceTask"
-                    :selected-task-option-selections="selectedTaskOptionSelections" :effective-entry="effectiveEntry"
+                    :selected-task-option-selections="selectedTaskOptionSelections"
+                    :selected-task-input-selections="selectedTaskInputSelections" :effective-entry="effectiveEntry"
                     @interface-task-selected="onInterfaceTaskSelected"
                     @open-interface-task-modal="openInterfaceTaskModal" @edit-override="onEditOverride" @start="onStart"
                     @stop="onStop" />

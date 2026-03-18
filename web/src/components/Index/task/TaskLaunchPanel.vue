@@ -12,8 +12,7 @@
                             :items="entrySelectItems" ignore-filter placeholder="Select task entry..." :search-input="{
                                 placeholder: 'Filter...',
                                 icon: 'i-lucide-search'
-                            }"
-                            :ui="{ base: 'w-full', content: '!w-auto min-w-(--entry-content-min-w) max-w-[80vw]' }"
+                            }" :ui="{ base: 'w-full', content: '!w-auto min-w-(--entry-content-min-w) max-w-[80vw]' }"
                             class="w-full" size="xl" value-key="value" :disabled="isRunning" arrow />
                     </UTooltip>
                 </div>
@@ -44,16 +43,16 @@
                     <div class="min-w-0">
                         <div class="font-medium text-default break-all flex flex-wrap items-center gap-x-2 gap-y-1">
                             <span>{{ selectedInterfaceTaskDisplayName }}</span>
-                            <span v-if="selectedInterfaceTaskLabelMuted"
+                            <span v-show="selectedInterfaceTaskLabelMuted"
                                 class="text-xs text-muted break-all font-normal">{{
-                                selectedInterfaceTask.name }}</span>
+                                    selectedInterfaceTask.name }}</span>
                         </div>
                         <div class="text-xs text-dimmed break-all">
                             Entry: {{ effectiveEntry || selectedInterfaceTask.entry || '-' }}
                         </div>
                     </div>
-                    <UBadge color="primary" variant="subtle">
-                        {{ selectedTaskOptionSelections.length }} option(s)
+                    <UBadge v-show="selectedTaskSelectionCount > 0" color="primary" variant="subtle">
+                        {{ selectedTaskSelectionCount }} option(s)
                     </UBadge>
                 </div>
             </div>
@@ -111,6 +110,11 @@ interface TaskOptionSelection {
     caseName: string
 }
 
+interface TaskInputSelection {
+    optionName: string
+    value: string
+}
+
 const props = defineProps<{
     selectedEntry: string
     entrySearchTerm: string
@@ -124,6 +128,7 @@ const props = defineProps<{
     interfaceTaskItems: SelectItem[]
     selectedInterfaceTask: InterfaceTaskCandidate | null
     selectedTaskOptionSelections: TaskOptionSelection[]
+    selectedTaskInputSelections: TaskInputSelection[]
     taskLaunchMode: 'manual' | 'interface'
     effectiveEntry: string
 }>()
@@ -177,6 +182,10 @@ const selectedInterfaceTaskLabelMuted = computed(() => {
     const item = findTaskItem(props.selectedInterfaceTask?.name)
     return item?.muted || ''
 })
+
+const selectedTaskSelectionCount = computed(
+    () => props.selectedTaskOptionSelections.length + props.selectedTaskInputSelections.length,
+)
 
 function findTaskItem(value?: string) {
     if (!value) return null
