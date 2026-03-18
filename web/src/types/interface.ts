@@ -23,8 +23,19 @@ export interface InterfaceTaskOptionCase {
   name: string;
   label?: string;
   description?: string;
+  options?: string[];
   pipeline_override_keys?: string[];
   pipeline_override?: Record<string, unknown>;
+}
+
+export interface InterfaceTaskInputDefinition {
+  name: string;
+  label?: string;
+  description?: string;
+  default_value?: string;
+  pipeline_type?: string;
+  verify?: string;
+  pattern_msg?: string;
 }
 
 export interface InterfaceTaskOptionDefinition {
@@ -33,6 +44,11 @@ export interface InterfaceTaskOptionDefinition {
   label?: string;
   description?: string;
   default_case?: string;
+  default_cases?: string[];
+  default_value?: string;
+  inputs?: InterfaceTaskInputDefinition[];
+  pipeline_override_keys?: string[];
+  pipeline_override?: Record<string, unknown>;
   cases?: InterfaceTaskOptionCase[];
   source?: string;
   resolved_from?: string;

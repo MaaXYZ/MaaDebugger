@@ -30,7 +30,7 @@
                                     <span>{{ getOptionTitle(optionDef).title }}</span>
                                     <span v-if="getOptionTitle(optionDef).muted"
                                         class="text-[11px] text-muted font-normal break-all">{{
-                                        getOptionTitle(optionDef).muted }}</span>
+                                            getOptionTitle(optionDef).muted }}</span>
                                 </div>
                                 <div v-if="getOptionDescription(optionDef)"
                                     class="text-xs text-dimmed whitespace-pre-wrap break-all">
@@ -55,10 +55,37 @@
                                 </template>
                             </USwitch>
                         </div>
-
-                        <USelectMenu v-else :model-value="selectedCaseMap[optionDef.name]"
-                            :items="buildOptionCaseItems(optionDef)" value-key="value" class="w-full" arrow
+                        <div v-else-if="optionDef.type === 'input'" class="space-y-2">
+                            <UInput :model-value="selectedInputMap[optionDef.name] ?? getInputValue(optionDef)"
+                                class="w-full" :placeholder="getInputPlaceholder(optionDef)"
+                                @update:model-value="(value) => onInputUpdated(optionDef.name, value)" />
+                            <div v-if="getInputMeta(optionDef).description"
+                                class="text-[11px] text-dimmed whitespace-pre-wrap">
+                                {{ getInputMeta(optionDef).description }}
+                            </div>
+                        </div>
+                        <USelectMenu v-else-if="optionDef.type === 'select'"
+                            :model-value="selectedCaseMap[optionDef.name]" :items="buildOptionCaseItems(optionDef)"
+                            value-key="value" class="w-full" arrow
                             @update:model-value="(value) => onCaseSelected(optionDef.name, value)" />
+                        <div v-else-if="optionDef.type === 'checkbox'" class="space-y-2">
+                            <div v-for="item in buildOptionCaseItems(optionDef)" :key="item.value"
+                                class="rounded-md border border-default bg-default/30 px-3 py-2">
+                                <UCheckbox :model-value="isCheckboxChecked(optionDef, item.value)"
+                                    @update:model-value="(value) => onCheckboxUpdated(optionDef, item.value, value)">
+                                    <template #label>
+                                        <div class="text-sm text-default flex flex-wrap items-center gap-x-2 gap-y-1">
+                                            <span>{{ item.label }}</span>
+                                            <span v-if="item.muted" class="text-xs text-muted">{{ item.muted }}</span>
+                                        </div>
+                                    </template>
+                                    <template v-if="item.description" #description>
+                                        <span class="text-xs text-dimmed whitespace-pre-wrap">{{ item.description
+                                            }}</span>
+                                    </template>
+                                </UCheckbox>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -82,11 +109,13 @@ const props = defineProps<{
     selectedTask: InterfaceTaskCandidate | null
     optionDefs: InterfaceTaskOptionDefinition[]
     selectedCaseMap: Record<string, string>
+    selectedInputMap: Record<string, string>
 }>()
 
 const emit = defineEmits<{
     'update:open': [value: boolean]
     'select-case': [optionName: string, caseName: string]
+    'update-input': [optionName: string, value: string]
     cancel: []
     confirm: []
 }>()
@@ -135,6 +164,23 @@ function buildOptionCaseItems(optionDef: InterfaceTaskOptionDefinition) {
     })
 }
 
+function getInputMeta(optionDef: InterfaceTaskOptionDefinition) {
+    const inputDef = optionDef.inputs?.[0]
+    return {
+        description: taskStore.resolveInterfaceText(inputDef?.description),
+        placeholder: taskStore.resolveInterfaceText(inputDef?.label) || taskStore.resolveInterfaceText(optionDef.label),
+        defaultValue: inputDef?.default_value || optionDef.default_value || '',
+    }
+}
+
+function getInputPlaceholder(optionDef: InterfaceTaskOptionDefinition) {
+    return getInputMeta(optionDef).placeholder
+}
+
+function getInputValue(optionDef: InterfaceTaskOptionDefinition) {
+    return props.selectedInputMap[optionDef.name] ?? getInputMeta(optionDef).defaultValue
+}
+
 function normalizeCaseName(value: string | undefined) {
     return (value ?? '').trim().toLowerCase()
 }
@@ -162,6 +208,20 @@ function isSwitchChecked(optionDef: InterfaceTaskOptionDefinition) {
 function onCaseSelected(optionName: string, value: string | undefined) {
     if (!value) return
     emit('select-case', optionName, value)
+}
+
+function onInputUpdated(optionName: string, value: string | number) {
+    emit('update-input', optionName, String(value ?? ''))
+}
+
+function isCheckboxChecked(optionDef: InterfaceTaskOptionDefinition, caseName: string) {
+    const selected = props.selectedCaseMap[`${optionDef.name}:${caseName}`]
+    if (selected) return selected === caseName
+    return (optionDef.default_cases ?? []).includes(caseName)
+}
+
+function onCheckboxUpdated(optionDef: InterfaceTaskOptionDefinition, caseName: string, value: boolean | 'indeterminate') {
+    emit('select-case', `${optionDef.name}:${caseName}`, value === true ? caseName : '')
 }
 
 function onSwitchUpdated(optionDef: InterfaceTaskOptionDefinition, value: boolean | 'indeterminate') {

@@ -11,6 +11,11 @@ export interface InterfaceTaskOptionSelection {
   caseName: string;
 }
 
+export interface InterfaceTaskInputSelection {
+  optionName: string;
+  value: string;
+}
+
 function cloneTasks(tasks: InterfaceTaskCandidate[]): InterfaceTaskCandidate[] {
   return JSON.parse(JSON.stringify(tasks)) as InterfaceTaskCandidate[];
 }
@@ -86,6 +91,67 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
+function coerceInputValue(value: string, pipelineType?: string): unknown {
+  const trimmed = value.trim();
+  switch ((pipelineType ?? "").trim().toLowerCase()) {
+    case "int": {
+      const parsed = Number.parseInt(trimmed, 10);
+      return Number.isNaN(parsed) ? trimmed : parsed;
+    }
+    case "bool": {
+      if (["true", "1", "yes", "y", "on"].includes(trimmed.toLowerCase())) {
+        return true;
+      }
+      if (["false", "0", "no", "n", "off"].includes(trimmed.toLowerCase())) {
+        return false;
+      }
+      return trimmed;
+    }
+    default:
+      return value;
+  }
+}
+
+function applyInputTemplate(
+  value: unknown,
+  replacements: Record<string, unknown>,
+): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => applyInputTemplate(item, replacements));
+  }
+
+  if (isPlainObject(value)) {
+    const next: Record<string, unknown> = {};
+    for (const [key, nested] of Object.entries(value)) {
+      next[key] = applyInputTemplate(nested, replacements);
+    }
+    return next;
+  }
+
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const exactTokenMatch = value.match(/^\{([^{}]+)\}$/);
+  if (exactTokenMatch) {
+    const tokenName = exactTokenMatch[1]?.trim() ?? "";
+    if (tokenName && tokenName in replacements) {
+      return cloneObject(replacements[tokenName]);
+    }
+  }
+
+  return value.replace(/\{([^{}]+)\}/g, (segment, rawToken) => {
+    const tokenName = String(rawToken ?? "").trim();
+    if (!tokenName || !(tokenName in replacements)) {
+      return segment;
+    }
+    const replacement = replacements[tokenName];
+    return typeof replacement === "string"
+      ? replacement
+      : String(replacement ?? "");
+  });
+}
+
 function buildManualOverridePatch(
   base: Record<string, unknown>,
   target: Record<string, unknown>,
@@ -139,6 +205,14 @@ function getDefaultCaseName(optionDef?: InterfaceTaskOptionDefinition): string {
   return optionDef.default_case || getOptionCases(optionDef)[0]?.name || "";
 }
 
+function getDefaultInputValue(
+  optionDef?: InterfaceTaskOptionDefinition,
+): string {
+  if (!optionDef) return "";
+  if (optionDef.default_value) return optionDef.default_value;
+  return optionDef.inputs?.[0]?.default_value || "";
+}
+
 export const useTaskStore = defineStore(
   "task",
   () => {
@@ -157,6 +231,7 @@ export const useTaskStore = defineStore(
     const selectedInterfaceLanguage = ref("");
     const selectedInterfaceTaskName = ref("");
     const selectedOptionCases = ref<InterfaceTaskOptionSelection[]>([]);
+    const selectedInputValues = ref<InterfaceTaskInputSelection[]>([]);
 
     const availableInterfaceLanguages = computed(() =>
       Object.entries(interfaceLanguages.value).map(([value, path]) => ({
@@ -193,22 +268,66 @@ export const useTaskStore = defineStore(
         ]),
       );
 
-      return selectedTaskOptionDefs.value.map((optionDef) => ({
-        optionName: optionDef.name,
-        caseName:
-          selectedMap.get(optionDef.name) ?? getDefaultCaseName(optionDef),
-      }));
+      return selectedTaskOptionDefs.value
+        .filter((optionDef) => optionDef.type !== "input")
+        .map((optionDef) => ({
+          optionName: optionDef.name,
+          caseName:
+            selectedMap.get(optionDef.name) ?? getDefaultCaseName(optionDef),
+        }));
+    });
+
+    const selectedTaskInputSelections = computed(() => {
+      const selectedMap = new Map(
+        selectedInputValues.value.map((item) => [item.optionName, item.value]),
+      );
+
+      return selectedTaskOptionDefs.value
+        .filter((optionDef) => optionDef.type === "input")
+        .map((optionDef) => ({
+          optionName: optionDef.name,
+          value:
+            selectedMap.get(optionDef.name) ?? getDefaultInputValue(optionDef),
+        }));
     });
 
     const derivedInterfaceOverride = computed<Record<string, unknown>>(() => {
       let merged: Record<string, unknown> = {};
 
-      for (const selection of selectedTaskOptionSelections.value) {
-        const optionDef = selectedTaskOptionDefs.value.find(
-          (item) => item.name === selection.optionName,
+      for (const optionDef of selectedTaskOptionDefs.value) {
+        if (optionDef.type === "input") {
+          if (optionDef.pipeline_override) {
+            const selectedInputValue =
+              selectedTaskInputSelections.value.find(
+                (item) => item.optionName === optionDef.name,
+              )?.value ?? getDefaultInputValue(optionDef);
+            const firstInput = optionDef.inputs?.[0];
+            const replacements: Record<string, unknown> = {
+              [optionDef.name]: selectedInputValue,
+            };
+            if (firstInput?.name) {
+              replacements[firstInput.name] = coerceInputValue(
+                selectedInputValue,
+                firstInput.pipeline_type,
+              );
+            }
+
+            const resolvedOverride = applyInputTemplate(
+              optionDef.pipeline_override,
+              replacements,
+            );
+            if (isPlainObject(resolvedOverride)) {
+              merged = deepMergeOverride(merged, resolvedOverride);
+            }
+          }
+          continue;
+        }
+
+        const selection = selectedTaskOptionSelections.value.find(
+          (item) => item.optionName === optionDef.name,
         );
         const selectedCase = getOptionCases(optionDef).find(
-          (item) => item.name === selection.caseName,
+          (item) => item.name === selection?.caseName,
         );
 
         if (!selectedCase?.pipeline_override) {
@@ -285,9 +404,30 @@ export const useTaskStore = defineStore(
       syncOverrideJson();
     }
 
+    function setSelectedInputValue(optionName: string, value: string) {
+      const next = selectedInputValues.value.filter(
+        (item) => item.optionName !== optionName,
+      );
+      next.push({ optionName, value });
+      selectedInputValues.value = next;
+      syncOverrideJson();
+    }
+
     function rebuildSelections(task: InterfaceTaskCandidate | null) {
       const nextSelections: InterfaceTaskOptionSelection[] = [];
+      const nextInputValues: InterfaceTaskInputSelection[] = [];
       for (const optionDef of task?.option_defs ?? []) {
+        if (optionDef.type === "input") {
+          const previousInput = selectedInputValues.value.find(
+            (item) => item.optionName === optionDef.name,
+          );
+          nextInputValues.push({
+            optionName: optionDef.name,
+            value: previousInput?.value ?? getDefaultInputValue(optionDef),
+          });
+          continue;
+        }
+
         const previous = selectedOptionCases.value.find(
           (item) => item.optionName === optionDef.name,
         );
@@ -304,6 +444,7 @@ export const useTaskStore = defineStore(
         }
       }
       selectedOptionCases.value = nextSelections;
+      selectedInputValues.value = nextInputValues;
     }
 
     function setInterfaceLanguage(language: string) {
@@ -373,6 +514,7 @@ export const useTaskStore = defineStore(
       selectedInterfaceLanguage.value = "";
       selectedInterfaceTaskName.value = "";
       selectedOptionCases.value = [];
+      selectedInputValues.value = [];
       if (taskLaunchMode.value === "interface") {
         taskLaunchMode.value = "manual";
       }
@@ -400,9 +542,11 @@ export const useTaskStore = defineStore(
       hasInterfaceLanguages,
       selectedInterfaceTaskName,
       selectedOptionCases,
+      selectedInputValues,
       selectedInterfaceTask,
       selectedTaskOptionDefs,
       selectedTaskOptionSelections,
+      selectedTaskInputSelections,
       activeLocaleMap,
       derivedInterfaceOverride,
       usingInterfaceTask,
@@ -412,6 +556,7 @@ export const useTaskStore = defineStore(
       setManualOverrideJson,
       setTaskLaunchMode,
       setSelectedOptionCase,
+      setSelectedInputValue,
       setInterfaceLanguage,
       resolveInterfaceText,
       getDisplayName,

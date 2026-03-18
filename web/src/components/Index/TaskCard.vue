@@ -21,7 +21,7 @@
                             <div class="flex items-center justify-between gap-3">
                                 <span class="text-xs text-muted">Actual FPS</span>
                                 <span class="text-xs tabular-nums font-medium" :class="actualFpsTone">{{ actualFpsLabel
-                                    }}</span>
+                                }}</span>
                             </div>
                             <USeparator />
                             <div class="flex flex-col gap-2">
@@ -115,7 +115,8 @@
 
     <TaskInterfaceModal v-model:open="interfaceTaskModalOpen" :selected-task="draftSelectedTask"
         :option-defs="draftTaskOptionDefs" :selected-case-map="draftSelectedCaseMap"
-        @select-case="onOptionCaseDraftSelected" @cancel="onInterfaceTaskCancel" @confirm="onInterfaceTaskConfirm" />
+        :selected-input-map="draftSelectedInputMap" @select-case="onOptionCaseDraftSelected"
+        @update-input="onOptionInputDraftUpdated" @cancel="onInterfaceTaskCancel" @confirm="onInterfaceTaskConfirm" />
 
     <component :is="jsonEditorModalComponent" v-if="jsonEditorModalComponent" v-model:open="overrideEditorOpen"
         v-model="overrideEditorDraft" title="Pipeline Override"
@@ -145,6 +146,7 @@ const interfaceTaskModalOpen = ref(false)
 const overrideEditorDraft = ref('{}')
 const interfaceTaskDraftName = ref('')
 const interfaceOptionDraftSelections = ref<Array<{ optionName: string, caseName: string }>>([])
+const interfaceInputDraftValues = ref<Array<{ optionName: string, value: string }>>([])
 let editorAssetsLoaded = false
 
 const {
@@ -164,11 +166,13 @@ const {
     interfaceTaskItems,
     selectedInterfaceTask,
     selectedTaskOptionSelections,
+    selectedTaskInputSelections,
     taskLaunchMode,
     usingInterfaceTask,
     effectiveEntry,
     selectInterfaceTask,
     setInterfaceOptionCase,
+    setInterfaceInputValue,
     setOverrideJson,
     onStart,
     onStop,
@@ -236,6 +240,9 @@ const draftTaskOptionDefs = computed(() => draftSelectedTask.value?.option_defs 
 const draftSelectedCaseMap = computed<Record<string, string>>(() =>
     Object.fromEntries(interfaceOptionDraftSelections.value.map((item) => [item.optionName, item.caseName])),
 )
+const draftSelectedInputMap = computed<Record<string, string>>(() =>
+    Object.fromEntries(interfaceInputDraftValues.value.map((item) => [item.optionName, item.value])),
+)
 
 watch(() => taskStore.overrideJson, (value) => {
     if (value !== overrideEditorDraft.value) {
@@ -282,6 +289,7 @@ async function ensureEditorAssetsLoaded() {
 function snapshotInterfaceDraft() {
     interfaceTaskDraftName.value = taskStore.selectedInterfaceTaskName
     interfaceOptionDraftSelections.value = selectedTaskOptionSelections.value.map((item) => ({ ...item }))
+    interfaceInputDraftValues.value = selectedTaskInputSelections.value.map((item) => ({ ...item }))
 }
 
 function openInterfaceTaskModal() {
@@ -305,6 +313,13 @@ function onOptionCaseDraftSelected(optionName: string, value: string) {
     ]
 }
 
+function onOptionInputDraftUpdated(optionName: string, value: string) {
+    interfaceInputDraftValues.value = [
+        ...interfaceInputDraftValues.value.filter((item) => item.optionName !== optionName),
+        { optionName, value },
+    ]
+}
+
 async function onInterfaceTaskConfirm() {
     if (interfaceTaskDraftName.value) {
         taskLaunchMode.value = 'interface'
@@ -312,6 +327,9 @@ async function onInterfaceTaskConfirm() {
         await nextTick()
         for (const selection of interfaceOptionDraftSelections.value) {
             setInterfaceOptionCase(selection.optionName, selection.caseName)
+        }
+        for (const inputValue of interfaceInputDraftValues.value) {
+            setInterfaceInputValue(inputValue.optionName, inputValue.value)
         }
     }
     interfaceTaskModalOpen.value = false

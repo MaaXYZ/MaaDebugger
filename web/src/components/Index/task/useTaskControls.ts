@@ -81,6 +81,9 @@ export default function useTaskControls(toast: ToastApi) {
   const selectedTaskOptionSelections = computed(
     () => taskStore.selectedTaskOptionSelections,
   );
+  const selectedTaskInputSelections = computed(
+    () => taskStore.selectedTaskInputSelections,
+  );
   const taskLaunchMode = computed({
     get: () => taskStore.taskLaunchMode,
     set: (value: "manual" | "interface") => {
@@ -164,6 +167,10 @@ export default function useTaskControls(toast: ToastApi) {
 
   function setInterfaceOptionCase(optionName: string, caseName: string) {
     taskStore.setSelectedOptionCase(optionName, caseName);
+  }
+
+  function setInterfaceInputValue(optionName: string, value: string) {
+    taskStore.setSelectedInputValue(optionName, value);
   }
 
   function setOverrideJson(value: string) {
@@ -295,11 +302,13 @@ export default function useTaskControls(toast: ToastApi) {
     selectedInterfaceTask,
     selectedTaskOptionDefs,
     selectedTaskOptionSelections,
+    selectedTaskInputSelections,
     taskLaunchMode,
     usingInterfaceTask,
     effectiveEntry,
     selectInterfaceTask,
     setInterfaceOptionCase,
+    setInterfaceInputValue,
     setOverrideJson,
     setManualOverrideJson,
     onStart,

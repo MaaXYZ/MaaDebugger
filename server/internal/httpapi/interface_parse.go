@@ -75,11 +75,14 @@ type rawImportedTaskFile struct {
 }
 
 type rawImportedTaskOption struct {
-	Type        string                   `json:"type"`
-	Label       string                   `json:"label"`
-	Description any                      `json:"description"`
-	DefaultCase rawImportedDefaultCase   `json:"default_case"`
-	Cases       []rawImportedOptionCase  `json:"cases"`
+	Type             string                  `json:"type"`
+	Label            string                  `json:"label"`
+	Description      any                     `json:"description"`
+	DefaultCase      rawImportedDefaultCase  `json:"default_case"`
+	DefaultValue     string                  `json:"default"`
+	Inputs           []rawImportedInputItem  `json:"inputs"`
+	PipelineOverride map[string]any          `json:"pipeline_override"`
+	Cases            []rawImportedOptionCase `json:"cases"`
 }
 
 type rawImportedDefaultCase struct {
@@ -130,6 +133,16 @@ func (d rawImportedDefaultCase) All() []string {
 		return []string{d.Single}
 	}
 	return nil
+}
+
+type rawImportedInputItem struct {
+	Name         string `json:"name"`
+	Label        string `json:"label"`
+	Description  any    `json:"description"`
+	DefaultValue string `json:"default"`
+	PipelineType string `json:"pipeline_type"`
+	Verify       string `json:"verify"`
+	PatternMsg   string `json:"pattern_msg"`
 }
 
 type rawImportedOptionCase struct {
@@ -188,15 +201,29 @@ type interfaceTaskItem struct {
 }
 
 type interfaceTaskOptionItem struct {
-	Name         string                    `json:"name"`
-	Type         string                    `json:"type,omitempty"`
-	Label        string                    `json:"label,omitempty"`
-	Description  string                    `json:"description,omitempty"`
-	DefaultCase  string                    `json:"default_case,omitempty"`
-	DefaultCases []string                  `json:"default_cases,omitempty"`
-	Cases        []interfaceTaskOptionCase `json:"cases,omitempty"`
-	Source       string                    `json:"source,omitempty"`
-	ResolvedFrom string                    `json:"resolved_from,omitempty"`
+	Name                 string                    `json:"name"`
+	Type                 string                    `json:"type,omitempty"`
+	Label                string                    `json:"label,omitempty"`
+	Description          string                    `json:"description,omitempty"`
+	DefaultCase          string                    `json:"default_case,omitempty"`
+	DefaultCases         []string                  `json:"default_cases,omitempty"`
+	DefaultValue         string                    `json:"default_value,omitempty"`
+	Inputs               []interfaceTaskInputItem  `json:"inputs,omitempty"`
+	PipelineOverrideKeys []string                  `json:"pipeline_override_keys,omitempty"`
+	PipelineOverride     map[string]any            `json:"pipeline_override,omitempty"`
+	Cases                []interfaceTaskOptionCase `json:"cases,omitempty"`
+	Source               string                    `json:"source,omitempty"`
+	ResolvedFrom         string                    `json:"resolved_from,omitempty"`
+}
+
+type interfaceTaskInputItem struct {
+	Name         string `json:"name"`
+	Label        string `json:"label,omitempty"`
+	Description  string `json:"description,omitempty"`
+	DefaultValue string `json:"default_value,omitempty"`
+	PipelineType string `json:"pipeline_type,omitempty"`
+	Verify       string `json:"verify,omitempty"`
+	PatternMsg   string `json:"pattern_msg,omitempty"`
 }
 
 type interfaceTaskOptionCase struct {
@@ -419,16 +446,37 @@ func buildTaskCandidate(raw rawInterfaceTask, sourceInterface string, optionDefs
 }
 
 func buildTaskOptionCandidate(name string, raw rawImportedTaskOption, sourceInterface string) interfaceTaskOptionItem {
+	pipelineOverrideKeys := make([]string, 0, len(raw.PipelineOverride))
+	for key := range raw.PipelineOverride {
+		pipelineOverrideKeys = append(pipelineOverrideKeys, key)
+	}
+
 	item := interfaceTaskOptionItem{
-		Name:         name,
-		Type:         strings.TrimSpace(raw.Type),
-		Label:        raw.Label,
-		Description:  stringifyText(raw.Description),
-		DefaultCase:  raw.DefaultCase.Primary(),
-		DefaultCases: raw.DefaultCase.All(),
-		Cases:        make([]interfaceTaskOptionCase, 0, len(raw.Cases)),
-		Source:       sourceInterface,
-		ResolvedFrom: sourceInterface,
+		Name:                 name,
+		Type:                 strings.TrimSpace(raw.Type),
+		Label:                raw.Label,
+		Description:          stringifyText(raw.Description),
+		DefaultCase:          raw.DefaultCase.Primary(),
+		DefaultCases:         raw.DefaultCase.All(),
+		DefaultValue:         strings.TrimSpace(raw.DefaultValue),
+		Inputs:               make([]interfaceTaskInputItem, 0, len(raw.Inputs)),
+		PipelineOverrideKeys: pipelineOverrideKeys,
+		PipelineOverride:     raw.PipelineOverride,
+		Cases:                make([]interfaceTaskOptionCase, 0, len(raw.Cases)),
+		Source:               sourceInterface,
+		ResolvedFrom:         sourceInterface,
+	}
+
+	for _, rawInput := range raw.Inputs {
+		item.Inputs = append(item.Inputs, interfaceTaskInputItem{
+			Name:         strings.TrimSpace(rawInput.Name),
+			Label:        rawInput.Label,
+			Description:  stringifyText(rawInput.Description),
+			DefaultValue: strings.TrimSpace(rawInput.DefaultValue),
+			PipelineType: strings.TrimSpace(rawInput.PipelineType),
+			Verify:       strings.TrimSpace(rawInput.Verify),
+			PatternMsg:   strings.TrimSpace(rawInput.PatternMsg),
+		})
 	}
 
 	for _, rawCase := range raw.Cases {
