@@ -37,6 +37,7 @@ func (s *ResourceService) LoadBundles(paths []string) LoadResult {
 		res, err = maa.NewResource()
 		if err != nil {
 			resourceServiceLog.Error().Err(err).Msg("create resource failed")
+			s.resource.Store(nil)
 			return LoadResult{Success: false, FailedPath: "failed to create resource"}
 		}
 		s.resource.Store(res)
@@ -44,6 +45,7 @@ func (s *ResourceService) LoadBundles(paths []string) LoadResult {
 
 	if err := res.Clear(); err != nil {
 		resourceServiceLog.Error().Err(err).Msg("clear resource failed")
+		s.resource.Store(nil)
 		return LoadResult{Success: false, FailedPath: "failed to clear resource"}
 	}
 
@@ -54,6 +56,7 @@ func (s *ResourceService) LoadBundles(paths []string) LoadResult {
 
 		if !job.Success() {
 			resourceServiceLog.Warn().Str("path", p).Str("status", fmt.Sprintf("%v", job.Status())).Msg("bundle load failed")
+			s.resource.Store(nil)
 			return LoadResult{Success: false, FailedPath: p}
 		}
 		resourceServiceLog.Info().Str("path", p).Msg("bundle loaded")
