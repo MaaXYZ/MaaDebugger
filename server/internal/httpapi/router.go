@@ -650,7 +650,7 @@ func (r *router) handlePathExists(w http.ResponseWriter, req *http.Request) {
 	info, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			response.Done(w, map[string]bool{"exists": false}, "Path does not exist")
+			response.OKWithMsg(w, map[string]bool{"exists": false}, "Path does not exist")
 			return
 		}
 		response.Fail(w, http.StatusBadRequest, err.Error())
@@ -660,12 +660,12 @@ func (r *router) handlePathExists(w http.ResponseWriter, req *http.Request) {
 	switch payload.Type {
 	case "file":
 		if info.IsDir() {
-			response.Done(w, map[string]bool{"exists": false}, "Path is a directory, expected a file")
+			response.OKWithMsg(w, map[string]bool{"exists": false}, "Path is a directory, expected a file")
 			return
 		}
 	case "dir":
 		if !info.IsDir() {
-			response.Done(w, map[string]bool{"exists": false}, "Path is a file, expected a directory")
+			response.OKWithMsg(w, map[string]bool{"exists": false}, "Path is a file, expected a directory")
 			return
 		}
 	case "", "any":
@@ -675,7 +675,7 @@ func (r *router) handlePathExists(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	response.Done(w, map[string]bool{"exists": true}, "Path exists")
+	response.OKWithMsg(w, map[string]bool{"exists": true}, "Path exists")
 }
 
 func (r *router) handleResourceLoad(w http.ResponseWriter, req *http.Request) {
