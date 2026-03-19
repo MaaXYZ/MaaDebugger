@@ -31,6 +31,8 @@ components.d.ts
 plans/*
 .kilocode/*
 .cursor/*
+.claude/*
+CLAUDE.md
 
 maa-js/*
 maa-py/*
