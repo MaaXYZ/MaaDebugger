@@ -57,9 +57,17 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { launchGraph, resetLaunchGraph } from '@/stores/launchGraph'
-import { taskDetailActiveIndex, taskDetailFollowLatest, taskDetailSelectedNodeId } from '@/stores/taskDetail'
+import {
+    activeTaskIndex,
+    followLatestTask,
+    selectedNodeId as taskDetailSelectedNodeId,
+    viewMode,
+    livePage,
+    historyPage,
+    historySnapshotNodes,
+    resetTaskDetailState,
+} from '@/stores/taskDetail'
 import { useTaskDetailSettingsStore } from '@/stores/taskDetailSettings'
-import type { PipelineNodeScope } from './taskDetail/types'
 import TaskDetailDisplayPane from './taskDetail/TaskDetailDisplayPane.vue'
 import TaskDetailNavigatorPane from './taskDetail/TaskDetailNavigatorPane.vue'
 import RecoDetailModal from './taskDetail/RecoDetailModal.vue'
@@ -69,14 +77,9 @@ import { findRecoNameInTasks } from './taskDetail/scopeTree'
 
 const taskDetailSettingsStore = useTaskDetailSettingsStore()
 
-const livePage = ref(1)
-const historyPage = ref(1)
-const viewMode = ref<'live' | 'history'>('live')
-const historySnapshotNodes = ref<PipelineNodeScope[]>([])
-
 const allTasks = computed(() => launchGraph.value.childs)
-const activeIndex = taskDetailActiveIndex
-const followLatest = taskDetailFollowLatest
+const activeIndex = activeTaskIndex
+const followLatest = followLatestTask
 const selectedNodeId = taskDetailSelectedNodeId
 const reverseNodeOrder = computed(() => taskDetailSettingsStore.reverseNodeOrder)
 const nodePageSize = computed(() => Math.max(1, taskDetailSettingsStore.nodePageSize))
@@ -155,7 +158,7 @@ function goToPage(page: number) {
 function goToLatestPage() {
     viewMode.value = 'live'
     historySnapshotNodes.value = []
-    setLivePage(reverseNodeOrder.value ? 1 : totalPages.value)
+    setLivePage(latestPage.value)
 }
 
 function selectTask(index: number) {
@@ -169,17 +172,16 @@ function selectNode(nodeId: number) {
 watch(() => allTasks.value.length, (newLen, oldLen) => {
     if (newLen > (oldLen ?? 0) && followLatest.value) {
         activeIndex.value = newLen - 1
-        viewMode.value = 'live'
-        setLivePage(reverseNodeOrder.value ? 1 : latestPage.value)
     }
 })
 
-watch(activeIndex, (idx) => {
+watch(activeIndex, (idx, prevIdx) => {
     followLatest.value = idx === allTasks.value.length - 1
+    if (idx === prevIdx) return
     viewMode.value = 'live'
     historySnapshotNodes.value = []
     selectedNodeId.value = null
-    setLivePage(reverseNodeOrder.value ? 1 : latestPage.value)
+    setLivePage(latestPage.value)
 })
 
 watch([() => activeTask.value?.childs.length, reverseNodeOrder, nodePageSize], () => {
@@ -187,7 +189,11 @@ watch([() => activeTask.value?.childs.length, reverseNodeOrder, nodePageSize], (
         clampPages()
         return
     }
-    setLivePage(reverseNodeOrder.value ? 1 : latestPage.value)
+    if (followLatest.value) {
+        setLivePage(latestPage.value)
+        return
+    }
+    clampPages()
 })
 
 watch(displayedNodes, (nodes) => {
@@ -199,6 +205,12 @@ watch(displayedNodes, (nodes) => {
         selectedNodeId.value = nodes[0]?.msg.node_id ?? null
     }
 }, { immediate: true })
+
+watch(() => allTasks.value.length, (length) => {
+    if (length === 0) {
+        resetTaskDetailState()
+    }
+})
 
 const modalOpen = ref(false)
 const selectedRecoId = ref<number | null>(null)
@@ -224,13 +236,7 @@ function onRequestActionDetail(actionId: number) {
 
 async function resetGraph() {
     resetLaunchGraph()
-    activeIndex.value = 0
-    livePage.value = 1
-    historyPage.value = 1
-    viewMode.value = 'live'
-    followLatest.value = true
-    selectedNodeId.value = null
-    historySnapshotNodes.value = []
+    resetTaskDetailState()
     await clearCache()
 }
 </script>

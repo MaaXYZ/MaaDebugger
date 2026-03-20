@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between gap-3">
             <UButton color="neutral" variant="ghost" size="sm"
                 :icon="showLeftTabs ? 'i-lucide-panel-left-close' : 'i-lucide-panel-left-open'"
-                :label="showLeftTabs ? 'Hide setup' : 'Show setup'" @click="toggleLeftTabs" />
+                :label="showLeftTabs ? 'Hide Setup' : 'Show Setup'" @click="toggleLeftTabs" />
         </div>
 
         <div class="grid gap-4 xl:items-start"
@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import LeftTabs from '@/components/Index/LeftTabs.vue'
 import TaskCard from '@/components/Index/TaskCard.vue'
 import TaskDetailCard from '@/components/Index/TaskDetailCard.vue'
@@ -33,16 +33,28 @@ import { useStatusStore } from '@/stores/status'
 
 const debugWorkspaceSettingsStore = useDebugWorkspaceSettingsStore()
 const statusStore = useStatusStore()
+const leftTabsAutoCollapsed = ref(false)
 
 const hideLeftTabsForRunning = computed(() =>
     debugWorkspaceSettingsStore.autoHideLeftTabsWhenRunning && statusStore.taskStatus === 'running',
 )
 
 const showLeftTabs = computed(() =>
-    !debugWorkspaceSettingsStore.leftTabsCollapsed && !hideLeftTabsForRunning.value,
+    !debugWorkspaceSettingsStore.leftTabsCollapsed && !leftTabsAutoCollapsed.value && !hideLeftTabsForRunning.value,
 )
 
+watch(hideLeftTabsForRunning, (isHiddenForRunning, wasHiddenForRunning) => {
+    if (!isHiddenForRunning || wasHiddenForRunning || debugWorkspaceSettingsStore.leftTabsCollapsed) return
+    leftTabsAutoCollapsed.value = true
+})
+
 function toggleLeftTabs() {
-    debugWorkspaceSettingsStore.setLeftTabsCollapsed(showLeftTabs.value)
+    if (showLeftTabs.value) {
+        debugWorkspaceSettingsStore.setLeftTabsCollapsed(true)
+        return
+    }
+
+    leftTabsAutoCollapsed.value = false
+    debugWorkspaceSettingsStore.setLeftTabsCollapsed(false)
 }
 </script>

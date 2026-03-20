@@ -21,7 +21,7 @@ const debugWorkspaceSettingsStore = useDebugWorkspaceSettingsStore()
             <div class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
                 <div class="flex flex-col gap-1">
                     <span class="text-sm font-medium">Auto hide left sidebar while running</span>
-                    <span class="text-sm text-dimmed">Temporarily hide setup tabs so Task and Task Detail get more space during runs.</span>
+                    <span class="text-sm text-dimmed">Hide setup tabs during runs and keep them collapsed afterward until you expand them again.</span>
                 </div>
                 <USwitch :model-value="debugWorkspaceSettingsStore.autoHideLeftTabsWhenRunning"
                     @update:model-value="debugWorkspaceSettingsStore.setAutoHideLeftTabsWhenRunning(Boolean($event))" />

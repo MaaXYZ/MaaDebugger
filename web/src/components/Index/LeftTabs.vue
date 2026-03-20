@@ -1,8 +1,5 @@
 <template>
     <div class="flex flex-col gap-3">
-        <div class="px-1 text-[11px] font-medium uppercase tracking-[0.18em] text-dimmed">
-            Setup
-        </div>
         <UTabs key="value" v-model="tabsModel" :items="tabs" variant="link" size="sm" :ui="{
             list: 'w-full border-default/60',
             trigger: 'px-2.5 py-2 text-sm'
