@@ -4,11 +4,11 @@ import { defineStore } from "pinia";
 export const useDebugWorkspaceSettingsStore = defineStore(
   "debugWorkspaceSettings",
   () => {
-    const autoHideLeftTabsWhenRunning = ref(true);
+    const autoCollapseLeftTabsOnRunStart = ref(true);
     const leftTabsCollapsed = ref(false);
 
-    function setAutoHideLeftTabsWhenRunning(value: boolean) {
-      autoHideLeftTabsWhenRunning.value = value;
+    function setAutoCollapseLeftTabsOnRunStart(value: boolean) {
+      autoCollapseLeftTabsOnRunStart.value = value;
     }
 
     function setLeftTabsCollapsed(value: boolean) {
@@ -16,14 +16,14 @@ export const useDebugWorkspaceSettingsStore = defineStore(
     }
 
     function reset() {
-      autoHideLeftTabsWhenRunning.value = true;
+      autoCollapseLeftTabsOnRunStart.value = true;
       leftTabsCollapsed.value = false;
     }
 
     return {
-      autoHideLeftTabsWhenRunning,
+      autoCollapseLeftTabsOnRunStart,
       leftTabsCollapsed,
-      setAutoHideLeftTabsWhenRunning,
+      setAutoCollapseLeftTabsOnRunStart,
       setLeftTabsCollapsed,
       reset,
     };

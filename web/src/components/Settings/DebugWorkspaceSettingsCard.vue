@@ -23,8 +23,8 @@ const debugWorkspaceSettingsStore = useDebugWorkspaceSettingsStore()
                     <span class="text-sm font-medium">Auto collapse left sidebar on run start</span>
                     <span class="text-sm text-dimmed">Collapse setup tabs automatically when a run starts, then keep that collapsed state until you expand them again.</span>
                 </div>
-                <USwitch :model-value="debugWorkspaceSettingsStore.autoHideLeftTabsWhenRunning"
-                    @update:model-value="debugWorkspaceSettingsStore.setAutoHideLeftTabsWhenRunning(Boolean($event))" />
+                <USwitch :model-value="debugWorkspaceSettingsStore.autoCollapseLeftTabsOnRunStart"
+                    @update:model-value="debugWorkspaceSettingsStore.setAutoCollapseLeftTabsOnRunStart(Boolean($event))" />
             </div>
 
             <div class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">

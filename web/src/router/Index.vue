@@ -35,7 +35,7 @@ const debugWorkspaceSettingsStore = useDebugWorkspaceSettingsStore()
 const statusStore = useStatusStore()
 
 const shouldAutoCollapseLeftTabs = computed(() =>
-    debugWorkspaceSettingsStore.autoHideLeftTabsWhenRunning && statusStore.taskStatus === 'running',
+    debugWorkspaceSettingsStore.autoCollapseLeftTabsOnRunStart && statusStore.taskStatus === 'running',
 )
 
 const showLeftTabs = computed(() =>
