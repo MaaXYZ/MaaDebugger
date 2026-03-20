@@ -12,11 +12,11 @@
                 <LeftTabs />
             </div>
 
-            <div class="w-full min-w-0 flex flex-col gap-4 order-2 xl:order-0 xl:self-stretch">
+            <div class="w-full min-w-0 flex flex-col gap-4 order-2 xl:order-0 xl:self-start">
                 <TaskCard />
             </div>
 
-            <div class="w-full min-w-0 flex flex-col gap-4 order-1 xl:order-0 xl:self-stretch">
+            <div class="w-full min-w-0 flex flex-col gap-4 order-1 xl:order-0 xl:self-start">
                 <TaskDetailCard />
             </div>
         </div>
@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 import LeftTabs from '@/components/Index/LeftTabs.vue'
 import TaskCard from '@/components/Index/TaskCard.vue'
 import TaskDetailCard from '@/components/Index/TaskDetailCard.vue'
@@ -33,28 +33,21 @@ import { useStatusStore } from '@/stores/status'
 
 const debugWorkspaceSettingsStore = useDebugWorkspaceSettingsStore()
 const statusStore = useStatusStore()
-const leftTabsAutoCollapsed = ref(false)
 
-const hideLeftTabsForRunning = computed(() =>
+const shouldAutoCollapseLeftTabs = computed(() =>
     debugWorkspaceSettingsStore.autoHideLeftTabsWhenRunning && statusStore.taskStatus === 'running',
 )
 
 const showLeftTabs = computed(() =>
-    !debugWorkspaceSettingsStore.leftTabsCollapsed && !leftTabsAutoCollapsed.value && !hideLeftTabsForRunning.value,
+    !debugWorkspaceSettingsStore.leftTabsCollapsed,
 )
 
-watch(hideLeftTabsForRunning, (isHiddenForRunning, wasHiddenForRunning) => {
-    if (!isHiddenForRunning || wasHiddenForRunning || debugWorkspaceSettingsStore.leftTabsCollapsed) return
-    leftTabsAutoCollapsed.value = true
+watch(shouldAutoCollapseLeftTabs, (shouldAutoCollapse, wasAutoCollapse) => {
+    if (!shouldAutoCollapse || wasAutoCollapse || debugWorkspaceSettingsStore.leftTabsCollapsed) return
+    debugWorkspaceSettingsStore.setLeftTabsCollapsed(true)
 })
 
 function toggleLeftTabs() {
-    if (showLeftTabs.value) {
-        debugWorkspaceSettingsStore.setLeftTabsCollapsed(true)
-        return
-    }
-
-    leftTabsAutoCollapsed.value = false
-    debugWorkspaceSettingsStore.setLeftTabsCollapsed(false)
+    debugWorkspaceSettingsStore.setLeftTabsCollapsed(showLeftTabs.value)
 }
 </script>
