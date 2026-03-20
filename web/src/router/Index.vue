@@ -6,18 +6,20 @@
                 :label="showLeftTabs ? 'Hide Setup' : 'Show Setup'" @click="toggleLeftTabs" />
         </div>
 
-        <div class="grid gap-4 xl:items-start"
-            :class="showLeftTabs ? 'xl:grid-cols-[minmax(260px,0.78fr)_minmax(0,1.06fr)_minmax(0,1.06fr)]' : 'xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]'">
-            <div v-if="showLeftTabs" class="w-full min-w-0 flex flex-col gap-4 order-3 xl:order-0">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-start">
+            <div v-show="showLeftTabs"
+                class="order-3 w-full min-w-0 flex flex-col gap-4 xl:order-0 xl:shrink-0 xl:basis-[clamp(260px,28vw,32rem)] xl:max-w-lg">
                 <LeftTabs />
             </div>
 
-            <div class="w-full min-w-0 flex flex-col gap-4 order-2 xl:order-0 xl:self-start">
-                <TaskCard />
-            </div>
+            <div class="order-1 min-w-0 flex-1 grid gap-4 xl:order-0 xl:grid-cols-2 xl:items-start">
+                <div class="w-full min-w-0 flex flex-col gap-4 xl:self-start">
+                    <TaskCard />
+                </div>
 
-            <div class="w-full min-w-0 flex flex-col gap-4 order-1 xl:order-0 xl:self-start">
-                <TaskDetailCard />
+                <div class="w-full min-w-0 flex flex-col gap-4 xl:self-start">
+                    <TaskDetailCard />
+                </div>
             </div>
         </div>
     </div>
