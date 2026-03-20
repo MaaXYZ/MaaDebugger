@@ -1,6 +1,6 @@
 <template>
     <UCard class="w-full transition-opacity duration-200" :class="{ 'opacity-50 pointer-events-none': isCardDisabled }"
-        size="xl" :ui="{ body: 'p-0 sm:p-0', footer: 'p-0 sm:p-0' }">
+        size="xl" :ui="{ root: 'bg-default/70 ring-default/70', header: 'p-4 sm:px-5', body: 'p-0 sm:p-0', footer: 'p-0 sm:p-0' }">
         <template #header>
             <div class="flex flex-col gap-2">
                 <div class="flex flex-row items-center justify-between gap-4">

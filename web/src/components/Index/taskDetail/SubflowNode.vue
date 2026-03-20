@@ -144,6 +144,8 @@ const kindLabel = computed(() => {
         return 'Reco Node'
     case 'act_node':
         return 'Action Node'
+    default:
+        return 'Node'
     }
 })
 
@@ -157,6 +159,8 @@ const iconName = computed(() => {
         return 'i-lucide-scan-search'
     case 'act_node':
         return 'i-lucide-play'
+    default:
+        return 'i-lucide-circle'
     }
 })
 </script>

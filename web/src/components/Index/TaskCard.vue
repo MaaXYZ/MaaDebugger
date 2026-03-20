@@ -1,5 +1,5 @@
 <template>
-    <UCard class="w-full" size="xl">
+    <UCard class="w-full xl:min-h-[34rem]" size="xl" :ui="{ root: 'h-full flex flex-col', body: 'flex-1' }">
         <template #header>
             <div class="flex flex-row items-center gap-2 min-h-10">
                 <span class="font-bold">Task</span>
@@ -50,7 +50,7 @@
         </template>
 
         <template #default>
-            <div class="flex flex-col gap-3">
+            <div class="flex h-full flex-col gap-3">
                 <TaskLaunchPanel v-model:selected-entry="selectedEntry" v-model:entry-search-term="entrySearchTerm"
                     v-model:task-launch-mode="taskLaunchMode" :entry-select-items="entrySelectItems"
                     :is-running="isRunning" :can-start="canStart" :is-stopping="isStopping"

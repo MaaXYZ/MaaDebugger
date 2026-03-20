@@ -15,14 +15,9 @@ const selectTheme = { trailingIcon: 'transition-transform ease-in-out duration-2
 
 const headerNavigationMenuItems = computed<NavigationMenuItem[]>(() => [
     {
-        label: 'Home',
-        icon: "i-lucide:home",
+        label: 'Debug',
+        icon: "i-lucide:bug",
         to: '/',
-    },
-    {
-        label: 'Running',
-        icon: "i-lucide:loader",
-        to: '/running',
     },
     {
         label: "Tools",

@@ -1,23 +1,48 @@
 <template>
-    <div class="w-full min-h-full flex flex-col items-start gap-4 p-4 lg:p-6 lg:grid lg:grid-cols-3 ">
-        <!-- 第一列: Interface / Controller / Resource / Agent -->
-        <div class="w-full flex flex-col gap-4 order-3 lg:order-0">
-            <LeftTabs />
+    <div class="w-full min-h-full flex flex-col gap-4 p-4 lg:p-6">
+        <div class="flex items-center justify-between gap-3">
+            <UButton color="neutral" variant="ghost" size="sm"
+                :icon="showLeftTabs ? 'i-lucide-panel-left-close' : 'i-lucide-panel-left-open'"
+                :label="showLeftTabs ? 'Hide setup' : 'Show setup'" @click="toggleLeftTabs" />
         </div>
-        <!-- 第二列: Task (includes Screenshot) -->
-        <div class="w-full flex flex-col gap-4 order-2 lg:order-0">
-            <TaskCard />
 
-        </div>
-        <!-- 第三列: Task Detail -->
-        <div class="w-full h-full flex flex-col gap-4 order-1 lg:order-0">
-            <TaskDetailCard />
+        <div class="grid gap-4 xl:items-start"
+            :class="showLeftTabs ? 'xl:grid-cols-[minmax(260px,0.78fr)_minmax(0,1.06fr)_minmax(0,1.06fr)]' : 'xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]'">
+            <div v-if="showLeftTabs" class="w-full min-w-0 flex flex-col gap-4 order-3 xl:order-0">
+                <LeftTabs />
+            </div>
+
+            <div class="w-full min-w-0 flex flex-col gap-4 order-2 xl:order-0 xl:self-stretch">
+                <TaskCard />
+            </div>
+
+            <div class="w-full min-w-0 flex flex-col gap-4 order-1 xl:order-0 xl:self-stretch">
+                <TaskDetailCard />
+            </div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import LeftTabs from "@/components/Index/LeftTabs.vue";
-import TaskCard from "@/components/Index/TaskCard.vue";
-import TaskDetailCard from "@/components/Index/TaskDetailCard.vue";
+import { computed } from 'vue'
+import LeftTabs from '@/components/Index/LeftTabs.vue'
+import TaskCard from '@/components/Index/TaskCard.vue'
+import TaskDetailCard from '@/components/Index/TaskDetailCard.vue'
+import { useDebugWorkspaceSettingsStore } from '@/stores/debugWorkspaceSettings'
+import { useStatusStore } from '@/stores/status'
+
+const debugWorkspaceSettingsStore = useDebugWorkspaceSettingsStore()
+const statusStore = useStatusStore()
+
+const hideLeftTabsForRunning = computed(() =>
+    debugWorkspaceSettingsStore.autoHideLeftTabsWhenRunning && statusStore.taskStatus === 'running',
+)
+
+const showLeftTabs = computed(() =>
+    !debugWorkspaceSettingsStore.leftTabsCollapsed && !hideLeftTabsForRunning.value,
+)
+
+function toggleLeftTabs() {
+    debugWorkspaceSettingsStore.setLeftTabsCollapsed(showLeftTabs.value)
+}
 </script>

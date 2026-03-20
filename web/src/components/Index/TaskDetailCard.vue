@@ -1,97 +1,50 @@
 <template>
-    <UCard class="w-full flex-1" size="xl">
+    <UCard class="w-full xl:min-h-[34rem]" size="xl" :ui="{ root: 'h-full flex flex-col', body: 'flex-1' }">
         <template #header>
             <div class="flex flex-row items-center gap-2 min-h-10">
                 <span class="font-bold">Task Detail</span>
                 <div class="flex-1"></div>
-                <template v-if="allTasks.length > 1">
-                    <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-chevron-left"
-                        :disabled="activeIndex <= 0" @click="activeIndex--" />
-                    <span class="text-xs tabular-nums text-dimmed min-w-12 text-center">
-                        {{ activeIndex + 1 }} / {{ allTasks.length }}
-                    </span>
-                    <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-chevron-right"
-                        :disabled="activeIndex >= allTasks.length - 1" @click="activeIndex++" />
-                </template>
-                <UTooltip v-if="showOpenAsPage" text="Open as page">
-                    <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-arrow-up-right" to="/TaskDetail"
-                        aria-label="Open Task Detail as page" />
-                </UTooltip>
                 <UButton v-if="allTasks.length > 0" size="xs" variant="ghost" color="neutral" icon="i-lucide-trash-2"
                     @click="resetGraph" />
             </div>
         </template>
 
         <template #default>
-            <div class="flex flex-col gap-3">
-                <UEmpty v-if="allTasks.length === 0" icon="i-lucide:list-checks" title="No Task Details" />
+            <div class="flex h-full flex-col gap-3 min-h-0 xl:grid xl:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.9fr)] xl:items-start">
+                <div v-if="allTasks.length === 0" class="xl:col-span-2 flex min-h-[20rem] xl:min-h-[28rem] items-center">
+                    <UEmpty icon="i-lucide:list-checks" title="No Task Details"
+                        class="w-full rounded-xl border border-dashed border-default bg-default/25 py-10" />
+                </div>
 
                 <template v-else-if="activeTask">
-                    <div class="flex flex-wrap items-center gap-2 text-sm min-w-0">
-                        <UBadge color="neutral" variant="outline" size="sm" class="shrink-0">
-                            #{{ activeIndex + 1 }}
-                        </UBadge>
-                        <UBadge
-                            :color="activeTask.status === 'success' ? 'success' : activeTask.status === 'failed' ? 'error' : 'info'"
-                            variant="subtle" class="capitalize shrink-0">
-                            {{ activeTask.status }}
-                        </UBadge>
-                        <UTooltip :text="activeTask.msg.entry">
-                            <span class="text-dimmed min-w-0 flex-1 truncate block">{{ activeTask.msg.entry }}</span>
-                        </UTooltip>
-                        <UBadge color="neutral" variant="soft" size="sm" class="shrink-0">
-                            {{ displayedNodes.length }} / {{ activeTask.childs.length }} nodes
-                        </UBadge>
-                        <UBadge v-if="isHistoryMode" color="warning" variant="soft" size="sm" class="shrink-0">
-                            Browsing history
-                        </UBadge>
-                    </div>
+                    <TaskDetailDisplayPane
+                        :active-task="activeTask"
+                        :active-index="activeIndex"
+                        :displayed-nodes="displayedNodes"
+                        :selected-node="selectedNode"
+                        :entry-node-id="entryNodeId"
+                        :current-page="currentPage"
+                        :total-pages="totalPages"
+                        :reverse-node-order="reverseNodeOrder"
+                        :is-history-mode="isHistoryMode"
+                        @go-page="goToPage"
+                        @go-latest="goToLatestPage"
+                        @request-detail="onRequestDetail"
+                        @request-action-detail="onRequestActionDetail"
+                    />
 
-                    <div v-if="activeTask.childs.length > 0" class="flex flex-wrap items-center justify-between gap-2">
-                        <div class="flex items-center gap-2 text-xs text-dimmed">
-                            <span>Page {{ currentPage }} / {{ totalPages }}</span>
-                            <span>•</span>
-                            <span>{{ reverseNodeOrder ? 'Newest first' : 'Oldest first' }}</span>
-                            <span>•</span>
-                            <span>{{ isHistoryMode ? 'History mode' : 'Live mode' }}</span>
-                        </div>
-                        <div class="flex flex-wrap items-center justify-end gap-2">
-                            <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-chevrons-left"
-                                :disabled="currentPage <= 1" @click="goToPage(1)">
-                                First
-                            </UButton>
-                            <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-chevron-left"
-                                :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">
-                                Prev
-                            </UButton>
-                            <UButton v-if="isHistoryMode" size="xs" color="primary" variant="soft"
-                                icon="i-lucide-arrow-down-to-line" @click="goToLatestPage">
-                                Latest
-                            </UButton>
-                            <UButton size="xs" variant="ghost" color="neutral" trailing-icon="i-lucide-chevron-right"
-                                :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">
-                                Next
-                            </UButton>
-                            <UButton size="xs" variant="ghost" color="neutral" trailing-icon="i-lucide-chevrons-right"
-                                :disabled="currentPage >= totalPages" @click="goToPage(totalPages)">
-                                Last
-                            </UButton>
-                        </div>
-                    </div>
-
-                    <div v-if="displayedNodes.length > 0" ref="scrollContainerRef"
-                        class="node-list max-h-screen overflow-y-auto pr-1">
-                        <div class="flex flex-col gap-2">
-                            <PipelineNodeItem v-for="(node, idx) in displayedNodes"
-                                :key="`${node.msg.name}-${node.msg.node_id}`" :node="node"
-                                :is-entry="node.msg.node_id === entryNodeId"
-                                :default-expanded="defaultExpandedIndex === idx" @request-detail="onRequestDetail"
-                                @request-action-detail="onRequestActionDetail" />
-                        </div>
-                    </div>
-                    <div v-else class="text-xs text-dimmed italic pl-2">
-                        No pipeline nodes
-                    </div>
+                    <TaskDetailNavigatorPane
+                        :tasks="allTasks"
+                        :active-task="activeTask"
+                        :active-index="activeIndex"
+                        :displayed-nodes="displayedNodes"
+                        :selected-node-id="selectedNodeId"
+                        :entry-node-id="entryNodeId"
+                        :is-history-mode="isHistoryMode"
+                        @select-task="selectTask"
+                        @select-node="selectNode"
+                        @go-latest="goToLatestPage"
+                    />
                 </template>
             </div>
         </template>
@@ -102,23 +55,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, watch } from 'vue'
 import { launchGraph, resetLaunchGraph } from '@/stores/launchGraph'
-import { taskDetailActiveIndex, taskDetailFollowLatest } from '@/stores/taskDetail'
+import { taskDetailActiveIndex, taskDetailFollowLatest, taskDetailSelectedNodeId } from '@/stores/taskDetail'
 import { useTaskDetailSettingsStore } from '@/stores/taskDetailSettings'
 import type { PipelineNodeScope } from './taskDetail/types'
-import PipelineNodeItem from './taskDetail/PipelineNodeItem.vue'
+import TaskDetailDisplayPane from './taskDetail/TaskDetailDisplayPane.vue'
+import TaskDetailNavigatorPane from './taskDetail/TaskDetailNavigatorPane.vue'
 import RecoDetailModal from './taskDetail/RecoDetailModal.vue'
 import ActionDetailModal from './taskDetail/ActionDetailModal.vue'
 import { clearCache } from '@/api/http'
 import { findRecoNameInTasks } from './taskDetail/scopeTree'
 
-const route = useRoute()
 const taskDetailSettingsStore = useTaskDetailSettingsStore()
-const showOpenAsPage = computed(() => route.path !== '/TaskDetail')
 
-const scrollContainerRef = ref<HTMLElement | null>(null)
 const livePage = ref(1)
 const historyPage = ref(1)
 const viewMode = ref<'live' | 'history'>('live')
@@ -127,6 +77,7 @@ const historySnapshotNodes = ref<PipelineNodeScope[]>([])
 const allTasks = computed(() => launchGraph.value.childs)
 const activeIndex = taskDetailActiveIndex
 const followLatest = taskDetailFollowLatest
+const selectedNodeId = taskDetailSelectedNodeId
 const reverseNodeOrder = computed(() => taskDetailSettingsStore.reverseNodeOrder)
 const nodePageSize = computed(() => Math.max(1, taskDetailSettingsStore.nodePageSize))
 
@@ -160,9 +111,12 @@ const displayedNodes = computed(() => {
 
 const entryNodeId = computed(() => activeTask.value?.entryNodeId ?? null)
 
-const defaultExpandedIndex = computed(() => {
-    if (displayedNodes.value.length === 0) return -1
-    return reverseNodeOrder.value ? 0 : displayedNodes.value.length - 1
+const selectedNode = computed(() => {
+    if (displayedNodes.value.length === 0) return null
+    if (selectedNodeId.value == null) {
+        return displayedNodes.value[0] ?? null
+    }
+    return displayedNodes.value.find((node) => node.msg.node_id === selectedNodeId.value) ?? displayedNodes.value[0] ?? null
 })
 
 function setLivePage(page: number) {
@@ -204,11 +158,12 @@ function goToLatestPage() {
     setLivePage(reverseNodeOrder.value ? 1 : totalPages.value)
 }
 
-function scrollNodeListToLatestPosition() {
-    nextTick(() => {
-        if (!scrollContainerRef.value) return
-        scrollContainerRef.value.scrollTop = reverseNodeOrder.value ? 0 : scrollContainerRef.value.scrollHeight
-    })
+function selectTask(index: number) {
+    activeIndex.value = index
+}
+
+function selectNode(nodeId: number) {
+    selectedNodeId.value = nodeId
 }
 
 watch(() => allTasks.value.length, (newLen, oldLen) => {
@@ -216,7 +171,6 @@ watch(() => allTasks.value.length, (newLen, oldLen) => {
         activeIndex.value = newLen - 1
         viewMode.value = 'live'
         setLivePage(reverseNodeOrder.value ? 1 : latestPage.value)
-        scrollNodeListToLatestPosition()
     }
 })
 
@@ -224,8 +178,8 @@ watch(activeIndex, (idx) => {
     followLatest.value = idx === allTasks.value.length - 1
     viewMode.value = 'live'
     historySnapshotNodes.value = []
+    selectedNodeId.value = null
     setLivePage(reverseNodeOrder.value ? 1 : latestPage.value)
-    scrollNodeListToLatestPosition()
 })
 
 watch([() => activeTask.value?.childs.length, reverseNodeOrder, nodePageSize], () => {
@@ -234,8 +188,17 @@ watch([() => activeTask.value?.childs.length, reverseNodeOrder, nodePageSize], (
         return
     }
     setLivePage(reverseNodeOrder.value ? 1 : latestPage.value)
-    scrollNodeListToLatestPosition()
 })
+
+watch(displayedNodes, (nodes) => {
+    if (nodes.length === 0) {
+        selectedNodeId.value = null
+        return
+    }
+    if (selectedNodeId.value == null || !nodes.some((node) => node.msg.node_id === selectedNodeId.value)) {
+        selectedNodeId.value = nodes[0]?.msg.node_id ?? null
+    }
+}, { immediate: true })
 
 const modalOpen = ref(false)
 const selectedRecoId = ref<number | null>(null)
@@ -266,31 +229,8 @@ async function resetGraph() {
     historyPage.value = 1
     viewMode.value = 'live'
     followLatest.value = true
+    selectedNodeId.value = null
     historySnapshotNodes.value = []
     await clearCache()
 }
 </script>
-
-<style scoped>
-.node-list::-webkit-scrollbar {
-    width: 4px;
-}
-
-.node-list::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.node-list::-webkit-scrollbar-thumb {
-    background-color: rgba(128, 128, 128, 0.3);
-    border-radius: 2px;
-}
-
-.node-list::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(128, 128, 128, 0.5);
-}
-
-.node-list {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
-}
-</style>
