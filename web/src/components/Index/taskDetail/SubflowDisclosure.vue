@@ -6,12 +6,15 @@
             size="xs"
             class="w-fit px-0"
             :icon="open ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
-            @click="open = !open"
+            @click="toggleOpen"
         >
             <template #default>
                 <span class="flex items-center gap-2">
+                    <UIcon name="i-lucide-workflow" class="size-3.5 text-dimmed" />
                     <span>{{ label }}</span>
-                    <UBadge size="xs" color="neutral" variant="subtle">{{ count }}</UBadge>
+                    <UBadge size="xs" color="info" variant="subtle">Custom</UBadge>
+                    <UBadge v-if="contextLabel" size="xs" color="neutral" variant="subtle">{{ contextLabel }}</UBadge>
+                    <UBadge size="xs" color="neutral" variant="subtle">{{ count }} node{{ count > 1 ? 's' : '' }}</UBadge>
                 </span>
             </template>
         </UButton>
@@ -27,20 +30,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = withDefaults(defineProps<{
     label?: string
+    kind?: 'reco' | 'action'
     count: number
-    defaultOpen?: boolean
 }>(), {
-    label: 'Subflow',
-    defaultOpen: false,
+    label: 'Internal flow',
+    kind: undefined,
 })
 
-const open = ref(props.defaultOpen)
-
-watch(() => props.defaultOpen, (value) => {
-    if (value) open.value = true
+const open = ref(false)
+const contextLabel = computed(() => {
+    switch (props.kind) {
+    case 'reco':
+        return 'Inside Reco'
+    case 'action':
+        return 'Inside Action'
+    default:
+        return ''
+    }
 })
+
+function toggleOpen() {
+    open.value = !open.value
+}
 </script>

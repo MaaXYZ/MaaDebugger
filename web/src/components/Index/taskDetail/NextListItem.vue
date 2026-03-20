@@ -16,12 +16,13 @@
                                 @request-detail="$emit('requestDetail', $event)" />
                     <SubflowDisclosure
                         v-if="entry.recos[0] && entry.recos[0].childs.length > 0"
-                        label="Subflow"
+                        label="Internal flow"
+                        kind="reco"
                         :count="countRecoSubflowNodes(entry.recos[0])"
-                        :default-open="hasRunningInAnyNodes(entry.recos[0].childs)"
                     >
                         <SubflowTree
                             :nodes="entry.recos[0].childs"
+                            kind="reco"
                             @request-detail="$emit('requestDetail', $event)"
                             @request-action-detail="$emit('requestActionDetail', $event)"
                         />
@@ -45,12 +46,13 @@
                                         @request-detail="$emit('requestDetail', $event)" />
                             <SubflowDisclosure
                                 v-if="reco.childs.length > 0"
-                                label="Subflow"
+                                label="Internal flow"
+                                kind="reco"
                                 :count="countRecoSubflowNodes(reco)"
-                                :default-open="hasRunningInAnyNodes(reco.childs)"
                             >
                                 <SubflowTree
                                     :nodes="reco.childs"
+                                    kind="reco"
                                     @request-detail="$emit('requestDetail', $event)"
                                     @request-action-detail="$emit('requestActionDetail', $event)"
                                 />
@@ -69,7 +71,7 @@ import type { NextListScope, NextListItem, RecoScope } from './types'
 import RecoButton from './RecoButton.vue'
 import SubflowTree from './SubflowTree.vue'
 import SubflowDisclosure from './SubflowDisclosure.vue'
-import { countRecoSubflowNodes, hasRunningInAnyNodes } from './scopeTree'
+import { countRecoSubflowNodes } from './scopeTree'
 
 const props = defineProps<{
     nextList: NextListScope

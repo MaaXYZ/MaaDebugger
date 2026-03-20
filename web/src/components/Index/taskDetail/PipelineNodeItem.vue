@@ -51,12 +51,13 @@
                                 @click="$emit('requestActionDetail', node.action!.msg.action_id)" />
                             <SubflowDisclosure
                                 v-if="node.action.childs.length > 0"
-                                label="Subflow"
+                                label="Internal flow"
+                                kind="action"
                                 :count="countActionSubflowNodes(node.action)"
-                                :default-open="hasRunningInAnyNodes(node.action.childs)"
                             >
                                 <SubflowTree
                                     :nodes="node.action.childs"
+                                    kind="action"
                                     @request-detail="$emit('requestDetail', $event)"
                                     @request-action-detail="$emit('requestActionDetail', $event)"
                                 />
@@ -77,7 +78,7 @@ import NextListItem from './NextListItem.vue'
 import NodeStatusButton from './NodeStatusButton.vue'
 import SubflowTree from './SubflowTree.vue'
 import SubflowDisclosure from './SubflowDisclosure.vue'
-import { countActionSubflowNodes, hasRunningInAnyNodes } from './scopeTree'
+import { countActionSubflowNodes } from './scopeTree'
 
 const props = defineProps<{
     node: PipelineNodeScope

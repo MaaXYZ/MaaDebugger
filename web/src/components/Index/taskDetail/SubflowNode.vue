@@ -48,12 +48,13 @@
                             />
                             <SubflowDisclosure
                                 v-if="node.action.childs.length > 0"
-                                label="Subflow"
+                                label="Internal flow"
+                                kind="action"
                                 :count="countActionSubflowNodes(node.action)"
-                                :default-open="hasRunningInAnyNodes(node.action.childs)"
                             >
                                 <SubflowTree
                                     :nodes="node.action.childs"
+                                    kind="action"
                                     @request-detail="$emit('requestDetail', $event)"
                                     @request-action-detail="$emit('requestActionDetail', $event)"
                                 />
@@ -70,12 +71,13 @@
                     />
                     <SubflowDisclosure
                         v-if="node.reco && node.reco.childs.length > 0"
-                        label="Subflow"
+                        label="Internal flow"
+                        kind="reco"
                         :count="countRecoSubflowNodes(node.reco)"
-                        :default-open="hasRunningInAnyNodes(node.reco.childs)"
                     >
                         <SubflowTree
                             :nodes="node.reco.childs"
+                            kind="reco"
                             @request-detail="$emit('requestDetail', $event)"
                             @request-action-detail="$emit('requestActionDetail', $event)"
                         />
@@ -93,12 +95,13 @@
                     />
                     <SubflowDisclosure
                         v-if="node.action && node.action.childs.length > 0"
-                        label="Subflow"
+                        label="Internal flow"
+                        kind="action"
                         :count="countActionSubflowNodes(node.action)"
-                        :default-open="hasRunningInAnyNodes(node.action.childs)"
                     >
                         <SubflowTree
                             :nodes="node.action.childs"
+                            kind="action"
                             @request-detail="$emit('requestDetail', $event)"
                             @request-action-detail="$emit('requestActionDetail', $event)"
                         />
@@ -121,7 +124,6 @@ import SubflowDisclosure from './SubflowDisclosure.vue'
 import {
     countActionSubflowNodes,
     countRecoSubflowNodes,
-    hasRunningInAnyNodes,
     nextListStableKey,
 } from './scopeTree'
 
