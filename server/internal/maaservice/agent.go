@@ -2,6 +2,7 @@ package maaservice
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	maa "github.com/MaaXYZ/maa-framework-go/v4"
@@ -23,13 +24,15 @@ type AgentConnectResult struct {
 }
 
 type AgentService struct {
+	mu          sync.Mutex
 	clients     map[string]*agentEntry
 	resourceSvc *ResourceService
 }
 
 type agentEntry struct {
-	client *maa.AgentClient
-	status string
+	client        *maa.AgentClient
+	ownedResource *maa.Resource
+	status        string
 }
 
 func NewAgentService(resSvc *ResourceService) *AgentService {
@@ -45,9 +48,13 @@ func (s *AgentService) Connect(identifier string) AgentConnectResult {
 		return AgentConnectResult{Error: "identifier is empty"}
 	}
 
-	s.Disconnect(identifier)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.disconnectLocked(identifier, false)
 
 	res := s.resourceSvc.Resource()
+	var ownedResource *maa.Resource
 	if res == nil {
 		agentServiceLog.Info().Msg("no resource loaded, creating empty resource")
 		var err error
@@ -56,32 +63,41 @@ func (s *AgentService) Connect(identifier string) AgentConnectResult {
 			agentServiceLog.Error().Err(err).Msg("create empty resource failed")
 			return AgentConnectResult{Error: fmt.Sprintf("create resource failed: %v", err)}
 		}
+		ownedResource = res
 	}
 
 	client, err := maa.NewAgentClient(maa.WithIdentifier(identifier))
 	if err != nil {
+		if ownedResource != nil {
+			ownedResource.Destroy()
+		}
 		agentServiceLog.Error().Err(err).Str("identifier", identifier).Msg("create agent client failed")
 		return AgentConnectResult{Error: fmt.Sprintf("create agent client failed: %v", err)}
 	}
 
 	if err := client.BindResource(res); err != nil {
+		client.Destroy()
+		if ownedResource != nil {
+			ownedResource.Destroy()
+		}
 		agentServiceLog.Error().Err(err).Str("identifier", identifier).Msg("bind resource failed")
-		client = nil
 		return AgentConnectResult{Error: fmt.Sprintf("bind resource failed: %v", err)}
 	}
 
-	entry := &agentEntry{client: client, status: "connecting"}
+	entry := &agentEntry{client: client, ownedResource: ownedResource, status: "connecting"}
 	s.clients[identifier] = entry
 
 	client.SetTimeout(5000 * time.Millisecond)
 	if err := client.Connect(); err != nil {
 		entry.status = "failed"
+		s.destroyEntry(entry)
 		agentServiceLog.Warn().Err(err).Str("identifier", identifier).Msg("connect failed")
 		return AgentConnectResult{Error: fmt.Sprintf("connect failed: %v", err)}
 	}
 
 	if !client.Connected() {
 		entry.status = "failed"
+		s.destroyEntry(entry)
 		agentServiceLog.Warn().Str("identifier", identifier).Msg("connected returned false")
 		return AgentConnectResult{Error: "agent client reports not connected"}
 	}
@@ -92,41 +108,75 @@ func (s *AgentService) Connect(identifier string) AgentConnectResult {
 }
 
 func (s *AgentService) Disconnect(identifier string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.disconnectLocked(identifier, false)
+}
+
+func (s *AgentService) disconnectLocked(identifier string, cleanup bool) {
 	entry, ok := s.clients[identifier]
 	if !ok {
 		return
 	}
 	delete(s.clients, identifier)
 
-	if entry == nil || entry.client == nil {
+	s.disconnectEntry(identifier, entry, cleanup)
+}
+
+func (s *AgentService) disconnectEntry(identifier string, entry *agentEntry, cleanup bool) {
+	if entry == nil {
 		return
 	}
 
-	agentServiceLog.Info().Str("identifier", identifier).Msg("disconnecting agent")
-	if err := entry.client.Disconnect(); err != nil {
-		agentServiceLog.Warn().Err(err).Str("identifier", identifier).Msg("agent disconnect failed")
+	if entry.client != nil {
+		msg := "disconnecting agent"
+		if cleanup {
+			msg = "disconnecting agent during cleanup"
+		}
+		agentServiceLog.Info().Str("identifier", identifier).Msg(msg)
+		if err := entry.client.Disconnect(); err != nil {
+			warnMsg := "agent disconnect failed"
+			if cleanup {
+				warnMsg = "agent disconnect during cleanup failed"
+			}
+			agentServiceLog.Warn().Err(err).Str("identifier", identifier).Msg(warnMsg)
+		}
 	}
+
 	entry.status = "failed"
-	entry.client = nil
+	s.destroyEntry(entry)
+}
+
+func (s *AgentService) destroyEntry(entry *agentEntry) {
+	if entry == nil {
+		return
+	}
+
+	if entry.client != nil {
+		entry.client.Destroy()
+		entry.client = nil
+	}
+	if entry.ownedResource != nil {
+		entry.ownedResource.Destroy()
+		entry.ownedResource = nil
+	}
 }
 
 func (s *AgentService) DisconnectAll() {
-	for identifier, entry := range s.clients {
-		if entry == nil || entry.client == nil {
-			continue
-		}
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-		agentServiceLog.Info().Str("identifier", identifier).Msg("disconnecting agent during cleanup")
-		if err := entry.client.Disconnect(); err != nil {
-			agentServiceLog.Warn().Err(err).Str("identifier", identifier).Msg("agent disconnect during cleanup failed")
-		}
-		entry.status = "failed"
-		entry.client = nil
+	for identifier, entry := range s.clients {
+		s.disconnectEntry(identifier, entry, true)
 	}
 	s.clients = make(map[string]*agentEntry)
 }
 
 func (s *AgentService) List() []AgentInfo {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	out := make([]AgentInfo, 0, len(s.clients))
 	for identifier, entry := range s.clients {
 		info := AgentInfo{
@@ -143,6 +193,9 @@ func (s *AgentService) List() []AgentInfo {
 }
 
 func (s *AgentService) GetClient(identifier string) *maa.AgentClient {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if entry, ok := s.clients[identifier]; ok {
 		return entry.client
 	}
@@ -150,6 +203,9 @@ func (s *AgentService) GetClient(identifier string) *maa.AgentClient {
 }
 
 func (s *AgentService) ConnectedClients() map[string]*maa.AgentClient {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	out := make(map[string]*maa.AgentClient)
 	for identifier, entry := range s.clients {
 		if entry == nil || entry.client == nil || entry.status != "connected" {
@@ -165,6 +221,9 @@ func (s *AgentService) ConnectedClients() map[string]*maa.AgentClient {
 }
 
 func (s *AgentService) ConnectedCount() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	n := 0
 	for _, entry := range s.clients {
 		if entry.status == "connected" {
