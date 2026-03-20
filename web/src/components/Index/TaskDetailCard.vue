@@ -112,6 +112,7 @@ import PipelineNodeItem from './taskDetail/PipelineNodeItem.vue'
 import RecoDetailModal from './taskDetail/RecoDetailModal.vue'
 import ActionDetailModal from './taskDetail/ActionDetailModal.vue'
 import { clearCache } from '@/api/http'
+import { findRecoNameInTasks } from './taskDetail/scopeTree'
 
 const route = useRoute()
 const taskDetailSettingsStore = useTaskDetailSettingsStore()
@@ -241,18 +242,7 @@ const selectedRecoId = ref<number | null>(null)
 const selectedRecoName = ref<string | null>(null)
 
 function findRecoNameById(recoId: number): string | null {
-    for (const task of allTasks.value) {
-        for (const pipelineNode of task.childs) {
-            for (const nextList of pipelineNode.reco) {
-                for (const reco of nextList.childs) {
-                    if (reco.msg.reco_id === recoId) {
-                        return reco.msg.name
-                    }
-                }
-            }
-        }
-    }
-    return null
+    return findRecoNameInTasks(allTasks.value, recoId)
 }
 
 function onRequestDetail(recoId: number) {

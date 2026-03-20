@@ -28,9 +28,13 @@
                             <span class="text-xs text-dimmed">Reco</span>
                             <span class="text-xs text-dimmed tabular-nums">({{ node.reco.length }})</span>
                         </div>
-                        <div class="pl-5 flex flex-wrap items-center gap-1.5">
+                        <div class="pl-5 flex flex-wrap items-start gap-1.5">
                             <template v-for="(nextList, idx) in node.reco" :key="idx">
-                                <NextListItem :next-list="nextList" @request-detail="$emit('requestDetail', $event)" />
+                                <NextListItem
+                                    :next-list="nextList"
+                                    @request-detail="$emit('requestDetail', $event)"
+                                    @request-action-detail="$emit('requestActionDetail', $event)"
+                                />
                             </template>
                         </div>
                     </div>
@@ -41,10 +45,22 @@
                             <UIcon name="i-lucide-play" class="size-3.5 shrink-0 text-dimmed" />
                             <span class="text-xs text-dimmed">Action</span>
                         </div>
-                        <div class="pl-5">
+                        <div class="pl-5 flex flex-col gap-2">
                             <NodeStatusButton :status="node.action.status" :label="node.action.msg.name"
                                 :action-id="node.action.msg.action_id" size="sm"
                                 @click="$emit('requestActionDetail', node.action!.msg.action_id)" />
+                            <SubflowDisclosure
+                                v-if="node.action.childs.length > 0"
+                                label="Subflow"
+                                :count="countActionSubflowNodes(node.action)"
+                                :default-open="hasRunningInAnyNodes(node.action.childs)"
+                            >
+                                <SubflowTree
+                                    :nodes="node.action.childs"
+                                    @request-detail="$emit('requestDetail', $event)"
+                                    @request-action-detail="$emit('requestActionDetail', $event)"
+                                />
+                            </SubflowDisclosure>
                         </div>
                     </div>
                 </div>
@@ -59,6 +75,9 @@ import type { PipelineNodeScope } from './types'
 import StatusIcon from './StatusIcon.vue'
 import NextListItem from './NextListItem.vue'
 import NodeStatusButton from './NodeStatusButton.vue'
+import SubflowTree from './SubflowTree.vue'
+import SubflowDisclosure from './SubflowDisclosure.vue'
+import { countActionSubflowNodes, hasRunningInAnyNodes } from './scopeTree'
 
 const props = defineProps<{
     node: PipelineNodeScope
