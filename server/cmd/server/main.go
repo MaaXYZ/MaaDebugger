@@ -130,9 +130,6 @@ func main() {
 	})
 
 	cfgStore := configstore.New(getCwd())
-	defer cfgStore.Close()
-	defer agentService.DisconnectAll()
-	defer screenshotService.Stop()
 
 	// Get args
 	devMode, _ := parsed.Bool("dev")
@@ -150,6 +147,9 @@ func main() {
 			log.Error().Err(err).Msg("maa release failed")
 		}
 	}()
+	defer screenshotService.Stop()
+	defer agentService.DisconnectAll()
+	defer cfgStore.Close()
 
 	router := httpapi.NewRouter(httpapi.Dependencies{
 		StatusStore:       statusStore,
