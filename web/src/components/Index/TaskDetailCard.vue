@@ -1,50 +1,40 @@
 <template>
-    <UCard class="w-full xl:min-h-[34rem]" size="xl" :ui="{ root: 'h-full flex flex-col', body: 'flex-1' }">
+    <UCard class="w-full max-h-[calc(100vh-8rem)] xl:h-[calc(100vh-8rem)]" size="xl"
+        :ui="{ root: 'h-full flex flex-col', body: 'flex flex-1 min-h-0 flex-col overflow-hidden' }">
         <template #header>
-            <div class="flex flex-row items-center gap-2 min-h-10">
+            <div class="flex min-h-10 items-center gap-2">
                 <span class="font-bold">Task Detail</span>
-                <div class="flex-1"></div>
-                <UButton v-if="allTasks.length > 0" size="xs" variant="ghost" color="neutral" icon="i-lucide-trash-2"
-                    @click="resetGraph" />
+                <div class="min-w-0 flex-1" />
+                <div v-if="allTasks.length > 0" class="flex min-w-0 flex-wrap items-center justify-end gap-2">
+                    <USelect :model-value="activeIndex" :items="taskSelectItems" value-key="value"
+                        class="w-52 min-w-0 max-w-[40vw]" size="sm" arrow @update:model-value="onTaskSelect" />
+                    <USelect :model-value="selectedNodeId ?? undefined" :items="nodeSelectItems" value-key="value"
+                        class="w-56 min-w-0 max-w-[44vw]" size="sm" arrow :disabled="nodeSelectItems.length === 0"
+                        @update:model-value="onNodeSelect" />
+                    <UButton v-if="isHistoryMode" size="xs" color="primary" variant="soft"
+                        icon="i-lucide-arrow-down-to-line" @click="goToLatestPage">
+                        Latest
+                    </UButton>
+                    <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-trash-2" @click="resetGraph" />
+                </div>
             </div>
         </template>
 
         <template #default>
-            <div class="flex h-full flex-col gap-3 min-h-0 xl:grid xl:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.9fr)] xl:items-start">
-                <div v-if="allTasks.length === 0" class="xl:col-span-2 flex min-h-[20rem] xl:min-h-[28rem] items-center">
+            <div class="flex h-full min-h-0 flex-col gap-3">
+                <div v-if="allTasks.length === 0" class="flex min-h-80 items-center">
                     <UEmpty icon="i-lucide:list-checks" title="No Task Details"
                         class="w-full rounded-xl border border-dashed border-default bg-default/25 py-10" />
                 </div>
 
                 <template v-else-if="activeTask">
-                    <TaskDetailDisplayPane
-                        :active-task="activeTask"
-                        :active-index="activeIndex"
-                        :displayed-nodes="displayedNodes"
-                        :selected-node="selectedNode"
-                        :entry-node-id="entryNodeId"
-                        :current-page="currentPage"
-                        :total-pages="totalPages"
-                        :reverse-node-order="reverseNodeOrder"
-                        :is-history-mode="isHistoryMode"
-                        @go-page="goToPage"
-                        @go-latest="goToLatestPage"
-                        @request-detail="onRequestDetail"
-                        @request-action-detail="onRequestActionDetail"
-                    />
-
-                    <TaskDetailNavigatorPane
-                        :tasks="allTasks"
-                        :active-task="activeTask"
-                        :active-index="activeIndex"
-                        :displayed-nodes="displayedNodes"
-                        :selected-node-id="selectedNodeId"
-                        :entry-node-id="entryNodeId"
-                        :is-history-mode="isHistoryMode"
-                        @select-task="selectTask"
-                        @select-node="selectNode"
-                        @go-latest="goToLatestPage"
-                    />
+                    <TaskDetailDisplayPane :active-task="activeTask" :active-index="activeIndex"
+                        :displayed-nodes="displayedNodes" :selected-node-id="selectedNodeId"
+                        :entry-node-id="entryNodeId" :current-page="currentPage" :total-pages="totalPages"
+                        :total-node-count="totalNodeCount" :reverse-node-order="reverseNodeOrder"
+                        :is-history-mode="isHistoryMode" :scroll-request-key="scrollRequestKey" @go-page="goToPage"
+                        @go-latest="goToLatestPage" @request-detail="onRequestDetail"
+                        @request-action-detail="onRequestActionDetail" />
                 </template>
             </div>
         </template>
@@ -69,7 +59,6 @@ import {
 } from '@/stores/taskDetail'
 import { useTaskDetailSettingsStore } from '@/stores/taskDetailSettings'
 import TaskDetailDisplayPane from './taskDetail/TaskDetailDisplayPane.vue'
-import TaskDetailNavigatorPane from './taskDetail/TaskDetailNavigatorPane.vue'
 import RecoDetailModal from './taskDetail/RecoDetailModal.vue'
 import ActionDetailModal from './taskDetail/ActionDetailModal.vue'
 import { clearCache } from '@/api/http'
@@ -102,6 +91,7 @@ const totalPages = computed(() => {
     if (effectiveOrderedNodes.value.length === 0) return 1
     return Math.ceil(effectiveOrderedNodes.value.length / nodePageSize.value)
 })
+const totalNodeCount = computed(() => effectiveOrderedNodes.value.length)
 
 const latestPage = computed(() => reverseNodeOrder.value ? 1 : totalPages.value)
 const currentPage = computed(() => isHistoryMode.value ? historyPage.value : livePage.value)
@@ -112,15 +102,22 @@ const displayedNodes = computed(() => {
     return effectiveOrderedNodes.value.slice(start, end)
 })
 
-const entryNodeId = computed(() => activeTask.value?.entryNodeId ?? null)
+const taskSelectItems = computed(() =>
+    allTasks.value.map((task, index) => ({
+        label: `#${index + 1} ${task.msg.entry}`,
+        value: index,
+    })),
+)
+const nodeSelectItems = computed(() =>
+    displayedNodes.value.map((node) => ({
+        label: node.msg.name,
+        value: node.msg.node_id,
+        muted: `#${node.msg.node_id} · ${node.status}`,
+    })),
+)
 
-const selectedNode = computed(() => {
-    if (displayedNodes.value.length === 0) return null
-    if (selectedNodeId.value == null) {
-        return displayedNodes.value[0] ?? null
-    }
-    return displayedNodes.value.find((node) => node.msg.node_id === selectedNodeId.value) ?? displayedNodes.value[0] ?? null
-})
+const entryNodeId = computed(() => activeTask.value?.entryNodeId ?? null)
+const scrollRequestKey = ref(0)
 
 function setLivePage(page: number) {
     livePage.value = Math.min(Math.max(page, 1), totalPages.value)
@@ -167,6 +164,17 @@ function selectTask(index: number) {
 
 function selectNode(nodeId: number) {
     selectedNodeId.value = nodeId
+    scrollRequestKey.value += 1
+}
+
+function onTaskSelect(value: string | number | undefined) {
+    if (typeof value !== 'number') return
+    selectTask(value)
+}
+
+function onNodeSelect(value: string | number | undefined) {
+    if (typeof value !== 'number') return
+    selectNode(value)
 }
 
 watch(() => allTasks.value.length, (newLen, oldLen) => {

@@ -1,20 +1,15 @@
 <template>
-    <UTooltip :text="reco.msg.name" class="inline-flex max-w-full min-w-0">
-        <UButton size="sm" :variant="'outline'" :color="btnColor" :icon="btnIcon" :loading="reco.status === 'running'"
-                 class="font-medium max-w-full min-w-0 justify-start overflow-hidden"
-                 @click="$emit('requestDetail', reco.msg.reco_id)">
-            <template #default>
-                <span class="flex items-center gap-1 max-w-full min-w-0 text-left overflow-hidden">
-                    <span class="truncate block min-w-0">{{ itemBrief }}</span>
-                    <UBadge v-if="algorithmType" size="xs" color="info" variant="subtle" class="shrink-0">
-                        {{ algorithmType }}
-                    </UBadge>
-                    <span v-if="taskDetailSettingsStore.showRecoId" class="text-[11px] text-dimmed shrink-0">#{{
-                        reco.msg.reco_id }}</span>
-                </span>
-            </template>
-        </UButton>
-    </UTooltip>
+    <UButton size="sm" variant="outline" :color="btnColor" :icon="btnIcon" :loading="reco.status === 'running'"
+        class="max-w-full min-w-0 justify-start overflow-hidden font-medium"
+        @click="$emit('requestDetail', reco.msg.reco_id)">
+        <template #default>
+            <span class="flex max-w-full min-w-0 items-center gap-1.5 text-left overflow-hidden">
+                <span v-if="primaryLabel" class="block min-w-0 truncate">{{ primaryLabel }}</span>
+                <span v-for="meta in metaItems" :key="meta" class="shrink-0 text-[11px] text-dimmed">{{ meta
+                }}</span>
+            </span>
+        </template>
+    </UButton>
 </template>
 
 <script setup lang="ts">
@@ -35,13 +30,31 @@ defineEmits<{
 
 const taskDetailSettingsStore = useTaskDetailSettingsStore()
 
-const itemBrief = computed(() => {
-    if (!props.info) return props.reco.msg.name
-
-    const label = props.info.label?.trim() || props.info.name
-    if (label === props.reco.msg.name) return label
-    return `${label} = ${props.reco.msg.name}`
+const primaryLabel = computed(() => {
+    const label = props.info?.label?.trim()
+    if (label) return label
+    if (props.info?.anchor) return 'Anchor'
+    if (props.info?.jump_back) return 'JumpBack'
+    return ''
 })
+
+const metaItems = computed(() => {
+    const items: string[] = []
+    if (props.algorithmType) {
+        items.push(props.algorithmType)
+    }
+    if (props.info?.anchor && primaryLabel.value !== 'Anchor') {
+        items.push('Anchor')
+    }
+    if (props.info?.jump_back && primaryLabel.value !== 'JumpBack') {
+        items.push('JumpBack')
+    }
+    if (taskDetailSettingsStore.showRecoId) {
+        items.push(`#${props.reco.msg.reco_id}`)
+    }
+    return items
+})
+
 
 const btnColor = computed(() => {
     if (props.reco.status === 'success') return 'success' as const

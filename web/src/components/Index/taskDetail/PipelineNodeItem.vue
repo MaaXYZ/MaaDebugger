@@ -1,5 +1,6 @@
 <template>
-    <div class="rounded-lg border border-default transition-colors hover:bg-elevated w-full flex-1">
+    <div class="w-full flex-1 rounded-lg border transition-colors"
+        :class="highlighted ? 'border-primary bg-primary/5 ring-1 ring-inset ring-primary/30' : 'border-default hover:bg-elevated'">
         <!-- Header: always visible -->
         <div class="flex flex-row items-center gap-2 min-w-0 p-3 cursor-pointer select-none w-full"
             @click="expanded = !expanded">
@@ -7,8 +8,9 @@
                 class="size-3.5 shrink-0 text-dimmed" />
             <UIcon name="i-lucide-workflow" class="size-4 shrink-0 text-dimmed" />
             <div class="min-w-0 flex-1">
-                <div class="min-w-0 flex items-center gap-2">
-                    <span class="text-sm font-medium truncate block" :title="node.msg.name">{{ node.msg.name }}</span>
+                <div class="min-w-0 flex items-start gap-2">
+                    <span class="block min-w-0 flex-1 break-all text-sm font-medium" :title="node.msg.name">{{
+                        node.msg.name }}</span>
                     <UBadge v-if="isEntry" label="Entry" color="primary" variant="soft" size="xs" class="shrink-0" />
                 </div>
             </div>
@@ -30,11 +32,8 @@
                         </div>
                         <div class="pl-5 flex flex-wrap items-start gap-1.5">
                             <template v-for="(nextList, idx) in node.reco" :key="idx">
-                                <NextListItem
-                                    :next-list="nextList"
-                                    @request-detail="$emit('requestDetail', $event)"
-                                    @request-action-detail="$emit('requestActionDetail', $event)"
-                                />
+                                <NextListItem :next-list="nextList" @request-detail="$emit('requestDetail', $event)"
+                                    @request-action-detail="$emit('requestActionDetail', $event)" />
                             </template>
                         </div>
                     </div>
@@ -46,21 +45,14 @@
                             <span class="text-xs text-dimmed">Action</span>
                         </div>
                         <div class="pl-5 flex flex-col gap-2">
-                            <NodeStatusButton :status="node.action.status" :label="node.action.msg.name"
+                            <NodeStatusButton :status="node.action.status" label="Action" :meta="['Custom']"
                                 :action-id="node.action.msg.action_id" size="sm"
                                 @click="$emit('requestActionDetail', node.action!.msg.action_id)" />
-                            <SubflowDisclosure
-                                v-if="node.action.childs.length > 0"
-                                label="Internal flow"
-                                kind="action"
-                                :count="countActionSubflowNodes(node.action)"
-                            >
-                                <SubflowTree
-                                    :nodes="node.action.childs"
-                                    kind="action"
+                            <SubflowDisclosure v-if="node.action.childs.length > 0" label="Internal flow" kind="action"
+                                :count="countActionSubflowNodes(node.action)">
+                                <SubflowTree :nodes="node.action.childs" kind="action"
                                     @request-detail="$emit('requestDetail', $event)"
-                                    @request-action-detail="$emit('requestActionDetail', $event)"
-                                />
+                                    @request-action-detail="$emit('requestActionDetail', $event)" />
                             </SubflowDisclosure>
                         </div>
                     </div>
@@ -84,6 +76,7 @@ const props = defineProps<{
     node: PipelineNodeScope
     isEntry?: boolean
     defaultExpanded?: boolean
+    highlighted?: boolean
 }>()
 
 defineEmits<{

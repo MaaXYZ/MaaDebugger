@@ -41,7 +41,9 @@
                         <div class="pl-4 flex flex-col gap-2">
                             <NodeStatusButton
                                 :status="node.action.status"
-                                :label="node.action.msg.name"
+                                :label="'Action'"
+                                :tooltip="node.action.msg.name"
+                                :meta="['Custom']"
                                 :action-id="node.action.msg.action_id"
                                 size="sm"
                                 @click="$emit('requestActionDetail', node.action.msg.action_id)"
@@ -88,7 +90,9 @@
                     <NodeStatusButton
                         v-if="node.action"
                         :status="node.action.status"
-                        :label="node.action.msg.name"
+                        :label="'Action'"
+                        :tooltip="node.action.msg.name"
+                        :meta="['Custom']"
                         :action-id="node.action.msg.action_id"
                         size="sm"
                         @click="$emit('requestActionDetail', node.action.msg.action_id)"

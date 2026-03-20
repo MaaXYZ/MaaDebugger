@@ -10,7 +10,7 @@
                 </UTooltip>
             </template>
 
-            <template v-else-if="entry.recos.length === 1 && entry.recos[0]?.msg.name === entry.item.name">
+            <template v-else-if="entry.recos.length === 1 && entry.recos[0]?.msg.name === entry.item.name && !entry.recos[0]?.childs.length">
                 <div class="flex max-w-full min-w-0 flex-col gap-2">
                     <RecoButton :reco="entry.recos[0]" :info="entry.item" :algorithm-type="entry.item.algorithm" use-warning
                                 @request-detail="$emit('requestDetail', $event)" />
