@@ -6,9 +6,13 @@
                 :label="showLeftTabs ? 'Hide Setup' : 'Show Setup'" @click="toggleLeftTabs" />
         </div>
 
-        <div class="flex flex-col gap-4 xl:flex-row xl:items-start">
-            <div v-show="showLeftTabs"
-                class="order-3 w-full min-w-0 flex flex-col gap-4 xl:order-0 xl:shrink-0 xl:basis-[clamp(260px,28vw,32rem)] xl:max-w-lg">
+        <div class="flex flex-col xl:flex-row xl:items-start">
+            <div
+                class="order-3 min-w-0 overflow-hidden motion-reduce:transition-none xl:order-0 xl:shrink-0 xl:w-[clamp(260px,28vw,32rem)]"
+                :class="showLeftTabs
+                    ? 'mb-4 max-h-[200rem] max-w-full opacity-100 transition-[max-height,opacity,margin-bottom] duration-200 ease-out xl:mb-0 xl:mr-4 xl:max-h-none xl:max-w-lg xl:transition-[max-width,opacity,margin-right]'
+                    : 'pointer-events-none mb-0 max-h-0 max-w-0 opacity-0 transition-[max-height,opacity,margin-bottom] duration-150 ease-in xl:mr-0 xl:max-h-none xl:transition-[max-width,opacity,margin-right]'"
+            >
                 <LeftTabs />
             </div>
 
