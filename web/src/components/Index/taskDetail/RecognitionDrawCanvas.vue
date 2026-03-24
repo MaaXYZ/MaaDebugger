@@ -3,12 +3,12 @@
         <!-- LEFT PANEL: controls + result list + detail -->
         <div v-if="!showOriginalDraw" class="reco-left">
             <!-- Draw mode selector -->
-            <div v-if="!showOriginalDraw" class="flex items-center gap-2 px-1">
+            <div class="flex items-center gap-2 px-1">
                 <UTabs key="value" v-model="drawMode" :items="drawModeOptions" class="flex-1" />
             </div>
 
             <!-- Selectable modes: search + toggle all -->
-            <div v-if="!showOriginalDraw && isSelectableMode" class="flex items-center gap-1.5 px-1">
+            <div v-if="isSelectableMode" class="flex items-center gap-1.5 px-1">
                 <UInput v-model="selectionSearch" icon="i-lucide-search" size="xs" placeholder="Filter..."
                     class="flex-1" />
                 <UTooltip :text="allSelectedInCurrentMode ? 'Deselect all' : 'Select all'">
@@ -19,7 +19,7 @@
             </div>
 
             <!-- Result list -->
-            <div v-if="!showOriginalDraw && showResultList" class="reco-list">
+            <div v-if="showResultList" class="reco-list">
                 <template v-if="isSelectableMode">
                     <label v-for="entry in filteredSelectableEntries" :key="`${drawMode}-${entry.idx}`"
                         class="reco-list-item" :class="[
@@ -61,7 +61,7 @@
             </div>
 
             <!-- Detail panel -->
-            <div v-if="!showOriginalDraw" class="reco-detail">
+            <div class="reco-detail">
                 <div v-if="focusedDetailItem" class="flex flex-col gap-2 text-xs">
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0">
@@ -197,9 +197,7 @@
                     <USeparator orientation="vertical" class="h-4" />
                     <UTooltip :text="showOriginalDraw ? 'Hide raw draw' : 'Show raw draw'">
                         <UButton color="neutral" :variant="showOriginalDraw ? 'soft' : 'ghost'" size="xs"
-                            icon="i-lucide-images" @click="showOriginalDraw = !showOriginalDraw">
-                            Raw Draw
-                        </UButton>
+                            icon="i-lucide-images" @click="showOriginalDraw = !showOriginalDraw" label="Raw Draw" />
                     </UTooltip>
                 </template>
             </div>
