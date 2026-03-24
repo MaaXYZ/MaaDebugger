@@ -99,16 +99,12 @@
 
         <!-- RIGHT PANEL: canvas + toolbar -->
         <div class="reco-right" :class="showOriginalDraw ? 'w-full' : ''">
-            <div v-if="showOriginalDraw" ref="containerRef" class="reco-canvas-container w-full"
-                :style="rawDrawContainerStyle" @wheel.prevent="onWheel">
-                <div v-if="activeDrawImageObj" class="absolute inset-0 flex items-center justify-center select-none"
-                    :class="[isDragging ? 'cursor-grabbing' : 'cursor-grab']" @mousedown="onMouseDown"
-                    @mousemove="onMouseMove" @mouseup="onMouseUp" @mouseleave="onMouseLeave">
-                    <div class="relative w-full h-full flex items-center justify-center" :style="rawDrawWrapperStyle">
-                        <img :src="activeDrawImageUrl || undefined" alt="Raw Draw" class="reco-original-draw-image"
-                            draggable="false" />
-                    </div>
-                </div>
+            <div v-if="showOriginalDraw" class="reco-canvas-container w-full overflow-y-auto"
+                :style="rawDrawContainerStyle">
+                <UScrollArea v-if="drawImageUrls.length > 0" orientation="vertical" class="h-full w-full">
+                    <img v-for="(url, idx) in drawImageUrls" :key="idx" :src="url" :alt="`Raw Draw ${idx + 1}`"
+                        class="w-full rounded border border-default bg-muted object-contain" draggable="false" />
+                </UScrollArea>
                 <div v-else class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted">
                     <UIcon name="i-lucide-image-off" class="size-10" />
                     <span class="text-xs">No raw draw available</span>
@@ -428,15 +424,12 @@ const drawImageUrls = computed(() => drawImages.value
     .map((item) => item.url || getTaskImageUrl(item.id))
     .filter((url): url is string => !!url))
 const hasOriginalDrawImages = computed(() => drawImageUrls.value.length > 0)
-const activeDrawImageUrl = computed(() => drawImageUrls.value[0] ?? null)
-const activeDrawImageObj = ref<HTMLImageElement | null>(null)
 const showOriginalDraw = ref(false)
 const results = computed(() => props.detail.results)
 const rois = computed<RectResponse[]>(() => props.rois ?? [])
 
-const activeImageObj = computed(() => showOriginalDraw.value ? activeDrawImageObj.value : rawImageObj.value)
-const imgWidth = computed(() => activeImageObj.value?.naturalWidth ?? 0)
-const imgHeight = computed(() => activeImageObj.value?.naturalHeight ?? 0)
+const imgWidth = computed(() => rawImageObj.value?.naturalWidth ?? 0)
+const imgHeight = computed(() => rawImageObj.value?.naturalHeight ?? 0)
 const containerStyle = computed(() => {
     if (props.fullscreen) {
         return { flex: '1 1 0', minHeight: '0' }
@@ -459,14 +452,6 @@ const rawDrawContainerStyle = computed(() => {
     }
     return { maxHeight: '60vh', width: '100%' }
 })
-
-const rawDrawWrapperStyle = computed(() => ({
-    width: '100%',
-    height: '100%',
-    transform: `translate(${panOffset.value.x}px, ${panOffset.value.y}px) scale(${zoomLevel.value})`,
-    transformOrigin: 'center center',
-    transition: isDragging.value ? 'none' : 'transform 0.15s ease-out',
-}))
 
 const allResults = computed<RecoResultItem[]>(() => {
     if (!results.value) return []
@@ -960,18 +945,6 @@ function loadRawImage() {
     img.src = rawImage.value.url || getTaskImageUrl(rawImage.value.id)
 }
 
-function loadActiveDrawImage() {
-    if (!activeDrawImageUrl.value) {
-        activeDrawImageObj.value = null
-        return
-    }
-    const img = new Image()
-    img.onload = () => {
-        activeDrawImageObj.value = img
-    }
-    img.src = activeDrawImageUrl.value
-}
-
 // --- Zoom ---
 function zoomIn() {
     zoomLevel.value = Math.min(MAX_ZOOM, +(zoomLevel.value + ZOOM_STEP).toFixed(2))
@@ -988,14 +961,10 @@ function resetView() {
 }
 
 function onWheel(e: WheelEvent) {
-    if (!activeImageObj.value) return
+    if (!rawImageObj.value) return
     if (e.deltaY < 0) zoomIn()
     else zoomOut()
 }
-
-watch(activeDrawImageUrl, () => {
-    loadActiveDrawImage()
-}, { immediate: true })
 
 // --- Download ---
 function downloadCanvas() {
@@ -1024,11 +993,6 @@ watch(rawImage, () => {
     cropCache.clear()
     loadRawImage()
     if (!showOriginalDraw.value) resetView()
-})
-
-watch(activeDrawImageUrl, () => {
-    loadActiveDrawImage()
-    if (showOriginalDraw.value) resetView()
 })
 
 watch(showOriginalDraw, () => {
