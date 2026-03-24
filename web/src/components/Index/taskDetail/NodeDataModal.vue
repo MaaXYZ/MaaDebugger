@@ -2,13 +2,7 @@
     <UModal v-model:open="open" :title="modalTitle" :ui="{ content: 'sm:max-w-[90vw] sm:w-[90vw] max-h-[90vh]' }">
         <template #body>
             <div class="flex flex-col gap-3 min-h-105">
-                <div class="flex items-center justify-between gap-2 flex-wrap">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <UBadge color="neutral" variant="subtle">Runtime</UBadge>
-                        <span class="text-sm text-dimmed truncate">{{ nodeName || 'Unknown node' }}</span>
-                    </div>
-                </div>
-
+                <span class="text-sm text-highlighted font-semibold truncate">{{ nodeName || 'Unknown node' }}</span>
                 <div v-if="loading"
                     class="flex flex-1 items-center justify-center rounded-lg border border-default bg-muted/30">
                     <UIcon name="i-lucide-loader" class="size-6 animate-spin text-dimmed" />
