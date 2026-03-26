@@ -1,6 +1,7 @@
 <template>
     <UCard class="w-full transition-opacity duration-200" :class="{ 'opacity-50 pointer-events-none': isTaskRunning }"
-        size="xl" :ui="{ root: 'bg-default/70 ring-default/70', header: 'p-4 sm:px-5', body: 'p-0 sm:p-0', footer: 'p-0 sm:p-0' }">
+        size="xl"
+        :ui="{ root: 'bg-default/70 ring-default/70', header: 'p-4 sm:px-5', body: 'p-0 sm:p-0', footer: 'p-0 sm:p-0' }">
         <template #header>
             <div class="flex flex-col gap-2">
                 <div class="flex flex-row items-center justify-between gap-4">
@@ -154,9 +155,9 @@ function isAgentBusy(agent: AgentItem): boolean {
 }
 
 function getAgentButtonIcon(agent: AgentItem): string {
-    if (agent.status === 'connected') return 'i-lucide:link-2-off'
+    if (agent.status === 'connected') return 'i-lucide-link-2-off'
     if (agent.status === 'connecting') return 'i-lucide-loader'
-    return 'i-lucide:link'
+    return 'i-lucide-link'
 }
 
 function onAddAgent() {

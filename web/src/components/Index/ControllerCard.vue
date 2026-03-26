@@ -1,6 +1,7 @@
 <template>
-    <UCard class="w-full max-w-xl transition-opacity duration-200 xl:min-h-[34rem]"
-        :class="{ 'opacity-50 pointer-events-none': isTaskRunning }" size="xl" :ui="{ root: 'bg-default/70 ring-default/70', header: 'p-4 sm:px-5', body: 'p-0 sm:p-0' }">
+    <UCard class="w-full max-w-xl transition-opacity duration-200 xl:min-h-136"
+        :class="{ 'opacity-50 pointer-events-none': isTaskRunning }" size="xl"
+        :ui="{ root: 'bg-default/70 ring-default/70', header: 'p-4 sm:px-5', body: 'p-0 sm:p-0' }">
         <template #header>
             <div class="flex flex-col gap-2">
                 <div class="flex flex-row items-center justify-between gap-4">
@@ -177,10 +178,10 @@ interface ControllerItem {
 const controllerItems: ControllerItem[] = [
     { label: 'ADB', value: 'adb', icon: 'i-simple-icons:android' },
     { label: 'Win32', value: 'win32', icon: 'i-simple-icons:windows' },
-    { label: 'Gamepad', value: 'gamepad', icon: 'i-lucide:gamepad-directional' },
+    { label: 'Gamepad', value: 'gamepad', icon: 'i-lucide-gamepad-directional' },
     { label: "PlayCover", value: "playcover", icon: "i-simple-icons:apple" },
     { label: "WlRoot", value: "wlroot", icon: "i-simple-icons:wayland" },
-    { label: 'Custom', value: 'custom', icon: 'i-lucide:upload' },
+    { label: 'Custom', value: 'custom', icon: 'i-lucide-upload' },
 ]
 
 const controllerValue = computed({
