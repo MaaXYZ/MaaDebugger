@@ -72,14 +72,14 @@ async function loadNodeData() {
         })
         if (!detail?.node_json) {
             editorValue.value = '{}'
-            errorMessage.value = '未获取到节点原始定义'
+            errorMessage.value = 'Failed to fetch node data'
             return
         }
 
         editorValue.value = formatNodeJson(detail.node_json)
     } catch (error) {
         editorValue.value = '{}'
-        errorMessage.value = error instanceof Error ? error.message : '获取节点原始定义失败'
+        errorMessage.value = error instanceof Error ? error.message : 'Failed to fetch node data'
     } finally {
         loading.value = false
     }
