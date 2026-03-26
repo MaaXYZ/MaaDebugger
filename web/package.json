@@ -13,7 +13,7 @@
   "dependencies": {
     "@iconify-json/lucide": "^1.2.93",
     "@iconify-json/simple-icons": "^1.2.71",
-    "@nuxt/ui": "^4.5.1",
+    "@nuxt/ui": "^4.6.0",
     "@tanstack/vue-virtual": "^3.13.19",
     "@unhead/vue": "^2.1.6",
     "monaco-editor": "^0.55.1",
