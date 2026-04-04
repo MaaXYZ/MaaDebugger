@@ -2,9 +2,13 @@ import { createApp } from "vue";
 import { createPinia } from "pinia";
 import { createRouter, createWebHistory } from "vue-router";
 import ui from "@nuxt/ui/vue-plugin";
+
 import App from "./App.vue";
 import { serverPersistPlugin } from "./stores/persist";
 import "./style.css";
+import addIcons from "./icon";
+
+addIcons();
 
 const router = createRouter({
   routes: [

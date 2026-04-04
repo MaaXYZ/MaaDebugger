@@ -11,6 +11,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
+    "@iconify/vue": "^5.0.0",
     "@iconify-json/lucide": "^1.2.93",
     "@iconify-json/simple-icons": "^1.2.71",
     "@nuxt/ui": "^4.6.0",
