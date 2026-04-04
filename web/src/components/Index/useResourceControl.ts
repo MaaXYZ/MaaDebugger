@@ -1,11 +1,13 @@
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import { useResourceStore } from "@/stores/resource";
+import { useSignalStore } from "@/stores/signal";
 import { loadResource } from "@/api/http";
 
 export default function useResourceControl() {
   const toast = useToast();
   const resourceStore = useResourceStore();
   const enabledPaths = computed(() => resourceStore.getEnabledPaths());
+  const signalStore = useSignalStore();
 
   async function tryLoadResource(): Promise<{
     success: boolean;
@@ -20,6 +22,7 @@ export default function useResourceControl() {
         console.error("[Resource] Load failed:", result.msg);
         return { success: false, msg: result.msg };
       }
+      signalStore.emitRefreshNode();
       return { success: true };
     } catch (err) {
       console.error("[Resource] Load failed:", err);
@@ -47,6 +50,13 @@ export default function useResourceControl() {
       });
     }
   }
+
+  watch(
+    () => signalStore.reloadResource,
+    (status) => {
+      if (status > 0) void tryLoadResource();
+    },
+  );
 
   return {
     enabledPaths,

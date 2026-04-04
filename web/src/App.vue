@@ -5,10 +5,12 @@ import { wsClient } from '@/api/ws'
 import { getStatusSnapshot, getScreenshotStatus, getUACStatus } from '@/api/http'
 import { useStatusStore } from '@/stores/status'
 import { handleTaskEvent } from '@/stores/launchGraph'
+import { useSignalStore, SIGNAL_TYPES } from './stores/signal'
 import { latestAgentUpdate } from '@/api/agentEvents'
 import { latestFrame, screenshotRunning, screenshotPaused, screenshotFps, screenshotError, screenshotOverlayState, screenshotOverlayMessage } from '@/stores/screenshot'
 
 const BACKEND_DISCONNECT_TOAST_ID = 'backend-disconnected'
+const WATCH_RESOURCE_TOAST_ID = 'watch-resource'
 const PING_INTERVAL_MS = 5000
 
 const selectTheme = { trailingIcon: 'transition-transform ease-in-out duration-200 group-data-[state=open]:rotate-180' }
@@ -32,6 +34,7 @@ const headerNavigationMenuItems = computed<NavigationMenuItem[]>(() => [
 ])
 
 const statusStore = useStatusStore()
+const signalStore = useSignalStore()
 const toast = useToast()
 const backendConnected = ref(true)
 const isUAC = ref(false)
@@ -131,6 +134,25 @@ onMounted(async () => {
             toast.add({
                 id: 'screenshot-error',
                 title: 'Screenshot Stopped',
+                description: reason,
+                icon: 'i-lucide-circle-x',
+                color: 'error',
+            })
+        },
+        onWatchResourceChanged(path) {
+            signalStore.emitReloadResource()
+            toast.add({
+                id: WATCH_RESOURCE_TOAST_ID,
+                title: 'Resource Changed',
+                description: `The Resource has reloaded as ${path} changed.`,
+                icon: 'i-lucide-info',
+                color: 'info',
+            })
+        },
+        onWatchResourceError(reason) {
+            toast.add({
+                id: WATCH_RESOURCE_TOAST_ID,
+                title: 'Resource Error',
                 description: reason,
                 icon: 'i-lucide-circle-x',
                 color: 'error',

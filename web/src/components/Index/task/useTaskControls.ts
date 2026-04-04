@@ -4,6 +4,7 @@ import { useShortcutsStore, formatShortcut } from "@/stores/shortcuts";
 import { useStatusStore } from "@/stores/status";
 import { useTaskStore } from "@/stores/task";
 import { useAgentStore } from "@/stores/agent";
+import { useSignalStore, SIGNAL_TYPES } from "@/stores/signal";
 import type { TaskStatus } from "./types";
 import useResourceControl from "../useResourceControl";
 
@@ -37,7 +38,7 @@ export default function useTaskControls(toast: ToastApi) {
   const statusStore = useStatusStore();
   const taskStore = useTaskStore();
   const agentStore = useAgentStore();
-
+  const signalStore = useSignalStore();
   const { tryLoadResource } = useResourceControl();
 
   const entries = ref<TaskEntry[]>([]);
@@ -153,11 +154,9 @@ export default function useTaskControls(toast: ToastApi) {
   });
 
   watch(
-    () => statusStore.resourceStatus,
-    (newStatus, oldStatus) => {
-      if (oldStatus === "loading" && newStatus === "loaded") {
-        void refreshNodes();
-      }
+    () => signalStore.refreshNode,
+    (status) => {
+      if (status > 0) void refreshNodes();
     },
   );
 

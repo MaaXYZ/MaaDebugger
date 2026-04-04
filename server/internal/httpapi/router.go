@@ -203,6 +203,19 @@ func (r *router) handleConfigSet(w http.ResponseWriter, req *http.Request) {
 	}
 
 	r.deps.ConfigStore.Set(key, value)
+
+	// 主动更新后端 cfg 值
+	if key == "debugWorkspaceSettings" {
+		if m, ok := value.(map[string]any); ok {
+			if w, ok := m["watchResourceChange"].(bool); ok {
+				r.deps.ResourceService.SetWatchEnabled(w)
+			}
+			if interval, ok := m["watchResourceChangeInterval"].(float64); ok {
+				r.deps.ResourceService.SetWatchInterval(int(interval))
+			}
+		}
+	}
+
 	response.OK(w, nil)
 }
 
@@ -228,6 +241,18 @@ func (r *router) handleConfigMerge(w http.ResponseWriter, req *http.Request) {
 	}
 
 	r.deps.ConfigStore.Merge(entries)
+
+	if v, ok := entries["debugWorkspaceSettings"]; ok {
+		if m, ok := v.(map[string]any); ok {
+			if w, ok := m["watchResourceChange"].(bool); ok {
+				r.deps.ResourceService.SetWatchEnabled(w)
+			}
+			if interval, ok := m["watchResourceChangeInterval"].(float64); ok {
+				r.deps.ResourceService.SetWatchInterval(int(interval))
+			}
+		}
+	}
+
 	response.OK(w, nil)
 }
 

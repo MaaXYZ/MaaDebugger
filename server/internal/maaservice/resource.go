@@ -13,12 +13,24 @@ var resourceServiceLog = logger.For(logger.ComponentResource)
 
 // ResourceService 管理 MaaFW Resource 实例的生命周期。
 type ResourceService struct {
-	resource atomic.Pointer[maa.Resource]
+	resource    atomic.Pointer[maa.Resource]
+	loadedPaths []string
+
+	watcher *Watcher
 }
 
 // NewResourceService 创建一个新的 ResourceService。
-func NewResourceService() *ResourceService {
-	return &ResourceService{}
+func NewResourceService(onChange func(path string), onError func(error)) *ResourceService {
+	s := &ResourceService{}
+
+	w, err := NewWatcher(onChange, onError)
+	if err != nil {
+		resourceServiceLog.Error().Err(err).Msg("failed to create watcher")
+	} else {
+		s.watcher = w
+	}
+
+	return s
 }
 
 // LoadResult 表示资源加载结果。
@@ -62,6 +74,11 @@ func (s *ResourceService) LoadBundles(paths []string) LoadResult {
 		resourceServiceLog.Info().Str("path", p).Msg("bundle loaded")
 	}
 
+	s.loadedPaths = paths
+	if s.watcher != nil {
+		s.watcher.SetPaths(paths)
+	}
+
 	resourceServiceLog.Info().Int("count", len(paths)).Msg("all bundles loaded")
 	return LoadResult{Success: true}
 }
@@ -82,8 +99,25 @@ func (s *ResourceService) Loaded() bool {
 
 // Destroy 销毁当前 Resource 实例。
 func (s *ResourceService) Destroy() {
+	if s.watcher != nil {
+		s.watcher.Destroy()
+	}
 	if res := s.resource.Swap(nil); res != nil {
 		res.Destroy()
 		resourceServiceLog.Info().Msg("resource destroyed")
+	}
+}
+
+// SetWatchEnabled 设置是否开启自动监听
+func (s *ResourceService) SetWatchEnabled(enabled bool) {
+	if s.watcher != nil {
+		s.watcher.SetEnabled(enabled)
+	}
+}
+
+// SetWatchInterval 设置自动监听防抖时间
+func (s *ResourceService) SetWatchInterval(intervalMs int) {
+	if s.watcher != nil {
+		s.watcher.SetInterval(intervalMs)
 	}
 }

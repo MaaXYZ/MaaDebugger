@@ -14,6 +14,8 @@ export type WSEventHandler = {
   onAgentUpdate?: (agents: AgentInfo[]) => void;
   onScreenshotFrame?: (data: ArrayBuffer) => void;
   onScreenshotError?: (reason: string) => void;
+  onWatchResourceChanged?: (path: string) => void;
+  onWatchResourceError?: (reason: string) => void;
   onLog?: (level: string, message: string) => void;
   onOpen?: () => void;
   onClose?: () => void;
@@ -148,6 +150,18 @@ class WSClient {
         case "screenshot.error": {
           const err = message.payload as { reason: string };
           this.handlers.onScreenshotError?.(err.reason);
+          break;
+        }
+
+        case "watch.resource.changed": {
+          const watch = message.payload as { path: string };
+          this.handlers.onWatchResourceChanged?.(watch.path);
+          break;
+        }
+
+        case "watch.resource.error": {
+          const err = message.payload as { reason: string };
+          this.handlers.onWatchResourceError?.(err.reason);
           break;
         }
 

@@ -115,7 +115,13 @@ func main() {
 	statusStore := state.NewStore()
 	hub := ws.NewHub()
 	ctrlService := maaservice.NewControllerService()
-	resService := maaservice.NewResourceService()
+	resService := maaservice.NewResourceService(func(path string) {
+		// onChange
+		hub.BroadcastJSON(ws.Message{Type: "watch.resource.changed", Payload: map[string]string{"path": path}})
+	}, func(err error) {
+		// onError
+		hub.BroadcastJSON(ws.Message{Type: "watch.resource.error", Payload: map[string]string{"reason": err.Error()}})
+	})
 	agentService := maaservice.NewAgentService(resService)
 	screenshotService := maaservice.NewScreenshotService(ctrlService)
 	taskerService := maaservice.NewTaskerService(ctrlService, resService, screenshotService, agentService)
@@ -130,6 +136,22 @@ func main() {
 	})
 
 	cfgStore := configstore.New(getCwd())
+
+	// Apply watch enabled state from config
+	watchEnabled := false
+	watchInterval := 1000
+	if v, ok := cfgStore.Get("debugWorkspaceSettings"); ok {
+		if m, ok := v.(map[string]any); ok {
+			if w, ok := m["watchResourceChange"].(bool); ok {
+				watchEnabled = w
+			}
+			if i, ok := m["watchResourceChangeInterval"].(int); ok {
+				watchInterval = i
+			}
+		}
+	}
+	resService.SetWatchEnabled(watchEnabled)
+	resService.SetWatchInterval(watchInterval)
 
 	// Get args
 	devMode, _ := parsed.Bool("dev")
