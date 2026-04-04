@@ -15,7 +15,6 @@
     "@iconify-json/simple-icons": "^1.2.71",
     "@nuxt/ui": "^4.6.0",
     "@tanstack/vue-virtual": "^3.13.19",
-    "@unhead/vue": "^2.1.6",
     "monaco-editor": "^0.55.1",
     "pinia": "^3.0.4",
     "tailwindcss": "^4.2.1",
