@@ -230,30 +230,30 @@ func (s *TaskerService) RunTask(entry string, pipelineOverride json.RawMessage) 
 		return RunTaskResult{Error: "Controller is not connected"}
 	}
 
+	// 始终使用新 tasker
+	if old := s.tasker.Swap(nil); old != nil {
+		old.Destroy()
+	}
+
+	tasker, err := maa.NewTasker()
+	if err != nil {
+		taskerLog.Error().Err(err).Msg("create tasker failed")
+		return RunTaskResult{Error: fmt.Sprintf("Failed to create tasker: %v", err)}
+	}
+
+	done := false
+	defer func() {
+		if !done {
+			tasker.Destroy()
+		}
+	}()
+
+	// 注册事件回调
+	s.registerSinks(tasker)
 	res := s.resourceSvc.Resource()
 	if res == nil {
 		taskerLog.Warn().Msg("run task aborted: resource is not loaded")
 		return RunTaskResult{Error: "Resource is not loaded"}
-	}
-
-	// 创建或复用 Tasker
-	tasker := s.tasker.Load()
-	if tasker == nil {
-		newTasker, err := maa.NewTasker()
-		if err != nil {
-			taskerLog.Error().Err(err).Msg("create tasker failed")
-			return RunTaskResult{Error: fmt.Sprintf("Failed to create tasker: %v", err)}
-		}
-		// 尝试原子设置，如果其他 goroutine 已经设置了，使用已有的
-		if s.tasker.CompareAndSwap(nil, newTasker) {
-			tasker = newTasker
-			// 注册事件回调
-			s.registerSinks(tasker)
-		} else {
-			// 其他 goroutine 已创建，销毁我们的并使用已有的
-			newTasker.Destroy()
-			tasker = s.tasker.Load()
-		}
 	}
 
 	if err := tasker.BindController(ctrl); err != nil {
@@ -270,6 +270,9 @@ func (s *TaskerService) RunTask(entry string, pipelineOverride json.RawMessage) 
 		taskerLog.Warn().Msg("run task aborted: tasker not initialized")
 		return RunTaskResult{Error: "Failed to initialize tasker"}
 	}
+
+	s.tasker.Store(tasker)
+	done = true
 
 	// 解析 pipeline override
 	var override any
