@@ -1,5 +1,5 @@
 <template>
-    <UCard class="w-full xl:min-h-[34rem]" size="xl" :ui="{ root: 'h-full flex flex-col', body: 'flex-1' }">
+    <UCard class="w-full xl:min-h-136" size="xl" :ui="{ root: 'h-full flex flex-col', body: 'flex-1' }">
         <template #header>
             <div class="flex flex-row items-center gap-2 min-h-10">
                 <span class="font-bold">Task</span>
