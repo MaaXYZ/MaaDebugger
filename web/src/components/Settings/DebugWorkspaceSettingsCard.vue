@@ -43,8 +43,9 @@ const debugWorkspaceSettingsStore = useDebugWorkspaceSettingsStore()
             <div class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
                 <div class="flex flex-col gap-1">
                     <span class="text-sm font-medium">Watch resource changes</span>
-                    <span class="text-sm text-dimmed">Automatically <b>reload the resource</b> list when changes are
-                        detected.</span>
+                    <span class="text-sm text-dimmed">
+                        Whether to watch the resource changes to <b>automatically reload the resource</b>
+                    </span>
                 </div>
                 <USwitch :model-value="debugWorkspaceSettingsStore.watchResourceChange"
                     @update:model-value="debugWorkspaceSettingsStore.setWatchResourceChange(Boolean($event))" />

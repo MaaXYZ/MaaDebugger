@@ -4,7 +4,7 @@ import { useShortcutsStore, formatShortcut } from "@/stores/shortcuts";
 import { useStatusStore } from "@/stores/status";
 import { useTaskStore } from "@/stores/task";
 import { useAgentStore } from "@/stores/agent";
-import { useSignalStore, SIGNAL_TYPES } from "@/stores/signal";
+import { useSignalStore } from "@/stores/signal";
 import type { TaskStatus } from "./types";
 import useResourceControl from "../useResourceControl";
 

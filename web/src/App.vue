@@ -5,7 +5,7 @@ import { wsClient } from '@/api/ws'
 import { getStatusSnapshot, getScreenshotStatus, getUACStatus } from '@/api/http'
 import { useStatusStore } from '@/stores/status'
 import { handleTaskEvent } from '@/stores/launchGraph'
-import { useSignalStore, SIGNAL_TYPES } from './stores/signal'
+import { useSignalStore } from './stores/signal'
 import { latestAgentUpdate } from '@/api/agentEvents'
 import { latestFrame, screenshotRunning, screenshotPaused, screenshotFps, screenshotError, screenshotOverlayState, screenshotOverlayMessage } from '@/stores/screenshot'
 
