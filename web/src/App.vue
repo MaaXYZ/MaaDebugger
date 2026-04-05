@@ -100,7 +100,7 @@ onMounted(async () => {
                     id: 'task-toast',
                     title: 'Task Completed',
                     description: result.entry ? `"${result.entry}" finished successfully` : 'Task finished successfully',
-                    icon: 'i-lucide-circle-check',
+                    icon: 'i-lucide-check-circle',
                     color: 'success',
                 })
             } else {
@@ -108,7 +108,7 @@ onMounted(async () => {
                     id: 'task-toast',
                     title: 'Task Failed',
                     description: result.error || 'Unknown error',
-                    icon: 'i-lucide-circle-x',
+                    icon: 'i-lucide-x-circle',
                     color: 'error',
                 })
             }
@@ -135,7 +135,7 @@ onMounted(async () => {
                 id: 'screenshot-error',
                 title: 'Screenshot Stopped',
                 description: reason,
-                icon: 'i-lucide-circle-x',
+                icon: 'i-lucide-x-circle',
                 color: 'error',
             })
         },

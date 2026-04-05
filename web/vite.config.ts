@@ -1,11 +1,31 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import ui from "@nuxt/ui/vite";
+import IconifyIcons from "./plugins/icon-loader";
 
 import path from "path";
 
 export default defineConfig({
-  plugins: [vue(), ui()],
+  plugins: [
+    vue(),
+    ui(),
+    IconifyIcons({
+      // 白名单用于兜底动态场景（无法被静态扫描捕获）
+      whitelist: {
+        "simple-icons": ["xbox", "playstation"],
+      },
+      // 仅 build 生效：白名单条目缺失时抛出错误，防止线上图标丢失
+      whitelistCheck: {
+        enabled: true,
+        throwOnMissing: true,
+      },
+      production: {
+        pruneIcons: true,
+        keepAliases: true,
+        dropMeta: true,
+      },
+    }),
+  ],
   resolve: {
     alias: [
       {

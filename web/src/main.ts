@@ -6,9 +6,8 @@ import ui from "@nuxt/ui/vue-plugin";
 import App from "./App.vue";
 import { serverPersistPlugin } from "./stores/persist";
 import "./style.css";
-import addIcons from "./icon";
-
-addIcons();
+import { AllIcons } from "virtual:load-iconify-icons";
+AllIcons();
 
 const router = createRouter({
   routes: [
