@@ -87,7 +87,12 @@ func (s *AgentService) Connect(identifier string) AgentConnectResult {
 	entry := &agentEntry{client: client, ownedResource: ownedResource, status: "connecting"}
 	s.clients[identifier] = entry
 
-	client.SetTimeout(5000 * time.Millisecond)
+	if err := client.SetTimeout(5000 * time.Millisecond); err != nil {
+		entry.status = "failed"
+		s.destroyEntry(entry)
+		agentServiceLog.Warn().Err(err).Str("identifier", identifier).Msg("set timeout failed")
+		return AgentConnectResult{Error: fmt.Sprintf("set timeout failed: %v", err)}
+	}
 	if err := client.Connect(); err != nil {
 		entry.status = "failed"
 		s.destroyEntry(entry)

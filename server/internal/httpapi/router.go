@@ -871,7 +871,7 @@ func (r *router) handleTaskNodeData(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	detail, err := r.deps.TaskerService.GetNodeData(name, recoID, actionID)
+	detail, err := r.deps.TaskerService.GetNode(name, recoID, actionID)
 	if err != nil {
 		response.Fail(w, http.StatusBadRequest, err.Error())
 		return

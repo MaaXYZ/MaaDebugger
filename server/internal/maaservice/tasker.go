@@ -291,7 +291,16 @@ func (s *TaskerService) RunTask(entry string, pipelineOverride json.RawMessage) 
 		job = tasker.PostTask(entry)
 	}
 
+	if err := job.Error(); err != nil {
+		taskerLog.Error().Err(err).Str("entry", entry).Msg("task create failed")
+		return RunTaskResult{Error: fmt.Sprintf("Task '%s' create failed: %v", entry, err)}
+	}
+
 	job.Wait()
+	if err := job.Error(); err != nil {
+		taskerLog.Error().Err(err).Str("entry", entry).Msg("task execution failed")
+		return RunTaskResult{Error: fmt.Sprintf("Task '%s' failed: %v", entry, err)}
+	}
 
 	succeeded := job.Success()
 	taskerLog.Info().Bool("succeeded", succeeded).Str("entry", entry).Msg("task completed")
@@ -688,11 +697,11 @@ func convertActionResult(result *maa.ActionResult) any {
 	}
 	if v, ok := result.AsShell(); ok {
 		return map[string]any{
-			"type":    actionType,
-			"cmd":     v.Cmd,
-			"timeout": v.ShellTimeout,
-			"success": v.Success,
-			"output":  v.Output,
+			"type":          actionType,
+			"cmd":           v.Cmd,
+			"shell_timeout": v.ShellTimeout,
+			"success":       v.Success,
+			"output":        v.Output,
 		}
 	}
 
@@ -825,8 +834,8 @@ func (s *TaskerService) getCachedNodeData(id int64) (*NodeDataResponse, bool) {
 	return resp, ok
 }
 
-// GetNodeData 获取运行时节点原始定义 JSON。
-func (s *TaskerService) GetNodeData(name string, recoID, actionID int64) (*NodeDataResponse, error) {
+// GetNode 获取运行时节点原始定义 JSON。
+func (s *TaskerService) GetNode(name string, recoID, actionID int64) (*NodeDataResponse, error) {
 	if recoID > 0 {
 		if detail, ok := s.getCachedNodeData(recoID); ok {
 			return detail, nil
@@ -855,6 +864,11 @@ func (s *TaskerService) GetNodeData(name string, recoID, actionID int64) (*NodeD
 		Name:     name,
 		NodeJSON: nodeJSON,
 	}, nil
+}
+
+// GetNodeData is kept as a compatibility wrapper for existing callers.
+func (s *TaskerService) GetNodeData(name string, recoID, actionID int64) (*NodeDataResponse, error) {
+	return s.GetNode(name, recoID, actionID)
 }
 
 // actionNeedsScreenshot 根据节点名从 Resource 获取 action 类型，
