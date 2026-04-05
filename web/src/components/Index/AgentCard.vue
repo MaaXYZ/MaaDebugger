@@ -188,7 +188,6 @@ function onToggleConnection(agent: AgentItem) {
         doConnect(agent)
     }
 }
-
 </script>
 
 <style scoped>

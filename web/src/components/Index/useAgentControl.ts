@@ -4,6 +4,8 @@ import {
   getAgentList,
 } from "@/api/http";
 import { useAgentStore, type AgentItem } from "@/stores/agent";
+import useBackoffPolling from "@/api/useBackoffPolling";
+import { computed, ref } from "vue";
 
 interface ConnectResult {
   success: boolean;
@@ -41,6 +43,13 @@ function applyRemoteStatus(
 export default function useAgentControl() {
   const toast = useToast();
   const agentStore = useAgentStore();
+
+  // 仅当有 agent 连接时才进行请求
+  useBackoffPolling(
+    () => syncAgentsFromServer(),
+    () => agentStore.getConnectedAgents().length > 0,
+    1500,
+  );
 
   async function syncAgentsFromServer() {
     try {
