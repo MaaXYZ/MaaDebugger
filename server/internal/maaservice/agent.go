@@ -54,37 +54,23 @@ func (s *AgentService) Connect(identifier string) AgentConnectResult {
 	s.disconnectLocked(identifier, false)
 
 	res := s.resourceSvc.Resource()
-	var ownedResource *maa.Resource
 	if res == nil {
-		agentServiceLog.Info().Msg("no resource loaded, creating empty resource")
-		var err error
-		res, err = maa.NewResource()
-		if err != nil {
-			agentServiceLog.Error().Err(err).Msg("create empty resource failed")
-			return AgentConnectResult{Error: fmt.Sprintf("create resource failed: %v", err)}
-		}
-		ownedResource = res
+		return AgentConnectResult{Error: "Resource is null."}
 	}
 
 	client, err := maa.NewAgentClient(maa.WithIdentifier(identifier))
 	if err != nil {
-		if ownedResource != nil {
-			ownedResource.Destroy()
-		}
 		agentServiceLog.Error().Err(err).Str("identifier", identifier).Msg("create agent client failed")
 		return AgentConnectResult{Error: fmt.Sprintf("create agent client failed: %v", err)}
 	}
 
 	if err := client.BindResource(res); err != nil {
 		client.Destroy()
-		if ownedResource != nil {
-			ownedResource.Destroy()
-		}
 		agentServiceLog.Error().Err(err).Str("identifier", identifier).Msg("bind resource failed")
 		return AgentConnectResult{Error: fmt.Sprintf("bind resource failed: %v", err)}
 	}
 
-	entry := &agentEntry{client: client, ownedResource: ownedResource, status: "connecting"}
+	entry := &agentEntry{client: client, status: "connecting"}
 	s.clients[identifier] = entry
 
 	if err := client.SetTimeout(5000 * time.Millisecond); err != nil {

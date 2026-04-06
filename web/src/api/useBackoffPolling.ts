@@ -17,7 +17,6 @@ export default function useBackoffPolling<
         loading.value = true;
         await apiFunc(...args);
       }
-    } catch (error) {
     } finally {
       loading.value = false;
       setNextTick(interval, ...args);
