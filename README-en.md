@@ -18,7 +18,8 @@ s
 </div>
 
 > [!NOTE]
-> We are currently refactoring MaaDebugger. You can visit https://github.com/MaaXYZ/MaaDebugger/issues/163 for more details and to get an early preview version.
+> We are currently refactoring MaaDebugger. You can visit https://github.com/MaaXYZ/MaaDebugger/issues/163 for more details\
+> You can run `npx @weinibuliu/maa-debugger@latest`  to get the early preview version.
 
 ## Requirement
 
