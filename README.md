@@ -17,7 +17,8 @@
 </div>
 
 > [!NOTE]
-> 我们目前正在重构 MaaDebugger ，你可以前往 https://github.com/MaaXYZ/MaaDebugger/issues/163 来了解详情并获取早期预览版。
+> 我们目前正在重构 MaaDebugger ，你可以前往 https://github.com/MaaXYZ/MaaDebugger/issues/163 来了解详情。\
+> 你可以使用 `npx @weinibuliu/maa-debugger@latest` 获取早期预览版。
 
 ## 需求版本
 
