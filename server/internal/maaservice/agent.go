@@ -30,9 +30,8 @@ type AgentService struct {
 }
 
 type agentEntry struct {
-	client        *maa.AgentClient
-	ownedResource *maa.Resource
-	status        string
+	client *maa.AgentClient
+	status string
 }
 
 func NewAgentService(resSvc *ResourceService) *AgentService {
@@ -126,15 +125,18 @@ func (s *AgentService) disconnectEntry(identifier string, entry *agentEntry, cle
 			msg = "disconnecting agent during cleanup"
 		}
 		agentServiceLog.Info().Str("identifier", identifier).Msg(msg)
-		if err := entry.client.Disconnect(); err != nil {
-			warnMsg := "agent disconnect failed"
-			if cleanup {
-				warnMsg = "agent disconnect during cleanup failed"
+
+		// 仅在 alive + connected 时触发断连
+		if entry.client.Alive() && entry.client.Connected() {
+			if err := entry.client.Disconnect(); err != nil {
+				warnMsg := "agent disconnect failed"
+				if cleanup {
+					warnMsg = "agent disconnect during cleanup failed"
+				}
+				agentServiceLog.Warn().Err(err).Str("identifier", identifier).Msg(warnMsg)
 			}
-			agentServiceLog.Warn().Err(err).Str("identifier", identifier).Msg(warnMsg)
 		}
 	}
-
 	entry.status = "failed"
 	s.destroyEntry(entry)
 }
@@ -147,10 +149,6 @@ func (s *AgentService) destroyEntry(entry *agentEntry) {
 	if entry.client != nil {
 		entry.client.Destroy()
 		entry.client = nil
-	}
-	if entry.ownedResource != nil {
-		entry.ownedResource.Destroy()
-		entry.ownedResource = nil
 	}
 }
 
