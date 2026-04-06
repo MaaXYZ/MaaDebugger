@@ -7,9 +7,10 @@
         </div>
 
         <div class="flex flex-col xl:flex-row xl:items-start">
-            <div class="order-3 min-w-0 overflow-hidden transition-all duration-200 ease-out motion-reduce:transition-none xl:order-0 xl:shrink-0 xl:w-[clamp(260px,28vw,32rem)]
+            <div class="order-3 min-w-0 overflow-visible transition-all duration-200 ease-out motion-reduce:transition-none xl:order-0 xl:shrink-0 xl:w-[clamp(260px,28vw,32rem)]
                        mb-4 max-h-800 max-w-full opacity-100 xl:mb-0 xl:mr-4 xl:max-h-none xl:max-w-lg
-                       data-[collapsed=true]:mb-0 data-[collapsed=true]:max-h-0 data-[collapsed=true]:max-w-0 data-[collapsed=true]:opacity-0 data-[collapsed=true]:pointer-events-none data-[collapsed=true]:duration-150 data-[collapsed=true]:ease-in data-[collapsed=true]:xl:mr-0"
+                       data-[collapsed=true]:mb-0 data-[collapsed=true]:max-h-0 data-[collapsed=true]:max-w-0 data-[collapsed=true]:overflow-hidden data-[collapsed=true]:opacity-0 data-[collapsed=true]:pointer-events-none data-[collapsed=true]:duration-150 data-[collapsed=true]:ease-in
+                       data-[collapsed=true]:xl:mr-0 data-[collapsed=true]:xl:w-0 data-[collapsed=true]:xl:max-h-0 data-[collapsed=true]:xl:max-w-0"
                 :data-collapsed="!showLeftTabs">
                 <LeftTabs />
             </div>
