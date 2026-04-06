@@ -50,7 +50,12 @@ func (s *AgentService) Connect(identifier string) AgentConnectResult {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.disconnectLocked(identifier, false)
+	// Destroy 已有实例
+	if existing, ok := s.clients[identifier]; ok {
+		agentServiceLog.Info().Str("identifier", identifier).Msg("cleaning up dead client entry")
+		delete(s.clients, identifier)
+		existing.client.Destroy()
+	}
 
 	res := s.resourceSvc.Resource()
 	if res == nil {
@@ -126,15 +131,12 @@ func (s *AgentService) disconnectEntry(identifier string, entry *agentEntry, cle
 		}
 		agentServiceLog.Info().Str("identifier", identifier).Msg(msg)
 
-		// 仅在 alive + connected 时触发断连
-		if entry.client.Alive() && entry.client.Connected() {
-			if err := entry.client.Disconnect(); err != nil {
-				warnMsg := "agent disconnect failed"
-				if cleanup {
-					warnMsg = "agent disconnect during cleanup failed"
-				}
-				agentServiceLog.Warn().Err(err).Str("identifier", identifier).Msg(warnMsg)
+		if err := entry.client.Disconnect(); err != nil {
+			warnMsg := "agent disconnect failed"
+			if cleanup {
+				warnMsg = "agent disconnect during cleanup failed"
 			}
+			agentServiceLog.Warn().Err(err).Str("identifier", identifier).Msg(warnMsg)
 		}
 	}
 	entry.status = "failed"
