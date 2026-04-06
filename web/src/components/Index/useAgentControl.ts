@@ -5,7 +5,6 @@ import {
 } from "@/api/http";
 import { useAgentStore, type AgentItem } from "@/stores/agent";
 import useBackoffPolling from "@/api/useBackoffPolling";
-import { computed, ref } from "vue";
 
 interface ConnectResult {
   success: boolean;
