@@ -1,5 +1,9 @@
 import { ref } from "vue";
+import type { Ref } from "vue";
 import { defineStore } from "pinia";
+import { StartPipelineCheck, StopPipelineCheck } from "@/api/http";
+
+type PipelineNotifyLevel = "NULL" | "ERROR" | "WARNING";
 
 export const useDebugWorkspaceSettingsStore = defineStore(
   "debugWorkspaceSettings",
@@ -9,7 +13,7 @@ export const useDebugWorkspaceSettingsStore = defineStore(
     const watchResourceChange = ref(true);
     const watchResourceChangeInterval = ref(1000);
     const checkPipeline = ref(true);
-    const checkPipelineNotifyLevel = ref("ERROR");
+    const checkPipelineNotifyLevel: Ref<PipelineNotifyLevel> = ref("ERROR");
     const preventRunning = ref(true);
 
     function setAutoCollapseLeftTabsOnRunStart(value: boolean) {
@@ -30,9 +34,22 @@ export const useDebugWorkspaceSettingsStore = defineStore(
 
     function setCheckPipeline(value: boolean) {
       checkPipeline.value = value;
+      void syncPipelineChecker(value);
     }
 
-    function setCheckPipelineNotifyLevel(value: string) {
+    async function syncPipelineChecker(enabled: boolean = checkPipeline.value) {
+      try {
+        if (enabled) {
+          await StartPipelineCheck();
+          return;
+        }
+        await StopPipelineCheck();
+      } catch (err) {
+        console.error("[PipelineChecker] Failed to sync running state:", err);
+      }
+    }
+
+    function setCheckPipelineNotifyLevel(value: PipelineNotifyLevel) {
       checkPipelineNotifyLevel.value = value;
     }
 
@@ -63,6 +80,7 @@ export const useDebugWorkspaceSettingsStore = defineStore(
       setWatchResourceChange,
       setWatchResourceChangeInterval,
       setCheckPipeline,
+      syncPipelineChecker,
       setCheckPipelineNotifyLevel,
       setPreventRunning,
       reset,
