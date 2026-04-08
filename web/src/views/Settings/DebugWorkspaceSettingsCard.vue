@@ -2,6 +2,13 @@
 import { useDebugWorkspaceSettingsStore } from '@/stores/debugWorkspaceSettings'
 
 const debugWorkspaceSettingsStore = useDebugWorkspaceSettingsStore()
+
+const pipelineNotifyLevel = [
+    { label: "Error", value: "ERROR" },
+    { label: "Warning", value: "WARNING" },
+    { label: "Never", value: "NULL" }
+]
+
 </script>
 
 <template>
@@ -59,6 +66,39 @@ const debugWorkspaceSettingsStore = useDebugWorkspaceSettingsStore()
                 </div>
                 <UInputNumber v-model="debugWorkspaceSettingsStore.watchResourceChangeInterval" :min="100"
                     :max="10000" />
+            </div>
+
+            <div class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
+                <div class="flex flex-col gap-1">
+                    <span class="text-sm font-medium">Check Pipeline Problems</span>
+                    <span class="text-sm text-dimmed">When resource loaded, check if the pipeline has any error or
+                        warning.</span>
+                </div>
+                <USwitch :model-value="debugWorkspaceSettingsStore.checkPipeline"
+                    @update:model-value="debugWorkspaceSettingsStore.setCheckPipeline(Boolean($event))" />
+            </div>
+
+            <div v-if="debugWorkspaceSettingsStore.checkPipeline"
+                class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
+                <div class="flex flex-col gap-1">
+                    <span class="text-sm font-medium">Prevent Running</span>
+                    <span class="text-sm text-dimmed">If the pipeline has errors, prevent task from
+                        running and raise error.</span>
+                </div>
+                <USelect :model-value="debugWorkspaceSettingsStore.checkPipelineNotifyLevel"
+                    :items="pipelineNotifyLevel"
+                    @update:model-value="debugWorkspaceSettingsStore.setCheckPipelineNotifyLevel($event)" />
+            </div>
+
+            <div v-if="debugWorkspaceSettingsStore.checkPipeline"
+                class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
+                <div class="flex flex-col gap-1">
+                    <span class="text-sm font-medium">Prevent Running</span>
+                    <span class="text-sm text-dimmed">If the pipeline has errors, prevent task from
+                        running and raise error.</span>
+                </div>
+                <USwitch :model-value="debugWorkspaceSettingsStore.checkPipeline"
+                    @update:model-value="debugWorkspaceSettingsStore.setCheckPipeline(Boolean($event))" />
             </div>
         </div>
     </UCard>
