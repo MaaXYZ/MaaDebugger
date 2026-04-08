@@ -8,12 +8,12 @@
         <UBadge
           color="error"
           variant="subtle"
-          :label="`Errors ${errors.length}`"
+          :label="`Errors: ${errors.length}`"
         />
         <UBadge
           color="warning"
           variant="subtle"
-          :label="`Warnings ${warnings.length}`"
+          :label="`Warnings: ${warnings.length}`"
         />
       </div>
     </template>
