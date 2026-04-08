@@ -193,7 +193,7 @@
                     <USeparator orientation="vertical" class="h-4" />
                     <UTooltip :text="showOriginalDraw ? 'Hide raw draw' : 'Show raw draw'">
                         <UButton color="neutral" :variant="showOriginalDraw ? 'soft' : 'ghost'" size="xs"
-                            icon="i-lucide-images" @click="showOriginalDraw = !showOriginalDraw" label="Raw Draw" />
+                            icon="i-lucide-images" label="Raw Draw" @click="showOriginalDraw = !showOriginalDraw" />
                     </UTooltip>
                 </template>
             </div>
