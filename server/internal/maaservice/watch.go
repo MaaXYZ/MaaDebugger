@@ -24,6 +24,14 @@ var ignorePaths = []string{
 	"node_modules",
 	// Python
 	"__pycache__",
+	".venv",
+	// Temp
+	"temp",
+	"tmp",
+	// maa
+	".maa",
+	"debug",
+	"config",
 }
 
 var watchLog = logger.For(logger.ComponentResource)
@@ -122,7 +130,7 @@ func (w *Watcher) addRecursive(root string) error {
 			}
 			// 跳过设定的忽略目录
 			for _, ignore := range ignorePaths {
-				if strings.Contains(path, ignore) {
+				if path == ignore {
 					return filepath.SkipDir
 				}
 			}
