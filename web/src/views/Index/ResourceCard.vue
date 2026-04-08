@@ -215,6 +215,12 @@
       </div>
     </template>
   </UModal>
+
+  <PipelineIssueModal
+    v-model:open="pipelineIssueModalOpen"
+    :errors="pipelineErrors"
+    :warnings="pipelineWarns"
+  />
 </template>
 
 <script setup lang="ts">
@@ -222,13 +228,19 @@ import { ref, computed } from "vue";
 import { checkPathExists } from "@/api/http";
 import { useResourceStore } from "@/stores/resource";
 import { useStatusStore } from "@/stores/status";
+import PipelineIssueModal from "@/components/Modals/PipelineIssue/PipelineIssueModal.vue";
 import useResourceControl from "./useResourceControl";
 
 const toast = useToast();
 const resourceStore = useResourceStore();
 const statusStore = useStatusStore();
-const { enabledPaths, onLoadResource: triggerLoadResource } =
-  useResourceControl();
+const {
+  enabledPaths,
+  onLoadResource: triggerLoadResource,
+  pipelineIssueModalOpen,
+  pipelineErrors,
+  pipelineWarns,
+} = useResourceControl();
 
 // --- UI State (not persisted) ---
 const editingIndex = ref<number | null>(null);

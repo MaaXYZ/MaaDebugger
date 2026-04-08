@@ -8,7 +8,7 @@ import {
   getUACStatus,
 } from "@/api/http";
 import { useStatusStore } from "@/stores/status";
-import { useDebugSettingsStore } from "@/stores/debugWorkspaceSettings";
+import { useDebugSettingsStore } from "@/stores/debugSettings";
 import { handleTaskEvent } from "@/stores/launchGraph";
 import { useSignalStore } from "./stores/signal";
 import { latestAgentUpdate } from "@/api/agentEvents";

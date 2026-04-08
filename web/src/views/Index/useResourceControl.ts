@@ -1,7 +1,8 @@
-import { computed, watch } from "vue";
+import { computed, watch, ref } from "vue";
+import type { Ref } from "vue";
 import { useResourceStore } from "@/stores/resource";
 import { useSignalStore } from "@/stores/signal";
-import { useDebugSettingsStore } from "@/stores/debugWorkspaceSettings";
+import { useDebugSettingsStore } from "@/stores/debugSettings";
 import { getPipelineCheckResult, loadResource } from "@/api/http";
 import type { CheckResponse } from "@/types/pipeline";
 
@@ -20,6 +21,10 @@ export default function useResourceControl() {
   const WATCH_RESOURCE_TOAST_ID = "watch-resource";
   const resourceToastID = "resource-toast";
   const pipelineCheckerToastID = "pipeline-checker-toast";
+
+  const pipelineErrors: Ref<CheckResponse[]> = ref([]);
+  const pipelineWarns: Ref<CheckResponse[]> = ref([]);
+  const pipelineIssueModalOpen = ref(false);
 
   async function tryLoadResource(): Promise<{
     success: boolean;
@@ -75,6 +80,8 @@ export default function useResourceControl() {
       });
     }
 
+    pipelineErrors.value = [];
+    pipelineWarns.value = [];
     if (success && debugWorkspaceSettingsStore.checkPipeline) {
       const pipelineCheckResult = await getPipelineCheckResult();
       const notifyLevel = debugWorkspaceSettingsStore.checkPipelineNotifyLevel;
@@ -100,8 +107,11 @@ export default function useResourceControl() {
           },
           { error: [] as CheckResponse[], warning: [] as CheckResponse[] },
         );
-        const toastType = grouped.error.length > 0 ? "error" : "warning";
 
+        pipelineErrors.value = grouped.error;
+        pipelineWarns.value = grouped.warning;
+
+        const toastType = grouped.error.length > 0 ? "error" : "warning";
         toast.add({
           id: pipelineCheckerToastID,
           progress: false,
@@ -129,9 +139,9 @@ export default function useResourceControl() {
     error: CheckResponse[];
     warning: CheckResponse[];
   }) {
-    // TODO: replace with UModal details view in follow-up.
-    console.log("[PipelineChecker] errors:", grouped.error);
-    console.log("[PipelineChecker] warnings:", grouped.warning);
+    pipelineErrors.value = grouped.error;
+    pipelineWarns.value = grouped.warning;
+    pipelineIssueModalOpen.value = true;
   }
 
   watch(
@@ -149,5 +159,8 @@ export default function useResourceControl() {
     enabledPaths,
     tryLoadResource,
     onLoadResource: LoadResource,
+    pipelineIssueModalOpen,
+    pipelineErrors,
+    pipelineWarns,
   };
 }

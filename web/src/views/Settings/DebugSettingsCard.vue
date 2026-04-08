@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useDebugSettingsStore } from "@/stores/debugWorkspaceSettings";
+import { useDebugSettingsStore } from "@/stores/debugSettings";
 
-const debugWorkspaceSettingsStore = useDebugSettingsStore();
+const debugSettingsStore = useDebugSettingsStore();
 
 const pipelineNotifyLevel = [
   { label: "Error", value: "ERROR" },
@@ -26,7 +26,7 @@ const pipelineNotifyLevel = [
           icon="i-lucide-rotate-ccw"
           label="Reset"
           size="xs"
-          @click="debugWorkspaceSettingsStore.reset()"
+          @click="debugSettingsStore.reset()"
         />
       </div>
     </template>
@@ -45,11 +45,9 @@ const pipelineNotifyLevel = [
           >
         </div>
         <USwitch
-          :model-value="
-            debugWorkspaceSettingsStore.autoCollapseLeftTabsOnRunStart
-          "
+          :model-value="debugSettingsStore.autoCollapseLeftTabsOnRunStart"
           @update:model-value="
-            debugWorkspaceSettingsStore.setAutoCollapseLeftTabsOnRunStart(
+            debugSettingsStore.setAutoCollapseLeftTabsOnRunStart(
               Boolean($event),
             )
           "
@@ -69,9 +67,9 @@ const pipelineNotifyLevel = [
           >
         </div>
         <USwitch
-          :model-value="debugWorkspaceSettingsStore.leftTabsCollapsed"
+          :model-value="debugSettingsStore.leftTabsCollapsed"
           @update:model-value="
-            debugWorkspaceSettingsStore.setLeftTabsCollapsed(Boolean($event))
+            debugSettingsStore.setLeftTabsCollapsed(Boolean($event))
           "
         />
       </div>
@@ -87,9 +85,9 @@ const pipelineNotifyLevel = [
           </span>
         </div>
         <USwitch
-          :model-value="debugWorkspaceSettingsStore.watchResourceChange"
+          :model-value="debugSettingsStore.watchResourceChange"
           @update:model-value="
-            debugWorkspaceSettingsStore.setWatchResourceChange(Boolean($event))
+            debugSettingsStore.setWatchResourceChange(Boolean($event))
           "
         />
       </div>
@@ -107,7 +105,7 @@ const pipelineNotifyLevel = [
           >
         </div>
         <UInputNumber
-          v-model="debugWorkspaceSettingsStore.watchResourceChangeInterval"
+          v-model="debugSettingsStore.watchResourceChangeInterval"
           :min="100"
           :max="10000"
         />
@@ -124,38 +122,36 @@ const pipelineNotifyLevel = [
           >
         </div>
         <USwitch
-          :model-value="debugWorkspaceSettingsStore.checkPipeline"
+          :model-value="debugSettingsStore.checkPipeline"
           @update:model-value="
-            debugWorkspaceSettingsStore.setCheckPipeline(Boolean($event))
+            debugSettingsStore.setCheckPipeline(Boolean($event))
           "
         />
       </div>
 
       <div
-        v-if="debugWorkspaceSettingsStore.checkPipeline"
+        v-if="debugSettingsStore.checkPipeline"
         class="flex items-center justify-between gap-4 rounded-lg border border-default p-3"
       >
         <div class="flex flex-col gap-1">
           <span class="text-sm font-medium">Prevent Running</span>
           <span class="text-sm text-dimmed"
-            >If the pipeline has errors, prevent task from running and raise
-            error.</span
+            >If the pipeline has issues at or above the selected level, prevent
+            task from running and send notification.</span
           >
         </div>
         <USelect
-          :model-value="debugWorkspaceSettingsStore.checkPipelineNotifyLevel"
+          :model-value="debugSettingsStore.checkPipelineNotifyLevel"
           :items="pipelineNotifyLevel"
           @update:model-value="
-            debugWorkspaceSettingsStore.setCheckPipelineNotifyLevel(
-              $event as any,
-            )
+            debugSettingsStore.setCheckPipelineNotifyLevel($event as any)
           "
           class="min-w-48"
         />
       </div>
 
       <div
-        v-if="debugWorkspaceSettingsStore.preventRunning"
+        v-if="debugSettingsStore.checkPipeline"
         class="flex items-center justify-between gap-4 rounded-lg border border-default p-3"
       >
         <div class="flex flex-col gap-1">
@@ -166,9 +162,9 @@ const pipelineNotifyLevel = [
           >
         </div>
         <USwitch
-          :model-value="debugWorkspaceSettingsStore.preventRunning"
+          :model-value="debugSettingsStore.preventRunning"
           @update:model-value="
-            debugWorkspaceSettingsStore.setPreventRunning(Boolean($event))
+            debugSettingsStore.setPreventRunning(Boolean($event))
           "
         />
       </div>

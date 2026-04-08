@@ -42,7 +42,7 @@ import { computed, watch } from "vue";
 import LeftTabs from "@/views/Index/LeftTabs.vue";
 import TaskCard from "@/views/Index/TaskCard.vue";
 import TaskDetailCard from "@/views/Index/TaskDetailCard.vue";
-import { useDebugSettingsStore } from "@/stores/debugWorkspaceSettings";
+import { useDebugSettingsStore } from "@/stores/debugSettings";
 import { useStatusStore } from "@/stores/status";
 
 const debugWorkspaceSettingsStore = useDebugSettingsStore();
