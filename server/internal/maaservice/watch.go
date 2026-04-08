@@ -116,9 +116,11 @@ func (w *Watcher) addRecursive(root string) error {
 			return err
 		}
 		if d.IsDir() {
-			if strings.HasPrefix(d.Name(), ".") { // 跳过 . 开头的目录
+			// 跳过 . 开头的目录
+			if strings.HasPrefix(d.Name(), ".") {
 				return filepath.SkipDir
 			}
+			// 跳过设定的忽略目录
 			for _, ignore := range ignorePaths {
 				if strings.Contains(path, ignore) {
 					return filepath.SkipDir
