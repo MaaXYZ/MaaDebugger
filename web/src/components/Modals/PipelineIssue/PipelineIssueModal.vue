@@ -8,12 +8,12 @@
         <UBadge
           color="error"
           variant="subtle"
-          :label="`Errors ${errors.length}`"
+          :label="`Error ${errors.length}`"
         />
         <UBadge
           color="warning"
           variant="subtle"
-          :label="`Warnings ${warnings.length}`"
+          :label="`Warning ${warnings.length}`"
         />
       </div>
     </template>
@@ -38,17 +38,16 @@
           >
             <div class="flex flex-row items-center gap-2 flex-wrap">
               <UBadge
-                :color="issue.level === 'error' ? 'error' : 'warning'"
-                variant="subtle"
-                :label="issue.level.toUpperCase()"
-              />
-              <UBadge
                 v-if="issue.task"
                 color="info"
                 variant="subtle"
                 :label="`${issue.task}`"
               />
-              <UBadge color="neutral" variant="subtle" :label="issue.code" />
+              <UBadge
+                variant="subtle"
+                :label="issue.code"
+                :color="issue.level === 'error' ? 'error' : 'warning'"
+              />
               <span class="text-sm text-dimmed">#{{ index + 1 }}</span>
             </div>
 
