@@ -39,7 +39,7 @@ func NewPipelineChecker() *PipelineChecker {
 
 func (s *PipelineChecker) SetPaths(paths []string) {
 	s.mux.Lock()
-	s.paths = append([]string(nil), paths...)
+	s.paths = paths
 	s.mux.Unlock()
 }
 
@@ -277,11 +277,12 @@ func parsePipelineFile(filePath string, roots []string) (*pipelineFile, []CheckR
 
 func checkTaskRules(pf pipelineFile, allTasks map[string]struct{}, images map[string]map[string]struct{}) []CheckResponse {
 	anchors := collectAnchors(pf.tasks)
-	diags := make([]CheckResponse, 0, 16)
+	diags := make([]CheckResponse, 0, 24)
 	for taskName, taskObj := range pf.tasks {
-		diags = append(diags, checkUnknownTaskRefs(pf, taskName, taskObj, allTasks)...)
+		diags = append(diags, checkUnknownTaskRefs(pf, taskName, taskObj, allTasks, anchors)...)
 		diags = append(diags, checkUnknownAnchorRefs(pf, taskName, taskObj, anchors)...)
 		diags = append(diags, checkTemplateWarningsAndUnknownImage(pf, taskName, taskObj, images)...)
+		diags = append(diags, checkCustomActionRecoRules(pf, taskName, taskObj)...)
 		diags = append(diags, checkUnknownAttr(pf, taskName, taskObj)...)
 		diags = append(diags, checkDuplicateNext(pf, taskName, taskObj)...)
 	}
@@ -291,16 +292,28 @@ func checkTaskRules(pf pipelineFile, allTasks map[string]struct{}, images map[st
 func collectAnchors(tasks map[string]map[string]any) map[string]struct{} {
 	anchors := make(map[string]struct{})
 	for _, taskObj := range tasks {
-		for _, anchor := range extractStringByKey(taskObj, "anchor") {
-			a := strings.TrimSpace(anchor)
-			if a != "" {
-				anchors[a] = struct{}{}
+		if anchorDecl, ok := taskObj["anchor"]; ok {
+			switch v := anchorDecl.(type) {
+			case string:
+				a := strings.TrimSpace(v)
+				if a != "" {
+					anchors[a] = struct{}{}
+				}
+			case map[string]any:
+				for name := range v {
+					a := strings.TrimSpace(name)
+					if a != "" {
+						anchors[a] = struct{}{}
+					}
+				}
 			}
 		}
-		for _, anchor := range extractStringByKey(taskObj, "custom_anchor") {
-			a := strings.TrimSpace(anchor)
-			if a != "" {
-				anchors[a] = struct{}{}
+		if customAnchorDecl, ok := taskObj["custom_anchor"]; ok {
+			for _, anchor := range extractStringValues(customAnchorDecl) {
+				a := strings.TrimSpace(anchor)
+				if a != "" {
+					anchors[a] = struct{}{}
+				}
 			}
 		}
 	}
@@ -320,7 +333,7 @@ func checkUnknownAnchorRefs(pf pipelineFile, taskName string, taskObj map[string
 		if _, ok := anchors[a]; ok {
 			continue
 		}
-		line := findKeyValueLine(pf.raw, pf.lineStarts, "Anchor", a)
+		line := findTaskKeyValueLine(pf, taskName, "Anchor", a)
 		diags = append(diags, CheckResponse{
 			Level: "warning",
 			Msg:   fmt.Sprintf("unknown-anchor: %q in task %q", a, taskName),
@@ -331,13 +344,15 @@ func checkUnknownAnchorRefs(pf pipelineFile, taskName string, taskObj map[string
 	return diags
 }
 
-func checkUnknownTaskRefs(pf pipelineFile, taskName string, taskObj map[string]any, allTasks map[string]struct{}) []CheckResponse {
+func checkUnknownTaskRefs(pf pipelineFile, taskName string, taskObj map[string]any, allTasks map[string]struct{}, anchors map[string]struct{}) []CheckResponse {
 	keys := map[string]string{
 		"next":         "unknown-task",
 		"target":       "unknown-task",
 		"roi":          "unknown-task",
 		"entry":        "unknown-task",
 		"color_filter": "unknown-task",
+		"all_of":       "unknown-task",
+		"any_of":       "unknown-task",
 	}
 	diags := make([]CheckResponse, 0)
 	for key, code := range keys {
@@ -345,15 +360,28 @@ func checkUnknownTaskRefs(pf pipelineFile, taskName string, taskObj map[string]a
 		if !ok {
 			continue
 		}
-		refs := extractTaskRefs(v)
+		refs := extractTaskRefsByField(key, v)
 		for _, ref := range refs {
 			if ref == "" {
+				continue
+			}
+			if anchorName, isAnchorRef := parseAnchorRef(ref); isAnchorRef {
+				if _, ok := anchors[anchorName]; ok {
+					continue
+				}
+				line := findTaskKeyValueLine(pf, taskName, key, ref)
+				diags = append(diags, CheckResponse{
+					Level: "warning",
+					Msg:   fmt.Sprintf("unknown-anchor: %q in task %q", anchorName, taskName),
+					Path:  pf.path,
+					Line:  line,
+				})
 				continue
 			}
 			if _, ok := allTasks[ref]; ok {
 				continue
 			}
-			line := findKeyValueLine(pf.raw, pf.lineStarts, key, ref)
+			line := findTaskKeyValueLine(pf, taskName, key, ref)
 			diags = append(diags, CheckResponse{
 				Level: "error",
 				Msg:   fmt.Sprintf("%s: %q referenced by task %q", code, ref, taskName),
@@ -367,8 +395,8 @@ func checkUnknownTaskRefs(pf pipelineFile, taskName string, taskObj map[string]a
 
 func checkTemplateWarningsAndUnknownImage(pf pipelineFile, taskName string, taskObj map[string]any, images map[string]map[string]struct{}) []CheckResponse {
 	diags := make([]CheckResponse, 0)
-	for _, tpl := range extractStringByKey(taskObj, "template") {
-		line := findKeyValueLine(pf.raw, pf.lineStarts, "template", tpl)
+	for _, tpl := range extractTemplateRefs(taskObj) {
+		line := findTaskKeyValueLine(pf, taskName, "template", tpl)
 		norm := strings.TrimSpace(tpl)
 		if strings.Contains(norm, `\\`) {
 			diags = append(diags, CheckResponse{Level: "warning", Msg: "image-path-back-slash", Path: pf.path, Line: line})
@@ -393,13 +421,42 @@ func checkTemplateWarningsAndUnknownImage(pf pipelineFile, taskName string, task
 		if len(imgSet) == 0 {
 			continue
 		}
-		normPath := strings.TrimPrefix(strings.ReplaceAll(filepath.ToSlash(norm), "\\", "/"), "./")
+		normPath := normalizeTemplatePath(norm)
 		if _, ok := imgSet[normPath]; !ok {
 			diags = append(diags, CheckResponse{
 				Level: "warning",
 				Msg:   fmt.Sprintf("unknown-image: %q (task %q)", norm, taskName),
 				Path:  pf.path,
 				Line:  line,
+			})
+		}
+	}
+	return diags
+}
+
+func checkCustomActionRecoRules(pf pipelineFile, taskName string, taskObj map[string]any) []CheckResponse {
+	diags := make([]CheckResponse, 0, 2)
+	action, _ := taskObj["action"].(string)
+	if strings.EqualFold(strings.TrimSpace(action), "Custom") {
+		customAction, _ := taskObj["custom_action"].(string)
+		if strings.TrimSpace(customAction) == "" {
+			diags = append(diags, CheckResponse{
+				Level: "error",
+				Msg:   fmt.Sprintf("missing-custom-action: task %q uses action=Custom but custom_action is empty", taskName),
+				Path:  pf.path,
+				Line:  findTaskKeyValueLine(pf, taskName, "action", action),
+			})
+		}
+	}
+	recognition, _ := taskObj["recognition"].(string)
+	if strings.EqualFold(strings.TrimSpace(recognition), "Custom") {
+		customReco, _ := taskObj["custom_recognition"].(string)
+		if strings.TrimSpace(customReco) == "" {
+			diags = append(diags, CheckResponse{
+				Level: "error",
+				Msg:   fmt.Sprintf("missing-custom-recognition: task %q uses recognition=Custom but custom_recognition is empty", taskName),
+				Path:  pf.path,
+				Line:  findTaskKeyValueLine(pf, taskName, "recognition", recognition),
 			})
 		}
 	}
@@ -429,7 +486,7 @@ func checkUnknownAttr(pf pipelineFile, taskName string, taskObj map[string]any) 
 			if attr == "name" || attr == "task" || attr == "value" || attr == "type" {
 				continue
 			}
-			line := findKeyValueLine(pf.raw, pf.lineStarts, key, "")
+			line := findTaskKeyValueLine(pf, taskName, key, "")
 			diags = append(diags, CheckResponse{
 				Level: "warning",
 				Msg:   fmt.Sprintf("unknown-attr: %q in %q (task %q)", attr, key, taskName),
@@ -468,7 +525,7 @@ func checkDuplicateNext(pf pipelineFile, taskName string, taskObj map[string]any
 	}
 	diags := make([]CheckResponse, 0, len(dups))
 	for d := range dups {
-		line := findKeyValueLine(pf.raw, pf.lineStarts, "next", d)
+		line := findTaskKeyValueLine(pf, taskName, "next", d)
 		diags = append(diags, CheckResponse{
 			Level: "warning",
 			Msg:   fmt.Sprintf("duplicate-next: %q in task %q", d, taskName),
@@ -479,7 +536,36 @@ func checkDuplicateNext(pf pipelineFile, taskName string, taskObj map[string]any
 	return diags
 }
 
-func extractTaskRefs(v any) []string {
+func extractTaskRefsByField(field string, v any) []string {
+	refs := make([]string, 0)
+	push := func(s string) {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			return
+		}
+		refs = append(refs, s)
+	}
+
+	switch strings.ToLower(field) {
+	case "next", "entry", "all_of", "any_of", "color_filter":
+		for _, s := range extractStringValues(v) {
+			push(s)
+		}
+	case "target", "roi":
+		obj, ok := v.(map[string]any)
+		if !ok {
+			break
+		}
+		if taskRef, ok := obj["task"]; ok {
+			for _, s := range extractStringValues(taskRef) {
+				push(s)
+			}
+		}
+	}
+	return refs
+}
+
+func extractStringValues(v any) []string {
 	out := make([]string, 0)
 	var walk func(any)
 	walk = func(x any) {
@@ -491,16 +577,33 @@ func extractTaskRefs(v any) []string {
 				walk(e)
 			}
 		case map[string]any:
-			for k, e := range t {
-				if strings.TrimSpace(k) != "" {
-					out = append(out, strings.TrimSpace(k))
-				}
+			for _, e := range t {
 				walk(e)
 			}
 		}
 	}
 	walk(v)
 	return out
+}
+
+func extractTemplateRefs(taskObj map[string]any) []string {
+	tpl, ok := taskObj["template"]
+	if !ok {
+		return nil
+	}
+	return extractStringValues(tpl)
+}
+
+func parseAnchorRef(ref string) (string, bool) {
+	r := strings.TrimSpace(ref)
+	if !strings.HasPrefix(strings.ToLower(r), strings.ToLower("[Anchor]")) {
+		return "", false
+	}
+	name := strings.TrimSpace(r[len("[Anchor]"):])
+	if name == "" {
+		return "", false
+	}
+	return name, true
 }
 
 func extractStringByKey(v any, key string) []string {
@@ -604,14 +707,21 @@ func collectImageFiles(roots []string) map[string]map[string]struct{} {
 				return nil
 			}
 			norm := filepath.ToSlash(path)
+			base := strings.ToLower(filepath.Base(norm))
+			if base != "" {
+				set[base] = struct{}{}
+			}
 			for _, dir := range []string{"/image/", "/template/"} {
 				idx := strings.Index(strings.ToLower(norm), dir)
 				if idx == -1 {
 					continue
 				}
-				rel := strings.TrimPrefix(norm[idx+1:], strings.TrimPrefix(dir, "/"))
-				rel = strings.TrimPrefix(rel, "/")
-				set[rel] = struct{}{}
+				rel := norm[idx+len(dir):]
+				rel = normalizeTemplatePath(rel)
+				if rel != "" {
+					set[rel] = struct{}{}
+					set[strings.ToLower(filepath.Base(rel))] = struct{}{}
+				}
 			}
 			return nil
 		})
@@ -703,13 +813,106 @@ func offsetToLineCol(lineStarts []int, offset int) (int, int) {
 }
 
 func findTaskLine(raw string, lineStarts []int, taskName string) string {
+	start, _, ok := findTaskSpan(raw, taskName)
+	if !ok {
+		return "1:1"
+	}
+	line, col := offsetToLineCol(lineStarts, start)
+	return fmt.Sprintf("%d:%d", line, col)
+}
+
+func findTaskKeyValueLine(pf pipelineFile, taskName string, key string, value string) string {
+	start, end, ok := findTaskSpan(pf.raw, taskName)
+	if !ok || start < 0 || end <= start || end > len(pf.raw) {
+		return findKeyValueLine(pf.raw, pf.lineStarts, key, value)
+	}
+
+	segment := pf.raw[start:end]
+	if value != "" {
+		reKV := regexp.MustCompile(fmt.Sprintf(`(?m)"%s"\s*:\s*"%s"`, regexp.QuoteMeta(key), regexp.QuoteMeta(value)))
+		if loc := reKV.FindStringIndex(segment); loc != nil {
+			line, col := offsetToLineCol(pf.lineStarts, start+loc[0])
+			return fmt.Sprintf("%d:%d", line, col)
+		}
+		reV := regexp.MustCompile(fmt.Sprintf(`(?m)"%s"`, regexp.QuoteMeta(value)))
+		if loc := reV.FindStringIndex(segment); loc != nil {
+			line, col := offsetToLineCol(pf.lineStarts, start+loc[0])
+			return fmt.Sprintf("%d:%d", line, col)
+		}
+	}
+
+	reK := regexp.MustCompile(fmt.Sprintf(`(?m)"%s"\s*:`, regexp.QuoteMeta(key)))
+	if loc := reK.FindStringIndex(segment); loc != nil {
+		line, col := offsetToLineCol(pf.lineStarts, start+loc[0])
+		return fmt.Sprintf("%d:%d", line, col)
+	}
+
+	line, col := offsetToLineCol(pf.lineStarts, start)
+	return fmt.Sprintf("%d:%d", line, col)
+}
+
+func findTaskSpan(raw string, taskName string) (int, int, bool) {
 	re := regexp.MustCompile(fmt.Sprintf(`(?m)"%s"\s*:`, regexp.QuoteMeta(taskName)))
 	loc := re.FindStringIndex(raw)
 	if loc == nil {
-		return "1:1"
+		return -1, -1, false
 	}
-	line, col := offsetToLineCol(lineStarts, loc[0])
-	return fmt.Sprintf("%d:%d", line, col)
+	objStart := -1
+	for i := loc[1]; i < len(raw); i++ {
+		if raw[i] == '{' {
+			objStart = i
+			break
+		}
+	}
+	if objStart < 0 {
+		return loc[0], loc[1], true
+	}
+	objEnd := matchBrace(raw, objStart)
+	if objEnd < 0 {
+		return loc[0], len(raw), true
+	}
+	return loc[0], objEnd + 1, true
+}
+
+func matchBrace(raw string, start int) int {
+	if start < 0 || start >= len(raw) || raw[start] != '{' {
+		return -1
+	}
+	depth := 0
+	inString := false
+	escaped := false
+	for i := start; i < len(raw); i++ {
+		ch := raw[i]
+		if inString {
+			if escaped {
+				escaped = false
+				continue
+			}
+			if ch == '\\' {
+				escaped = true
+				continue
+			}
+			if ch == '"' {
+				inString = false
+			}
+			continue
+		}
+		if ch == '"' {
+			inString = true
+			continue
+		}
+		if ch == '{' {
+			depth++
+			continue
+		}
+		if ch == '}' {
+			depth--
+			if depth == 0 {
+				return i
+			}
+		}
+	}
+	return -1
 }
 
 func findKeyValueLine(raw string, lineStarts []int, key string, value string) string {
@@ -728,6 +931,18 @@ func findKeyValueLine(raw string, lineStarts []int, key string, value string) st
 	}
 	line, col := offsetToLineCol(lineStarts, loc[0])
 	return fmt.Sprintf("%d:%d", line, col)
+}
+
+func normalizeTemplatePath(path string) string {
+	norm := strings.TrimSpace(path)
+	norm = strings.ReplaceAll(norm, "\\", "/")
+	norm = strings.TrimPrefix(norm, "./")
+	norm = strings.TrimPrefix(norm, "/")
+	norm = strings.ToLower(norm)
+	for strings.Contains(norm, "//") {
+		norm = strings.ReplaceAll(norm, "//", "/")
+	}
+	return norm
 }
 
 func splitLineCol(s string) (int, int) {

@@ -20,10 +20,6 @@
 
     <template #body>
       <div class="flex flex-col gap-4">
-        <div class="text-sm text-dimmed">
-          The following issues were found in the pipeline:
-        </div>
-
         <div
           v-if="issues.length === 0"
           class="text-sm text-dimmed p-4 text-center"
@@ -49,11 +45,11 @@
               <span class="text-sm text-dimmed">#{{ index + 1 }}</span>
             </div>
 
-            <div class="text-md text-dimmed break-all font-mono">
+            <div class="text-sm text-dimmed break-all font-mono">
               {{ issue.path }}:{{ issue.line }}
             </div>
 
-            <div class="text-sm text-highlighted wrap-break-word">
+            <div class="text-md text-highlighted wrap-break-word">
               {{ issue.msg }}
             </div>
           </div>

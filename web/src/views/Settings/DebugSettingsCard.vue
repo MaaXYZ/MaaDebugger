@@ -115,7 +115,7 @@ const pipelineNotifyLevel = [
         class="flex items-center justify-between gap-4 rounded-lg border border-default p-3"
       >
         <div class="flex flex-col gap-1">
-          <span class="text-sm font-medium">Check Pipeline Problems</span>
+          <span class="text-sm font-medium">Check Pipeline Issues</span>
           <span class="text-sm text-dimmed"
             >When resource loaded, check if the pipeline has any error or
             warning.</span
