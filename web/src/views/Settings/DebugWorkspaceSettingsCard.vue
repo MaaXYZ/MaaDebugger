@@ -155,7 +155,7 @@ const pipelineNotifyLevel = [
       </div>
 
       <div
-        v-if="debugWorkspaceSettingsStore.checkPipeline"
+        v-if="debugWorkspaceSettingsStore.preventRunning"
         class="flex items-center justify-between gap-4 rounded-lg border border-default p-3"
       >
         <div class="flex flex-col gap-1">
@@ -166,9 +166,9 @@ const pipelineNotifyLevel = [
           >
         </div>
         <USwitch
-          :model-value="debugWorkspaceSettingsStore.checkPipeline"
+          :model-value="debugWorkspaceSettingsStore.preventRunning"
           @update:model-value="
-            debugWorkspaceSettingsStore.setCheckPipeline(Boolean($event))
+            debugWorkspaceSettingsStore.setPreventRunning(Boolean($event))
           "
         />
       </div>
