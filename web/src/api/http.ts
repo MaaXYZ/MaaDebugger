@@ -14,6 +14,8 @@ import type {
   ActionDetailResponse,
 } from "@/types/taskDetail";
 
+import type { CheckResponse } from "@/types/pipeline";
+
 export interface ApiResponse<T = unknown> {
   succeed: boolean;
   msg: string;
@@ -287,6 +289,35 @@ export async function loadResource(paths: string[]): Promise<ApiResponse> {
     method: "POST",
     body: JSON.stringify({ paths }),
   });
+}
+
+/**
+ * 启动 Pipeline 检查
+ */
+export async function StartPipelineCheck(): Promise<ApiResponse<boolean>> {
+  return request("/pipeline/start", { method: "POST" });
+}
+
+/**
+ * 停止 Pipeline 检查
+ */
+export async function StopPipelineCheck(): Promise<ApiResponse<boolean>> {
+  return request("/pipeline/stop", { method: "POST" });
+}
+
+/**
+ * 手动触发一次 Pipeline 检查
+ */
+export async function DoPipelineCheck(): Promise<ApiResponse<boolean>> {
+  return request("/pipeline/check", { method: "POST" });
+}
+
+/**
+ * 获取 pipeline 检查结果
+ */
+export async function getPipelineCheckResult(): Promise<CheckResponse[]> {
+  const result = await request<CheckResponse[]>("/pipeline/result");
+  return Array.isArray(result.data) ? result.data : [];
 }
 
 // ============================================================
