@@ -1,5 +1,5 @@
 import type { StatusSnapshot } from "@/types/api";
-import type { TaskEvent } from "@/views/Index/taskDetail/types";
+import type { TaskEvent } from "@/types/taskDetail";
 import type { AgentInfo } from "@/api/http";
 
 export type WSEventHandler = {

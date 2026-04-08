@@ -64,7 +64,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { PipelineNodeScope } from './types'
+import type { PipelineNodeScope } from '@/types/taskDetail'
 import StatusIcon from './StatusIcon.vue'
 import NextListItem from './NextListItem.vue'
 import NodeStatusButton from './NodeStatusButton.vue'

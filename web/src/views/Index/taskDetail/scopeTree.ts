@@ -5,7 +5,7 @@ import type {
   NextListScope,
   RecoScope,
   TaskScope,
-} from "./types";
+} from "@/types/taskDetail";
 
 function hasRunningInRecoScope(scope: RecoScope): boolean {
   if (scope.status === "running") return true;
@@ -74,7 +74,10 @@ export function summarizeAnyNodesStatus(nodes: AnyNodeScope[]): GeneralStatus {
   return "success";
 }
 
-function findRecoNameInRecoScope(scope: RecoScope, recoId: number): string | null {
+function findRecoNameInRecoScope(
+  scope: RecoScope,
+  recoId: number,
+): string | null {
   if (scope.msg.reco_id === recoId) return scope.msg.name;
   return findRecoNameInAnyNodes(scope.childs, recoId);
 }

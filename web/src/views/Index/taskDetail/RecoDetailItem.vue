@@ -29,7 +29,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { RecoDetailResponse } from './types'
+import type { RecoDetailResponse } from '@/types/taskDetail'
 
 const props = defineProps<{
     detail: RecoDetailResponse

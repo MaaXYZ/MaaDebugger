@@ -7,7 +7,12 @@ import type {
 } from "@/types/api";
 import type { InterfaceParseResult } from "@/types/interface";
 
-import type { NodeDataResponse } from "@/views/Index/taskDetail/types";
+import type {
+  NodeDataResponse,
+  NodeDetailResponse,
+  RecoDetailResponse,
+  ActionDetailResponse,
+} from "@/types/taskDetail";
 
 export interface ApiResponse<T = unknown> {
   succeed: boolean;
@@ -293,10 +298,10 @@ export async function loadResource(paths: string[]): Promise<ApiResponse> {
  */
 export async function getNodeDetail(
   name: string,
-): Promise<import("@/views/Index/taskDetail/types").NodeDetailResponse | null> {
-  const result = await request<
-    import("@/views/Index/taskDetail/types").NodeDetailResponse
-  >(`/task/node/${encodeURIComponent(name)}`);
+): Promise<NodeDetailResponse | null> {
+  const result = await request<NodeDetailResponse>(
+    `/task/node/${encodeURIComponent(name)}`,
+  );
   return result.data ?? null;
 }
 
@@ -315,9 +320,9 @@ export async function getNodeData(
     params.set("action_id", String(options.actionId));
   }
   const query = params.toString();
-  const result = await request<
-    import("@/views/Index/taskDetail/types").NodeDataResponse
-  >(`/task/node-data/${encodeURIComponent(name)}${query ? `?${query}` : ""}`);
+  const result = await request<NodeDataResponse>(
+    `/task/node-data/${encodeURIComponent(name)}${query ? `?${query}` : ""}`,
+  );
   return result.data ?? null;
 }
 
@@ -326,10 +331,8 @@ export async function getNodeData(
  */
 export async function getRecoDetailById(
   recoId: number,
-): Promise<import("@/views/Index/taskDetail/types").RecoDetailResponse | null> {
-  const result = await request<
-    import("@/views/Index/taskDetail/types").RecoDetailResponse
-  >(`/task/reco/${recoId}`);
+): Promise<RecoDetailResponse | null> {
+  const result = await request<RecoDetailResponse>(`/task/reco/${recoId}`);
   return result.data ?? null;
 }
 
@@ -338,12 +341,10 @@ export async function getRecoDetailById(
  */
 export async function getActionDetailById(
   actionId: number,
-): Promise<
-  import("@/views/Index/taskDetail/types").ActionDetailResponse | null
-> {
-  const result = await request<
-    import("@/views/Index/taskDetail/types").ActionDetailResponse
-  >(`/task/action/${actionId}`);
+): Promise<ActionDetailResponse | null> {
+  const result = await request<ActionDetailResponse>(
+    `/task/action/${actionId}`,
+  );
   return result.data ?? null;
 }
 

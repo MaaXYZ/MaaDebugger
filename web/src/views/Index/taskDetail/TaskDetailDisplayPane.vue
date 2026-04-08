@@ -6,8 +6,7 @@
             </UBadge>
             <UBadge
                 :color="activeTask.status === 'success' ? 'success' : activeTask.status === 'failed' ? 'error' : 'info'"
-                variant="subtle" class="shrink-0 capitalize"
-            >
+                variant="subtle" class="shrink-0 capitalize">
                 {{ activeTask.status }}
             </UBadge>
             <UTooltip :text="activeTask.msg.entry">
@@ -55,21 +54,13 @@
 
         <div v-if="displayedNodes.length > 0" ref="feedContainer" class="min-h-0 flex-1 overflow-y-auto pr-1">
             <div class="flex flex-col gap-3">
-                <div
-                    v-for="node in displayedNodes"
-                    :key="`${activeTask.msg.uuid}-${currentPage}-${node.msg.node_id}`"
-                    :ref="(el) => setNodeElement(node.msg.node_id, el)"
-                    class="scroll-mt-3"
-                    :data-node-id="node.msg.node_id"
-                >
-                    <PipelineNodeItem
-                        :node="node"
-                        :is-entry="node.msg.node_id === entryNodeId"
-                        :default-expanded="false"
-                        :highlighted="node.msg.node_id === selectedNodeId"
+                <div v-for="node in displayedNodes" :key="`${activeTask.msg.uuid}-${currentPage}-${node.msg.node_id}`"
+                    :ref="(el) => setNodeElement(node.msg.node_id, el)" class="scroll-mt-3"
+                    :data-node-id="node.msg.node_id">
+                    <PipelineNodeItem :node="node" :is-entry="node.msg.node_id === entryNodeId"
+                        :default-expanded="false" :highlighted="node.msg.node_id === selectedNodeId"
                         @request-detail="$emit('requestDetail', $event)"
-                        @request-action-detail="$emit('requestActionDetail', $event)"
-                    />
+                        @request-action-detail="$emit('requestActionDetail', $event)" />
                 </div>
             </div>
         </div>
@@ -82,7 +73,7 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
-import type { PipelineNodeScope, TaskScope } from './types'
+import type { PipelineNodeScope, TaskScope } from '@/types/taskDetail'
 import PipelineNodeItem from './PipelineNodeItem.vue'
 
 const props = defineProps<{

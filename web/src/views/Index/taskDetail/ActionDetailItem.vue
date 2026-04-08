@@ -118,7 +118,7 @@ import type {
     InputTextActionResult,
     AppActionResult,
     ShellActionResult,
-} from './types'
+} from '@/types/taskDetail'
 import InfoRow from './ActionInfoRow.vue'
 
 const props = defineProps<{

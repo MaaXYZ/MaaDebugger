@@ -205,7 +205,7 @@
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import type { TabsItem } from '@nuxt/ui'
 import { getTaskImageUrl } from '@/api/http'
-import type { RecoDetailResponse, RecoResultItem, RectResponse } from './types'
+import type { RecoDetailResponse, RecoResultItem, RectResponse } from '@/types/taskDetail'
 
 // --- Constants ---
 const MIN_ZOOM = 0.5

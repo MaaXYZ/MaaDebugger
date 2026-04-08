@@ -6,8 +6,8 @@
                 <UBadge :color="detail.success ? 'success' : 'error'" variant="subtle"
                     :label="detail.success ? 'Success' : 'Failed'" />
                 <UBadge color="info" variant="subtle" :label="detail.action" />
-                <UButton color="neutral" variant="ghost" size="xs" icon="i-lucide-file-json"
-                    label="NodeData" @click="nodeDataOpen = true" />
+                <UButton color="neutral" variant="ghost" size="xs" icon="i-lucide-file-json" label="NodeData"
+                    @click="nodeDataOpen = true" />
             </div>
         </template>
 
@@ -30,8 +30,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { getActionDetailById, getTaskImageUrl } from '@/api/http'
-import type { ActionDetailResponse } from './types'
-import { actionHasCoords } from './types'
+import type { ActionDetailResponse } from '@/types/taskDetail'
+import { actionHasCoords } from '@/types/taskDetail'
 import ActionDetailItem from './ActionDetailItem.vue'
 import ActionDrawCanvas from './ActionDrawCanvas.vue'
 import NodeDataModal from './NodeDataModal.vue'

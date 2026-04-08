@@ -4,38 +4,32 @@
             <template v-if="entry.recos.length === 0">
                 <UTooltip :text="formatItemLabel(entry.item)">
                     <UButton size="sm" variant="outline" color="neutral" disabled
-                             class="max-w-full min-w-0 overflow-hidden">
+                        class="max-w-full min-w-0 overflow-hidden">
                         <span class="truncate block min-w-0">{{ formatItemLabel(entry.item) }}</span>
                     </UButton>
                 </UTooltip>
             </template>
 
-            <template v-else-if="entry.recos.length === 1 && entry.recos[0]?.msg.name === entry.item.name && !entry.recos[0]?.childs.length">
+            <template
+                v-else-if="entry.recos.length === 1 && entry.recos[0]?.msg.name === entry.item.name && !entry.recos[0]?.childs.length">
                 <div class="flex max-w-full min-w-0 flex-col gap-2">
-                    <RecoButton :reco="entry.recos[0]" :info="entry.item" :algorithm-type="entry.item.algorithm" use-warning
-                                @request-detail="$emit('requestDetail', $event)" />
-                    <SubflowDisclosure
-                        v-if="entry.recos[0] && entry.recos[0].childs.length > 0"
-                        label="Internal flow"
-                        kind="reco"
-                        :count="countRecoSubflowNodes(entry.recos[0])"
-                    >
-                        <SubflowTree
-                            :nodes="entry.recos[0].childs"
-                            kind="reco"
+                    <RecoButton :reco="entry.recos[0]" :info="entry.item" :algorithm-type="entry.item.algorithm"
+                        use-warning @request-detail="$emit('requestDetail', $event)" />
+                    <SubflowDisclosure v-if="entry.recos[0] && entry.recos[0].childs.length > 0" label="Internal flow"
+                        kind="reco" :count="countRecoSubflowNodes(entry.recos[0])">
+                        <SubflowTree :nodes="entry.recos[0].childs" kind="reco"
                             @request-detail="$emit('requestDetail', $event)"
-                            @request-action-detail="$emit('requestActionDetail', $event)"
-                        />
+                            @request-action-detail="$emit('requestActionDetail', $event)" />
                     </SubflowDisclosure>
                 </div>
             </template>
 
             <div v-else
-                 class="inline-flex max-w-full flex-col items-start gap-1.5 rounded-md border border-default px-2 py-1">
+                class="inline-flex max-w-full flex-col items-start gap-1.5 rounded-md border border-default px-2 py-1">
                 <div class="inline-flex max-w-full flex-wrap items-start gap-1.5">
                     <UTooltip :text="formatItemLabel(entry.item)">
                         <UButton size="sm" variant="soft" color="neutral" disabled
-                                 class="max-w-full min-w-0 overflow-hidden">
+                            class="max-w-full min-w-0 overflow-hidden">
                             <span class="truncate block min-w-0">{{ formatItemLabel(entry.item) }}</span>
                         </UButton>
                     </UTooltip>
@@ -43,19 +37,12 @@
                     <template v-for="(reco, recoIdx) in entry.recos" :key="`entry-${idx}-reco-${recoIdx}`">
                         <div class="flex max-w-full min-w-0 flex-col gap-2">
                             <RecoButton :reco="reco" :algorithm-type="entry.item.algorithm"
-                                        @request-detail="$emit('requestDetail', $event)" />
-                            <SubflowDisclosure
-                                v-if="reco.childs.length > 0"
-                                label="Internal flow"
-                                kind="reco"
-                                :count="countRecoSubflowNodes(reco)"
-                            >
-                                <SubflowTree
-                                    :nodes="reco.childs"
-                                    kind="reco"
+                                @request-detail="$emit('requestDetail', $event)" />
+                            <SubflowDisclosure v-if="reco.childs.length > 0" label="Internal flow" kind="reco"
+                                :count="countRecoSubflowNodes(reco)">
+                                <SubflowTree :nodes="reco.childs" kind="reco"
                                     @request-detail="$emit('requestDetail', $event)"
-                                    @request-action-detail="$emit('requestActionDetail', $event)"
-                                />
+                                    @request-action-detail="$emit('requestActionDetail', $event)" />
                             </SubflowDisclosure>
                         </div>
                     </template>
@@ -67,7 +54,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { NextListScope, NextListItem, RecoScope } from './types'
+import type { NextListScope, NextListItem, RecoScope } from '@/types/taskDetail'
 import RecoButton from './RecoButton.vue'
 import SubflowTree from './SubflowTree.vue'
 import SubflowDisclosure from './SubflowDisclosure.vue'

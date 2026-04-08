@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import type { GeneralStatus } from './types'
+import type { GeneralStatus } from '@/types/taskDetail'
 
 defineProps<{
     status: GeneralStatus

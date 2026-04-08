@@ -6,7 +6,7 @@
             <span class="flex max-w-full min-w-0 items-center gap-1.5 text-left overflow-hidden">
                 <span v-if="primaryLabel" class="block min-w-0 truncate">{{ primaryLabel }}</span>
                 <span v-for="meta in metaItems" :key="meta" class="shrink-0 text-[11px] text-dimmed">{{ meta
-                }}</span>
+                    }}</span>
             </span>
         </template>
     </UButton>
@@ -15,7 +15,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useTaskDetailSettingsStore } from '@/stores/taskDetailSettings'
-import type { RecoScope, NextListItem } from './types'
+import type { RecoScope, NextListItem } from '@/types/taskDetail'
 
 const props = defineProps<{
     reco: RecoScope

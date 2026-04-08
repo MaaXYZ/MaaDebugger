@@ -15,7 +15,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useTaskDetailSettingsStore } from '@/stores/taskDetailSettings'
-import type { NodeStatus } from './types'
+import type { NodeStatus } from '@/types/taskDetail'
 
 const props = withDefaults(defineProps<{
     status: NodeStatus

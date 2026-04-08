@@ -110,7 +110,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { getNodeData, getRecoDetailById } from '@/api/http'
-import type { RecoDetailResponse, RectResponse } from './types'
+import type { RecoDetailResponse, RectResponse } from '@/types/taskDetail'
 import RecoDetailItem from './RecoDetailItem.vue'
 import RecognitionDrawCanvas from './RecognitionDrawCanvas.vue'
 import NodeDataModal from './NodeDataModal.vue'

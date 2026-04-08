@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import type { TaskScope, PipelineNodeScope } from './types'
+import type { TaskScope, PipelineNodeScope } from '@/types/taskDetail'
 
 defineProps<{
     tasks: TaskScope[]
