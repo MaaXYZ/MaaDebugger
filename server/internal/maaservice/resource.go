@@ -16,14 +16,22 @@ type ResourceService struct {
 	resource    atomic.Pointer[maa.Resource]
 	loadedPaths []string
 
-	watcher *Watcher
+	watcher         *Watcher
+	PipelineChecker *PipelineChecker
 }
 
 // NewResourceService 创建一个新的 ResourceService。
 func NewResourceService(onChange func(path string), onError func(error)) *ResourceService {
-	s := &ResourceService{}
+	s := &ResourceService{
+		PipelineChecker: NewPipelineChecker(),
+	}
 
-	w, err := NewWatcher(onChange, onError)
+	w, err := NewWatcher(func(path string) {
+		s.PipelineChecker.OnPathChanged(path)
+		if onChange != nil {
+			onChange(path)
+		}
+	}, onError)
 	if err != nil {
 		resourceServiceLog.Error().Err(err).Msg("failed to create watcher")
 	} else {
@@ -79,6 +87,9 @@ func (s *ResourceService) LoadBundles(paths []string) LoadResult {
 		s.watcher.SetPaths(paths)
 	}
 
+	// 只在资源加载成功时重写 PipelineChecker 路径
+	s.PipelineChecker.SetPaths(paths)
+
 	resourceServiceLog.Info().Int("count", len(paths)).Msg("all bundles loaded")
 	return LoadResult{Success: true}
 }
@@ -99,6 +110,7 @@ func (s *ResourceService) Loaded() bool {
 
 // Destroy 销毁当前 Resource 实例。
 func (s *ResourceService) Destroy() {
+	s.PipelineChecker.Stop()
 	if s.watcher != nil {
 		s.watcher.Destroy()
 	}
@@ -119,5 +131,29 @@ func (s *ResourceService) SetWatchEnabled(enabled bool) {
 func (s *ResourceService) SetWatchInterval(intervalMs int) {
 	if s.watcher != nil {
 		s.watcher.SetInterval(intervalMs)
+	}
+}
+
+func (s *ResourceService) SetPipelinePaths(paths []string) error {
+	if s.watcher != nil {
+		if err := s.watcher.SetPaths(paths); err != nil {
+			return err
+		}
+	}
+	s.PipelineChecker.SetPaths(paths)
+	return nil
+}
+
+func (s *ResourceService) StartPipelineCheck() {
+	s.PipelineChecker.Start()
+	if s.watcher != nil {
+		s.watcher.SetEnabled(true)
+	}
+}
+
+func (s *ResourceService) StopPipelineCheck() {
+	s.PipelineChecker.Stop()
+	if s.watcher != nil {
+		s.watcher.SetEnabled(false)
 	}
 }

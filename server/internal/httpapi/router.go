@@ -88,6 +88,10 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.HandleFunc("POST /api/path/exists", r.handlePathExists)
 	mux.HandleFunc("POST /api/interface/parse", r.handleInterfaceParse)
 	mux.HandleFunc("POST /api/resource/load", r.handleResourceLoad)
+	mux.HandleFunc("POST /api/pipeline/start", r.handlePipelineCheckerStart)
+	mux.HandleFunc("POST /api/pipeline/stop", r.handlePipelineCheckerStop)
+	mux.HandleFunc("POST /api/pipeline/check", r.handlePipelineCheckerCheck)
+	mux.HandleFunc("GET /api/pipeline/result", r.handlePipelineCheckerGet)
 	mux.HandleFunc("POST /api/task/run", r.handleTaskRun)
 	mux.HandleFunc("POST /api/task/stop", r.handleTaskStop)
 	mux.HandleFunc("GET /api/task/nodes", r.handleTaskNodes)
@@ -1004,6 +1008,30 @@ func (r *router) handleScreenshotStatus(w http.ResponseWriter, _ *http.Request) 
 	})
 }
 
+func (r *router) handlePipelineCheckerStart(w http.ResponseWriter, _ *http.Request) {
+	r.deps.ResourceService.StartPipelineCheck()
+	response.OK(w, nil)
+}
+
+func (r *router) handlePipelineCheckerStop(w http.ResponseWriter, _ *http.Request) {
+	r.deps.ResourceService.StopPipelineCheck()
+	response.OK(w, nil)
+}
+
+type pipelineAddPathRequest struct {
+	Paths []string `json:"paths"`
+}
+
+func (r *router) handlePipelineCheckerGet(w http.ResponseWriter, _ *http.Request) {
+	result := r.deps.ResourceService.PipelineChecker.GetResult()
+	response.OK(w, result)
+}
+
+func (r *router) handlePipelineCheckerCheck(w http.ResponseWriter, _ *http.Request) {
+	result := r.deps.ResourceService.PipelineChecker.CheckOnce()
+	response.OK(w, result)
+}
+
 func (r *router) handleWS(w http.ResponseWriter, req *http.Request) {
 	conn, err := r.upgrader.Upgrade(w, req, nil)
 	if err != nil {
@@ -1231,14 +1259,6 @@ func truncateLogField(v string, max int) string {
 		return v
 	}
 	return v[:max] + "...(truncated)"
-}
-
-func parsePort(v string, fallback int) int {
-	p, err := strconv.Atoi(v)
-	if err != nil || p <= 0 {
-		return fallback
-	}
-	return p
 }
 
 func containsOrRegexMatch(value, pattern string) bool {

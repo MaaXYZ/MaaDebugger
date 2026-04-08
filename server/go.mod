@@ -10,6 +10,7 @@ require (
 	github.com/rs/zerolog v1.34.0
 	golang.org/x/mod v0.33.0
 	golang.org/x/sys v0.41.0
+	github.com/tailscale/hujson v0.0.0-20260302212456-ecc657c15afd
 )
 
 require (
