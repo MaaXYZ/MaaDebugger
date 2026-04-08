@@ -20,7 +20,7 @@ type ProductionOptions = {
 };
 
 type IconifyIconsOptions = {
-  whitelist?: IconWhitelist;
+  appendList?: IconWhitelist;
   production?: ProductionOptions;
   whitelistCheck?: {
     enabled?: boolean;
@@ -114,7 +114,7 @@ export default function IconifyIcons(
   }
 
   function applyWhitelist() {
-    const whitelist = options.whitelist;
+    const whitelist = options.appendList;
     if (!whitelist) return;
 
     for (const [prefix, iconNames] of Object.entries(whitelist)) {
@@ -128,7 +128,7 @@ export default function IconifyIcons(
 
   function collectWhitelistMissingEntries() {
     const missing: string[] = [];
-    const whitelist = options.whitelist;
+    const whitelist = options.appendList;
     if (!whitelist) return missing;
 
     for (const [prefix, iconNames] of Object.entries(whitelist)) {

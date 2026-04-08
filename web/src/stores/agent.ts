@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import type { ConnectionStatus } from "@/components/Index/agent/types";
+import type { ConnectionStatus } from "@/views/Index/agent/types";
 
 export interface AgentItem {
   identifier: string;

@@ -29,9 +29,9 @@
 
 <script setup lang="ts">
 import { computed, watch } from 'vue'
-import LeftTabs from '@/components/Index/LeftTabs.vue'
-import TaskCard from '@/components/Index/TaskCard.vue'
-import TaskDetailCard from '@/components/Index/TaskDetailCard.vue'
+import LeftTabs from '@/views/Index/LeftTabs.vue'
+import TaskCard from '@/views/Index/TaskCard.vue'
+import TaskDetailCard from '@/views/Index/TaskDetailCard.vue'
 import { useDebugWorkspaceSettingsStore } from '@/stores/debugWorkspaceSettings'
 import { useStatusStore } from '@/stores/status'
 

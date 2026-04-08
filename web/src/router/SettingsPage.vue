@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import AboutCard from '@/components/Settings/AboutCard.vue'
-import DebugWorkspaceSettingsCard from '@/components/Settings/DebugWorkspaceSettingsCard.vue'
-import EditorSettingsCard from '@/components/Settings/EditorSettingsCard.vue'
-import KeyboardShortcutsCard from '@/components/Settings/KeyboardShortcutsCard.vue'
-import TaskDetailSettingsCard from '@/components/Settings/TaskDetailSettingsCard.vue'
+import AboutCard from '@/views/Settings/AboutCard.vue'
+import DebugWorkspaceSettingsCard from '@/views/Settings/DebugWorkspaceSettingsCard.vue'
+import EditorSettingsCard from '@/views/Settings/EditorSettingsCard.vue'
+import KeyboardShortcutsCard from '@/views/Settings/KeyboardShortcutsCard.vue'
+import TaskDetailSettingsCard from '@/views/Settings/TaskDetailSettingsCard.vue'
 </script>
 
 <template>

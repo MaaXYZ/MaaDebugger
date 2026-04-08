@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import type { PipelineNodeScope } from "@/components/Index/taskDetail/types";
+import type { PipelineNodeScope } from "@/views/Index/taskDetail/types";
 
 export const activeTaskIndex = ref(0);
 export const followLatestTask = ref(true);

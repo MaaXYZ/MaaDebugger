@@ -11,10 +11,10 @@ export default defineConfig({
     ui(),
     IconifyIcons({
       // 白名单用于兜底动态场景（无法被静态扫描捕获）
-      whitelist: {
+      appendList: {
         "simple-icons": ["xbox", "playstation"],
       },
-      // 仅 build 生效：白名单条目缺失时抛出错误，防止线上图标丢失
+      // 仅 build 生效：白名单条目缺失时抛出错误，防止图标丢失
       whitelistCheck: {
         enabled: true,
         throwOnMissing: true,

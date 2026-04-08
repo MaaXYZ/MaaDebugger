@@ -7,7 +7,7 @@ import type {
 } from "@/types/api";
 import type { InterfaceParseResult } from "@/types/interface";
 
-import type { NodeDataResponse } from "@/components/Index/taskDetail/types";
+import type { NodeDataResponse } from "@/views/Index/taskDetail/types";
 
 export interface ApiResponse<T = unknown> {
   succeed: boolean;
@@ -293,11 +293,9 @@ export async function loadResource(paths: string[]): Promise<ApiResponse> {
  */
 export async function getNodeDetail(
   name: string,
-): Promise<
-  import("@/components/Index/taskDetail/types").NodeDetailResponse | null
-> {
+): Promise<import("@/views/Index/taskDetail/types").NodeDetailResponse | null> {
   const result = await request<
-    import("@/components/Index/taskDetail/types").NodeDetailResponse
+    import("@/views/Index/taskDetail/types").NodeDetailResponse
   >(`/task/node/${encodeURIComponent(name)}`);
   return result.data ?? null;
 }
@@ -318,7 +316,7 @@ export async function getNodeData(
   }
   const query = params.toString();
   const result = await request<
-    import("@/components/Index/taskDetail/types").NodeDataResponse
+    import("@/views/Index/taskDetail/types").NodeDataResponse
   >(`/task/node-data/${encodeURIComponent(name)}${query ? `?${query}` : ""}`);
   return result.data ?? null;
 }
@@ -328,11 +326,9 @@ export async function getNodeData(
  */
 export async function getRecoDetailById(
   recoId: number,
-): Promise<
-  import("@/components/Index/taskDetail/types").RecoDetailResponse | null
-> {
+): Promise<import("@/views/Index/taskDetail/types").RecoDetailResponse | null> {
   const result = await request<
-    import("@/components/Index/taskDetail/types").RecoDetailResponse
+    import("@/views/Index/taskDetail/types").RecoDetailResponse
   >(`/task/reco/${recoId}`);
   return result.data ?? null;
 }
@@ -343,10 +339,10 @@ export async function getRecoDetailById(
 export async function getActionDetailById(
   actionId: number,
 ): Promise<
-  import("@/components/Index/taskDetail/types").ActionDetailResponse | null
+  import("@/views/Index/taskDetail/types").ActionDetailResponse | null
 > {
   const result = await request<
-    import("@/components/Index/taskDetail/types").ActionDetailResponse
+    import("@/views/Index/taskDetail/types").ActionDetailResponse
   >(`/task/action/${actionId}`);
   return result.data ?? null;
 }

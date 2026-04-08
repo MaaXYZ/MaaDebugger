@@ -10,7 +10,7 @@ import type {
   TaskEvent,
   RecoNodeScope,
   ActionNodeScope,
-} from "@/components/Index/taskDetail/types";
+} from "@/views/Index/taskDetail/types";
 
 function lastOf<T>(arr: T[]): T | undefined {
   return arr.length > 0 ? arr[arr.length - 1] : undefined;
