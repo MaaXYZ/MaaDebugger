@@ -5,7 +5,7 @@ import { StartPipelineCheck, StopPipelineCheck } from "@/api/http";
 
 type PipelineNotifyLevel = "NULL" | "ERROR" | "WARNING";
 
-export const useDebugWorkspaceSettingsStore = defineStore(
+export const useDebugSettingsStore = defineStore(
   "debugWorkspaceSettings",
   () => {
     const autoCollapseLeftTabsOnRunStart = ref(true);

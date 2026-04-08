@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useDebugWorkspaceSettingsStore } from "@/stores/debugWorkspaceSettings";
+import { useDebugSettingsStore } from "@/stores/debugWorkspaceSettings";
 
-const debugWorkspaceSettingsStore = useDebugWorkspaceSettingsStore();
+const debugWorkspaceSettingsStore = useDebugSettingsStore();
 
 const pipelineNotifyLevel = [
   { label: "Error", value: "ERROR" },

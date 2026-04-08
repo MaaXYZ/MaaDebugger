@@ -1,7 +1,7 @@
 import { computed, watch } from "vue";
 import { useResourceStore } from "@/stores/resource";
 import { useSignalStore } from "@/stores/signal";
-import { useDebugWorkspaceSettingsStore } from "@/stores/debugWorkspaceSettings";
+import { useDebugSettingsStore } from "@/stores/debugWorkspaceSettings";
 import { getPipelineCheckResult, loadResource } from "@/api/http";
 import type { CheckResponse } from "@/types/pipeline";
 
@@ -15,7 +15,7 @@ export default function useResourceControl() {
   const resourceStore = useResourceStore();
   const enabledPaths = computed(() => resourceStore.getEnabledPaths());
   const signalStore = useSignalStore();
-  const debugWorkspaceSettingsStore = useDebugWorkspaceSettingsStore();
+  const debugWorkspaceSettingsStore = useDebugSettingsStore();
 
   const WATCH_RESOURCE_TOAST_ID = "watch-resource";
   const resourceToastID = "resource-toast";

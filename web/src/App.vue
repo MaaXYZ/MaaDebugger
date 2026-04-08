@@ -8,7 +8,7 @@ import {
   getUACStatus,
 } from "@/api/http";
 import { useStatusStore } from "@/stores/status";
-import { useDebugWorkspaceSettingsStore } from "@/stores/debugWorkspaceSettings";
+import { useDebugSettingsStore } from "@/stores/debugWorkspaceSettings";
 import { handleTaskEvent } from "@/stores/launchGraph";
 import { useSignalStore } from "./stores/signal";
 import { latestAgentUpdate } from "@/api/agentEvents";
@@ -51,7 +51,7 @@ const headerNavigationMenuItems = computed<NavigationMenuItem[]>(() => [
 ]);
 
 const statusStore = useStatusStore();
-const debugWorkspaceSettingsStore = useDebugWorkspaceSettingsStore();
+const debugWorkspaceSettingsStore = useDebugSettingsStore();
 const signalStore = useSignalStore();
 const toast = useToast();
 const backendConnected = ref(true);
