@@ -71,7 +71,7 @@ func main() {
 	parser.AddString("host", "H", "service host", "", false)
 	parser.AddString("lib-path", "b", "path to maa framework binary", "", false)
 	parser.AddBool("dev", "D", "Enable Dev Mode.", false)
-	parser.AddBool("log-file", "L", "Enable file logging to .maa/go.log", false)
+	parser.AddBool("log-file", "L", "Enable file logging to .maa/MaaDebugger.log", false)
 	parser.AddBool("log-stdout", "S", "Enable stdout logging for all levels", false)
 
 	parsed, err := parser.Parse(os.Args[1:])
@@ -87,7 +87,7 @@ func main() {
 	var fileWriter zerolog.LevelWriter
 	var logFile *os.File
 	if logToFile {
-		logFile, err = initLogFile(filepath.Join(getCwd(), ".maa", "go.log"))
+		logFile, err = initLogFile(filepath.Join(getCwd(), ".maa", "MaaDebugger.log"))
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "failed to initialize log file:", err)
 			os.Exit(1)
