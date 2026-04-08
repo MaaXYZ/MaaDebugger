@@ -134,10 +134,10 @@ const pipelineNotifyLevel = [
         class="flex items-center justify-between gap-4 rounded-lg border border-default p-3"
       >
         <div class="flex flex-col gap-1">
-          <span class="text-sm font-medium">Prevent Running</span>
+          <span class="text-sm font-medium">Pipeline Notify Level</span>
           <span class="text-sm text-dimmed"
-            >If the pipeline has issues at or above the selected level, prevent
-            task from running and send notification.</span
+            >If the pipeline has issues at or above the selected level, send
+            notification.</span
           >
         </div>
         <USelect
@@ -157,8 +157,7 @@ const pipelineNotifyLevel = [
         <div class="flex flex-col gap-1">
           <span class="text-sm font-medium">Prevent Running</span>
           <span class="text-sm text-dimmed"
-            >If the pipeline has errors, prevent task from running and raise
-            error.</span
+            >If the pipeline has errors, prevent task from running.</span
           >
         </div>
         <USwitch

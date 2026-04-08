@@ -16,9 +16,31 @@ import (
 
 type CheckResponse struct {
 	Level string `json:"level"`
+	Code  string `json:"code"`
 	Msg   string `json:"msg"`
+	Task  string `json:"task,omitempty"`
 	Path  string `json:"path"`
 	Line  string `json:"line"`
+}
+
+func nodeLevelByCode(code string) string {
+	switch code {
+	case "mpe-config", "image-path-back-slash", "image-path-dot-slash", "image-path-missing-png", "dynamic-image":
+		return "warning"
+	default:
+		return "error"
+	}
+}
+
+func newDiag(code string, msg string, path string, line string, task string) CheckResponse {
+	return CheckResponse{
+		Level: nodeLevelByCode(strings.TrimSpace(code)),
+		Code:  strings.TrimSpace(code),
+		Msg:   msg,
+		Task:  strings.TrimSpace(task),
+		Path:  path,
+		Line:  line,
+	}
 }
 
 type PipelineChecker struct {
@@ -160,12 +182,7 @@ func runPipelineCheck(roots []string) []CheckResponse {
 		for name := range pf.tasks {
 			if prev, ok := decls[name]; ok {
 				line := findTaskLine(pf.raw, pf.lineStarts, name)
-				result = append(result, CheckResponse{
-					Level: "error",
-					Msg:   fmt.Sprintf("conflict-task: %q already declared at %s:%s", name, prev.path, prev.line),
-					Path:  pf.path,
-					Line:  line,
-				})
+				result = append(result, newDiag("conflict-task", fmt.Sprintf("Conflict task %s, previous defined in %s:%s", name, prev.path, prev.line), pf.path, line, name))
 				continue
 			}
 			line := findTaskLine(pf.raw, pf.lineStarts, name)
@@ -202,58 +219,39 @@ func runPipelineCheck(roots []string) []CheckResponse {
 func parsePipelineFile(filePath string, roots []string) (*pipelineFile, []CheckResponse) {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, []CheckResponse{{
-			Level: "error",
-			Msg:   err.Error(),
-			Path:  filePath,
-			Line:  "1:1",
-		}}
+		return nil, []CheckResponse{newDiag("syntax-error", err.Error(), filePath, "1:1", "")}
 	}
 
 	raw := string(content)
 	lineStarts := buildLineStarts(raw)
 	if _, err := hujson.Parse(content); err != nil {
 		line, col := parseHujsonLineCol(err)
-		return nil, []CheckResponse{{
-			Level: "error",
-			Msg:   err.Error(),
-			Path:  filePath,
-			Line:  fmt.Sprintf("%d:%d", line, col),
-		}}
+		return nil, []CheckResponse{newDiag("syntax-error", err.Error(), filePath, fmt.Sprintf("%d:%d", line, col), "")}
 	}
 
 	std, err := hujson.Standardize(content)
 	if err != nil {
 		line, col := parseHujsonLineCol(err)
-		return nil, []CheckResponse{{
-			Level: "error",
-			Msg:   err.Error(),
-			Path:  filePath,
-			Line:  fmt.Sprintf("%d:%d", line, col),
-		}}
+		return nil, []CheckResponse{newDiag("syntax-error", err.Error(), filePath, fmt.Sprintf("%d:%d", line, col), "")}
 	}
 
 	var root map[string]any
 	if err := json.Unmarshal(std, &root); err != nil {
 		line, col := parseStdJSONLineCol(err)
-		return nil, []CheckResponse{{
-			Level: "error",
-			Msg:   err.Error(),
-			Path:  filePath,
-			Line:  fmt.Sprintf("%d:%d", line, col),
-		}}
+		return nil, []CheckResponse{newDiag("syntax-error", err.Error(), filePath, fmt.Sprintf("%d:%d", line, col), "")}
 	}
 
 	tasks := make(map[string]map[string]any)
 	diags := make([]CheckResponse, 0, 2)
 	for k, v := range root {
 		if strings.HasPrefix(k, "$__mpe") {
-			diags = append(diags, CheckResponse{
-				Level: "warning",
-				Msg:   "mpe-config detected",
-				Path:  filePath,
-				Line:  findTaskLine(raw, lineStarts, k),
-			})
+			diags = append(diags, newDiag(
+				"mpe-config",
+				"MPE config detected",
+				filePath,
+				findTaskLine(raw, lineStarts, k),
+				k,
+			))
 			continue
 		}
 		if strings.HasPrefix(k, "$") {
@@ -282,7 +280,6 @@ func checkTaskRules(pf pipelineFile, allTasks map[string]struct{}, images map[st
 		diags = append(diags, checkUnknownTaskRefs(pf, taskName, taskObj, allTasks, anchors)...)
 		diags = append(diags, checkUnknownAnchorRefs(pf, taskName, taskObj, anchors)...)
 		diags = append(diags, checkTemplateWarningsAndUnknownImage(pf, taskName, taskObj, images)...)
-		diags = append(diags, checkCustomActionRecoRules(pf, taskName, taskObj)...)
 		diags = append(diags, checkUnknownAttr(pf, taskName, taskObj)...)
 		diags = append(diags, checkDuplicateNext(pf, taskName, taskObj)...)
 	}
@@ -334,12 +331,7 @@ func checkUnknownAnchorRefs(pf pipelineFile, taskName string, taskObj map[string
 			continue
 		}
 		line := findTaskKeyValueLine(pf, taskName, "Anchor", a)
-		diags = append(diags, CheckResponse{
-			Level: "warning",
-			Msg:   fmt.Sprintf("unknown-anchor: %q in task %q", a, taskName),
-			Path:  pf.path,
-			Line:  line,
-		})
+		diags = append(diags, newDiag("unknown-anchor", fmt.Sprintf("Unknown anchor %s", a), pf.path, line, taskName))
 	}
 	return diags
 }
@@ -370,24 +362,14 @@ func checkUnknownTaskRefs(pf pipelineFile, taskName string, taskObj map[string]a
 					continue
 				}
 				line := findTaskKeyValueLine(pf, taskName, key, ref)
-				diags = append(diags, CheckResponse{
-					Level: "warning",
-					Msg:   fmt.Sprintf("unknown-anchor: %q in task %q", anchorName, taskName),
-					Path:  pf.path,
-					Line:  line,
-				})
+				diags = append(diags, newDiag("unknown-anchor", fmt.Sprintf("Unknown anchor %s", anchorName), pf.path, line, taskName))
 				continue
 			}
 			if _, ok := allTasks[ref]; ok {
 				continue
 			}
 			line := findTaskKeyValueLine(pf, taskName, key, ref)
-			diags = append(diags, CheckResponse{
-				Level: "error",
-				Msg:   fmt.Sprintf("%s: %q referenced by task %q", code, ref, taskName),
-				Path:  pf.path,
-				Line:  line,
-			})
+			diags = append(diags, newDiag(code, fmt.Sprintf("Unknown task %s", ref), pf.path, line, taskName))
 		}
 	}
 	return diags
@@ -399,16 +381,16 @@ func checkTemplateWarningsAndUnknownImage(pf pipelineFile, taskName string, task
 		line := findTaskKeyValueLine(pf, taskName, "template", tpl)
 		norm := strings.TrimSpace(tpl)
 		if strings.Contains(norm, `\\`) {
-			diags = append(diags, CheckResponse{Level: "warning", Msg: "image-path-back-slash", Path: pf.path, Line: line})
+			diags = append(diags, newDiag("image-path-back-slash", "Image path contains backslash, shall use forward slash instead", pf.path, line, taskName))
 		}
 		if strings.HasPrefix(norm, "./") {
-			diags = append(diags, CheckResponse{Level: "warning", Msg: "image-path-dot-slash", Path: pf.path, Line: line})
+			diags = append(diags, newDiag("image-path-dot-slash", "Image path contains ./ , shall omit instead", pf.path, line, taskName))
 		}
 		if norm != "" && !strings.HasSuffix(strings.ToLower(norm), ".png") {
-			diags = append(diags, CheckResponse{Level: "warning", Msg: "image-path-missing-png", Path: pf.path, Line: line})
+			diags = append(diags, newDiag("image-path-missing-png", "Image path shall not omit .png", pf.path, line, taskName))
 		}
 		if strings.ContainsAny(norm, "{}*$") {
-			diags = append(diags, CheckResponse{Level: "warning", Msg: "dynamic-image", Path: pf.path, Line: line})
+			diags = append(diags, newDiag("dynamic-image", "Dynamic image path detected", pf.path, line, taskName))
 			continue
 		}
 		if norm == "" || !strings.HasSuffix(strings.ToLower(norm), ".png") {
@@ -423,12 +405,7 @@ func checkTemplateWarningsAndUnknownImage(pf pipelineFile, taskName string, task
 		}
 		normPath := normalizeTemplatePath(norm)
 		if _, ok := imgSet[normPath]; !ok {
-			diags = append(diags, CheckResponse{
-				Level: "warning",
-				Msg:   fmt.Sprintf("unknown-image: %q (task %q)", norm, taskName),
-				Path:  pf.path,
-				Line:  line,
-			})
+			diags = append(diags, newDiag("unknown-image", fmt.Sprintf("Unknown image %s", norm), pf.path, line, taskName))
 		}
 	}
 	return diags
@@ -440,24 +417,14 @@ func checkCustomActionRecoRules(pf pipelineFile, taskName string, taskObj map[st
 	if strings.EqualFold(strings.TrimSpace(action), "Custom") {
 		customAction, _ := taskObj["custom_action"].(string)
 		if strings.TrimSpace(customAction) == "" {
-			diags = append(diags, CheckResponse{
-				Level: "error",
-				Msg:   fmt.Sprintf("missing-custom-action: task %q uses action=Custom but custom_action is empty", taskName),
-				Path:  pf.path,
-				Line:  findTaskKeyValueLine(pf, taskName, "action", action),
-			})
+			diags = append(diags, newDiag("error", "missing-custom-action: custom_action is empty", pf.path, findTaskKeyValueLine(pf, taskName, "action", action), taskName))
 		}
 	}
 	recognition, _ := taskObj["recognition"].(string)
 	if strings.EqualFold(strings.TrimSpace(recognition), "Custom") {
 		customReco, _ := taskObj["custom_recognition"].(string)
 		if strings.TrimSpace(customReco) == "" {
-			diags = append(diags, CheckResponse{
-				Level: "error",
-				Msg:   fmt.Sprintf("missing-custom-recognition: task %q uses recognition=Custom but custom_recognition is empty", taskName),
-				Path:  pf.path,
-				Line:  findTaskKeyValueLine(pf, taskName, "recognition", recognition),
-			})
+			diags = append(diags, newDiag("error", "missing-custom-recognition: custom_recognition is empty", pf.path, findTaskKeyValueLine(pf, taskName, "recognition", recognition), taskName))
 		}
 	}
 	return diags
@@ -487,12 +454,7 @@ func checkUnknownAttr(pf pipelineFile, taskName string, taskObj map[string]any) 
 				continue
 			}
 			line := findTaskKeyValueLine(pf, taskName, key, "")
-			diags = append(diags, CheckResponse{
-				Level: "warning",
-				Msg:   fmt.Sprintf("unknown-attr: %q in %q (task %q)", attr, key, taskName),
-				Path:  pf.path,
-				Line:  line,
-			})
+			diags = append(diags, newDiag("unknown-attr", fmt.Sprintf("Unknown attribute %s", attr), pf.path, line, taskName))
 		}
 	}
 	return diags
@@ -526,12 +488,7 @@ func checkDuplicateNext(pf pipelineFile, taskName string, taskObj map[string]any
 	diags := make([]CheckResponse, 0, len(dups))
 	for d := range dups {
 		line := findTaskKeyValueLine(pf, taskName, "next", d)
-		diags = append(diags, CheckResponse{
-			Level: "warning",
-			Msg:   fmt.Sprintf("duplicate-next: %q in task %q", d, taskName),
-			Path:  pf.path,
-			Line:  line,
-		})
+		diags = append(diags, newDiag("duplicate-next", fmt.Sprintf("Duplicate route %s", d), pf.path, line, taskName))
 	}
 	return diags
 }

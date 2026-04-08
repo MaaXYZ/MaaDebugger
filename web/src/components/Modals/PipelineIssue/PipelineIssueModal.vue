@@ -8,12 +8,12 @@
         <UBadge
           color="error"
           variant="subtle"
-          :label="`Errors: ${errors.length}`"
+          :label="`Errors ${errors.length}`"
         />
         <UBadge
           color="warning"
           variant="subtle"
-          :label="`Warnings: ${warnings.length}`"
+          :label="`Warnings ${warnings.length}`"
         />
       </div>
     </template>
@@ -33,7 +33,7 @@
         >
           <div
             v-for="(issue, index) in issues"
-            :key="`${issue.path}-${issue.line}-${issue.msg}-${index}`"
+            :key="`${issue.code}-${issue.path}-${issue.line}-${issue.task ?? ''}-${issue.msg}-${index}`"
             class="rounded-lg border border-default p-3 flex flex-col gap-2"
           >
             <div class="flex flex-row items-center gap-2 flex-wrap">
@@ -42,6 +42,13 @@
                 variant="subtle"
                 :label="issue.level.toUpperCase()"
               />
+              <UBadge
+                v-if="issue.task"
+                color="info"
+                variant="subtle"
+                :label="`${issue.task}`"
+              />
+              <UBadge color="neutral" variant="subtle" :label="issue.code" />
               <span class="text-sm text-dimmed">#{{ index + 1 }}</span>
             </div>
 

@@ -84,8 +84,22 @@ export default function useResourceControl() {
 
     pipelineErrors.value = [];
     pipelineWarns.value = [];
-    if (success && debugWorkspaceSettingsStore.checkPipeline) {
+    if (debugWorkspaceSettingsStore.checkPipeline) {
       const pipelineCheckResult = await getPipelineCheckResult();
+      const fullGrouped = pipelineCheckResult.reduce(
+        (acc, item) => {
+          if (item.level === "error" || item.level === "warning") {
+            acc[item.level].push(item);
+          }
+          return acc;
+        },
+        { error: [] as CheckResponse[], warning: [] as CheckResponse[] },
+      );
+
+      // 始终保留全量诊断，level 仅用于提醒时机。
+      pipelineErrors.value = fullGrouped.error;
+      pipelineWarns.value = fullGrouped.warning;
+
       const notifyLevel = debugWorkspaceSettingsStore.checkPipelineNotifyLevel;
       const filteredResult = pipelineCheckResult.filter((item) => {
         if (notifyLevel === "NULL") {
@@ -97,6 +111,7 @@ export default function useResourceControl() {
         if (notifyLevel === "WARNING") {
           return item.level === "error" || item.level === "warning";
         }
+        return false;
       });
 
       if (filteredResult.length > 0) {
@@ -110,15 +125,13 @@ export default function useResourceControl() {
           { error: [] as CheckResponse[], warning: [] as CheckResponse[] },
         );
 
-        pipelineErrors.value = grouped.error;
-        pipelineWarns.value = grouped.warning;
-
         const toastType = grouped.error.length > 0 ? "error" : "warning";
         toast.add({
           id: PIPELINE_CHECKER_TOAST_ID,
           progress: false,
           title: "Pipeline Check Results",
-          description: `Found ${filteredResult.length} issues.`,
+          duration: 0,
+          description: `Found ${fullGrouped.error.length + fullGrouped.warning.length} issues.`,
           icon: "i-lucide-alert-triangle",
           color: toastType,
           actions: [
@@ -128,7 +141,7 @@ export default function useResourceControl() {
               color: "neutral",
               variant: "outline",
               onClick: () => {
-                openPipelineCheckDetails(grouped);
+                openPipelineCheckDetails(fullGrouped);
               },
             },
           ],
