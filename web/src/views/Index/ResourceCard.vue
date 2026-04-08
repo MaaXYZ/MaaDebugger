@@ -224,16 +224,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { checkPathExists } from "@/api/http";
 import { useResourceStore } from "@/stores/resource";
 import { useStatusStore } from "@/stores/status";
+import { useSignalStore } from "@/stores/signal";
 import PipelineIssueModal from "@/components/Modals/PipelineIssue/PipelineIssueModal.vue";
 import useResourceControl from "./useResourceControl";
 
 const toast = useToast();
 const resourceStore = useResourceStore();
 const statusStore = useStatusStore();
+const signalStore = useSignalStore();
 const {
   enabledPaths,
   onLoadResource: triggerLoadResource,
@@ -442,6 +444,18 @@ function onConfirmRename() {
   resourceStore.renameProfile(renameInput.value);
   renameModalOpen.value = false;
 }
+
+watch(
+  () => signalStore.reloadResource,
+  (status) => {
+    if (status > 0) {
+      void triggerLoadResource({
+        manual: false,
+        changedPath: signalStore.changedPath,
+      });
+    }
+  },
+);
 </script>
 
 <style scoped>

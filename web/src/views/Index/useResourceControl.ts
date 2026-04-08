@@ -1,4 +1,4 @@
-import { computed, watch, ref } from "vue";
+import { computed, ref } from "vue";
 import type { Ref } from "vue";
 import { useResourceStore } from "@/stores/resource";
 import { useSignalStore } from "@/stores/signal";
@@ -19,8 +19,8 @@ export default function useResourceControl() {
   const debugWorkspaceSettingsStore = useDebugSettingsStore();
 
   const WATCH_RESOURCE_TOAST_ID = "watch-resource";
-  const resourceToastID = "resource-toast";
-  const pipelineCheckerToastID = "pipeline-checker-toast";
+  const RESOURCE_TOAST_ID = "resource-toast";
+  const PIPELINE_CHECKER_TOAST_ID = "pipeline-checker-toast";
 
   const pipelineErrors: Ref<CheckResponse[]> = ref([]);
   const pipelineWarns: Ref<CheckResponse[]> = ref([]);
@@ -53,10 +53,11 @@ export default function useResourceControl() {
     const { success, msg } = await tryLoadResource();
 
     if (options.manual) {
+      toast.remove(WATCH_RESOURCE_TOAST_ID);
       if (!success) {
         console.error("[Resource] Load failed:", msg);
         toast.add({
-          id: resourceToastID,
+          id: RESOURCE_TOAST_ID,
           title: "Resource Load Failed",
           description: msg || "Unknown error",
           icon: "i-lucide-circle-x",
@@ -64,13 +65,14 @@ export default function useResourceControl() {
         });
       } else {
         toast.add({
-          id: resourceToastID,
+          id: RESOURCE_TOAST_ID,
           title: "Resource Loaded",
           icon: "i-lucide-check-circle",
           color: "success",
         });
       }
     } else {
+      toast.remove(RESOURCE_TOAST_ID);
       toast.add({
         id: WATCH_RESOURCE_TOAST_ID,
         title: "Resource Changed",
@@ -113,7 +115,7 @@ export default function useResourceControl() {
 
         const toastType = grouped.error.length > 0 ? "error" : "warning";
         toast.add({
-          id: pipelineCheckerToastID,
+          id: PIPELINE_CHECKER_TOAST_ID,
           progress: false,
           title: "Pipeline Check Results",
           description: `Found ${filteredResult.length} issues.`,
@@ -143,17 +145,6 @@ export default function useResourceControl() {
     pipelineWarns.value = grouped.warning;
     pipelineIssueModalOpen.value = true;
   }
-
-  watch(
-    () => signalStore.reloadResource,
-    (status) => {
-      if (status > 0)
-        void LoadResource({
-          manual: false,
-          changedPath: signalStore.changedPath,
-        });
-    },
-  );
 
   return {
     enabledPaths,
