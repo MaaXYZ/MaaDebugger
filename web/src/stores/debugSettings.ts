@@ -3,7 +3,7 @@ import type { Ref } from "vue";
 import { defineStore } from "pinia";
 import { StartPipelineCheck, StopPipelineCheck } from "@/api/http";
 
-type PipelineNotifyLevel = "NULL" | "ERROR" | "WARNING";
+export type PipelineNotifyLevel = "NULL" | "ERROR" | "WARNING";
 
 export const useDebugSettingsStore = defineStore(
   "debugWorkspaceSettings",
@@ -40,10 +40,16 @@ export const useDebugSettingsStore = defineStore(
     async function syncPipelineChecker(enabled: boolean = checkPipeline.value) {
       try {
         if (enabled) {
-          await StartPipelineCheck();
+          const result = await StartPipelineCheck();
+          if (!result.succeed) {
+            throw new Error(result.msg || "Start pipeline checker failed");
+          }
           return;
         }
-        await StopPipelineCheck();
+        const result = await StopPipelineCheck();
+        if (!result.succeed) {
+          throw new Error(result.msg || "Stop pipeline checker failed");
+        }
       } catch (err) {
         console.error("[PipelineChecker] Failed to sync running state:", err);
       }
@@ -61,10 +67,11 @@ export const useDebugSettingsStore = defineStore(
       autoCollapseLeftTabsOnRunStart.value = true;
       leftTabsCollapsed.value = false;
       watchResourceChange.value = true;
-      watchResourceChangeInterval.value = 500;
+      watchResourceChangeInterval.value = 1000;
       checkPipeline.value = true;
       checkPipelineNotifyLevel.value = "ERROR";
       preventRunning.value = true;
+      void syncPipelineChecker(true);
     }
 
     return {

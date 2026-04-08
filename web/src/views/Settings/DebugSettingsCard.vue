@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { useDebugSettingsStore } from "@/stores/debugSettings";
+import type { PipelineNotifyLevel } from "@/stores/debugSettings";
 
 const debugSettingsStore = useDebugSettingsStore();
 
-const pipelineNotifyLevel = [
+const pipelineNotifyLevel: { label: string; value: PipelineNotifyLevel }[] = [
   { label: "Error", value: "ERROR" },
   { label: "Warning", value: "WARNING" },
   { label: "Never", value: "NULL" },
@@ -143,10 +144,12 @@ const pipelineNotifyLevel = [
         <USelect
           :model-value="debugSettingsStore.checkPipelineNotifyLevel"
           :items="pipelineNotifyLevel"
-          @update:model-value="
-            debugSettingsStore.setCheckPipelineNotifyLevel($event as any)
-          "
           class="min-w-48"
+          @update:model-value="
+            debugSettingsStore.setCheckPipelineNotifyLevel(
+              $event as PipelineNotifyLevel,
+            )
+          "
         />
       </div>
 

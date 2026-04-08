@@ -1,10 +1,11 @@
 import { computed, ref, watch } from "vue";
-import { getTaskNodes, runTask, stopTask } from "@/api/http";
+import { DoPipelineCheck, getTaskNodes, runTask, stopTask } from "@/api/http";
 import { useShortcutsStore, formatShortcut } from "@/stores/shortcuts";
 import { useStatusStore } from "@/stores/status";
 import { useTaskStore } from "@/stores/task";
 import { useAgentStore } from "@/stores/agent";
 import { useSignalStore } from "@/stores/signal";
+import { useDebugSettingsStore } from "@/stores/debugSettings";
 import type { TaskStatus } from "./types";
 import useResourceControl from "../useResourceControl";
 
@@ -20,6 +21,7 @@ interface ToastApi {
     description?: string;
     icon?: string;
     color?: "error" | "success" | "warning" | "primary" | "neutral";
+    actions?: any[];
   }) => void;
 }
 
@@ -39,7 +41,10 @@ export default function useTaskControls(toast: ToastApi) {
   const taskStore = useTaskStore();
   const agentStore = useAgentStore();
   const signalStore = useSignalStore();
-  const { tryLoadResource } = useResourceControl();
+  const debugSettingsStore = useDebugSettingsStore();
+  const { tryLoadResource, openPipelineCheckDetails } = useResourceControl();
+
+  const TASK_TOAST_ID = "task-toast";
 
   const entries = ref<TaskEntry[]>([]);
   const entrySearchTerm = ref("");
@@ -185,7 +190,7 @@ export default function useTaskControls(toast: ToastApi) {
 
     if (agentStore.hasConnecting) {
       toast.add({
-        id: "task-toast",
+        id: TASK_TOAST_ID,
         title: "Agent Connecting",
         description: "Please wait for agent connection to finish",
         icon: "i-lucide-loader",
@@ -197,7 +202,7 @@ export default function useTaskControls(toast: ToastApi) {
     const loadResult = await tryLoadResource();
     if (!loadResult.success) {
       toast.add({
-        id: "task-toast",
+        id: TASK_TOAST_ID,
         title: "Resource Load Failed",
         description: loadResult.msg,
         icon: "i-lucide-circle-x",
@@ -206,13 +211,74 @@ export default function useTaskControls(toast: ToastApi) {
       return;
     }
 
+    if (debugSettingsStore.checkPipeline) {
+      const pipelineCheck = await DoPipelineCheck();
+      if (!pipelineCheck.succeed) {
+        toast.add({
+          id: TASK_TOAST_ID,
+          title: "Pipeline Check Failed",
+          description: pipelineCheck.msg,
+          icon: "i-lucide-circle-x",
+          color: "error",
+        });
+      }
+
+      const issues = Array.isArray(pipelineCheck.data)
+        ? pipelineCheck.data
+        : [];
+      const errorCount = issues.filter((item) => item.level === "error").length;
+      const warningCount = issues.filter(
+        (item) => item.level === "warning",
+      ).length;
+
+      if (debugSettingsStore.preventRunning && errorCount > 0) {
+        toast.add({
+          id: TASK_TOAST_ID,
+          title: "Task Blocked",
+          description: `Pipeline has ${errorCount} error(s). Fix errors or disable Prevent Running to continue.`,
+          icon: "i-lucide-octagon-x",
+          color: "error",
+          actions: [
+            {
+              icon: "i-lucide-info",
+              label: "View Details",
+              color: "neutral",
+              variant: "outline",
+              onClick: () => {
+                openPipelineCheckDetails();
+              },
+            },
+          ],
+        });
+        return;
+      }
+
+      const notifyLevel = debugSettingsStore.checkPipelineNotifyLevel;
+      const shouldNotify =
+        notifyLevel === "WARNING"
+          ? errorCount + warningCount > 0
+          : notifyLevel === "ERROR"
+            ? errorCount > 0
+            : false;
+
+      if (shouldNotify) {
+        toast.add({
+          id: TASK_TOAST_ID,
+          title: "Pipeline Issues Found",
+          description: `Found ${errorCount} error(s) and ${warningCount} warning(s).`,
+          icon: "i-lucide-alert-triangle",
+          color: errorCount > 0 ? "error" : "warning",
+        });
+      }
+    }
+
     const result = await runTask(
       effectiveEntry.value,
       taskStore.effectiveOverrideObject,
     );
     if (!result.succeed) {
       toast.add({
-        id: "task-toast",
+        id: TASK_TOAST_ID,
         title: "Task Run Failed",
         description: result.msg,
         icon: "i-lucide-circle-x",
@@ -228,7 +294,7 @@ export default function useTaskControls(toast: ToastApi) {
       const result = await stopTask();
       if (!result.succeed) {
         toast.add({
-          id: "task-toast",
+          id: TASK_TOAST_ID,
           title: "Task Stop Failed",
           description: result.msg,
           icon: "i-lucide-circle-x",
@@ -236,7 +302,7 @@ export default function useTaskControls(toast: ToastApi) {
         });
       } else {
         toast.add({
-          id: "task-toast",
+          id: TASK_TOAST_ID,
           title: "Task Stop Requested",
           icon: "i-lucide-circle-stop",
           color: "warning",

@@ -3,7 +3,11 @@ import type { Ref } from "vue";
 import { useResourceStore } from "@/stores/resource";
 import { useSignalStore } from "@/stores/signal";
 import { useDebugSettingsStore } from "@/stores/debugSettings";
-import { getPipelineCheckResult, loadResource } from "@/api/http";
+import {
+  DoPipelineCheck,
+  getPipelineCheckResult,
+  loadResource,
+} from "@/api/http";
 import type { CheckResponse } from "@/types/pipeline";
 
 interface LoadResourceOptions {
@@ -84,8 +88,19 @@ export default function useResourceControl() {
 
     pipelineErrors.value = [];
     pipelineWarns.value = [];
-    if (debugWorkspaceSettingsStore.checkPipeline) {
-      const pipelineCheckResult = await getPipelineCheckResult();
+    if (success && debugWorkspaceSettingsStore.checkPipeline) {
+      let pipelineCheckResult: CheckResponse[] = [];
+      const checkResponse = await DoPipelineCheck();
+      if (checkResponse.succeed && Array.isArray(checkResponse.data)) {
+        pipelineCheckResult = checkResponse.data;
+      } else {
+        console.error(
+          "[PipelineChecker] Check once failed, fallback to cached result:",
+          checkResponse.msg,
+        );
+        pipelineCheckResult = await getPipelineCheckResult();
+      }
+
       const fullGrouped = pipelineCheckResult.reduce(
         (acc, item) => {
           if (item.level === "error" || item.level === "warning") {
@@ -150,10 +165,12 @@ export default function useResourceControl() {
     }
   }
 
-  function openPipelineCheckDetails(grouped: {
+  function openPipelineCheckDetails(grouped?: {
     error: CheckResponse[];
     warning: CheckResponse[];
   }) {
+    if (!grouped) return;
+
     pipelineErrors.value = grouped.error;
     pipelineWarns.value = grouped.warning;
     pipelineIssueModalOpen.value = true;
@@ -163,6 +180,7 @@ export default function useResourceControl() {
     enabledPaths,
     tryLoadResource,
     onLoadResource: LoadResource,
+    openPipelineCheckDetails,
     pipelineIssueModalOpen,
     pipelineErrors,
     pipelineWarns,

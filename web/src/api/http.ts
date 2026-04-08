@@ -308,7 +308,7 @@ export async function StopPipelineCheck(): Promise<ApiResponse<boolean>> {
 /**
  * 手动触发一次 Pipeline 检查
  */
-export async function DoPipelineCheck(): Promise<ApiResponse<boolean>> {
+export async function DoPipelineCheck(): Promise<ApiResponse<CheckResponse[]>> {
   return request("/pipeline/check", { method: "POST" });
 }
 
