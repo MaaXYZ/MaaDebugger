@@ -1,6 +1,6 @@
 // Package configstore 提供基于本地 JSON 文件的持久化配置存储。
 //
-// 数据保存在 cwd/.maa/dbg.json 中，结构为 map[string]any，
+// 数据保存在 cwd/.maa/.MaaDebugger.json 中，结构为 map[string]any，
 // 与前端 Pinia serverPersistPlugin 的 config API 对应。
 package configstore
 
@@ -19,14 +19,15 @@ var configStoreLog = logger.For(logger.ComponentConfigStore)
 
 const (
 	dirName  = ".maa"
-	fileName = "dbg.json"
+	fileName = ".MaaDebugger.json"
 )
 
 // Store 是线程安全的、带本地文件持久化的 KV 配置存储。
 type Store struct {
-	mu       sync.RWMutex
-	data     map[string]any
-	filePath string
+	mu          sync.RWMutex
+	data        map[string]any
+	filePath    string
+	cfgFilePath string
 
 	// 防抖写入
 	saveCh chan struct{}
@@ -34,15 +35,17 @@ type Store struct {
 }
 
 // New 创建一个 Store，以 baseDir 为基目录（通常为 cwd）。
-// 启动时自动从 baseDir/.maa/dbg.json 加载数据。
+// 启动时自动从 baseDir/.maa/.MaaDebugger.json 加载数据。
 func New(baseDir string) *Store {
 	fp := filepath.Join(baseDir, dirName, fileName)
+	cfgp := filepath.Join(baseDir, dirName, "MaaDebugger.json")
 
 	s := &Store{
-		data:     make(map[string]any),
-		filePath: fp,
-		saveCh:   make(chan struct{}, 1),
-		done:     make(chan struct{}),
+		data:        make(map[string]any),
+		filePath:    fp,
+		cfgFilePath: cfgp,
+		saveCh:      make(chan struct{}, 1),
+		done:        make(chan struct{}),
 	}
 
 	s.loadFromDisk()
@@ -99,6 +102,13 @@ func (s *Store) Close() {
 
 // loadFromDisk 从文件加载数据。文件不存在时静默返回。
 func (s *Store) loadFromDisk() {
+	cfg, err := os.ReadFile(s.cfgFilePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			configStoreLog.Debug().Str("path", s.cfgFilePath).Msg("no existing config file, starting fresh")
+		}
+	}
+
 	raw, err := os.ReadFile(s.filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -109,12 +119,16 @@ func (s *Store) loadFromDisk() {
 		return
 	}
 
+	// 合并 config 与 本地 store
+	raw = append(raw, cfg...)
+
 	if len(raw) == 0 {
 		return
 	}
 
 	var loaded map[string]any
 	if err := json.Unmarshal(raw, &loaded); err != nil {
+		// TODO: 处理特殊变量 如 ./ {CWD} ...
 		configStoreLog.Error().Err(err).Str("path", s.filePath).Msg("failed to parse config file")
 		return
 	}
