@@ -2,6 +2,7 @@ package maaservice
 
 import (
 	"context"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -110,12 +111,12 @@ func (w *Watcher) removeAll() {
 
 // addRecursive 递归添加目录到监听列表
 func (w *Watcher) addRecursive(root string) error {
-	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+	return filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if info.IsDir() {
-			if strings.HasPrefix(info.Name(), ".") { // 跳过 . 开头的目录
+		if d.IsDir() {
+			if strings.HasPrefix(d.Name(), ".") { // 跳过 . 开头的目录
 				return filepath.SkipDir
 			}
 			for _, ignore := range ignorePaths {
