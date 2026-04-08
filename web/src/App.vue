@@ -8,6 +8,7 @@ import { handleTaskEvent } from '@/stores/launchGraph'
 import { useSignalStore } from './stores/signal'
 import { latestAgentUpdate } from '@/api/agentEvents'
 import { latestFrame, screenshotRunning, screenshotPaused, screenshotFps, screenshotError, screenshotOverlayState, screenshotOverlayMessage } from '@/stores/screenshot'
+import { useRouter } from 'vue-router'
 
 const BACKEND_DISCONNECT_TOAST_ID = 'backend-disconnected'
 const WATCH_RESOURCE_TOAST_ID = 'watch-resource'
@@ -66,8 +67,10 @@ async function pingBackend() {
             close: false
         })
     } else if (connected && !backendConnected.value) {
+        // Reload 界面避免状态残留
         backendConnected.value = true
         toast.remove(BACKEND_DISCONNECT_TOAST_ID)
+        window.location.reload()
     }
 }
 
