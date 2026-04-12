@@ -18,8 +18,9 @@ import (
 var configStoreLog = logger.For(logger.ComponentConfigStore)
 
 const (
-	dirName  = ".maa"
-	fileName = ".MaaDebugger.json"
+	dir            = ".maa/Debugger"
+	fileName       = "store.json"
+	configFileName = "config.json"
 )
 
 // Store 是线程安全的、带本地文件持久化的 KV 配置存储。
@@ -35,10 +36,10 @@ type Store struct {
 }
 
 // New 创建一个 Store，以 baseDir 为基目录（通常为 cwd）。
-// 启动时自动从 baseDir/.maa/.MaaDebugger.json 加载数据。
+// 启动时自动从 baseDir/.maa/Debugger/store.json 加载数据。
 func New(baseDir string) *Store {
-	fp := filepath.Join(baseDir, dirName, fileName)
-	cfgp := filepath.Join(baseDir, dirName, "MaaDebugger.json")
+	fp := filepath.Join(baseDir, dir, fileName)
+	cfgp := filepath.Join(baseDir, dir, configFileName)
 
 	s := &Store{
 		data:        make(map[string]any),
