@@ -195,79 +195,47 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <UApp
-    :toaster="{
-      position: 'bottom-right',
-      duration: 3000,
-      class: 'whitespace-pre-wrap break-words [overflow-wrap:anywhere]',
-    }"
-  >
-    <UTheme
-      :ui="{
-        select: selectTheme,
-      }"
-    >
-      <UHeader
-        :ui="{
-          toggle: 'hidden',
-          container: 'max-w-none w-full px-6 sm:px-8 lg:px-10 xl:px-12',
-          left: 'flex flex-1 items-center gap-1.5 min-w-0',
-          center: 'hidden lg:flex flex-none items-center justify-center',
-          right: 'flex flex-1 items-center justify-end gap-1.5 min-w-0',
-        }"
-      >
+  <UApp :toaster="{
+    position: 'bottom-right',
+    duration: 3000,
+    class: 'whitespace-pre-wrap break-words [overflow-wrap:anywhere]',
+  }">
+    <UTheme :ui="{
+      select: selectTheme,
+    }">
+      <UHeader :ui="{
+        toggle: 'hidden',
+        container: 'max-w-none w-full px-6 sm:px-8 lg:px-10 xl:px-12',
+        left: 'flex flex-1 items-center gap-1.5 min-w-0',
+        center: 'hidden lg:flex flex-none items-center justify-center',
+        right: 'flex flex-1 items-center justify-end gap-1.5 min-w-0',
+      }">
         <template #left>
           <div class="flex items-end gap-2">
-            <a
-              href="/"
-              aria-label="MaaDebugger"
-              class="group inline-flex items-end gap-0.5 shrink-0 text-2xl font-black tracking-tight transition-all duration-200 hover:opacity-90 focus-visible:outline-primary"
-            >
+            <a href="/" aria-label="MaaDebugger"
+              class="group inline-flex items-end gap-0.5 shrink-0 text-2xl font-black tracking-tight transition-all duration-200 hover:opacity-90 focus-visible:outline-primary">
               <span class="text-primary">Maa</span>
               <span class="text-highlighted">Debugger</span>
             </a>
-            <UBadge
-              v-if="isUAC"
-              label="UAC"
-              color="warning"
-              variant="subtle"
-              size="xs"
-              class="mb-1"
-            />
+            <UBadge v-if="isUAC" label="UAC" color="warning" variant="subtle" size="xs" class="mb-1" />
           </div>
         </template>
 
         <template #default>
-          <UNavigationMenu
-            :items="headerNavigationMenuItems"
-            class="w-full justify-center"
-            content-orientation="vertical"
-            highlight
-          />
+          <UNavigationMenu :items="headerNavigationMenuItems" class="w-full justify-center"
+            content-orientation="vertical" highlight />
         </template>
 
         <template #right>
           <UColorModeButton />
 
           <UTooltip text="Settings">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              to="/settings"
-              icon="i-lucide-settings"
-              aria-label="Settings"
-            />
+            <UButton color="neutral" variant="ghost" to="/settings" icon="i-lucide-settings" aria-label="Settings" />
           </UTooltip>
 
           <UTooltip text="Open on GitHub">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              to="https://github.com/MaaXYZ/MaaDebugger"
-              target="_blank"
-              icon="i-simple-icons:github"
-              aria-label="GitHub"
-            />
+            <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger" target="_blank"
+              icon="i-simple-icons:github" aria-label="GitHub" />
           </UTooltip>
         </template>
       </UHeader>
