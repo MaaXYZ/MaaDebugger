@@ -12,9 +12,9 @@ export const useDebugSettingsStore = defineStore(
     const leftTabsCollapsed = ref(false);
     const watchResourceChange = ref(true);
     const watchResourceChangeInterval = ref(1000);
-    const checkPipeline = ref(false);
+    const checkPipeline = ref(true);
     const checkPipelineNotifyLevel: Ref<PipelineNotifyLevel> = ref("ERROR");
-    const preventRunning = ref(false);
+    const preventRunning = ref(true);
 
     function setAutoCollapseLeftTabsOnRunStart(value: boolean) {
       autoCollapseLeftTabsOnRunStart.value = value;
@@ -68,10 +68,10 @@ export const useDebugSettingsStore = defineStore(
       leftTabsCollapsed.value = false;
       watchResourceChange.value = true;
       watchResourceChangeInterval.value = 1000;
-      checkPipeline.value = false;
+      checkPipeline.value = true;
       checkPipelineNotifyLevel.value = "ERROR";
-      preventRunning.value = false;
-      void syncPipelineChecker(false);
+      preventRunning.value = true;
+      void syncPipelineChecker(true);
     }
 
     return {
