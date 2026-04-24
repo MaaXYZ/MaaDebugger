@@ -8,7 +8,7 @@
           <UBadge color="warning" variant="subtle" :label="`Warning ${warnings.length}`" />
         </div>
         <span class="text-sm text-dimmed">You can config this feature in
-          <ULink href="/settings">Debug Settings</ULink>
+          <ULink href="/settings#debug-checkPipeline">Debug Settings</ULink>
         </span>
       </div>
     </template>

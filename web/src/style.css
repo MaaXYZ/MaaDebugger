@@ -1,2 +1,23 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+html {
+  scroll-behavior: smooth;
+}
+
+[id] {
+  scroll-margin-top: 6rem;
+}
+
+@keyframes highlight-fade {
+  0% {
+    background-color: #b9af63;
+  } /* 黄色背景 */
+  100% {
+    background-color: transparent;
+  }
+}
+
+:target {
+  animation: highlight-fade 1.5s ease-out;
+}
