@@ -2,6 +2,7 @@ import { computed, ref } from "vue";
 import type { Ref } from "vue";
 import { useResourceStore } from "@/stores/resource";
 import { useSignalStore } from "@/stores/signal";
+import { useStatusStore } from "@/stores/status";
 import { useDebugSettingsStore } from "@/stores/debugSettings";
 import {
   DoPipelineCheck,
@@ -9,26 +10,149 @@ import {
   loadResource,
 } from "@/api/http";
 import type { CheckResponse } from "@/types/pipeline";
+import { useRouter } from "vue-router";
 
 interface LoadResourceOptions {
   manual: boolean;
   changedPath: string;
 }
 
+interface PipelineIssueGrouped {
+  error: CheckResponse[];
+  warning: CheckResponse[];
+}
+
+interface PipelinePrecheckOptions {
+  toastId: string;
+  blockedTitle: string;
+  notifyTitle?: string;
+  notify?: boolean;
+}
+
 export default function useResourceControl() {
+  const router = useRouter();
   const toast = useToast();
   const resourceStore = useResourceStore();
   const enabledPaths = computed(() => resourceStore.getEnabledPaths());
   const signalStore = useSignalStore();
+  const statusStore = useStatusStore();
   const debugWorkspaceSettingsStore = useDebugSettingsStore();
 
   const WATCH_RESOURCE_TOAST_ID = "watch-resource";
   const RESOURCE_TOAST_ID = "resource-toast";
-  const PIPELINE_CHECKER_TOAST_ID = "pipeline-checker-toast";
 
   const pipelineErrors: Ref<CheckResponse[]> = ref([]);
   const pipelineWarns: Ref<CheckResponse[]> = ref([]);
   const pipelineIssueModalOpen = ref(false);
+
+  async function precheckPipelineIssuesBeforeAction(
+    options: PipelinePrecheckOptions,
+  ): Promise<{ blocked: boolean; grouped: PipelineIssueGrouped }> {
+    const emptyGrouped: PipelineIssueGrouped = { error: [], warning: [] };
+    if (!debugWorkspaceSettingsStore.checkPipeline) {
+      return { blocked: false, grouped: emptyGrouped };
+    }
+
+    let pipelineCheckResult: CheckResponse[] = [];
+    const checkResponse = await DoPipelineCheck();
+    if (checkResponse.succeed && Array.isArray(checkResponse.data)) {
+      pipelineCheckResult = checkResponse.data;
+    } else {
+      toast.add({
+        id: options.toastId,
+        title: "Pipeline Check Failed",
+        description: checkResponse.msg,
+        icon: "i-lucide-circle-x",
+        color: "error",
+      });
+      console.error(
+        "[PipelineChecker] Check once failed, fallback to cached result:",
+        checkResponse.msg,
+      );
+      pipelineCheckResult = await getPipelineCheckResult();
+    }
+
+    const grouped = pipelineCheckResult.reduce(
+      (acc, item) => {
+        if (item.level === "error" || item.level === "warning") {
+          acc[item.level].push(item);
+        }
+        return acc;
+      },
+      { error: [] as CheckResponse[], warning: [] as CheckResponse[] },
+    );
+
+    pipelineErrors.value = grouped.error;
+    pipelineWarns.value = grouped.warning;
+
+    const errorCount = grouped.error.length;
+    const warningCount = grouped.warning.length;
+    const issueCount = errorCount + warningCount;
+
+    if (debugWorkspaceSettingsStore.preventResourceLoaded && issueCount > 0) {
+      toast.add({
+        id: options.toastId,
+        title: options.blockedTitle,
+        description: `Pipeline has ${errorCount} error(s) and ${warningCount} warning(s). Fix issues or disable Prevent Resource Loaded to continue.`,
+        icon: "i-lucide-octagon-x",
+        color: "error",
+        actions: [
+          {
+            icon: "i-lucide-info",
+            label: "View Details",
+            color: "neutral",
+            variant: "outline",
+            onClick: () => {
+              openPipelineCheckDetails(grouped);
+            },
+          },
+          {
+            icon: "i-lucide-settings",
+            label: "Go to Settings",
+            color: "neutral",
+            variant: "outline",
+            onClick: () => {
+              router.push("/settings#debug-preventResourceLoaded");
+            },
+          },
+        ],
+      });
+      return { blocked: true, grouped };
+    }
+
+    if (options.notify ?? true) {
+      const notifyLevel = debugWorkspaceSettingsStore.checkPipelineNotifyLevel;
+      const shouldNotify =
+        notifyLevel === "WARNING"
+          ? issueCount > 0
+          : notifyLevel === "ERROR"
+            ? errorCount > 0
+            : false;
+
+      if (shouldNotify) {
+        toast.add({
+          id: options.toastId,
+          title: options.notifyTitle || "Pipeline Issues Found",
+          description: `Found ${errorCount} error(s) and ${warningCount} warning(s).`,
+          icon: "i-lucide-alert-triangle",
+          color: errorCount > 0 ? "error" : "warning",
+          actions: [
+            {
+              icon: "i-lucide-info",
+              label: "View Details",
+              color: "neutral",
+              variant: "outline",
+              onClick: () => {
+                openPipelineCheckDetails(grouped);
+              },
+            },
+          ],
+        });
+      }
+    }
+
+    return { blocked: false, grouped };
+  }
 
   async function tryLoadResource(): Promise<{
     success: boolean;
@@ -54,7 +178,25 @@ export default function useResourceControl() {
   async function LoadResource(
     options: LoadResourceOptions = { manual: true, changedPath: "" },
   ) {
+    const precheck = await precheckPipelineIssuesBeforeAction({
+      toastId: options.manual ? RESOURCE_TOAST_ID : WATCH_RESOURCE_TOAST_ID,
+      blockedTitle: options.manual
+        ? "Resource Load Blocked"
+        : "Resource Reload Blocked",
+      notifyTitle: "Pipeline Issues Found",
+    });
+    if (precheck.blocked) {
+      statusStore.setResourceStatus("failed");
+      return;
+    }
+
     const { success, msg } = await tryLoadResource();
+
+    if (!success) {
+      statusStore.setResourceStatus("failed");
+    } else {
+      statusStore.setResourceStatus("loaded");
+    }
 
     if (options.manual) {
       toast.remove(WATCH_RESOURCE_TOAST_ID);
@@ -85,84 +227,6 @@ export default function useResourceControl() {
         color: "info",
       });
     }
-
-    pipelineErrors.value = [];
-    pipelineWarns.value = [];
-    if (success && debugWorkspaceSettingsStore.checkPipeline) {
-      let pipelineCheckResult: CheckResponse[] = [];
-      const checkResponse = await DoPipelineCheck();
-      if (checkResponse.succeed && Array.isArray(checkResponse.data)) {
-        pipelineCheckResult = checkResponse.data;
-      } else {
-        console.error(
-          "[PipelineChecker] Check once failed, fallback to cached result:",
-          checkResponse.msg,
-        );
-        pipelineCheckResult = await getPipelineCheckResult();
-      }
-
-      const fullGrouped = pipelineCheckResult.reduce(
-        (acc, item) => {
-          if (item.level === "error" || item.level === "warning") {
-            acc[item.level].push(item);
-          }
-          return acc;
-        },
-        { error: [] as CheckResponse[], warning: [] as CheckResponse[] },
-      );
-
-      // 始终保留全量诊断，level 仅用于提醒时机。
-      pipelineErrors.value = fullGrouped.error;
-      pipelineWarns.value = fullGrouped.warning;
-
-      const notifyLevel = debugWorkspaceSettingsStore.checkPipelineNotifyLevel;
-      const filteredResult = pipelineCheckResult.filter((item) => {
-        if (notifyLevel === "NULL") {
-          return false;
-        }
-        if (notifyLevel === "ERROR") {
-          return item.level === "error";
-        }
-        if (notifyLevel === "WARNING") {
-          return item.level === "error" || item.level === "warning";
-        }
-        return false;
-      });
-
-      if (filteredResult.length > 0) {
-        const grouped = filteredResult.reduce(
-          (acc, item) => {
-            if (item.level === "error" || item.level === "warning") {
-              acc[item.level].push(item);
-            }
-            return acc;
-          },
-          { error: [] as CheckResponse[], warning: [] as CheckResponse[] },
-        );
-
-        const toastType = grouped.error.length > 0 ? "error" : "warning";
-        toast.add({
-          id: PIPELINE_CHECKER_TOAST_ID,
-          progress: false,
-          title: "Pipeline Check Results",
-          duration: 0,
-          description: `Found ${fullGrouped.error.length + fullGrouped.warning.length} issues.`,
-          icon: "i-lucide-alert-triangle",
-          color: toastType,
-          actions: [
-            {
-              icon: "i-lucide-info",
-              label: "View Details",
-              color: "neutral",
-              variant: "outline",
-              onClick: () => {
-                openPipelineCheckDetails(fullGrouped);
-              },
-            },
-          ],
-        });
-      }
-    }
   }
 
   function openPipelineCheckDetails(grouped?: {
@@ -179,6 +243,7 @@ export default function useResourceControl() {
   return {
     enabledPaths,
     tryLoadResource,
+    precheckPipelineIssuesBeforeAction,
     onLoadResource: LoadResource,
     openPipelineCheckDetails,
     pipelineIssueModalOpen,

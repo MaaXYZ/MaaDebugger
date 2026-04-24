@@ -34,6 +34,13 @@ export const useStatusStore = defineStore("status", () => {
     status.value = snapshot;
   }
 
+  function setResourceStatus(resource: ResourceStatus) {
+    status.value = {
+      ...status.value,
+      resource,
+    };
+  }
+
   return {
     status,
     controllerStatus,
@@ -41,5 +48,6 @@ export const useStatusStore = defineStore("status", () => {
     taskStatus,
     agentStatus,
     updateStatus,
+    setResourceStatus,
   };
 });

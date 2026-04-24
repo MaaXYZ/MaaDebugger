@@ -14,7 +14,7 @@ export const useDebugSettingsStore = defineStore(
     const watchResourceChangeInterval = ref(1000);
     const checkPipeline = ref(true);
     const checkPipelineNotifyLevel: Ref<PipelineNotifyLevel> = ref("ERROR");
-    const preventRunning = ref(true);
+    const preventResourceLoaded = ref(true);
 
     function setAutoCollapseLeftTabsOnRunStart(value: boolean) {
       autoCollapseLeftTabsOnRunStart.value = value;
@@ -59,8 +59,8 @@ export const useDebugSettingsStore = defineStore(
       checkPipelineNotifyLevel.value = value;
     }
 
-    function setPreventRunning(value: boolean) {
-      preventRunning.value = value;
+    function setPreventResourceLoaded(value: boolean) {
+      preventResourceLoaded.value = value;
     }
 
     function reset() {
@@ -70,7 +70,7 @@ export const useDebugSettingsStore = defineStore(
       watchResourceChangeInterval.value = 1000;
       checkPipeline.value = true;
       checkPipelineNotifyLevel.value = "ERROR";
-      preventRunning.value = true;
+      preventResourceLoaded.value = true;
       void syncPipelineChecker(true);
     }
 
@@ -81,7 +81,7 @@ export const useDebugSettingsStore = defineStore(
       watchResourceChangeInterval,
       checkPipeline,
       checkPipelineNotifyLevel,
-      preventRunning,
+      preventResourceLoaded,
       setAutoCollapseLeftTabsOnRunStart,
       setLeftTabsCollapsed,
       setWatchResourceChange,
@@ -89,7 +89,7 @@ export const useDebugSettingsStore = defineStore(
       setCheckPipeline,
       syncPipelineChecker,
       setCheckPipelineNotifyLevel,
-      setPreventRunning,
+      setPreventResourceLoaded,
       reset,
     };
   },

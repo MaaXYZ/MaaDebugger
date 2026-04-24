@@ -1,11 +1,10 @@
 import { computed, ref, watch } from "vue";
-import { DoPipelineCheck, getTaskNodes, runTask, stopTask } from "@/api/http";
+import { getTaskNodes, runTask, stopTask } from "@/api/http";
 import { useShortcutsStore, formatShortcut } from "@/stores/shortcuts";
 import { useStatusStore } from "@/stores/status";
 import { useTaskStore } from "@/stores/task";
 import { useAgentStore } from "@/stores/agent";
 import { useSignalStore } from "@/stores/signal";
-import { useDebugSettingsStore } from "@/stores/debugSettings";
 import type { TaskStatus } from "./types";
 import useResourceControl from "../useResourceControl";
 
@@ -41,8 +40,8 @@ export default function useTaskControls(toast: ToastApi) {
   const taskStore = useTaskStore();
   const agentStore = useAgentStore();
   const signalStore = useSignalStore();
-  const debugSettingsStore = useDebugSettingsStore();
-  const { tryLoadResource, openPipelineCheckDetails } = useResourceControl();
+  const { tryLoadResource, precheckPipelineIssuesBeforeAction } =
+    useResourceControl();
 
   const TASK_TOAST_ID = "task-toast";
 
@@ -199,8 +198,20 @@ export default function useTaskControls(toast: ToastApi) {
       return;
     }
 
+    const precheckBeforeLoad = await precheckPipelineIssuesBeforeAction({
+      toastId: TASK_TOAST_ID,
+      blockedTitle: "Task Blocked",
+      notifyTitle: "Pipeline Issues Found",
+      notify: false,
+    });
+    if (precheckBeforeLoad.blocked) {
+      statusStore.setResourceStatus("failed");
+      return;
+    }
+
     const loadResult = await tryLoadResource();
     if (!loadResult.success) {
+      statusStore.setResourceStatus("failed");
       toast.add({
         id: TASK_TOAST_ID,
         title: "Resource Load Failed",
@@ -210,66 +221,17 @@ export default function useTaskControls(toast: ToastApi) {
       });
       return;
     }
+    statusStore.setResourceStatus("loaded");
 
-    if (debugSettingsStore.checkPipeline) {
-      const pipelineCheck = await DoPipelineCheck();
-      if (!pipelineCheck.succeed) {
-        toast.add({
-          id: TASK_TOAST_ID,
-          title: "Pipeline Check Failed",
-          description: pipelineCheck.msg,
-          icon: "i-lucide-circle-x",
-          color: "error",
-        });
-      }
-
-      const issues = Array.isArray(pipelineCheck.data)
-        ? pipelineCheck.data
-        : [];
-      const errorCount = issues.filter((item) => item.level === "error").length;
-      const warningCount = issues.filter(
-        (item) => item.level === "warning",
-      ).length;
-
-      if (debugSettingsStore.preventRunning && errorCount > 0) {
-        toast.add({
-          id: TASK_TOAST_ID,
-          title: "Task Blocked",
-          description: `Pipeline has ${errorCount} error(s). Fix errors or disable Prevent Running to continue.`,
-          icon: "i-lucide-octagon-x",
-          color: "error",
-          actions: [
-            {
-              icon: "i-lucide-info",
-              label: "View Details",
-              color: "neutral",
-              variant: "outline",
-              onClick: () => {
-                openPipelineCheckDetails();
-              },
-            },
-          ],
-        });
-        return;
-      }
-
-      const notifyLevel = debugSettingsStore.checkPipelineNotifyLevel;
-      const shouldNotify =
-        notifyLevel === "WARNING"
-          ? errorCount + warningCount > 0
-          : notifyLevel === "ERROR"
-            ? errorCount > 0
-            : false;
-
-      if (shouldNotify) {
-        toast.add({
-          id: TASK_TOAST_ID,
-          title: "Pipeline Issues Found",
-          description: `Found ${errorCount} error(s) and ${warningCount} warning(s).`,
-          icon: "i-lucide-alert-triangle",
-          color: errorCount > 0 ? "error" : "warning",
-        });
-      }
+    const precheckBeforeRun = await precheckPipelineIssuesBeforeAction({
+      toastId: TASK_TOAST_ID,
+      blockedTitle: "Task Blocked",
+      notifyTitle: "Pipeline Issues Found",
+      notify: true,
+    });
+    if (precheckBeforeRun.blocked) {
+      statusStore.setResourceStatus("failed");
+      return;
     }
 
     const result = await runTask(

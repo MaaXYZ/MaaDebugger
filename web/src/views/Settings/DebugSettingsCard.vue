@@ -102,13 +102,14 @@ const pipelineNotifyLevel: { label: string; value: PipelineNotifyLevel }[] = [
       </div>
 
       <div v-if="debugSettingsStore.checkPipeline"
-        class="flex items-center justify-between gap-4 rounded-lg border border-default p-3" id="debug-preventRunning">
+        class="flex items-center justify-between gap-4 rounded-lg border border-default p-3"
+        id="debug-preventResourceLoaded">
         <div class="flex flex-col gap-1">
-          <span class="text-sm font-medium">Prevent Running</span>
-          <span class="text-sm text-dimmed">If the pipeline has errors, prevent task from running.</span>
+          <span class="text-sm font-medium">Prevent Resource Loaded</span>
+          <span class="text-sm text-dimmed">If the pipeline has errors, prevent the resource from being loaded.</span>
         </div>
-        <USwitch :model-value="debugSettingsStore.preventRunning" @update:model-value="
-          debugSettingsStore.setPreventRunning(Boolean($event))
+        <USwitch :model-value="debugSettingsStore.preventResourceLoaded" @update:model-value="
+          debugSettingsStore.setPreventResourceLoaded(Boolean($event))
           " />
       </div>
     </div>
