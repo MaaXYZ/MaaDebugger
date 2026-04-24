@@ -410,12 +410,8 @@ func checkUnknownTaskRefs(pf pipelineFile, taskName string, taskObj map[string]a
 			if jumpbackName, isJumpback := parseJumpback(ref); isJumpback {
 				ref = jumpbackName
 			}
-			if anchorName, isAnchorRef := parseAnchorRef(ref); isAnchorRef {
-				if _, ok := anchors[anchorName]; ok {
-					continue
-				}
-				line := findTaskKeyValueLine(pf, taskName, key, ref)
-				diags = append(diags, newDiag(codeUnknownAnchor, fmt.Sprintf("Unknown anchor %s", anchorName), pf.path, line, taskName))
+			if _, isAnchorRef := parseAnchorRef(ref); isAnchorRef {
+				// Anchor 引用统一在 checkUnknownAnchorRefs 中校验，避免重复上报。
 				continue
 			}
 			if _, ok := allTasks[ref]; ok {
