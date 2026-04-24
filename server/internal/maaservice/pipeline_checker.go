@@ -14,6 +14,26 @@ import (
 	"github.com/tailscale/hujson"
 )
 
+// jumpback 正则
+var jumpbackRegex = regexp.MustCompile(`(?i)\[JumpBack\]`)
+
+const (
+	codeSyntaxError              = "syntax-error"
+	codeMPEConfig                = "mpe-config"
+	codeConflictTask             = "conflict-task"
+	codeUnknownTask              = "unknown-task"
+	codeUnknownAnchor            = "unknown-anchor"
+	codeUnknownImage             = "unknown-image"
+	codeImagePathBackSlash       = "image-path-back-slash"
+	codeImagePathDotSlash        = "image-path-dot-slash"
+	codeImagePathMissingPNG      = "image-path-missing-png"
+	codeDynamicImage             = "dynamic-image"
+	codeUnknownAttr              = "unknown-attr"
+	codeDuplicateNext            = "duplicate-next"
+	codeMissingCustomAction      = "missing-custom-action"
+	codeMissingCustomRecognition = "missing-custom-recognition"
+)
+
 type CheckResponse struct {
 	Level string `json:"level"`
 	Code  string `json:"code"`
@@ -25,7 +45,7 @@ type CheckResponse struct {
 
 func nodeLevelByCode(code string) string {
 	switch code {
-	case "mpe-config", "image-path-back-slash", "image-path-dot-slash", "image-path-missing-png", "dynamic-image":
+	case codeMPEConfig, codeImagePathBackSlash, codeImagePathDotSlash, codeImagePathMissingPNG, codeDynamicImage:
 		return "warning"
 	default:
 		return "error"
@@ -182,7 +202,7 @@ func runPipelineCheck(roots []string) []CheckResponse {
 		for name := range pf.tasks {
 			if prev, ok := decls[name]; ok {
 				line := findTaskLine(pf.raw, pf.lineStarts, name)
-				result = append(result, newDiag("conflict-task", fmt.Sprintf("Conflict task %s, previous defined in %s:%s", name, prev.path, prev.line), pf.path, line, name))
+				result = append(result, newDiag(codeConflictTask, fmt.Sprintf("Conflict task %s, previous defined in %s:%s", name, prev.path, prev.line), pf.path, line, name))
 				continue
 			}
 			line := findTaskLine(pf.raw, pf.lineStarts, name)
@@ -191,8 +211,10 @@ func runPipelineCheck(roots []string) []CheckResponse {
 		}
 	}
 
+	allAnchors := collectAnchorsFromParsed(parsed)
+
 	for i := range parsed {
-		result = append(result, checkTaskRules(parsed[i], allTasks, images)...)
+		result = append(result, checkTaskRules(parsed[i], allTasks, allAnchors, images)...)
 	}
 
 	sort.Slice(result, func(i, j int) bool {
@@ -219,26 +241,26 @@ func runPipelineCheck(roots []string) []CheckResponse {
 func parsePipelineFile(filePath string, roots []string) (*pipelineFile, []CheckResponse) {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, []CheckResponse{newDiag("syntax-error", err.Error(), filePath, "1:1", "")}
+		return nil, []CheckResponse{newDiag(codeSyntaxError, err.Error(), filePath, "1:1", "")}
 	}
 
 	raw := string(content)
 	lineStarts := buildLineStarts(raw)
 	if _, err := hujson.Parse(content); err != nil {
 		line, col := parseHujsonLineCol(err)
-		return nil, []CheckResponse{newDiag("syntax-error", err.Error(), filePath, fmt.Sprintf("%d:%d", line, col), "")}
+		return nil, []CheckResponse{newDiag(codeSyntaxError, err.Error(), filePath, fmt.Sprintf("%d:%d", line, col), "")}
 	}
 
 	std, err := hujson.Standardize(content)
 	if err != nil {
 		line, col := parseHujsonLineCol(err)
-		return nil, []CheckResponse{newDiag("syntax-error", err.Error(), filePath, fmt.Sprintf("%d:%d", line, col), "")}
+		return nil, []CheckResponse{newDiag(codeSyntaxError, err.Error(), filePath, fmt.Sprintf("%d:%d", line, col), "")}
 	}
 
 	var root map[string]any
 	if err := json.Unmarshal(std, &root); err != nil {
 		line, col := parseStdJSONLineCol(err)
-		return nil, []CheckResponse{newDiag("syntax-error", err.Error(), filePath, fmt.Sprintf("%d:%d", line, col), "")}
+		return nil, []CheckResponse{newDiag(codeSyntaxError, err.Error(), filePath, fmt.Sprintf("%d:%d", line, col), "")}
 	}
 
 	tasks := make(map[string]map[string]any)
@@ -246,7 +268,7 @@ func parsePipelineFile(filePath string, roots []string) (*pipelineFile, []CheckR
 	for k, v := range root {
 		if strings.HasPrefix(k, "$__mpe") {
 			diags = append(diags, newDiag(
-				"mpe-config",
+				codeMPEConfig,
 				"MPE config detected",
 				filePath,
 				findTaskLine(raw, lineStarts, k),
@@ -273,17 +295,27 @@ func parsePipelineFile(filePath string, roots []string) (*pipelineFile, []CheckR
 	}, diags
 }
 
-func checkTaskRules(pf pipelineFile, allTasks map[string]struct{}, images map[string]map[string]struct{}) []CheckResponse {
-	anchors := collectAnchors(pf.tasks)
+func checkTaskRules(pf pipelineFile, allTasks map[string]struct{}, allAnchors map[string]struct{}, images map[string]map[string]struct{}) []CheckResponse {
 	diags := make([]CheckResponse, 0, 24)
 	for taskName, taskObj := range pf.tasks {
-		diags = append(diags, checkUnknownTaskRefs(pf, taskName, taskObj, allTasks, anchors)...)
-		diags = append(diags, checkUnknownAnchorRefs(pf, taskName, taskObj, anchors)...)
+		diags = append(diags, checkUnknownTaskRefs(pf, taskName, taskObj, allTasks, allAnchors)...)
+		diags = append(diags, checkUnknownAnchorRefs(pf, taskName, taskObj, allAnchors)...)
 		diags = append(diags, checkTemplateWarningsAndUnknownImage(pf, taskName, taskObj, images)...)
 		diags = append(diags, checkUnknownAttr(pf, taskName, taskObj)...)
 		diags = append(diags, checkDuplicateNext(pf, taskName, taskObj)...)
 	}
 	return diags
+}
+
+func collectAnchorsFromParsed(parsed []pipelineFile) map[string]struct{} {
+	all := make(map[string]struct{})
+	for _, pf := range parsed {
+		anchors := collectAnchors(pf.tasks)
+		for a := range anchors {
+			all[a] = struct{}{}
+		}
+	}
+	return all
 }
 
 func collectAnchors(tasks map[string]map[string]any) map[string]struct{} {
@@ -295,6 +327,17 @@ func collectAnchors(tasks map[string]map[string]any) map[string]struct{} {
 				a := strings.TrimSpace(v)
 				if a != "" {
 					anchors[a] = struct{}{}
+				}
+			case []any:
+				for _, item := range v {
+					s, ok := item.(string)
+					if !ok {
+						continue
+					}
+					a := strings.TrimSpace(s)
+					if a != "" {
+						anchors[a] = struct{}{}
+					}
 				}
 			case map[string]any:
 				for name := range v {
@@ -322,47 +365,57 @@ func checkUnknownAnchorRefs(pf pipelineFile, taskName string, taskObj map[string
 		return nil
 	}
 	diags := make([]CheckResponse, 0)
-	for _, ref := range extractStringByKey(taskObj, "Anchor") {
-		a := strings.TrimSpace(ref)
-		if a == "" {
+	for _, key := range []string{"next", "on_error", "target", "roi"} {
+		v, ok := taskObj[key]
+		if !ok {
 			continue
 		}
-		if _, ok := anchors[a]; ok {
-			continue
+		for _, ref := range extractAnchorRefsByField(key, v) {
+			a := strings.TrimSpace(ref)
+			if a == "" {
+				continue
+			}
+			if _, ok := anchors[a]; ok {
+				continue
+			}
+			line := findTaskKeyValueLine(pf, taskName, key, a)
+			diags = append(diags, newDiag(codeUnknownAnchor, fmt.Sprintf("Unknown anchor %s", a), pf.path, line, taskName))
 		}
-		line := findTaskKeyValueLine(pf, taskName, "Anchor", a)
-		diags = append(diags, newDiag("unknown-anchor", fmt.Sprintf("Unknown anchor %s", a), pf.path, line, taskName))
 	}
 	return diags
 }
 
 func checkUnknownTaskRefs(pf pipelineFile, taskName string, taskObj map[string]any, allTasks map[string]struct{}, anchors map[string]struct{}) []CheckResponse {
 	keys := map[string]string{
-		"next":         "unknown-task",
-		"target":       "unknown-task",
-		"roi":          "unknown-task",
-		"entry":        "unknown-task",
-		"color_filter": "unknown-task",
-		"all_of":       "unknown-task",
-		"any_of":       "unknown-task",
+		"next":         codeUnknownTask,
+		"on_error":     codeUnknownTask,
+		"target":       codeUnknownTask,
+		"roi":          codeUnknownTask,
+		"entry":        codeUnknownTask,
+		"color_filter": codeUnknownTask,
+		"all_of":       codeUnknownTask,
+		"any_of":       codeUnknownTask,
 	}
 	diags := make([]CheckResponse, 0)
 	for key, code := range keys {
-		v, ok := taskObj[key]
-		if !ok {
+		refs := extractTaskRefsByNodeField(taskObj, key)
+		if len(refs) == 0 {
 			continue
 		}
-		refs := extractTaskRefsByField(key, v)
 		for _, ref := range refs {
 			if ref == "" {
 				continue
+			}
+			// 先过滤 jumpback 标记
+			if jumpbackName, isJumpback := parseJumpback(ref); isJumpback {
+				ref = jumpbackName
 			}
 			if anchorName, isAnchorRef := parseAnchorRef(ref); isAnchorRef {
 				if _, ok := anchors[anchorName]; ok {
 					continue
 				}
 				line := findTaskKeyValueLine(pf, taskName, key, ref)
-				diags = append(diags, newDiag("unknown-anchor", fmt.Sprintf("Unknown anchor %s", anchorName), pf.path, line, taskName))
+				diags = append(diags, newDiag(codeUnknownAnchor, fmt.Sprintf("Unknown anchor %s", anchorName), pf.path, line, taskName))
 				continue
 			}
 			if _, ok := allTasks[ref]; ok {
@@ -375,22 +428,69 @@ func checkUnknownTaskRefs(pf pipelineFile, taskName string, taskObj map[string]a
 	return diags
 }
 
+func extractTaskRefsByNodeField(taskObj map[string]any, field string) []string {
+	if field == "all_of" || field == "any_of" {
+		return extractCompositeRecognitionRefs(taskObj, field)
+	}
+	v, ok := taskObj[field]
+	if !ok {
+		return nil
+	}
+	return extractTaskRefsByField(field, v)
+}
+
+func extractCompositeRecognitionRefs(taskObj map[string]any, field string) []string {
+	refs := make([]string, 0)
+	refs = append(refs, extractStringArrayItems(taskObj[field])...)
+
+	recognition, ok := taskObj["recognition"].(map[string]any)
+	if !ok {
+		return refs
+	}
+	param, ok := recognition["param"].(map[string]any)
+	if !ok {
+		return refs
+	}
+	refs = append(refs, extractStringArrayItems(param[field])...)
+	return refs
+}
+
+func extractStringArrayItems(v any) []string {
+	arr, ok := v.([]any)
+	if !ok {
+		return nil
+	}
+	out := make([]string, 0, len(arr))
+	for _, item := range arr {
+		s, ok := item.(string)
+		if !ok {
+			continue
+		}
+		s = strings.TrimSpace(s)
+		if s == "" {
+			continue
+		}
+		out = append(out, s)
+	}
+	return out
+}
+
 func checkTemplateWarningsAndUnknownImage(pf pipelineFile, taskName string, taskObj map[string]any, images map[string]map[string]struct{}) []CheckResponse {
 	diags := make([]CheckResponse, 0)
 	for _, tpl := range extractTemplateRefs(taskObj) {
 		line := findTaskKeyValueLine(pf, taskName, "template", tpl)
 		norm := strings.TrimSpace(tpl)
 		if strings.Contains(norm, `\\`) {
-			diags = append(diags, newDiag("image-path-back-slash", "Image path contains backslash, shall use forward slash instead", pf.path, line, taskName))
+			diags = append(diags, newDiag(codeImagePathBackSlash, "Image path contains backslash, shall use forward slash instead", pf.path, line, taskName))
 		}
 		if strings.HasPrefix(norm, "./") {
-			diags = append(diags, newDiag("image-path-dot-slash", "Image path contains ./ , shall omit instead", pf.path, line, taskName))
+			diags = append(diags, newDiag(codeImagePathDotSlash, "Image path contains ./ , shall omit instead", pf.path, line, taskName))
 		}
 		if norm != "" && !strings.HasSuffix(strings.ToLower(norm), ".png") {
-			diags = append(diags, newDiag("image-path-missing-png", "Image path shall not omit .png", pf.path, line, taskName))
+			diags = append(diags, newDiag(codeImagePathMissingPNG, "Image path shall not omit .png", pf.path, line, taskName))
 		}
 		if strings.ContainsAny(norm, "{}*$") {
-			diags = append(diags, newDiag("dynamic-image", "Dynamic image path detected", pf.path, line, taskName))
+			diags = append(diags, newDiag(codeDynamicImage, "Dynamic image path detected", pf.path, line, taskName))
 			continue
 		}
 		if norm == "" || !strings.HasSuffix(strings.ToLower(norm), ".png") {
@@ -405,7 +505,7 @@ func checkTemplateWarningsAndUnknownImage(pf pipelineFile, taskName string, task
 		}
 		normPath := normalizeTemplatePath(norm)
 		if _, ok := imgSet[normPath]; !ok {
-			diags = append(diags, newDiag("unknown-image", fmt.Sprintf("Unknown image %s", norm), pf.path, line, taskName))
+			diags = append(diags, newDiag(codeUnknownImage, fmt.Sprintf("Unknown image %s", norm), pf.path, line, taskName))
 		}
 	}
 	return diags
@@ -417,14 +517,14 @@ func checkCustomActionRecoRules(pf pipelineFile, taskName string, taskObj map[st
 	if strings.EqualFold(strings.TrimSpace(action), "Custom") {
 		customAction, _ := taskObj["custom_action"].(string)
 		if strings.TrimSpace(customAction) == "" {
-			diags = append(diags, newDiag("error", "missing-custom-action: custom_action is empty", pf.path, findTaskKeyValueLine(pf, taskName, "action", action), taskName))
+			diags = append(diags, newDiag(codeMissingCustomAction, "custom_action is empty", pf.path, findTaskKeyValueLine(pf, taskName, "action", action), taskName))
 		}
 	}
 	recognition, _ := taskObj["recognition"].(string)
 	if strings.EqualFold(strings.TrimSpace(recognition), "Custom") {
 		customReco, _ := taskObj["custom_recognition"].(string)
 		if strings.TrimSpace(customReco) == "" {
-			diags = append(diags, newDiag("error", "missing-custom-recognition: custom_recognition is empty", pf.path, findTaskKeyValueLine(pf, taskName, "recognition", recognition), taskName))
+			diags = append(diags, newDiag(codeMissingCustomRecognition, "custom_recognition is empty", pf.path, findTaskKeyValueLine(pf, taskName, "recognition", recognition), taskName))
 		}
 	}
 	return diags
@@ -454,7 +554,7 @@ func checkUnknownAttr(pf pipelineFile, taskName string, taskObj map[string]any) 
 				continue
 			}
 			line := findTaskKeyValueLine(pf, taskName, key, "")
-			diags = append(diags, newDiag("unknown-attr", fmt.Sprintf("Unknown attribute %s", attr), pf.path, line, taskName))
+			diags = append(diags, newDiag(codeUnknownAttr, fmt.Sprintf("Unknown attribute %s", attr), pf.path, line, taskName))
 		}
 	}
 	return diags
@@ -488,7 +588,7 @@ func checkDuplicateNext(pf pipelineFile, taskName string, taskObj map[string]any
 	diags := make([]CheckResponse, 0, len(dups))
 	for d := range dups {
 		line := findTaskKeyValueLine(pf, taskName, "next", d)
-		diags = append(diags, newDiag("duplicate-next", fmt.Sprintf("Duplicate route %s", d), pf.path, line, taskName))
+		diags = append(diags, newDiag(codeDuplicateNext, fmt.Sprintf("Duplicate route %s", d), pf.path, line, taskName))
 	}
 	return diags
 }
@@ -504,7 +604,11 @@ func extractTaskRefsByField(field string, v any) []string {
 	}
 
 	switch strings.ToLower(field) {
-	case "next", "entry", "all_of", "any_of", "color_filter":
+	case "next", "on_error":
+		for _, s := range extractNodeRefs(v) {
+			push(s)
+		}
+	case "entry", "all_of", "any_of", "color_filter":
 		for _, s := range extractStringValues(v) {
 			push(s)
 		}
@@ -520,6 +624,77 @@ func extractTaskRefsByField(field string, v any) []string {
 		}
 	}
 	return refs
+}
+
+func extractNodeRefs(v any) []string {
+	out := make([]string, 0)
+	push := func(s string) {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			return
+		}
+		out = append(out, s)
+	}
+
+	var walk func(any)
+	walk = func(x any) {
+		switch t := x.(type) {
+		case string:
+			push(t)
+		case []any:
+			for _, e := range t {
+				walk(e)
+			}
+		case map[string]any:
+			name, _ := t["name"].(string)
+			name = strings.TrimSpace(name)
+			if name == "" {
+				return
+			}
+			if isAnchorRef, _ := t["anchor"].(bool); isAnchorRef {
+				push("[Anchor]" + name)
+				return
+			}
+			push(name)
+		}
+	}
+
+	walk(v)
+	return out
+}
+
+func extractAnchorRefsByField(field string, v any) []string {
+	out := make([]string, 0)
+	seen := make(map[string]struct{})
+	push := func(s string) {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			return
+		}
+		if _, ok := seen[s]; ok {
+			return
+		}
+		seen[s] = struct{}{}
+		out = append(out, s)
+	}
+
+	switch strings.ToLower(field) {
+	case "next", "on_error":
+		for _, ref := range extractNodeRefs(v) {
+			if anchorName, ok := parseAnchorRef(ref); ok {
+				push(anchorName)
+			}
+		}
+		for _, ref := range extractStringByKey(v, "Anchor") {
+			push(ref)
+		}
+	case "target", "roi":
+		for _, ref := range extractStringByKey(v, "Anchor") {
+			push(ref)
+		}
+	}
+
+	return out
 }
 
 func extractStringValues(v any) []string {
@@ -561,6 +736,16 @@ func parseAnchorRef(ref string) (string, bool) {
 		return "", false
 	}
 	return name, true
+}
+
+func parseJumpback(ref string) (string, bool) {
+	r := strings.TrimSpace(ref)
+
+	if jumpbackRegex.MatchString(r) {
+		name := jumpbackRegex.ReplaceAllString(ref, "")
+		return name, true
+	}
+	return "", false
 }
 
 func extractStringByKey(v any, key string) []string {
