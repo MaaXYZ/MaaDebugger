@@ -273,7 +273,7 @@ func (s *ControllerService) ConnectWlRoot(wlrSocketPath string) ConnectControlle
 	maaServiceLog.Info().Str("socket_path", wlrSocketPath).Msg("connect wlroot request")
 
 	maaServiceLog.Info().Msg("creating wlroot controller")
-	ctrl, err := maa.NewWlRootsController(wlrSocketPath)
+	ctrl, err := maa.NewWlRootsController(wlrSocketPath, false) // TODO: provide `useWin32VkCode` option
 	if err != nil {
 		maaServiceLog.Error().Err(err).Str("socket_path", wlrSocketPath).Msg("create wlroot controller failed")
 		return ConnectControllerResult{Error: fmt.Sprintf("create WlRoot controller failed: %v", err)}

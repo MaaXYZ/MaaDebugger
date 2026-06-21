@@ -3,14 +3,14 @@ module github.com/MaaXYZ/MaaDebugger
 go 1.26.0
 
 require (
-	github.com/MaaXYZ/maa-framework-go/v4 v4.0.0-beta.14
+	github.com/MaaXYZ/maa-framework-go/v4 v4.0.0-beta.17
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/mattn/go-colorable v0.1.14
 	github.com/rs/zerolog v1.34.0
+	github.com/tailscale/hujson v0.0.0-20260302212456-ecc657c15afd
 	golang.org/x/mod v0.33.0
 	golang.org/x/sys v0.41.0
-	github.com/tailscale/hujson v0.0.0-20260302212456-ecc657c15afd
 )
 
 require (
