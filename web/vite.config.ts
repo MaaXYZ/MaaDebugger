@@ -49,7 +49,7 @@ export default defineConfig({
     ],
   },
   build: {
-    outDir: path.resolve(__dirname, "../server/frontend/dist"),
+    outDir: path.resolve(__dirname, "./dist"),
     emptyOutDir: true,
     chunkSizeWarningLimit: 10240,
   },

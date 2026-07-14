@@ -15,7 +15,7 @@
  */
 
 import { execSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -63,13 +63,28 @@ if (buildFrontend) {
   step(++currentStep, totalSteps, "Building frontend (vite build)...");
   run("pnpm run build", WEB_DIR);
 
-  // Verify output
-  const distIndex = path.join(GO_DIR, "frontend", "dist", "index.html");
-  if (!existsSync(distIndex)) {
-    console.error("\n❌ Frontend build output not found at:", distIndex);
+  // Copy frontend output to the Go embed directory
+  const webDist = path.join(WEB_DIR, "dist");
+  const serverDist = path.join(GO_DIR, "frontend", "dist");
+  if (!existsSync(webDist)) {
+    console.error("\n❌ Frontend build output not found at:", webDist);
     process.exit(1);
   }
-  console.log("✅ Frontend build output verified.");
+  mkdirSync(serverDist, { recursive: true });
+  for (const entry of readdirSync(serverDist)) {
+    if (entry !== ".gitignore") {
+      rmSync(path.join(serverDist, entry), { recursive: true, force: true });
+    }
+  }
+  cpSync(webDist, serverDist, { recursive: true });
+
+  // Verify copied output
+  const distIndex = path.join(serverDist, "index.html");
+  if (!existsSync(distIndex)) {
+    console.error("\n❌ Copied frontend output not found at:", distIndex);
+    process.exit(1);
+  }
+  console.log("✅ Frontend build output copied and verified.");
 }
 
 // ── Step 3: Build Go binary ──
