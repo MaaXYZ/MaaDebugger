@@ -97,7 +97,7 @@
 
                 <UTooltip text="Fullscreen">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-fullscreen" size="sm" :disabled="!imageUrl"
-                        @click="isFullscreen = true" />
+                        @click="() => { isFullscreen = true }" />
                 </UTooltip>
 
                 <UTooltip text="Download">

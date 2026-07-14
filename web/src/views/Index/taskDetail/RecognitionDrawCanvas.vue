@@ -180,7 +180,7 @@
                 <USeparator orientation="vertical" class="h-4" />
                 <UTooltip :text="showRois ? 'Hide ROI overlay' : 'Show ROI overlay'">
                     <UButton color="neutral" variant="ghost" size="xs"
-                        :icon="showRois ? 'i-lucide-eye-off' : 'i-lucide-eye'" @click="showRois = !showRois">
+                        :icon="showRois ? 'i-lucide-eye-off' : 'i-lucide-eye'" @click="() => { showRois = !showRois }">
                         ROI
                     </UButton>
                 </UTooltip>
@@ -193,7 +193,7 @@
                     <USeparator orientation="vertical" class="h-4" />
                     <UTooltip :text="showOriginalDraw ? 'Hide raw draw' : 'Show raw draw'">
                         <UButton color="neutral" :variant="showOriginalDraw ? 'soft' : 'ghost'" size="xs"
-                            icon="i-lucide-images" label="Raw Draw" @click="showOriginalDraw = !showOriginalDraw" />
+                            icon="i-lucide-images" label="Raw Draw" @click="() => { showOriginalDraw = !showOriginalDraw }" />
                     </UTooltip>
                 </template>
             </div>

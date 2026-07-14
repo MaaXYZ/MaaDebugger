@@ -16,7 +16,7 @@ const nodePageSizeInput = computed({
 <template>
     <UCard size="xl">
         <template #header>
-            <div class="flex flex-row items-center justify-between gap-3" id="task">
+            <div id="task" class="flex flex-row items-center justify-between gap-3">
                 <div class="flex flex-col">
                     <span class="font-bold">Task Detail</span>
                     <span class="text-sm text-dimmed">Configure task detail display and node browsing behavior.</span>
@@ -27,8 +27,8 @@ const nodePageSizeInput = computed({
         </template>
 
         <div class="flex flex-col gap-3">
-            <div class="flex items-center justify-between gap-4 rounded-lg border border-default p-3"
-                id="task-showRecoID">
+            <div id="task-showRecoID"
+                class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
                 <div class="flex flex-col gap-1">
                     <span class="text-sm font-medium">Show Recognition ID</span>
                     <span class="text-sm text-dimmed">Display the ID beside recognition buttons like #400000001</span>
@@ -37,8 +37,8 @@ const nodePageSizeInput = computed({
                     @update:model-value="taskDetailSettingsStore.setShowRecoId(Boolean($event))" />
             </div>
 
-            <div class="flex items-center justify-between gap-4 rounded-lg border border-default p-3"
-                id="task-showActionID">
+            <div id="task-showActionID"
+                class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
                 <div class="flex flex-col gap-1">
                     <span class="text-sm font-medium">Show Action ID</span>
                     <span class="text-sm text-dimmed">Display the ID beside action buttons like #500000001</span>
@@ -47,8 +47,8 @@ const nodePageSizeInput = computed({
                     @update:model-value="taskDetailSettingsStore.setShowActionId(Boolean($event))" />
             </div>
 
-            <div class="flex items-center justify-between gap-4 rounded-lg border border-default p-3"
-                id="task-reverseNodeOrder">
+            <div id="task-reverseNodeOrder"
+                class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
                 <div class="flex flex-col gap-1">
                     <span class="text-sm font-medium">Reverse Node Order</span>
                     <span class="text-sm text-dimmed">Show newer pipeline nodes above older ones by default</span>
@@ -57,8 +57,8 @@ const nodePageSizeInput = computed({
                     @update:model-value="taskDetailSettingsStore.setReverseNodeOrder(Boolean($event))" />
             </div>
 
-            <div class="flex items-center justify-between gap-4 rounded-lg border border-default p-3"
-                id="task-nodePageSize">
+            <div id="task-nodePageSize"
+                class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
                 <div class="flex flex-col gap-1">
                     <span class="text-sm font-medium">Nodes Per Page</span>
                     <span class="text-sm text-dimmed">Limit how many pipeline nodes are rendered per page</span>

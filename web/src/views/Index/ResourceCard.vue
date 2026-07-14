@@ -204,7 +204,7 @@
           color="neutral"
           variant="ghost"
           label="Cancel"
-          @click="renameModalOpen = false"
+          @click="() => { renameModalOpen = false }"
         />
         <UButton
           color="primary"

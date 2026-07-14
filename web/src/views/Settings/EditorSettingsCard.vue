@@ -7,7 +7,7 @@ const editorSettingsStore = useEditorSettingsStore()
 <template>
     <UCard size="xl">
         <template #header>
-            <div class="flex flex-row items-center justify-between gap-3" id="editor">
+            <div id="editor" class="flex flex-row items-center justify-between gap-3">
                 <div class="flex flex-col">
                     <span class="font-bold">Editor</span>
                     <span class="text-sm text-dimmed">Configure JSON editor size and readability.</span>
@@ -18,7 +18,7 @@ const editorSettingsStore = useEditorSettingsStore()
         </template>
 
         <div class="flex flex-col gap-6">
-            <div class="flex flex-col gap-2" id="editor-fontSize">
+            <div id="editor-fontSize" class="flex flex-col gap-2">
                 <div class="flex items-center justify-between gap-3">
                     <span class="text-sm font-medium">Editor font size</span>
                     <span class="text-sm text-dimmed tabular-nums">{{ editorSettingsStore.normalizedFontSize }}
@@ -28,7 +28,7 @@ const editorSettingsStore = useEditorSettingsStore()
                     @update:model-value="editorSettingsStore.setFontSize(Number($event))" />
             </div>
 
-            <div class="flex flex-col gap-2" id="editor-minHeight">
+            <div id="editor-minHeight" class="flex flex-col gap-2">
                 <div class="flex items-center justify-between gap-3">
                     <span class="text-sm font-medium">Minimum editor height</span>
                     <span class="text-sm text-dimmed tabular-nums">{{ editorSettingsStore.normalizedMinHeight }}
@@ -38,7 +38,7 @@ const editorSettingsStore = useEditorSettingsStore()
                     @update:model-value="editorSettingsStore.setMinHeight(Number($event))" />
             </div>
 
-            <div class="flex flex-col gap-2" id="editor-maxHeight">
+            <div id="editor-maxHeight" class="flex flex-col gap-2">
                 <div class="flex items-center justify-between gap-3">
                     <span class="text-sm font-medium">Maximum editor height</span>
                     <span class="text-sm text-dimmed tabular-nums">{{ editorSettingsStore.normalizedMaxHeight }}

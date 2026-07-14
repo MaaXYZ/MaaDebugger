@@ -53,3 +53,6 @@ maa-py/*
 # MaaFramework
 **/debug/*
 **/config/*
+
+# Fronted
+**/dist/*

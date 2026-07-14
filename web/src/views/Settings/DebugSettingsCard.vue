@@ -14,7 +14,7 @@ const pipelineNotifyLevel: { label: string; value: PipelineNotifyLevel }[] = [
 <template>
   <UCard size="xl">
     <template #header>
-      <div class="flex flex-row items-center justify-between gap-3" id="debug">
+      <div id="debug" class="flex flex-row items-center justify-between gap-3">
         <div class="flex flex-col">
           <span class="font-bold">Debug Workspace</span>
           <span class="text-sm text-dimmed">Configure the Debug page layout and sidebar behavior.</span>
@@ -25,8 +25,8 @@ const pipelineNotifyLevel: { label: string; value: PipelineNotifyLevel }[] = [
     </template>
 
     <div class="flex flex-col gap-3">
-      <div class="flex items-center justify-between gap-4 rounded-lg border border-default p-3"
-        id="debug-auto-collapse">
+      <div id="debug-auto-collapse"
+        class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
         <div class="flex flex-col gap-1">
           <span class="text-sm font-medium">Auto collapse left sidebar on run start</span>
           <span class="text-sm text-dimmed">Collapse setup tabs automatically when a run starts, then keep that
@@ -39,7 +39,7 @@ const pipelineNotifyLevel: { label: string; value: PipelineNotifyLevel }[] = [
           " />
       </div>
 
-      <div class="flex items-center justify-between gap-4 rounded-lg border border-default p-3" id="debug-collapse">
+      <div id="debug-collapse" class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
         <div class="flex flex-col gap-1">
           <span class="text-sm font-medium">Collapse left sidebar by default</span>
           <span class="text-sm text-dimmed">Start the Debug workspace in focused mode until you expand the
@@ -50,8 +50,8 @@ const pipelineNotifyLevel: { label: string; value: PipelineNotifyLevel }[] = [
           " />
       </div>
 
-      <div class="flex items-center justify-between gap-4 rounded-lg border border-default p-3"
-        id="debug-watchResource">
+      <div id="debug-watchResource"
+        class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
         <div class="flex flex-col gap-1">
           <span class="text-sm font-medium">Watch resource changes</span>
           <span class="text-sm text-dimmed">
@@ -64,8 +64,8 @@ const pipelineNotifyLevel: { label: string; value: PipelineNotifyLevel }[] = [
           " />
       </div>
 
-      <div class="flex items-center justify-between gap-4 rounded-lg border border-default p-3"
-        id="debug-checkResourceInterval">
+      <div id="debug-checkResourceInterval"
+        class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
         <div class="flex flex-col gap-1">
           <span class="text-sm font-medium">Resource change check interval</span>
           <span class="text-sm text-dimmed">The interval (in milliseconds) at which to check for resource
@@ -74,8 +74,8 @@ const pipelineNotifyLevel: { label: string; value: PipelineNotifyLevel }[] = [
         <UInputNumber v-model="debugSettingsStore.watchResourceChangeInterval" :min="100" :max="10000" />
       </div>
 
-      <div class="flex items-center justify-between gap-4 rounded-lg border border-default p-3"
-        id="debug-checkPipeline">
+      <div id="debug-checkPipeline"
+        class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
         <div class="flex flex-col gap-1">
           <span class="text-sm font-medium">Check Pipeline Issues</span>
           <span class="text-sm text-dimmed">When resource loaded, check if the pipeline has any error or
@@ -87,7 +87,7 @@ const pipelineNotifyLevel: { label: string; value: PipelineNotifyLevel }[] = [
       </div>
 
       <div v-if="debugSettingsStore.checkPipeline"
-        class="flex items-center justify-between gap-4 rounded-lg border border-default p-3" id="debug-pipelineNotify">
+        id="debug-pipelineNotify" class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
         <div class="flex flex-col gap-1">
           <span class="text-sm font-medium">Pipeline Notify Level</span>
           <span class="text-sm text-dimmed">If the pipeline has issues at or above the selected level, send
@@ -102,8 +102,8 @@ const pipelineNotifyLevel: { label: string; value: PipelineNotifyLevel }[] = [
       </div>
 
       <div v-if="debugSettingsStore.checkPipeline"
-        class="flex items-center justify-between gap-4 rounded-lg border border-default p-3"
-        id="debug-preventResourceLoaded">
+        id="debug-preventResourceLoaded"
+        class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
         <div class="flex flex-col gap-1">
           <span class="text-sm font-medium">Prevent Resource Loaded</span>
           <span class="text-sm text-dimmed">If the pipeline has errors, prevent the resource from being loaded.</span>

@@ -18,7 +18,7 @@
                         :label="detail.hit ? 'Hit' : 'Miss'" />
                     <UBadge color="info" variant="subtle" :label="detail.algorithm" />
                     <UButton color="neutral" variant="ghost" size="xs" icon="i-lucide-file-json" label="NodeData"
-                        @click="nodeDataOpen = true" />
+                        @click="() => { nodeDataOpen = true }" />
                 </div>
             </div>
         </template>

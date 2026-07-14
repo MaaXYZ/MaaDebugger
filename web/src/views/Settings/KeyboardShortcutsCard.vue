@@ -46,7 +46,7 @@ function resetBinding(action: ShortcutAction) {
 <template>
     <UCard size="xl">
         <template #header>
-            <div class="flex flex-row items-center justify-between" id="keyboard">
+            <div id="keyboard" class="flex flex-row items-center justify-between">
                 <span class="font-bold">Keyboard Shortcuts</span>
                 <UButton color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" label="Reset All" size="xs"
                     @click="shortcutsStore.resetAll()" />

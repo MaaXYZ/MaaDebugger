@@ -7,7 +7,7 @@
                     :label="detail.success ? 'Success' : 'Failed'" />
                 <UBadge color="info" variant="subtle" :label="detail.action" />
                 <UButton color="neutral" variant="ghost" size="xs" icon="i-lucide-file-json" label="NodeData"
-                    @click="nodeDataOpen = true" />
+                    @click="() => { nodeDataOpen = true }" />
             </div>
         </template>
 
