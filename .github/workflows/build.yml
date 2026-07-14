@@ -52,7 +52,8 @@ jobs:
           cache-dependency-path: web/pnpm-lock.yaml
 
       - name: Build frontend
-        run: node build.mjs --skip-go
+        run: |
+          node build.mjs --skip-go
 
       - uses: actions/upload-artifact@v7
         with:
@@ -154,7 +155,8 @@ jobs:
           preRelease: true
 
       - name: Build Go binary
-        run: node build.mjs --skip-frontend --os ${{ matrix.goos }} --arch ${{ matrix.goarch }}
+        run: |
+          node build.mjs --skip-frontend --os ${{ matrix.goos }} --arch ${{ matrix.goarch }}
 
       - name: Package release artifact
         shell: bash

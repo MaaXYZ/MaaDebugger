@@ -85,7 +85,7 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: .artifacts/platform
 
-      - name: Prepare nodejs nightly package
+      - name: Prepare npm nightly package
         shell: bash
         run: |
           rm -rf dist/platform .artifacts/platform/extracted
@@ -119,7 +119,6 @@ jobs:
           PACKAGE_NAME="${{ matrix.package_name }}" \
           TARGET_OS="${{ matrix.os }}" \
           TARGET_CPU="${{ matrix.cpu }}" \
-
           node .github/scripts/prepare-npm-package.mjs
 
       - uses: actions/upload-artifact@v7
