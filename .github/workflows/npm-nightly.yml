@@ -145,6 +145,8 @@ jobs:
           cp publish/npm/index.cjs dist/main/index.cjs
           cp README.md LICENSE dist/main/
 
+          source publish/.env
+
           PACKAGE_JSON_PATH="dist/main/package.json" \
           node .github/scripts/prepare-npm-package.mjs
 

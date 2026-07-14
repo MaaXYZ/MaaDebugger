@@ -53,8 +53,10 @@ function main() {
   pkg.version = version;
   pkg.publishConfig = buildPublishConfig(channel);
 
-  // setup @maaxyz/maa-node version
-  pkg.dependency["@maaxyz/maa-node"] = process.env.MAAFW_VERSION;
+  // Keep @maaxyz/maa-node aligned with MaaFramework for the main package.
+  if (pkg.dependencies?.["@maaxyz/maa-node"]) {
+    pkg.dependencies["@maaxyz/maa-node"] = getRequiredEnv("MAAFW_VERSION");
+  }
 
   if (targetOS) {
     pkg.os = [targetOS];
