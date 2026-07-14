@@ -148,6 +148,7 @@ jobs:
           source publish/.env
 
           PACKAGE_JSON_PATH="dist/main/package.json" \
+          MAAFW_VERSION="${MAAFW_VERSION}" \
           node .github/scripts/prepare-npm-package.mjs
 
       - uses: actions/upload-artifact@v7
