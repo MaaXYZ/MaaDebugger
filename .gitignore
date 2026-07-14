@@ -23,11 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 
-# NuxtUI
+# TS
 auto-imports.d.ts
 components.d.ts
 
-# LLM
+# Agents
 plans/*
 .kilocode/*
 .cursor/*
