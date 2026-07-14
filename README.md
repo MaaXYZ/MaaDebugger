@@ -28,6 +28,9 @@ MaaDebugger 支持命令行参数，你可以通过 `--help` / `-H` 命令来获
 npx @weinibuliu/maa-debugger --help
 ```
 
+> [!TIP]
+> 还可以使用别名 `maa-dbg`
+
 ### 使用 pip (Python)
 
 MaaDebugger
