@@ -43,9 +43,6 @@ maa-py/*
 # Go
 */tmp/*
 
-# Fronted
-**/dist/*
-
 # bin
 **/bin/*
 *.exe

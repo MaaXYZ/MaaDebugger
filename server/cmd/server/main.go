@@ -248,6 +248,7 @@ func loadMaaFramework(devMode bool, argPath string, channel string, channelPath 
 
 	exePath = filepath.Dir(exePath)
 	root := filepath.Join(exePath, "bin")
+	// if in devMode, set the root as the cwd instead of the exe absolutely path.
 	if devMode {
 		root = filepath.Dir(getCwd())
 		root = filepath.Join(root, "bin")
