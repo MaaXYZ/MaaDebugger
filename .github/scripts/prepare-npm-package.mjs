@@ -53,6 +53,9 @@ function main() {
   pkg.version = version;
   pkg.publishConfig = buildPublishConfig(channel);
 
+  // setup @maaxyz/maa-node version
+  pkg.dependency["@maaxyz/maa-node"] = process.env.MAAFW_VERSION;
+
   if (targetOS) {
     pkg.os = [targetOS];
   }

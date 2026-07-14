@@ -32,8 +32,8 @@ jobs:
       commit_sha: ${{ needs.metadata.outputs.commit_sha }}
       build_time: ${{ needs.metadata.outputs.build_time }}
 
-  package-nodejs-nightly:
-    name: Package nodejs nightly
+  prepare-npm-nightly:
+    name: Package npm nightly
     needs: build
     runs-on: ubuntu-latest
     strategy:
@@ -113,10 +113,13 @@ jobs:
             chmod 755 "dist/platform/${{ matrix.bin_name }}"
           fi
 
+          source publish/.env
+
           PACKAGE_JSON_PATH="dist/platform/package.json" \
           PACKAGE_NAME="${{ matrix.package_name }}" \
           TARGET_OS="${{ matrix.os }}" \
           TARGET_CPU="${{ matrix.cpu }}" \
+
           node .github/scripts/prepare-npm-package.mjs
 
       - uses: actions/upload-artifact@v7
@@ -125,7 +128,7 @@ jobs:
           path: dist/platform
           if-no-files-found: error
 
-  package-nodejs-main-nightly:
+  package-npm-nightly:
     name: Package maa-debugger nightly
     needs: build
     runs-on: ubuntu-latest
@@ -152,11 +155,11 @@ jobs:
           path: dist/main
           if-no-files-found: error
 
-  merge-nodejs-nightly-artifacts:
+  merge-npm-nightly-artifacts:
     name: Merge nodejs nightly artifacts
     needs:
-      - package-nodejs-nightly
-      - package-nodejs-main-nightly
+      - prepare-npm-nightly
+      - package-npm-nightly
     runs-on: ubuntu-latest
 
     steps:
@@ -172,10 +175,10 @@ jobs:
           path: assets/pkgs-nodejs
           if-no-files-found: error
 
-  publish-nodejs-nightly:
-    name: Publish nodejs nightly
+  publish-npm-nightly:
+    name: Publish npm nightly
     needs:
-      - merge-nodejs-nightly-artifacts
+      - merge-npm-nightly-artifacts
       - metadata
     runs-on: ubuntu-latest
     permissions:
