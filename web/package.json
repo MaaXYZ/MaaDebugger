@@ -11,28 +11,28 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@nuxt/ui": "^4.6.0",
-    "@tanstack/vue-virtual": "^3.13.19",
+    "@nuxt/ui": "^4.9.0",
+    "@tanstack/vue-virtual": "^3.13.32",
     "monaco-editor": "^0.55.1",
     "pinia": "^3.0.4",
-    "tailwindcss": "^4.2.1",
-    "vue": "^3.5.30",
-    "vue-router": "^5.0.3"
+    "tailwindcss": "^4.3.2",
+    "vue": "^3.5.39",
+    "vue-router": "^5.1.0"
   },
   "devDependencies": {
-    "@types/node": "^25.5.2",
-    "@iconify/vue": "5.0.0",
-    "@iconify-json/lucide": "^1.2.93",
-    "@iconify-json/simple-icons": "^1.2.71",
-    "@iconify/utils": "^3.1.0",
-    "@vitejs/plugin-vue": "^6.0.4",
-    "@vue/eslint-config-typescript": "^14.7.0",
-    "@vue/tsconfig": "^0.8.1",
-    "eslint": "^10.0.2",
-    "eslint-plugin-vue": "^10.8.0",
-    "typescript": "~5.9.3",
-    "vite": "^8.0.1",
-    "vue-tsc": "^3.2.5"
+    "@types/node": "^26.1.1",
+    "@iconify/vue": "5.0.1",
+    "@iconify-json/lucide": "^1.2.117",
+    "@iconify-json/simple-icons": "^1.2.90",
+    "@iconify/utils": "^3.1.4",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "@vue/eslint-config-typescript": "^14.9.0",
+    "@vue/tsconfig": "^0.9.1",
+    "eslint": "^10.7.0",
+    "eslint-plugin-vue": "^10.9.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.1.4",
+    "vue-tsc": "^3.3.7"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
