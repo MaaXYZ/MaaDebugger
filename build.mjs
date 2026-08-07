@@ -16,8 +16,8 @@
 
 import { execSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
-import path from "node:path";
 import { fileURLToPath } from "node:url";
+import path from "node:path";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = __dirname;
@@ -33,6 +33,36 @@ const targetOS = osIndex !== -1 ? args[osIndex + 1] : undefined;
 const archIndex = args.indexOf("--arch");
 const targetArch = archIndex !== -1 ? args[archIndex + 1] : undefined;
 
+const buildFrontend = !skipFrontend;
+const buildGo = !skipGo;
+
+// Resolve build configuration
+const goosMap = { windows: "windows", linux: "linux", darwin: "darwin" };
+const resolvedOS = targetOS
+  ? goosMap[targetOS] || targetOS
+  : process.platform === "win32"
+    ? "windows"
+    : process.platform;
+
+const archMap = { x64: "amd64", ia32: "386", arm64: "arm64", arm: "arm" };
+const resolvedArch = targetArch || archMap[process.arch] || process.arch;
+
+const ext = resolvedOS === "windows" ? ".exe" : "";
+const outputName = `MaaDebugger${ext}`;
+
+// Echo build configuration
+console.log(`
+========================================
+  Build configuration
+  OS:            ${resolvedOS}${targetOS ? "" : " (Current)"}
+  Arch:          ${resolvedArch}${targetOS && targetArch ? "" : " (Current)"}
+  Output dir:    ${ROOT}
+  Binary:        ./${outputName}
+  Frontend:      ${buildFrontend ? "Yes" : "No"}
+  Go build:      ${buildGo ? "Yes" : "No"}
+========================================
+`);
+
 function run(cmd, cwd, env) {
   console.log(`\n> ${cmd}`);
   execSync(cmd, {
@@ -47,9 +77,6 @@ function step(n, total, msg) {
     `\n[${"=".repeat(n)}${" ".repeat(total - n)}] (${n}/${total}) ${msg}`,
   );
 }
-
-const buildFrontend = !skipFrontend;
-const buildGo = !skipGo;
 
 const totalSteps = (buildFrontend ? 2 : 0) + (buildGo ? 1 : 0);
 let currentStep = 0;
@@ -91,22 +118,12 @@ if (buildFrontend) {
 if (buildGo) {
   step(++currentStep, totalSteps, "Building Go binary...");
 
-  const goosMap = { windows: "windows", linux: "linux", darwin: "darwin" };
-  const resolvedOS = targetOS
-    ? goosMap[targetOS] || targetOS
-    : process.platform === "win32"
-      ? "windows"
-      : process.platform;
-
   const version = process.env.VERSION || "dev";
   const commitSHA = process.env.COMMIT_SHA || "";
   const buildTime =
     process.env.BUILD_TIME || `${Math.floor(Date.now() / 1000)}`;
   const ldPath = "github.com/MaaXYZ/MaaDebugger/internal/buildinfo";
   const ldFlags = `-s -w -X ${ldPath}.Version=${version} -X ${ldPath}.CommitSHA=${commitSHA} -X ${ldPath}.BuildTime=${buildTime}`;
-
-  const ext = resolvedOS === "windows" ? ".exe" : "";
-  const outputName = `MaaDebugger${ext}`;
 
   const goEnv = {
     CGO_ENABLED: "0",

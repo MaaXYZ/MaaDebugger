@@ -49,6 +49,7 @@ maa-py/*
 *.exe~
 *.dll
 *.so
+MaaDebugger
 
 # MaaFramework
 **/debug/*
