@@ -20,7 +20,7 @@ export default {
     settings: "Settings",
     openOnGitHub: "Open on GitHub",
     disconnected: "Disconnected",
-    checkServiceStatus: "Please check the service status.",
+    checkServiceStatus: "Please try restart the application.",
     taskCompleted: "Task Completed",
     taskFinishedWithEntry: '"{entry}" finished successfully',
     taskFinished: "Task finished successfully",
@@ -105,7 +105,8 @@ export default {
     extraConfigDescription: "ADB extra configuration (JSONC)",
     selectDevice: "Select a device...",
     noDevicesFound: "No ADB devices found",
-    noDevicesDescription: "Make sure your device is connected and ADB is running.",
+    noDevicesDescription:
+      "Make sure your device is connected and ADB is running.",
   },
   playcover: {
     address: "Address",
@@ -124,7 +125,8 @@ export default {
     windowNameRegexPlaceholder: ".*",
     selectWindow: "Select a window...",
     noWindowsFound: "No windows found",
-    noWindowsDescription: "Try adjusting your class name or window regex filters.",
+    noWindowsDescription:
+      "Try adjusting your class name or window regex filters.",
   },
   agent: {
     title: "Agent",
@@ -169,7 +171,8 @@ export default {
     failed: "Failed",
     idle: "Idle",
     resourceChanged: "Resource Changed",
-    resourceChangedDescription: "Detected changes in {path}; the resource will reload.",
+    resourceChangedDescription:
+      "Detected changes in {path}; the resource will reload.",
     resourceLoaded: "Resource Loaded",
     resourceLoadFailed: "Resource Load Failed",
     resourceLoadBlocked: "Resource Load Blocked",
@@ -182,7 +185,7 @@ export default {
     loaded: "Loaded",
     idle: "Idle",
     project: "Project: {name}",
-    unnamed: "Unnamed interface",
+    unnamed: "Unnamed Project",
     filePath: "File Path",
     filePathHint: "Enter the path to the interface.json file",
     language: "Language",
@@ -344,7 +347,8 @@ export default {
       title: "Debug Workspace",
       description: "Configure the Debug page layout",
       sidebarAutoCollapse: "Auto collapse sidebar",
-      sidebarAutoCollapseDescription: "Choose when to auto-collapse the setup sidebar.",
+      sidebarAutoCollapseDescription:
+        "Choose when to auto-collapse the setup sidebar.",
       sidebarNever: "Never",
       sidebarTask: "Only while task running",
       sidebarAlways: "Always",
