@@ -16,7 +16,7 @@ inputs:
     tag:
         description: The tag to use when publishing the package.
         required: false
-        default: "latest"
+        default: "latest" # 在目前硬编码为 latest 以后 stable 后会进行对应处理
     dry-run:
         description: Run npm with the --dry-run flag to avoid actually publishing anything.
         required: false
