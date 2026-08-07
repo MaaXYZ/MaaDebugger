@@ -110,6 +110,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.HandleFunc("PUT /api/screenshot/fps", r.handleScreenshotSetFPS)
 	mux.HandleFunc("PUT /api/screenshot/output", r.handleScreenshotSetOutput)
 	mux.HandleFunc("GET /api/screenshot/status", r.handleScreenshotStatus)
+	mux.HandleFunc("GET /api/screenshot/raw", r.handleScreenshotRaw)
 	mux.HandleFunc("POST /api/clear/cache", r.handleClearCache)
 	mux.HandleFunc("GET /api/update/check", r.handleCheckUpdate)
 	mux.HandleFunc("GET /ws", r.handleWS)
@@ -1006,6 +1007,18 @@ func (r *router) handleScreenshotStatus(w http.ResponseWriter, _ *http.Request) 
 		OverlayState:   r.deps.ScreenshotService.OverlayState(),
 		OverlayMessage: r.deps.ScreenshotService.OverlayMessage(),
 	})
+}
+
+func (r *router) handleScreenshotRaw(w http.ResponseWriter, req *http.Request) {
+	img := r.deps.ScreenshotService.RawFrame()
+	if img == nil {
+		response.Fail(w, http.StatusNotFound, "no raw frame available")
+		return
+	}
+	if err := maaservice.WriteImageResponse(w, req, img); err != nil {
+		response.Fail(w, http.StatusBadRequest, err.Error())
+		return
+	}
 }
 
 func (r *router) handlePipelineCheckerStart(w http.ResponseWriter, _ *http.Request) {

@@ -194,12 +194,26 @@ func taskImageETag(data []byte, createdAt time.Time, format string) string {
 }
 
 func WriteTaskImageResponse(w http.ResponseWriter, req *http.Request, item *taskImageItem) error {
+	return writeTaskImageResponse(w, req, item, "")
+}
+
+// WriteImageResponse 直接以 image.Image 响应图片，默认按无损 PNG 编码，
+// 也支持通过 ?format=jpeg 指定 JPEG。用于截图流 raw 帧等场景。
+func WriteImageResponse(w http.ResponseWriter, req *http.Request, img image.Image) error {
+	item := newTaskImageItem(img)
+	return writeTaskImageResponse(w, req, item, taskImageFormatPNG)
+}
+
+func writeTaskImageResponse(w http.ResponseWriter, req *http.Request, item *taskImageItem, defaultFormat string) error {
 	if item == nil {
 		http.NotFound(w, req)
 		return nil
 	}
 
 	format := req.URL.Query().Get("format")
+	if format == "" {
+		format = defaultFormat
+	}
 	contentType, data, createdAt, err := item.encodeByFormat(format)
 	if err != nil {
 		return err

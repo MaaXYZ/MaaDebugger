@@ -73,11 +73,19 @@ export function useScreenshotStream() {
     imageUrl.value = URL.createObjectURL(blob);
   }
 
-  function downloadImage() {
-    if (!imageData.value) return;
-    const blob = new Blob([new Uint8Array(imageData.value)], {
-      type: "image/jpeg",
-    });
+  async function downloadImage() {
+    // 截图下载一律走后端保留的 raw 帧（无损 PNG）
+    let blob: Blob | null = null;
+    const extension = "png";
+    try {
+      const resp = await fetch("/api/screenshot/raw");
+      if (resp.ok) {
+        blob = await resp.blob();
+      }
+    } catch {
+      // raw 不可用时不做任何下载
+    }
+    if (!blob) return;
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     const now = new Date();
@@ -91,7 +99,7 @@ export function useScreenshotStream() {
       String(now.getSeconds()).padStart(2, "0");
 
     a.href = url;
-    a.download = `screenshot_${timestamp}.jpg`;
+    a.download = `screenshot_${timestamp}.${extension}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

@@ -77,6 +77,9 @@ type ScreenshotService struct {
 	stopCh  chan struct{}
 	running bool
 
+	rawMu    sync.Mutex
+	rawFrame image.Image
+
 	jpegJobs chan *jpegJob
 
 	paused       atomic.Bool
@@ -633,8 +636,24 @@ func (s *ScreenshotService) prepareJPEGJob(seq uint64) (*jpegJob, error) {
 	if img == nil {
 		return nil, nil
 	}
+	s.setRawFrame(img)
 
 	return &jpegJob{seq: seq, img: img}, nil
+}
+
+// RawFrame 返回流水线最近捕获的一帧未压缩图像（cache 图快照），
+// 尚无帧时返回 nil。CacheImage 每次都会新分配 *image.RGBA，
+// 因此保存的引用不会被后续 screencap 覆盖。
+func (s *ScreenshotService) RawFrame() image.Image {
+	s.rawMu.Lock()
+	defer s.rawMu.Unlock()
+	return s.rawFrame
+}
+
+func (s *ScreenshotService) setRawFrame(img image.Image) {
+	s.rawMu.Lock()
+	s.rawFrame = img
+	s.rawMu.Unlock()
 }
 
 func (s *ScreenshotService) enqueueLatestJPEGJob(job *jpegJob) {
@@ -715,6 +734,9 @@ func (s *ScreenshotService) resetPipelineStateLocked() {
 	s.paused.Store(true)
 	s.stats.encodedFrames.Store(0)
 	s.stats.broadcastedFrames.Store(0)
+	s.rawMu.Lock()
+	s.rawFrame = nil
+	s.rawMu.Unlock()
 	s.setOverlayState(ScreenshotOverlayStateDisconnected, "Controller disconnected")
 }
 
