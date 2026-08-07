@@ -21,7 +21,7 @@
                             <div class="flex items-center justify-between gap-3">
                                 <span class="text-xs text-muted">{{ t('task.actualFps') }}</span>
                                 <span class="text-xs tabular-nums font-medium" :class="actualFpsTone">{{ actualFpsLabel
-                                    }}</span>
+                                }}</span>
                             </div>
                             <USeparator />
                             <div class="flex flex-col gap-2">
@@ -42,9 +42,7 @@
                 </UTooltip>
 
                 <UTooltip :text="aspectMode === 'landscape' ? t('task.switchPortrait') : t('task.switchLandscape')">
-                    <UButton color="neutral" variant="ghost" :icon="aspectMode === 'landscape'
-                        ? 'i-lucide-monitor'
-                        : 'i-lucide-smartphone'" size="sm" @click="toggleAspect" />
+                    <UButton color="neutral" variant="ghost" icon="i-lucide-monitor-smartphone" @click="toggleAspect" />
                 </UTooltip>
             </div>
         </template>
@@ -122,8 +120,8 @@
 
     <component :is="jsonEditorModalComponent" v-if="jsonEditorModalComponent" v-model:open="overrideEditorOpen"
         v-model="overrideEditorDraft" :title="t('task.pipelineOverride')"
-        :description="t('task.pipelineOverrideDescription')"
-        :schema="editorSchema" :external-schemas="editorExternalSchemas" />
+        :description="t('task.pipelineOverrideDescription')" :schema="editorSchema"
+        :external-schemas="editorExternalSchemas" />
 </template>
 
 <script setup lang="ts">
