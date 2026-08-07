@@ -31,11 +31,13 @@
                         <p>{{ t('interface.filePathHint') }}</p>
                     </template>
                     <UInput v-model="interfacePath" class="w-full" icon="i-lucide-file-json" size="xl"
-                        :color="pathError ? 'error' : 'neutral'" @blur="onPathBlur" />
+                        :color="pathError ? 'error' : 'neutral'" @blur="onPathBlur"
+                        :placeholder="t('interface.filePathHint')" />
                 </UFormField>
             </UTooltip>
 
-            <UFormField v-if="taskStore.hasInterfaceLanguages" name="interfaceLanguage" :label="t('interface.language')">
+            <UFormField v-if="taskStore.hasInterfaceLanguages" name="interfaceLanguage"
+                :label="t('interface.language')">
                 <USelect v-model="selectedInterfaceLanguage" :items="interfaceLanguageItems" value-key="value"
                     class="w-full" size="xl" arrow />
             </UFormField>

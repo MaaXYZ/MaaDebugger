@@ -175,7 +175,7 @@ export default {
     project: "项目：{name}",
     unnamed: "未命名项目",
     filePath: "文件路径",
-    filePathHint: "输入 interface.json 文件的路径",
+    filePathHint: "输入 interface.json 文件路径",
     language: "语言",
     load: "加载",
     invalidPath: "无效的接口路径",
