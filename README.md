@@ -1,14 +1,12 @@
 # MaaDebugger
 
-由 MaaXYZ 团队开发与维护的 MaaFramework 调试器，拥有现代 Web 界面与强大的调试功能。
+由 [MaaXYZ](https://github.com/MaaXYZ) 团队开发与维护的 MaaFramework 调试器，拥有现代 Web 界面与强大的调试功能。
 
 ## 安装方式
 
 ### 使用 npm
 
-MaaDebugger 暂时以 `@weinibuliu/maa-debugger` 的名称发布于 [npm](https://www.npmjs.com) 。你可以使用 npm 或其他包管理器(如 pnpm)安装、管理与使用。
-
-#### npm
+MaaDebugger 暂时以 `@weinibuliu/maa-debugger` 的名称发布于 [npm](https://www.npmjs.com) 。
 
 ```bash
 npm install -g @weinibuliu/maa-debugger@latest
@@ -18,29 +16,15 @@ MaaDebugger 支持命令行参数，你可以通过 `--help` / `-H` 命令来获
 
 ```bash
 maa-debugger --help
+# or
+maa-dbg --help
 ```
-
-> [!TIP]
-> 还可以使用别名 `maa-dbg`
-
-### 使用 pip (Python)
-
-MaaDebugger
-将以 `MaaDebugger` 的名称发布于 [PyPI](https://pypi.org/project/MaaDebugger) 。你可以使用 pip 或其他包管理器(如 uv)安装、管理与使用。
->[!WARNING]
-在早期开发阶段，我们**不会**发布至 PyPI，请自行使用其他渠道。
-
-### 自行下载
-
-我们也提供了 [Github Release](https://github.com/MaaXYZ/MaaDebugger/releases) 下载渠道，下载解压后即可使用。
->[!WARNING]
-在早期开发阶段，我们**不会**发布至 Github Release，而是仅在 [Actions](https://github.com/MaaXYZ/MaaDebugger/actions/workflows/publish.yml) 上传产物，请自行前往下载。
 
 ## 如何开发
 
-在开发阶段需要同时启动**后端**和**前端**两个终端：
+在开发阶段需要同时启动**后端**和**前端**。
 
-### Terminal 1: 后端 (Go Service)
+### 后端 (Go Service)
 
 > [!NOTE]
 > `MaaDebugger` 将寻找 `./bin` 下的 MaaFramework 动态库。
@@ -51,7 +35,7 @@ MaaDebugger
 air # 支持热重载
 ```
 
-### Terminal 2: 前端 (Web)
+### 前端 (Web)
 
 ```bash
 cd web
@@ -76,4 +60,4 @@ node build.mjs --skip-frontend     # 跳过前端构建（仅编译 Go）
 node build.mjs --skip-go           # 跳过 Go 编译（仅构建前端）
 ```
 
-构建完成后，启动 `./MaaDebugger`（Windows 下为 `./MaaDebugger.exe`），程序会自动选择可用端口（默认从 8011 开始）并打开浏览器。
+构建完成后，启动 `./MaaDebugger` 。程序会从 8011 端口开始自动检测可用端口并打开浏览器。
