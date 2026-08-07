@@ -12,6 +12,7 @@ export const useDebugSettingsStore = defineStore(
     const leftTabsCollapsed = ref(false);
     const watchResourceChange = ref(true);
     const watchResourceChangeInterval = ref(1000);
+    const showTaskFps = ref(false);
     const checkPipeline = ref(true);
     const checkPipelineNotifyLevel: Ref<PipelineNotifyLevel> = ref("ERROR");
     const preventResourceLoaded = ref(true);
@@ -30,6 +31,10 @@ export const useDebugSettingsStore = defineStore(
 
     function setWatchResourceChangeInterval(value: number) {
       watchResourceChangeInterval.value = value;
+    }
+
+    function setShowTaskFps(value: boolean) {
+      showTaskFps.value = value;
     }
 
     function setCheckPipeline(value: boolean) {
@@ -68,6 +73,7 @@ export const useDebugSettingsStore = defineStore(
       leftTabsCollapsed.value = false;
       watchResourceChange.value = true;
       watchResourceChangeInterval.value = 1000;
+      showTaskFps.value = false;
       checkPipeline.value = true;
       checkPipelineNotifyLevel.value = "ERROR";
       preventResourceLoaded.value = true;
@@ -79,6 +85,7 @@ export const useDebugSettingsStore = defineStore(
       leftTabsCollapsed,
       watchResourceChange,
       watchResourceChangeInterval,
+      showTaskFps,
       checkPipeline,
       checkPipelineNotifyLevel,
       preventResourceLoaded,
@@ -86,6 +93,7 @@ export const useDebugSettingsStore = defineStore(
       setLeftTabsCollapsed,
       setWatchResourceChange,
       setWatchResourceChangeInterval,
+      setShowTaskFps,
       setCheckPipeline,
       syncPipelineChecker,
       setCheckPipelineNotifyLevel,

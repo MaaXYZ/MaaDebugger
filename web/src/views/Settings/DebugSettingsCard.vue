@@ -50,6 +50,18 @@ const pipelineNotifyLevel: { label: string; value: PipelineNotifyLevel }[] = [
           " />
       </div>
 
+      <div id="debug-showTaskFps"
+        class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
+        <div class="flex flex-col gap-1">
+          <span class="text-sm font-medium">Show current FPS</span>
+          <span class="text-sm text-dimmed">Show the current (actual) frame rate in the Task panel header next to
+            the target rate. The FPS adjustment popover stays available.</span>
+        </div>
+        <USwitch :model-value="debugSettingsStore.showTaskFps" @update:model-value="
+          debugSettingsStore.setShowTaskFps(Boolean($event))
+          " />
+      </div>
+
       <div id="debug-watchResource"
         class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
         <div class="flex flex-col gap-1">

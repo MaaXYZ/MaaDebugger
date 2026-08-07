@@ -8,8 +8,8 @@
 
                 <UPopover>
                     <UButton color="neutral" variant="ghost" size="sm" class="tabular-nums">
-                        {{ currentFps }} /
-                        <span class="font-medium" :class="actualFpsTone">{{ actualFpsLabel }}</span>
+                        {{ currentFps }}<template v-if="debugSettingsStore.showTaskFps"> /
+                            <span class="font-medium" :class="actualFpsTone">{{ actualFpsLabel }}</span></template>
                         FPS
                     </UButton>
                     <template #content>
@@ -137,9 +137,11 @@ import TaskInterfaceModal from './task/TaskInterfaceModal.vue'
 import useTaskControls from './task/useTaskControls'
 import { useScreenshotStream } from './task/useScreenshotStream'
 import { MAX_ZOOM, MIN_ZOOM, usePanZoom } from './task/usePanZoom'
+import { useDebugSettingsStore } from '@/stores/debugSettings'
 import { warmupMonacoJsonWorker } from '@/components/MonacoEditor'
 
 const toast = useToast()
+const debugSettingsStore = useDebugSettingsStore()
 const jsonEditorModalComponent = shallowRef<Component | null>(null)
 const editorSchema = shallowRef<Record<string, unknown> | undefined>()
 const editorExternalSchemas = shallowRef<Record<string, Record<string, unknown>> | undefined>()
