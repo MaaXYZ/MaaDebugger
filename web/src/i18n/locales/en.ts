@@ -343,12 +343,12 @@ export default {
     debug: {
       title: "Debug Workspace",
       description: "Configure the Debug page layout and sidebar behavior.",
-      autoCollapse: "Auto collapse setup sidebar on run start",
-      autoCollapseDescription:
-        "Collapse setup sidebar automatically when a run starts, then keep that collapsed state until you expand them again.",
-      collapseLeft: "Collapse left sidebar by default",
-      collapseLeftDescription:
-        "Start the Debug workspace in focused mode until you expand the setup sidebar.",
+      sidebarAutoCollapse: "Auto collapse sidebar",
+      sidebarAutoCollapseDescription:
+        "Choose when to auto-collapse the setup sidebar: never, when a task starts, or always.",
+      sidebarNever: "Never",
+      sidebarTask: "Only while task running",
+      sidebarAlways: "Always",
       showFps: "Show current FPS",
       showFpsDescription:
         "Show the current (actual) frame rate in the Task panel header next to the target rate. The FPS adjustment popover stays available.",

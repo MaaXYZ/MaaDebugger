@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useDebugSettingsStore } from "@/stores/debugSettings";
-import type { PipelineNotifyLevel } from "@/stores/debugSettings";
+import type {
+  PipelineNotifyLevel,
+  SidebarAutoCollapseMode,
+} from "@/stores/debugSettings";
 
 const { t } = useI18n();
 const debugSettingsStore = useDebugSettingsStore();
@@ -11,6 +15,22 @@ const pipelineNotifyLevel: { label: string; value: PipelineNotifyLevel }[] = [
   { label: t('settings.debug.warning'), value: "WARNING" },
   { label: t('settings.debug.never'), value: "NULL" },
 ];
+
+const sidebarAutoCollapseItems: {
+  label: string;
+  value: SidebarAutoCollapseMode;
+}[] = [
+  { label: t('settings.debug.sidebarNever'), value: "never" },
+  { label: t('settings.debug.sidebarTask'), value: "task-running" },
+  { label: t('settings.debug.sidebarAlways'), value: "always" },
+];
+
+// 通过 store 的 setter 写入（setter 会同步当前位置，避免模式与状态矛盾）
+const sidebarAutoCollapse = computed({
+  get: () => debugSettingsStore.sidebarAutoCollapse,
+  set: (value: SidebarAutoCollapseMode) =>
+    debugSettingsStore.setSidebarAutoCollapse(value),
+});
 </script>
 
 <template>
@@ -30,24 +50,10 @@ const pipelineNotifyLevel: { label: string; value: PipelineNotifyLevel }[] = [
       <div id="debug-auto-collapse"
         class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
         <div class="flex flex-col gap-1">
-          <span class="text-sm font-medium">{{ t('settings.debug.autoCollapse') }}</span>
-          <span class="text-sm text-dimmed">{{ t('settings.debug.autoCollapseDescription') }}</span>
+          <span class="text-sm font-medium">{{ t('settings.debug.sidebarAutoCollapse') }}</span>
+          <span class="text-sm text-dimmed">{{ t('settings.debug.sidebarAutoCollapseDescription') }}</span>
         </div>
-        <USwitch :model-value="debugSettingsStore.autoCollapseLeftTabsOnRunStart" @update:model-value="
-          debugSettingsStore.setAutoCollapseLeftTabsOnRunStart(
-            Boolean($event),
-          )
-          " />
-      </div>
-
-      <div id="debug-collapse" class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
-        <div class="flex flex-col gap-1">
-          <span class="text-sm font-medium">{{ t('settings.debug.collapseLeft') }}</span>
-          <span class="text-sm text-dimmed">{{ t('settings.debug.collapseLeftDescription') }}</span>
-        </div>
-        <USwitch :model-value="debugSettingsStore.leftTabsCollapsed" @update:model-value="
-          debugSettingsStore.setLeftTabsCollapsed(Boolean($event))
-          " />
+        <USelect v-model="sidebarAutoCollapse" :items="sidebarAutoCollapseItems" class="min-w-48" arrow />
       </div>
 
       <div id="debug-showTaskFps" class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
