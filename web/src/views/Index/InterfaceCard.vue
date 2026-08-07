@@ -121,6 +121,16 @@ onMounted(async () => {
     const saved = await getStoreConfig<{ path?: string }>('interface')
     if (saved?.path) {
         interfacePath.value = saved.path
+        // 重新解析已保存的 interface 文件，恢复 Project 名称等展示信息。
+        // 只刷新展示，不重复应用 controller/resource/task（这些已由持久化 store 恢复）。
+        try {
+            const result = await parseInterface(saved.path)
+            if (result.succeed && result.data) {
+                loadedInterface.value = result.data
+            }
+        } catch {
+            // 解析失败（文件被移动/删除等）时保持 Idle 展示
+        }
     }
 })
 
