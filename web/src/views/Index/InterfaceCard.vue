@@ -1,6 +1,7 @@
 <template>
     <UCard class="w-full max-w-xl transition-opacity duration-200"
-        :class="{ 'opacity-50 pointer-events-none': isTaskRunning }" size="xl" :ui="{ root: 'bg-default/70 ring-default/70', header: 'p-4 sm:px-5', body: 'p-0 sm:p-0' }">
+        :class="{ 'opacity-50 pointer-events-none': isTaskRunning }" size="xl"
+        :ui="{ root: 'bg-default/70 ring-default/70', header: 'p-4 sm:px-5', body: 'p-0 sm:p-0' }">
         <template #header>
             <div class="flex flex-col gap-2">
                 <div class="flex flex-row items-center justify-between gap-4">
@@ -24,10 +25,15 @@
         </template>
 
         <div class="p-4 sm:p-6 min-h-36 flex flex-col gap-3">
-            <UFormField name="interfacePath" label="File Path" :error="pathError || undefined">
-                <UInput v-model="interfacePath" class="w-full" placeholder="Enter interface.json file path..."
-                    icon="i-lucide-file-json" size="xl" :color="pathError ? 'error' : 'neutral'" @blur="onPathBlur" />
-            </UFormField>
+            <UTooltip :text="interfacePath">
+                <UFormField name="interfacePath" label="File Path" :error="pathError || undefined">
+                    <template #content>
+                        <p>Enter the path to the interface.json file</p>
+                    </template>
+                    <UInput v-model="interfacePath" class="w-full" icon="i-lucide-file-json" size="xl"
+                        :color="pathError ? 'error' : 'neutral'" @blur="onPathBlur" />
+                </UFormField>
+            </UTooltip>
 
             <UFormField v-if="taskStore.hasInterfaceLanguages" name="interfaceLanguage" label="Language">
                 <USelect v-model="selectedInterfaceLanguage" :items="interfaceLanguageItems" value-key="value"
