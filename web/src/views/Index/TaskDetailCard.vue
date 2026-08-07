@@ -22,7 +22,7 @@
 
         <template #default>
             <div class="flex h-full min-h-0 flex-col gap-3">
-                <div v-if="allTasks.length === 0" class="flex min-h-80 items-center">
+                <div v-if="allTasks.length === 0" class="flex min-h-80 items-center justify-center xl:flex-1">
                     <UEmpty icon="i-lucide-list-checks" title="No Task Details"
                         class="w-full rounded-xl border border-dashed border-default bg-default/25 py-10" />
                 </div>
