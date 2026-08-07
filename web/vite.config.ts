@@ -1,9 +1,10 @@
+import path from "path";
+
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import ui from "@nuxt/ui/vite";
-import IconifyIcons from "./plugins/icon-loader";
 
-import path from "path";
+import IconifyIcons from "./plugins/icon-loader.ts";
 
 export default defineConfig({
   plugins: [
@@ -30,26 +31,26 @@ export default defineConfig({
     alias: [
       {
         find: "@",
-        replacement: path.resolve(__dirname, "src"),
+        replacement: path.resolve(import.meta.dirname, "src"),
       },
       {
         find: /^monaco-editor$/,
         replacement: path.resolve(
-          __dirname,
+          import.meta.dirname,
           "node_modules/monaco-editor/esm/vs/editor/editor.api.js",
         ),
       },
       {
         find: "monaco-editor/esm/vs/editor/editor.main.js",
         replacement: path.resolve(
-          __dirname,
+          import.meta.dirname,
           "node_modules/monaco-editor/esm/vs/editor/editor.api.js",
         ),
       },
     ],
   },
   build: {
-    outDir: path.resolve(__dirname, "./dist"),
+    outDir: path.resolve(import.meta.dirname, "./dist"),
     emptyOutDir: true,
     chunkSizeWarningLimit: 10240,
   },
