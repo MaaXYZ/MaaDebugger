@@ -16,7 +16,7 @@
                             class="w-full" size="xl" value-key="value" :disabled="isRunning" arrow />
                     </UTooltip>
                 </div>
-                <UTooltip text="Edit task override">
+                <UTooltip :text="t('task.editOverride')">
                     <UButton color="neutral" variant="outline" icon="i-lucide-file-edit" size="xl"
                         :loading="isPreparingOverrideEditor" :disabled="isPreparingOverrideEditor"
                         @click="emit('edit-override')" />
@@ -73,7 +73,7 @@
                         </USelect>
                     </UTooltip>
                 </div>
-                <UTooltip text="Edit task override">
+                <UTooltip :text="t('task.editOverride')">
                     <UButton color="neutral" variant="outline" icon="i-lucide-file-edit" size="xl"
                         :loading="isPreparingOverrideEditor" :disabled="isPreparingOverrideEditor"
                         @click="emit('edit-override')" />
@@ -97,6 +97,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { InterfaceTaskCandidate } from '@/types/interface'
 
 interface SelectItem {
@@ -144,15 +145,17 @@ const emit = defineEmits<{
     stop: []
 }>()
 
+const { t } = useI18n()
+
 const showTaskModeTabs = computed(() => props.hasInterfaceTasks)
 const taskModeTabItems = [
     {
-        label: 'Manual Entry',
+        label: t('task.manualEntry'),
         value: 'manual',
         icon: 'i-lucide-list',
     },
     {
-        label: 'Interface Task',
+        label: t('task.interfaceTask'),
         value: 'interface',
         icon: 'i-lucide-list-tree',
     },

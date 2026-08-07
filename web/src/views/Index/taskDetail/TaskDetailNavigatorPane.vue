@@ -2,15 +2,15 @@
     <div class="flex h-full flex-col gap-3 rounded-xl border border-default bg-default/40 p-3">
         <div class="flex items-center gap-2">
             <UIcon name="i-lucide-list-tree" class="size-4 text-dimmed" />
-            <span class="text-sm font-semibold">Navigator</span>
+            <span class="text-sm font-semibold">{{ t('taskDetail.navigator') }}</span>
         </div>
 
-        <UEmpty v-if="tasks.length === 0" icon="i-lucide-list-checks" title="No Tasks"
-            description="Run a task to start inspecting details." />
+        <UEmpty v-if="tasks.length === 0" icon="i-lucide-list-checks" :title="t('taskDetail.noTasks')"
+            :description="t('taskDetail.noTasksDescription')" />
 
         <template v-else>
             <div class="flex flex-col gap-2">
-                <span class="text-xs font-medium uppercase tracking-wide text-dimmed">Tasks</span>
+                <span class="text-xs font-medium uppercase tracking-wide text-dimmed">{{ t('taskDetail.tasks') }}</span>
                 <div class="flex flex-col gap-2">
                     <button v-for="(task, index) in tasks" :key="task.msg.uuid" type="button"
                         class="flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors"
@@ -29,10 +29,10 @@
 
             <div v-if="activeTask" class="flex min-h-0 flex-1 flex-col gap-2">
                 <div class="flex items-center justify-between gap-2">
-                    <span class="text-xs font-medium uppercase tracking-wide text-dimmed">Nodes</span>
+                    <span class="text-xs font-medium uppercase tracking-wide text-dimmed">{{ t('taskDetail.nodes') }}</span>
                     <UButton v-if="isHistoryMode" size="xs" color="primary" variant="soft"
                         icon="i-lucide-arrow-down-to-line" @click="$emit('goLatest')">
-                        Latest
+                        {{ t('taskDetail.latest') }}
                     </UButton>
                 </div>
 
@@ -61,7 +61,10 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { TaskScope, PipelineNodeScope } from '@/types/taskDetail'
+
+const { t } = useI18n()
 
 defineProps<{
     tasks: TaskScope[]

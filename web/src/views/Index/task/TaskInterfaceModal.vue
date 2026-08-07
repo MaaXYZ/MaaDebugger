@@ -1,5 +1,5 @@
 <template>
-    <UModal :open="open" title="Interface Task" :dismissible="false" :ui="{ content: 'sm:max-w-2xl' }"
+    <UModal :open="open" :title="t('task.interfaceTask')" :dismissible="false" :ui="{ content: 'sm:max-w-2xl' }"
         @update:open="emit('update:open', $event)">
         <template #body>
             <div class="w-full flex flex-col gap-3">
@@ -11,7 +11,7 @@
                                 taskTitleMuted }}</span>
                         </div>
                         <div class="text-xs text-dimmed break-all">
-                            Entry: {{ selectedTask.entry || 'n/a' }}
+                            {{ t('task.entry', { entry: selectedTask.entry || t('task.notApplicable') }) }}
                         </div>
                         <div v-if="taskDescription" class="mt-1 text-xs text-dimmed whitespace-pre-wrap">
                             {{ taskDescription }}
@@ -21,7 +21,7 @@
 
                 <div v-if="selectedTask && optionDefs.length"
                     class="rounded-lg border border-default bg-elevated/50 p-3 space-y-3">
-                    <div class="text-xs font-medium text-default">Options</div>
+                    <div class="text-xs font-medium text-default">{{ t('common.option') }}</div>
                     <div v-for="optionDef in optionDefs" :key="optionDef.name" class="space-y-2">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
@@ -92,8 +92,8 @@
         </template>
         <template #footer>
             <div class="flex w-full justify-end gap-2">
-                <UButton color="neutral" variant="ghost" @click="emit('cancel')">Cancel</UButton>
-                <UButton color="primary" @click="emit('confirm')">Confirm</UButton>
+                <UButton color="neutral" variant="ghost" @click="emit('cancel')">{{ t('common.cancel') }}</UButton>
+                <UButton color="primary" @click="emit('confirm')">{{ t('common.confirm') }}</UButton>
             </div>
         </template>
     </UModal>
@@ -101,6 +101,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useTaskStore } from '@/stores/task'
 import type { InterfaceTaskCandidate, InterfaceTaskOptionCase, InterfaceTaskOptionDefinition } from '@/types/interface'
 
@@ -119,6 +120,8 @@ const emit = defineEmits<{
     cancel: []
     confirm: []
 }>()
+
+const { t } = useI18n()
 
 const taskStore = useTaskStore()
 
@@ -153,7 +156,7 @@ function getCaseTitle(item: InterfaceTaskOptionCase) {
 
 function getOptionTypeLabel(optionDef: InterfaceTaskOptionDefinition) {
     const optionType = optionDef.type?.trim()
-    if (!optionType) return 'Option'
+    if (!optionType) return t('common.option')
     return optionType.charAt(0).toUpperCase() + optionType.slice(1)
 }
 

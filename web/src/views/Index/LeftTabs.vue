@@ -19,6 +19,7 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { TabsItem } from '@nuxt/ui';
 
 import InterfaceCard from './InterfaceCard.vue';
@@ -26,10 +27,11 @@ import ControllerCard from './ControllerCard.vue';
 import ResourceCard from './ResourceCard.vue';
 import AgentCard from './AgentCard.vue';
 
+const { t } = useI18n();
 const tabsModel = ref("controller")
 const tabs: TabsItem[] = [
-    { label: 'Controller', value: 'controller' },
-    { label: 'Resource', value: 'resource' },
-    { label: 'Agent', value: 'agent' }
+    { label: t('nav.controller'), value: 'controller' },
+    { label: t('nav.resource'), value: 'resource' },
+    { label: t('nav.agent'), value: 'agent' }
 ];
 </script>

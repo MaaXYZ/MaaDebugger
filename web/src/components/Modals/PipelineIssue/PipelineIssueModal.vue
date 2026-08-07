@@ -3,12 +3,12 @@
     <template #header>
       <div>
         <div class="flex flex-row items-center gap-2 flex-wrap">
-          <span class="text-sm text-highlighted font-semibold">Pipeline Issues</span>
-          <UBadge color="error" variant="subtle" :label="`Error ${errors.length}`" />
-          <UBadge color="warning" variant="subtle" :label="`Warning ${warnings.length}`" />
+          <span class="text-sm text-highlighted font-semibold">{{ t('pipeline.issues') }}</span>
+          <UBadge color="error" variant="subtle" :label="t('pipeline.errorCount', { count: errors.length })" />
+          <UBadge color="warning" variant="subtle" :label="t('pipeline.warningCount', { count: warnings.length })" />
         </div>
-        <span class="text-sm text-dimmed">You can config this feature in
-          <ULink href="/settings#debug-checkPipeline">Debug Settings</ULink>
+        <span class="text-sm text-dimmed">{{ t('pipeline.configHint') }}
+          <ULink href="/settings#debug-checkPipeline">{{ t('pipeline.debugSettings') }}</ULink>
         </span>
       </div>
     </template>
@@ -16,7 +16,7 @@
     <template #body>
       <div class="flex flex-col gap-4">
         <div v-if="issues.length === 0" class="text-sm text-dimmed p-4 text-center">
-          No issues found
+          {{ t('pipeline.noIssues') }}
         </div>
 
         <div v-else class="flex flex-col gap-3 max-h-[60vh] overflow-y-auto pr-1">
@@ -45,8 +45,11 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 
 import type { CheckResponse } from "@/types/pipeline";
+
+const { t } = useI18n()
 
 const open = defineModel<boolean>("open", { default: false });
 const props = defineProps<{

@@ -2,7 +2,7 @@
     <UCard class="w-full" size="xl" :ui="{ root: 'h-full flex flex-col', body: 'flex-1 xl:min-h-0' }">
         <template #header>
             <div class="flex flex-row items-center gap-2 min-h-10">
-                <span class="font-bold">Task</span>
+                <span class="font-bold">{{ t('task.title') }}</span>
                 <TaskStatusBadge :status="taskStatus" />
                 <div class="flex-1"></div>
 
@@ -15,33 +15,33 @@
                     <template #content>
                         <div class="p-3 flex flex-col gap-3 w-56">
                             <div class="flex items-center justify-between gap-3">
-                                <span class="text-xs text-muted">Target FPS</span>
+                                <span class="text-xs text-muted">{{ t('task.targetFps') }}</span>
                                 <span class="text-xs tabular-nums">{{ currentFps }}</span>
                             </div>
                             <div class="flex items-center justify-between gap-3">
-                                <span class="text-xs text-muted">Actual FPS</span>
+                                <span class="text-xs text-muted">{{ t('task.actualFps') }}</span>
                                 <span class="text-xs tabular-nums font-medium" :class="actualFpsTone">{{ actualFpsLabel
                                     }}</span>
                             </div>
                             <USeparator />
                             <div class="flex flex-col gap-2">
-                                <span class="text-xs text-muted">Frame Rate</span>
+                                <span class="text-xs text-muted">{{ t('task.frameRate') }}</span>
                                 <USlider v-model="fpsSlider" :min="1" :max="30" :step="1" />
                                 <div class="flex items-center justify-between">
                                     <span class="text-xs text-muted tabular-nums">{{ fpsSlider }} FPS</span>
-                                    <UButton size="xs" @click="applyFps">Apply</UButton>
+                                    <UButton size="xs" @click="applyFps">{{ t('task.apply') }}</UButton>
                                 </div>
                             </div>
                         </div>
                     </template>
                 </UPopover>
 
-                <UTooltip :text="isPaused ? 'Resume Screenshot' : 'Pause Screenshot'">
+                <UTooltip :text="isPaused ? t('task.resumeScreenshot') : t('task.pauseScreenshot')">
                     <UButton color="neutral" variant="ghost" :icon="isPaused ? 'i-lucide-play' : 'i-lucide-pause'"
                         size="sm" @click="togglePause" />
                 </UTooltip>
 
-                <UTooltip :text="aspectMode === 'landscape' ? 'Switch to 9:16 portrait' : 'Switch to 16:9 landscape'">
+                <UTooltip :text="aspectMode === 'landscape' ? t('task.switchPortrait') : t('task.switchLandscape')">
                     <UButton color="neutral" variant="ghost" :icon="aspectMode === 'landscape'
                         ? 'i-lucide-monitor'
                         : 'i-lucide-smartphone'" size="sm" @click="toggleAspect" />
@@ -74,14 +74,14 @@
         <template #footer>
             <div class="flex flex-row items-center gap-2">
                 <div class="flex items-center gap-1">
-                    <UTooltip text="Zoom out">
+                    <UTooltip :text="t('common.zoomOut')">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-out" size="sm"
                             :disabled="!imageUrl || zoomLevel <= MIN_ZOOM" @click="zoomOut" />
                     </UTooltip>
                     <span class="text-xs text-muted min-w-10 text-center tabular-nums">
                         {{ zoomPercentage }}%
                     </span>
-                    <UTooltip text="Zoom in">
+                    <UTooltip :text="t('common.zoomIn')">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-in" size="sm"
                             :disabled="!imageUrl || zoomLevel >= MAX_ZOOM" @click="zoomIn" />
                     </UTooltip>
@@ -89,19 +89,19 @@
 
                 <USeparator orientation="vertical" class="h-5" />
 
-                <UTooltip text="Fit to view">
+                <UTooltip :text="t('common.fitToView')">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-maximize" size="sm" :disabled="!imageUrl"
                         @click="resetZoom" />
                 </UTooltip>
 
                 <div class="flex-1"></div>
 
-                <UTooltip text="Fullscreen">
+                <UTooltip :text="t('common.fullscreen')">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-fullscreen" size="sm" :disabled="!imageUrl"
                         @click="() => { isFullscreen = true }" />
                 </UTooltip>
 
-                <UTooltip text="Download">
+                <UTooltip :text="t('common.download')">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-download" size="sm" :disabled="!imageUrl"
                         @click="downloadImage" />
                 </UTooltip>
@@ -121,13 +121,14 @@
         @update-input="onOptionInputDraftUpdated" @cancel="onInterfaceTaskCancel" @confirm="onInterfaceTaskConfirm" />
 
     <component :is="jsonEditorModalComponent" v-if="jsonEditorModalComponent" v-model:open="overrideEditorOpen"
-        v-model="overrideEditorDraft" title="Pipeline Override"
-        description="Edit the effective override JSON. Interface-generated values remain synced until you change them manually."
+        v-model="overrideEditorDraft" :title="t('task.pipelineOverride')"
+        :description="t('task.pipelineOverrideDescription')"
         :schema="editorSchema" :external-schemas="editorExternalSchemas" />
 </template>
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, shallowRef, watch, watchEffect } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Component } from 'vue'
 import TaskStatusBadge from './task/TaskStatusBadge.vue'
 import TaskLaunchPanel from './task/TaskLaunchPanel.vue'
@@ -141,6 +142,7 @@ import { useDebugSettingsStore } from '@/stores/debugSettings'
 import { warmupMonacoJsonWorker } from '@/components/MonacoEditor'
 
 const toast = useToast()
+const { t } = useI18n()
 const debugSettingsStore = useDebugSettingsStore()
 const jsonEditorModalComponent = shallowRef<Component | null>(null)
 const editorSchema = shallowRef<Record<string, unknown> | undefined>()

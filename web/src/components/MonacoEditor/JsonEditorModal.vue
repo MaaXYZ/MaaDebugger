@@ -6,8 +6,8 @@
         </template>
         <template #footer>
             <div class="flex justify-end gap-2 w-full">
-                <UButton variant="ghost" color="neutral" label="Cancel" @click="onCancel" />
-                <UButton color="primary" label="Save" icon="i-lucide-save" @click="onSave" />
+                <UButton variant="ghost" color="neutral" :label="t('editor.cancel')" @click="onCancel" />
+                <UButton color="primary" :label="t('editor.save')" icon="i-lucide-save" @click="onSave" />
             </div>
         </template>
     </UModal>
@@ -15,6 +15,7 @@
 
 <script setup lang="ts">
 import { ref, watch, onBeforeUnmount } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { MonacoEditor, monaco, ensureMonacoReady, getJsonDiagnosticsOptions, setJsonDiagnosticsOptions, runMonacoJsonSession } from '@/components/MonacoEditor'
 import type { editor as MonacoEditorNamespace, IDisposable } from 'monaco-editor'
 import type { MonacoJsonSchemaEntry } from './setup'
@@ -39,6 +40,8 @@ const props = withDefaults(
         externalSchemas: undefined,
     },
 )
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
     'update:modelValue': [value: string]
@@ -263,8 +266,8 @@ function onSave() {
                 const firstError = errors[0]!
                 toast.add({
                     id: 'json-editor-error',
-                    title: 'JSON / Schema Error',
-                    description: `Line ${firstError.startLineNumber}: ${firstError.message}`,
+                    title: t('editor.jsonSchemaError'),
+                    description: t('editor.lineError', { line: firstError.startLineNumber, message: firstError.message }),
                     icon: 'i-lucide-circle-x',
                     color: 'error',
                 })

@@ -6,7 +6,7 @@
             <div class="flex flex-col gap-2">
                 <div class="flex flex-row items-center justify-between gap-4">
                     <div class="flex items-center gap-2">
-                        <span class="font-bold">Interface</span>
+                        <span class="font-bold">{{ t('interface.title') }}</span>
                         <UBadge :color="statusColor" variant="subtle" size="sm" class="gap-1.5">
                             <span class="relative flex size-2">
                                 <span v-if="loading"
@@ -17,7 +17,7 @@
                         </UBadge>
 
                         <span v-if="loadedInterface" class="font-medium text-muted">
-                            Project: {{ loadedInterface.name || 'Unnamed interface' }}
+                            {{ t('interface.project', { name: loadedInterface.name || t('interface.unnamed') }) }}
                         </span>
                     </div>
                 </div>
@@ -26,23 +26,23 @@
 
         <div class="p-4 sm:p-6 min-h-36 flex flex-col gap-3">
             <UTooltip :text="interfacePath">
-                <UFormField name="interfacePath" label="File Path" :error="pathError || undefined">
+                <UFormField name="interfacePath" :label="t('interface.filePath')" :error="pathError || undefined">
                     <template #content>
-                        <p>Enter the path to the interface.json file</p>
+                        <p>{{ t('interface.filePathHint') }}</p>
                     </template>
                     <UInput v-model="interfacePath" class="w-full" icon="i-lucide-file-json" size="xl"
                         :color="pathError ? 'error' : 'neutral'" @blur="onPathBlur" />
                 </UFormField>
             </UTooltip>
 
-            <UFormField v-if="taskStore.hasInterfaceLanguages" name="interfaceLanguage" label="Language">
+            <UFormField v-if="taskStore.hasInterfaceLanguages" name="interfaceLanguage" :label="t('interface.language')">
                 <USelect v-model="selectedInterfaceLanguage" :items="interfaceLanguageItems" value-key="value"
                     class="w-full" size="xl" arrow />
             </UFormField>
 
             <div class="flex justify-end">
                 <UButton color="primary" variant="soft" icon="i-lucide-folder-open" size="xl" :loading="loading"
-                    :disabled="!canLoad" label="Load" @click="onLoad" />
+                    :disabled="!canLoad" :label="t('interface.load')" @click="onLoad" />
             </div>
         </div>
     </UCard>
@@ -50,6 +50,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { checkPathExists, getStoreConfig, parseInterface, saveStoreConfig } from '@/api/http'
 import { useStatusStore } from '@/stores/status'
 import { useControllerStore } from '@/stores/controller'
@@ -58,6 +59,7 @@ import { useTaskStore } from '@/stores/task'
 import type { InterfaceControllerCandidate, InterfaceParseResult } from '@/types/interface'
 
 const toast = useToast()
+const { t } = useI18n()
 const statusStore = useStatusStore()
 const controllerStore = useControllerStore()
 const resourceStore = useResourceStore()
@@ -83,9 +85,9 @@ const interfaceLanguageItems = computed(() =>
     })),
 )
 const statusLabel = computed(() => {
-    if (loading.value) return 'Loading'
-    if (loadedInterface.value) return 'Loaded'
-    return 'Idle'
+    if (loading.value) return t('interface.loading')
+    if (loadedInterface.value) return t('interface.loaded')
+    return t('interface.idle')
 })
 const statusColor = computed(() => {
     if (loading.value) return 'warning' as const
@@ -115,7 +117,7 @@ async function validatePath(): Promise<boolean> {
     const exists = Boolean(result.succeed && result.data?.exists)
 
     if (!exists) {
-        pathError.value = result.msg || 'Path validation failed'
+        pathError.value = result.msg || t('interface.pathValidationFailed')
         return false
     }
 
@@ -182,8 +184,8 @@ async function onLoad() {
     if (!valid) {
         toast.add({
             id: 'interface-path-toast',
-            title: 'Invalid interface path',
-            description: 'Please provide an existing file path',
+            title: t('interface.invalidPath'),
+            description: t('interface.invalidPathDescription'),
             icon: 'i-lucide-circle-x',
             color: 'error',
         })
@@ -196,8 +198,8 @@ async function onLoad() {
         if (!result.succeed || !result.data) {
             toast.add({
                 id: 'interface-load-failed-toast',
-                title: 'Interface load failed',
-                description: result.msg || 'Failed to parse interface file',
+                title: t('interface.loadFailed'),
+                description: result.msg || t('interface.parseFailed'),
                 icon: 'i-lucide-circle-x',
                 color: 'error',
             })
@@ -236,18 +238,18 @@ async function onLoad() {
         )
         toast.add({
             id: 'interface-load-success-toast',
-            title: 'Interface loaded',
+            title: t('interface.loadSuccess'),
             description: [
                 controllerApplied && controller
-                    ? `Controller: ${controller.name || controller.type}`
-                    : 'Controller: skipped',
-                `Resource profile: ${resourceProfile.profileName}`,
-                `Resource paths patched: ${resourceProfile.paths.length}`,
-                `Import files: ${parsed.imports?.length ?? 0}`,
+                    ? t('interface.controllerApplied', { name: controller.name || controller.type })
+                    : t('interface.controllerSkipped'),
+                t('interface.resourceProfile', { name: resourceProfile.profileName }),
+                t('interface.resourcePathsPatched', { count: resourceProfile.paths.length }),
+                t('interface.importFiles', { count: parsed.imports?.length ?? 0 }),
                 parsed.task_candidates[0]?.entry
-                    ? `First task entry: ${parsed.task_candidates[0].entry}`
-                    : 'First task entry: n/a',
-                resourceCount > 0 ? `Resolved resource paths: ${resourceCount}` : 'Resolved resource paths: 0',
+                    ? t('interface.firstTaskEntry', { entry: parsed.task_candidates[0].entry })
+                    : t('interface.firstTaskEntryNa'),
+                t('interface.resolvedResourcePaths', { count: resourceCount }),
             ].filter(Boolean).join('\n'),
             icon: 'i-lucide-check-circle',
             color: 'success',

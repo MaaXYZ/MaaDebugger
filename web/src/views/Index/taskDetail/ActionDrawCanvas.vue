@@ -17,31 +17,31 @@
                 </div>
                 <div v-else class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted">
                     <UIcon name="i-lucide-image-off" class="size-10" />
-                    <span class="text-xs">No raw image available</span>
+                    <span class="text-xs">{{ t('common.noRawImage') }}</span>
                 </div>
             </div>
 
             <!-- Toolbar -->
             <div v-if="rawImage" class="flex flex-row items-center gap-2 pt-1">
                 <div class="flex items-center gap-1">
-                    <UTooltip text="Zoom out">
+                    <UTooltip :text="t('common.zoomOut')">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-out" size="xs"
                             :disabled="zoomLevel <= MIN_ZOOM" @click="zoomOut" />
                     </UTooltip>
                     <span class="text-xs text-muted min-w-10 text-center tabular-nums">
                         {{ zoomPercentage }}%
                     </span>
-                    <UTooltip text="Zoom in">
+                    <UTooltip :text="t('common.zoomIn')">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-in" size="xs"
                             :disabled="zoomLevel >= MAX_ZOOM" @click="zoomIn" />
                     </UTooltip>
                 </div>
                 <USeparator orientation="vertical" class="h-4" />
-                <UTooltip text="Fit to view">
+                <UTooltip :text="t('common.fitToView')">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-maximize" size="xs" @click="resetView" />
                 </UTooltip>
                 <USeparator orientation="vertical" class="h-4" />
-                <UTooltip text="Download drawn image">
+                <UTooltip :text="t('common.downloadDrawnImage')">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-download" size="xs"
                         @click="downloadCanvas" />
                 </UTooltip>
@@ -52,6 +52,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type {
     ActionDetailResponse,
     PointResponse,
@@ -77,6 +78,8 @@ const props = defineProps<{
     rawImage: string
     fullscreen?: boolean
 }>()
+
+const { t } = useI18n()
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const zoomLevel = ref(1)
@@ -217,11 +220,11 @@ function drawSwipePath(ctx: CanvasRenderingContext2D, begin: PointResponse, end:
     }
 
     // Draw begin point
-    drawPoint(ctx, begin, color, baseSize / 60, 'Start')
+    drawPoint(ctx, begin, color, baseSize / 60, t('taskDetail.drawStart'))
 
     // Draw end point
     if (end.length > 0) {
-        drawPoint(ctx, end[end.length - 1]!, color, baseSize / 80, 'End')
+        drawPoint(ctx, end[end.length - 1]!, color, baseSize / 80, t('taskDetail.drawEnd'))
     }
 }
 
@@ -304,11 +307,11 @@ function drawCanvas() {
 
     switch (result.type) {
         case 'Click':
-            drawPoint(ctx, (result as ClickActionResult).point, ACTION_COLOR, pointRadius, 'Click')
+            drawPoint(ctx, (result as ClickActionResult).point, ACTION_COLOR, pointRadius, t('taskDetail.drawClick'))
             break
 
         case 'LongPress':
-            drawPoint(ctx, (result as LongPressActionResult).point, ACTION_COLOR, pointRadius, `LongPress ${(result as LongPressActionResult).duration}ms`)
+            drawPoint(ctx, (result as LongPressActionResult).point, ACTION_COLOR, pointRadius, `${t('taskDetail.drawLongPress')} ${(result as LongPressActionResult).duration}ms`)
             break
 
         case 'Swipe':

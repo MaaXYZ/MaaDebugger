@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useEditorSettingsStore } from '@/stores/editorSettings'
 
+const { t } = useI18n()
 const editorSettingsStore = useEditorSettingsStore()
 </script>
 
@@ -9,10 +11,10 @@ const editorSettingsStore = useEditorSettingsStore()
         <template #header>
             <div id="editor" class="flex flex-row items-center justify-between gap-3">
                 <div class="flex flex-col">
-                    <span class="font-bold">Editor</span>
-                    <span class="text-sm text-dimmed">Configure JSON editor size and readability.</span>
+                    <span class="font-bold">{{ t('settings.editor.title') }}</span>
+                    <span class="text-sm text-dimmed">{{ t('settings.editor.description') }}</span>
                 </div>
-                <UButton color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" label="Reset" size="xs"
+                <UButton color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" :label="t('settings.editor.reset')" size="xs"
                     @click="editorSettingsStore.reset()" />
             </div>
         </template>
@@ -20,7 +22,7 @@ const editorSettingsStore = useEditorSettingsStore()
         <div class="flex flex-col gap-6">
             <div id="editor-fontSize" class="flex flex-col gap-2">
                 <div class="flex items-center justify-between gap-3">
-                    <span class="text-sm font-medium">Editor font size</span>
+                    <span class="text-sm font-medium">{{ t('settings.editor.fontSize') }}</span>
                     <span class="text-sm text-dimmed tabular-nums">{{ editorSettingsStore.normalizedFontSize }}
                         px</span>
                 </div>
@@ -30,7 +32,7 @@ const editorSettingsStore = useEditorSettingsStore()
 
             <div id="editor-minHeight" class="flex flex-col gap-2">
                 <div class="flex items-center justify-between gap-3">
-                    <span class="text-sm font-medium">Minimum editor height</span>
+                    <span class="text-sm font-medium">{{ t('settings.editor.minHeight') }}</span>
                     <span class="text-sm text-dimmed tabular-nums">{{ editorSettingsStore.normalizedMinHeight }}
                         px</span>
                 </div>
@@ -40,7 +42,7 @@ const editorSettingsStore = useEditorSettingsStore()
 
             <div id="editor-maxHeight" class="flex flex-col gap-2">
                 <div class="flex items-center justify-between gap-3">
-                    <span class="text-sm font-medium">Maximum editor height</span>
+                    <span class="text-sm font-medium">{{ t('settings.editor.maxHeight') }}</span>
                     <span class="text-sm text-dimmed tabular-nums">{{ editorSettingsStore.normalizedMaxHeight }}
                         px</span>
                 </div>

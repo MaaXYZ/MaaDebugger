@@ -12,9 +12,9 @@
                 <span class="flex items-center gap-2">
                     <UIcon name="i-lucide-workflow" class="size-3.5 text-dimmed" />
                     <span>{{ label }}</span>
-                    <UBadge size="xs" color="info" variant="subtle">Custom</UBadge>
+                    <UBadge size="xs" color="info" variant="subtle">{{ t('taskDetail.custom') }}</UBadge>
                     <UBadge v-if="contextLabel" size="xs" color="neutral" variant="subtle">{{ contextLabel }}</UBadge>
-                    <UBadge size="xs" color="neutral" variant="subtle">{{ count }} node{{ count > 1 ? 's' : '' }}</UBadge>
+                    <UBadge size="xs" color="neutral" variant="subtle">{{ formatNodeCount(count) }}</UBadge>
                 </span>
             </template>
         </UButton>
@@ -31,6 +31,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = withDefaults(defineProps<{
     label?: string
@@ -41,13 +42,21 @@ const props = withDefaults(defineProps<{
     kind: undefined,
 })
 
+const { t } = useI18n()
+
+function formatNodeCount(count: number): string {
+    return count > 1
+        ? t('taskDetail.nodesLabels', { count })
+        : t('taskDetail.nodesLabel', { count })
+}
+
 const open = ref(false)
 const contextLabel = computed(() => {
     switch (props.kind) {
     case 'reco':
-        return 'Inside Reco'
+        return t('taskDetail.insideReco')
     case 'action':
-        return 'Inside Action'
+        return t('taskDetail.insideAction')
     default:
         return ''
     }

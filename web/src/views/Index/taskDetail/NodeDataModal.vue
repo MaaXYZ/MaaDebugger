@@ -2,7 +2,7 @@
     <UModal v-model:open="open" :title="modalTitle" :ui="{ content: 'sm:max-w-[90vw] sm:w-[90vw] max-h-[90vh]' }">
         <template #body>
             <div class="flex flex-col gap-3 min-h-105">
-                <span class="text-sm text-highlighted font-semibold truncate">{{ nodeName || 'Unknown node' }}</span>
+                <span class="text-sm text-highlighted font-semibold truncate">{{ nodeName || t('taskDetail.unknownNode') }}</span>
                 <div v-if="loading"
                     class="flex flex-1 items-center justify-center rounded-lg border border-default bg-muted/30">
                     <UIcon name="i-lucide-loader" class="size-6 animate-spin text-dimmed" />
@@ -20,8 +20,11 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { getNodeData } from '@/api/http'
 import { MonacoEditor } from '@/components/MonacoEditor'
+
+const { t } = useI18n()
 
 const props = defineProps<{
     nodeName: string | null
@@ -36,7 +39,7 @@ const loading = ref(false)
 const errorMessage = ref('')
 const editorValue = ref('{}')
 
-const modalTitle = "Node Data"
+const modalTitle = t('taskDetail.nodeData')
 
 function formatNodeJson(value: string): string {
     if (!value.trim()) return '{}'
@@ -72,14 +75,14 @@ async function loadNodeData() {
         })
         if (!detail?.node_json) {
             editorValue.value = '{}'
-            errorMessage.value = 'Failed to fetch node data'
+            errorMessage.value = t('taskDetail.failedToFetchNodeData')
             return
         }
 
         editorValue.value = formatNodeJson(detail.node_json)
     } catch (error) {
         editorValue.value = '{}'
-        errorMessage.value = error instanceof Error ? error.message : 'Failed to fetch node data'
+        errorMessage.value = error instanceof Error ? error.message : t('taskDetail.failedToFetchNodeData')
     } finally {
         loading.value = false
     }

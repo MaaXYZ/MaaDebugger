@@ -22,7 +22,7 @@
                     <div v-if="node.reco.length > 0" class="flex flex-col gap-1.5">
                         <div class="flex items-center gap-1.5 text-xs text-dimmed">
                             <UIcon name="i-lucide-scan-search" class="size-3.5" />
-                            <span>Reco</span>
+                            <span>{{ t('taskDetail.reco') }}</span>
                         </div>
                         <div class="pl-4 flex flex-wrap items-start gap-1.5">
                             <NextListItem v-for="(nextList, index) in node.reco"
@@ -35,14 +35,14 @@
                     <div v-if="node.action" class="flex flex-col gap-1.5">
                         <div class="flex items-center gap-1.5 text-xs text-dimmed">
                             <UIcon name="i-lucide-play" class="size-3.5" />
-                            <span>Action</span>
+                            <span>{{ t('taskDetail.action') }}</span>
                         </div>
                         <div class="pl-4 flex flex-col gap-2">
-                            <NodeStatusButton :status="node.action.status" :label="'Action'"
-                                :tooltip="node.action.msg.name" :meta="['Custom']"
+                            <NodeStatusButton :status="node.action.status" :label="t('taskDetail.action')"
+                                :tooltip="node.action.msg.name" :meta="[t('taskDetail.custom')]"
                                 :action-id="node.action.msg.action_id" size="sm"
                                 @click="$emit('requestActionDetail', node.action.msg.action_id)" />
-                            <SubflowDisclosure v-if="node.action.childs.length > 0" label="Internal flow" kind="action"
+                            <SubflowDisclosure v-if="node.action.childs.length > 0" :label="t('taskDetail.internalFlow')" kind="action"
                                 :count="countActionSubflowNodes(node.action)">
                                 <SubflowTree :nodes="node.action.childs" kind="action"
                                     @request-detail="$emit('requestDetail', $event)"
@@ -54,7 +54,7 @@
 
                 <div v-else-if="node.type === 'reco_node'" class="mt-2 pl-4 flex flex-col gap-2">
                     <RecoButton v-if="node.reco" :reco="node.reco" @request-detail="$emit('requestDetail', $event)" />
-                    <SubflowDisclosure v-if="node.reco && node.reco.childs.length > 0" label="Internal flow" kind="reco"
+                    <SubflowDisclosure v-if="node.reco && node.reco.childs.length > 0" :label="t('taskDetail.internalFlow')" kind="reco"
                         :count="countRecoSubflowNodes(node.reco)">
                         <SubflowTree :nodes="node.reco.childs" kind="reco"
                             @request-detail="$emit('requestDetail', $event)"
@@ -63,10 +63,10 @@
                 </div>
 
                 <div v-else-if="node.type === 'act_node'" class="mt-2 pl-4 flex flex-col gap-2">
-                    <NodeStatusButton v-if="node.action" :status="node.action.status" :label="'Action'"
-                        :tooltip="node.action.msg.name" :meta="['Custom']" :action-id="node.action.msg.action_id"
+                    <NodeStatusButton v-if="node.action" :status="node.action.status" :label="t('taskDetail.action')"
+                        :tooltip="node.action.msg.name" :meta="[t('taskDetail.custom')]" :action-id="node.action.msg.action_id"
                         size="sm" @click="$emit('requestActionDetail', node.action.msg.action_id)" />
-                    <SubflowDisclosure v-if="node.action && node.action.childs.length > 0" label="Internal flow"
+                    <SubflowDisclosure v-if="node.action && node.action.childs.length > 0" :label="t('taskDetail.internalFlow')"
                         kind="action" :count="countActionSubflowNodes(node.action)">
                         <SubflowTree :nodes="node.action.childs" kind="action"
                             @request-detail="$emit('requestDetail', $event)"
@@ -80,6 +80,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { AnyNodeScope } from '@/types/taskDetail'
 import StatusIcon from './StatusIcon.vue'
 import NodeStatusButton from './NodeStatusButton.vue'
@@ -97,6 +98,8 @@ const props = defineProps<{
     node: AnyNodeScope
 }>()
 
+const { t } = useI18n()
+
 defineEmits<{
     requestDetail: [recoId: number]
     requestActionDetail: [actionId: number]
@@ -105,13 +108,13 @@ defineEmits<{
 const kindLabel = computed(() => {
     switch (props.node.type) {
         case 'pipeline_node':
-            return 'Pipeline'
+            return t('taskDetail.pipeline')
         case 'reco_node':
-            return 'Reco Node'
+            return t('taskDetail.recoNode')
         case 'act_node':
-            return 'Action Node'
+            return t('taskDetail.actionNode')
         default:
-            return 'Node'
+            return t('taskDetail.node')
     }
 })
 

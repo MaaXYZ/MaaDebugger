@@ -15,8 +15,8 @@
                 <div class="flex max-w-full min-w-0 flex-col gap-2">
                     <RecoButton :reco="entry.recos[0]" :info="entry.item" :algorithm-type="entry.item.algorithm"
                         use-warning @request-detail="$emit('requestDetail', $event)" />
-                    <SubflowDisclosure v-if="entry.recos[0] && entry.recos[0].childs.length > 0" label="Internal flow"
-                        kind="reco" :count="countRecoSubflowNodes(entry.recos[0])">
+                    <SubflowDisclosure v-if="entry.recos[0] && entry.recos[0].childs.length > 0"
+                        :label="t('taskDetail.internalFlow')" kind="reco" :count="countRecoSubflowNodes(entry.recos[0])">
                         <SubflowTree :nodes="entry.recos[0].childs" kind="reco"
                             @request-detail="$emit('requestDetail', $event)"
                             @request-action-detail="$emit('requestActionDetail', $event)" />
@@ -38,7 +38,7 @@
                         <div class="flex max-w-full min-w-0 flex-col gap-2">
                             <RecoButton :reco="reco" :algorithm-type="entry.item.algorithm"
                                 @request-detail="$emit('requestDetail', $event)" />
-                            <SubflowDisclosure v-if="reco.childs.length > 0" label="Internal flow" kind="reco"
+                            <SubflowDisclosure v-if="reco.childs.length > 0" :label="t('taskDetail.internalFlow')" kind="reco"
                                 :count="countRecoSubflowNodes(reco)">
                                 <SubflowTree :nodes="reco.childs" kind="reco"
                                     @request-detail="$emit('requestDetail', $event)"
@@ -54,6 +54,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { NextListScope, NextListItem, RecoScope } from '@/types/taskDetail'
 import RecoButton from './RecoButton.vue'
 import SubflowTree from './SubflowTree.vue'
@@ -63,6 +64,8 @@ import { countRecoSubflowNodes } from './scopeTree'
 const props = defineProps<{
     nextList: NextListScope
 }>()
+
+const { t } = useI18n()
 
 defineEmits<{
     requestDetail: [recoId: number]
@@ -125,8 +128,8 @@ function formatItemLabel(item: NextListItem): string {
     if (label) return label
 
     let fallback = item.name
-    if (item.anchor) fallback = `[Anchor] ${fallback}`
-    if (item.jump_back) fallback = `[JumpBack] ${fallback}`
+    if (item.anchor) fallback = t('taskDetail.anchorLabel', { name: fallback })
+    if (item.jump_back) fallback = t('taskDetail.jumpBackLabel', { name: fallback })
     return fallback
 }
 </script>

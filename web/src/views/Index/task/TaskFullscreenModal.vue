@@ -11,24 +11,24 @@
                 </div>
                 <div
                     class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-elevated/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-default shadow-lg">
-                    <UTooltip text="Zoom out">
+                    <UTooltip :text="t('common.zoomOut')">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-out" size="sm"
                                  :disabled="zoomLevel <= minZoom" @click="emit('zoom-out')" />
                     </UTooltip>
                     <span class="text-xs text-muted min-w-10 text-center tabular-nums">
                         {{ zoomPercentage }}%
                     </span>
-                    <UTooltip text="Zoom in">
+                    <UTooltip :text="t('common.zoomIn')">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-in" size="sm"
                                  :disabled="zoomLevel >= maxZoom" @click="emit('zoom-in')" />
                     </UTooltip>
                     <USeparator orientation="vertical" class="h-5" />
-                    <UTooltip text="Fit to view">
+                    <UTooltip :text="t('common.fitToView')">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-maximize" size="sm"
                                  @click="emit('reset-zoom')" />
                     </UTooltip>
                     <USeparator orientation="vertical" class="h-5" />
-                    <UTooltip text="Download">
+                    <UTooltip :text="t('common.download')">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-download" size="sm"
                                  @click="emit('download')" />
                     </UTooltip>
@@ -39,7 +39,10 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { CSSProperties } from 'vue'
+
+const { t } = useI18n()
 
 defineProps<{
     open: boolean

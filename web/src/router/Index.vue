@@ -10,7 +10,7 @@
             ? 'i-lucide-panel-left-close'
             : 'i-lucide-panel-left-open'
         "
-        :label="showLeftTabs ? 'Hide Setup' : 'Show Setup'"
+        :label="showLeftTabs ? t('nav.hideSetup') : t('nav.showSetup')"
         @click="toggleLeftTabs"
       />
     </div>
@@ -39,6 +39,7 @@
 
 <script setup lang="ts">
 import { computed, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import LeftTabs from "@/views/Index/LeftTabs.vue";
 import TaskCard from "@/views/Index/TaskCard.vue";
 import TaskDetailCard from "@/views/Index/TaskDetailCard.vue";
@@ -47,6 +48,7 @@ import { useStatusStore } from "@/stores/status";
 
 const debugWorkspaceSettingsStore = useDebugSettingsStore();
 const statusStore = useStatusStore();
+const { t } = useI18n();
 
 const shouldAutoCollapseLeftTabs = computed(
   () =>

@@ -15,14 +15,14 @@
             <!-- LongPress -->
             <template v-else-if="detail.result.type === 'LongPress'">
                 <InfoRow label="Point" :value="formatPoint((detail.result as LongPressActionResult).point)" />
-                <InfoRow label="Duration" :value="`${(detail.result as LongPressActionResult).duration}ms`" />
+                <InfoRow :label="t('taskDetail.duration')" :value="`${(detail.result as LongPressActionResult).duration}ms`" />
             </template>
 
             <!-- Swipe -->
             <template v-else-if="detail.result.type === 'Swipe'">
                 <InfoRow label="Begin" :value="formatPoint((detail.result as SwipeActionResult).begin)" />
                 <InfoRow label="End" :value="(detail.result as SwipeActionResult).end.map(formatPoint).join(' → ')" />
-                <InfoRow label="Duration"
+                <InfoRow :label="t('taskDetail.duration')"
                     :value="(detail.result as SwipeActionResult).duration.map(d => `${d}ms`).join(', ')" />
             </template>
 
@@ -33,7 +33,7 @@
                     <span class="text-xs text-dimmed font-medium">Swipe #{{ idx }}</span>
                     <InfoRow label="Begin" :value="formatPoint(swipe.begin)" />
                     <InfoRow label="End" :value="swipe.end.map(formatPoint).join(' → ')" />
-                    <InfoRow label="Duration" :value="swipe.duration.map(d => `${d}ms`).join(', ')" />
+                    <InfoRow :label="t('taskDetail.duration')" :value="swipe.duration.map(d => `${d}ms`).join(', ')" />
                 </div>
             </template>
 
@@ -60,7 +60,7 @@
             <template v-else-if="detail.result.type === 'LongPressKey'">
                 <InfoRow label="Keycode" :value="(detail.result as LongPressKeyActionResult).keycode.join(', ')"
                     :controller-type="detail.controller_type" />
-                <InfoRow label="Duration" :value="`${(detail.result as LongPressKeyActionResult).duration}ms`"
+                <InfoRow :label="t('taskDetail.duration')" :value="`${(detail.result as LongPressKeyActionResult).duration}ms`"
                     :controller-type="detail.controller_type" />
             </template>
 
@@ -103,6 +103,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { MonacoEditor } from '@/components/MonacoEditor'
 import type {
     ActionDetailResponse,
@@ -120,6 +121,8 @@ import type {
     ShellActionResult,
 } from '@/types/taskDetail'
 import InfoRow from './ActionInfoRow.vue'
+
+const { t } = useI18n()
 
 const props = defineProps<{
     detail: ActionDetailResponse

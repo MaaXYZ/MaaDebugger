@@ -6,7 +6,7 @@
             <div class="flex flex-col gap-2">
                 <div class="flex flex-row items-center justify-between gap-4">
                     <div class="flex items-center gap-2">
-                        <span class="font-bold">Controller</span>
+                        <span class="font-bold">{{ t('controller.title') }}</span>
                         <UBadge :color="statusColor" variant="subtle" size="sm" class="gap-1.5">
                             <span class="relative flex size-2">
                                 <span v-if="statusStore.controllerStatus === 'connecting'"
@@ -37,19 +37,19 @@
             <div v-show="isDesktopType" class="flex flex-col gap-3 h-full">
                 <!-- Action Buttons Row -->
                 <div class="flex flex-row gap-2">
-                    <UTooltip text="Search Windows">
+                    <UTooltip :text="t('controller.searchWindows')">
                         <UButton color="success" variant="outline" icon="i-lucide-search" size="xl"
                             :loading="windowSearchRef?.searching" @click="windowSearchRef?.onSearch()" />
                     </UTooltip>
 
-                    <UTooltip text="Connect">
+                    <UTooltip :text="t('common.connect')">
                         <UButton color="primary" variant="outline" icon="i-lucide-link" size="xl"
                             :loading="controllerStore.connecting"
                             :disabled="!windowSearchRef?.selectedHwnd || controllerStore.connecting"
                             @click="onConnect" />
                     </UTooltip>
 
-                    <UTooltip text="Disconnect">
+                    <UTooltip :text="t('common.disconnect')">
                         <UButton color="error" variant="outline" icon="i-lucide-unlink" size="xl"
                             @click="onDisconnect" />
                     </UTooltip>
@@ -61,26 +61,26 @@
                 </div>
 
                 <!-- Shared Screencap Method -->
-                <UFormField name="screencap" label="Screencap Method">
+                <UFormField name="screencap" :label="t('controller.screencapMethod')">
                     <USelect v-model="desktopScreencap" :items="screencapMethods" class="w-full" arrow />
                 </UFormField>
 
                 <!-- Win32 独有：Mouse + Keyboard -->
                 <template v-if="controllerValue === 'win32'">
-                    <UFormField name="mouse" label="Mouse Method">
+                    <UFormField name="mouse" :label="t('controller.mouseMethod')">
                         <USelect v-model="win32MouseMethod" :items="inputMethods" class="w-full" arrow :ui="{
                             trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200'
                         }" />
                     </UFormField>
 
-                    <UFormField name="keyboard" label="Keyboard Method">
+                    <UFormField name="keyboard" :label="t('controller.keyboardMethod')">
                         <USelect v-model="win32KeyboardMethod" :items="inputMethods" class="w-full" arrow />
                     </UFormField>
                 </template>
 
                 <!-- Gamepad 独有：Gamepad Type -->
                 <template v-if="controllerValue === 'gamepad'">
-                    <UFormField name="gamepad_type" label="Gamepad Type">
+                    <UFormField name="gamepad_type" :label="t('controller.gamepadType')">
                         <USelect v-model="gamepadType" :items="gamepadTypes" :icon="gamepadIcon" class="w-full" arrow />
                     </UFormField>
                 </template>
@@ -91,6 +91,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import ADB from './controller/ADB.vue'
 import PlayCover from './controller/PlayCover.vue'
 import WlRoot from './controller/WlRoot.vue'
@@ -108,6 +109,7 @@ import { connectController, disconnectController, getControllerMethod } from '@/
 import { type MethodItems, type ConnectControllerRequest } from '@/types/api'
 
 const toast = useToast()
+const { t } = useI18n()
 const statusStore = useStatusStore()
 const controllerStore = useControllerStore()
 const isTaskRunning = computed(() => statusStore.taskStatus === 'running')
@@ -123,11 +125,11 @@ const hasAttemptedConnection = ref(false)
 const capitalizedStatus = computed(() => {
     switch (statusStore.controllerStatus) {
         case 'connected':
-            return 'Connected'
+            return t('controller.connected')
         case 'connecting':
-            return 'Connecting'
+            return t('controller.connecting')
         case 'disconnected':
-            return hasAttemptedConnection.value ? 'Disconnected' : 'Idle'
+            return hasAttemptedConnection.value ? t('controller.disconnected') : t('controller.idle')
         default:
             return capitalize(statusStore.controllerStatus)
     }
@@ -339,8 +341,8 @@ async function onConnect() {
             console.error(`[${type}] Connect failed:`, result.msg)
             toast.add({
                 id: 'ctrl-toast',
-                title: 'Controller Connect Failed',
-                description: result.msg || 'Unknown error',
+                title: t('common.controllerConnectFailed'),
+                description: result.msg || t('common.unknownErrorMsg'),
                 icon: 'i-lucide-circle-x',
                 color: 'error',
             })
@@ -351,7 +353,7 @@ async function onConnect() {
         // showFullCard.value = false
         toast.add({
             id: 'ctrl-toast',
-            title: 'Controller Connected',
+            title: t('common.controllerConnected'),
             icon: 'i-lucide-check-circle',
             color: 'success',
         })
@@ -377,7 +379,7 @@ async function onDisconnect() {
         if (result && !result.succeed) {
             toast.add({
                 id: 'ctrl-toast',
-                title: 'Controller Disconnect Failed',
+                title: t('common.controllerDisconnectFailed'),
                 description: result.msg,
                 icon: 'i-lucide-circle-x',
                 color: 'error',
@@ -385,7 +387,7 @@ async function onDisconnect() {
         } else {
             toast.add({
                 id: 'ctrl-toast',
-                title: 'Controller Disconnected',
+                title: t('common.controllerDisconnected'),
                 icon: 'i-lucide-unlink',
                 color: 'warning',
             })

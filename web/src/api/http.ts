@@ -559,6 +559,25 @@ export async function saveStoreConfig(
 }
 
 // ============================================================
+// Locale API
+// ============================================================
+
+export interface EffectiveLocale {
+  /** 生效的界面语言，如 "zh-CN" / "en" */
+  locale: string;
+  /** "user"（用户显式指定）或 "detected"（后端按 Accept-Language 检测） */
+  source: "user" | "detected";
+}
+
+/**
+ * 获取当前生效的界面语言（后端决定：优先用户持久化选择，否则按请求头检测，失败回退 en）。
+ */
+export async function getEffectiveLocale(): Promise<EffectiveLocale | null> {
+  const result = await request<EffectiveLocale>("/locale");
+  return result.data ?? null;
+}
+
+// ============================================================
 // Update Check API
 // ============================================================
 

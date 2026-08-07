@@ -2,23 +2,23 @@
     <div class="flex flex-col gap-3 h-full">
         <!-- Action Buttons Row -->
         <div class="flex flex-row gap-2">
-            <UTooltip text="Connect">
+            <UTooltip :text="t('common.connect')">
                 <UButton color="primary" variant="outline" icon="i-lucide-link" size="xl" :loading="connecting"
                     :disabled="!playcoverAddress.trim() || connecting" @click="onConnect" />
             </UTooltip>
 
-            <UTooltip text="Disconnect">
+            <UTooltip :text="t('common.disconnect')">
                 <UButton color="error" variant="outline" icon="i-lucide-unlink" size="xl" @click="onDisconnect" />
             </UTooltip>
         </div>
 
         <!-- PlayCover Configuration -->
-        <UFormField name="playcover_address" label="Address">
-            <UInput v-model="playcoverAddress" placeholder="192.168.1.100" icon="i-lucide-network" class="w-full" />
+        <UFormField name="playcover_address" :label="t('playcover.address')">
+            <UInput v-model="playcoverAddress" :placeholder="t('playcover.addressPlaceholder')" icon="i-lucide-network" class="w-full" />
         </UFormField>
 
-        <UFormField name="playcover_uuid" label="UUID (Optional)">
-            <UInput v-model="playcoverUuid" placeholder="Device UUID (optional)" icon="i-lucide-fingerprint"
+        <UFormField name="playcover_uuid" :label="t('playcover.uuid')">
+            <UInput v-model="playcoverUuid" :placeholder="t('playcover.uuidPlaceholder')" icon="i-lucide-fingerprint"
                 class="w-full" />
         </UFormField>
     </div>
@@ -26,6 +26,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { connectController, disconnectController } from '@/api/http'
 import type { ConnectControllerRequest } from '@/types/api'
 import { useControllerStore } from '@/stores/controller'
@@ -35,6 +36,7 @@ const emit = defineEmits<{
 }>()
 
 const toast = useToast()
+const { t } = useI18n()
 const controllerStore = useControllerStore()
 
 // connecting 使用 store 中的全局状态
@@ -96,8 +98,8 @@ async function onConnect() {
             console.error('[PlayCover] Connect failed:', result.msg)
             toast.add({
                 id: 'ctrl-toast',
-                title: 'Controller Connect Failed',
-                description: result.msg || 'Unknown error',
+                title: t('common.controllerConnectFailed'),
+                description: result.msg || t('common.unknownErrorMsg'),
                 icon: 'i-lucide-circle-x',
                 color: 'error',
             })
@@ -106,7 +108,7 @@ async function onConnect() {
 
         toast.add({
             id: 'ctrl-toast',
-            title: 'Controller Connected',
+            title: t('common.controllerConnected'),
             icon: 'i-lucide-check-circle',
             color: 'success',
         })
@@ -134,7 +136,7 @@ async function onDisconnect() {
         if (result && !result.succeed) {
             toast.add({
                 id: 'ctrl-toast',
-                title: 'Controller Disconnect Failed',
+                title: t('common.controllerDisconnectFailed'),
                 description: result.msg,
                 icon: 'i-lucide-circle-x',
                 color: 'error',
@@ -142,7 +144,7 @@ async function onDisconnect() {
         } else {
             toast.add({
                 id: 'ctrl-toast',
-                title: 'Controller Disconnected',
+                title: t('common.controllerDisconnected'),
                 icon: 'i-lucide-unlink',
                 color: 'warning',
             })

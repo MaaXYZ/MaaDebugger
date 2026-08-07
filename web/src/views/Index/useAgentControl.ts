@@ -3,6 +3,8 @@ import {
   disconnectAgent as apiDisconnect,
   getAgentList,
 } from "@/api/http";
+import { useI18n } from "vue-i18n";
+import { i18n } from "@/i18n";
 import { useAgentStore, type AgentItem } from "@/stores/agent";
 import useBackoffPolling from "@/api/useBackoffPolling";
 
@@ -34,12 +36,13 @@ function applyRemoteStatus(
       break;
     default:
       agent.status = "failed";
-      agent.errorMsg = remote.error || "Connection failed";
+      agent.errorMsg = remote.error || i18n.global.t("agent.connectFailed");
       break;
   }
 }
 
 export default function useAgentControl() {
+  const { t } = useI18n();
   const toast = useToast();
   const agentStore = useAgentStore();
 
@@ -66,7 +69,7 @@ export default function useAgentControl() {
 
   async function tryConnectAgent(agent: AgentItem): Promise<ConnectResult> {
     const identifier = agent.identifier.trim();
-    if (!identifier) return { success: false, msg: "Empty identifier" };
+    if (!identifier) return { success: false, msg: i18n.global.t("agent.emptyIdentifier") };
 
     const result = await apiConnect(identifier);
 
@@ -77,7 +80,7 @@ export default function useAgentControl() {
     }
 
     agent.status = "failed";
-    agent.errorMsg = result.msg || "Connection failed";
+    agent.errorMsg = result.msg || t("agent.connectFailed");
     return { success: false, msg: agent.errorMsg };
   }
 
@@ -92,10 +95,10 @@ export default function useAgentControl() {
       agent.errorMsg = "";
     } else {
       agent.status = "failed";
-      agent.errorMsg = result.msg || "Connection failed";
+      agent.errorMsg = result.msg || t("agent.connectFailed");
       toast.add({
         id: "agent-toast",
-        title: "Agent Connect Failed",
+        title: t("agent.connectFailed"),
         description: agent.errorMsg,
         icon: "i-lucide-circle-x",
         color: "error",
@@ -136,7 +139,7 @@ export default function useAgentControl() {
 
       const result = await tryConnectAgent(agent);
       if (!result.success) {
-        failedAgents.push(agent.name || agent.identifier || "Unnamed agent");
+        failedAgents.push(agent.name || agent.identifier || t("agent.unnamed"));
       }
     }
 
@@ -145,15 +148,15 @@ export default function useAgentControl() {
     if (failedAgents.length > 0) {
       toast.add({
         id: "agent-toast",
-        title: "Agent Connect Failed",
-        description: `Failed: ${failedAgents.join(", ")}`,
+        title: t("agent.connectFailed"),
+        description: t("agent.failedList", { list: failedAgents.join(", ") }),
         icon: "i-lucide-circle-x",
         color: "error",
       });
       agentStore.cardExpanded = true;
       return {
         success: false,
-        msg: `Failed to connect ${failedAgents.length} agent(s)`,
+        msg: t("agent.failedToConnect", { count: failedAgents.length }),
       };
     }
 

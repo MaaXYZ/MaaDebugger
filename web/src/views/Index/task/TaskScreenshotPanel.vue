@@ -4,7 +4,7 @@
         <div v-if="imageUrl" class="absolute inset-0 z-0 flex items-center justify-center cursor-grab select-none"
             :class="{ 'cursor-grabbing': isDragging }" @mousedown="emit('drag-start', $event)"
             @mousemove="emit('drag-move', $event)" @mouseup="emit('drag-end')" @mouseleave="emit('drag-end')">
-            <img :src="imageUrl" alt="Screenshot" draggable="false"
+            <img :src="imageUrl" :alt="t('task.screenshotImgAlt')" draggable="false"
                 class="pointer-events-none w-full h-full object-contain" :style="imageStyle" />
         </div>
 
@@ -19,7 +19,7 @@
         <div v-else-if="screenshotError"
             class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-error">
             <UIcon name="i-lucide-circle-x" class="size-12" />
-            <span class="text-sm font-medium">Screenshot Failed</span>
+            <span class="text-sm font-medium">{{ t('task.screenshotFailed') }}</span>
             <span class="text-xs text-dimmed max-w-xs text-center">{{ screenshotError }}</span>
         </div>
     </div>
@@ -27,6 +27,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { CSSProperties } from 'vue'
 import type { ScreenshotOverlayState } from '@/stores/screenshot'
 
@@ -47,15 +48,17 @@ const emit = defineEmits<{
     'drag-end': []
 }>()
 
+const { t } = useI18n()
+
 const overlayVisible = computed(() => props.overlayState !== 'none')
 const overlayTitle = computed(() => {
     switch (props.overlayState) {
         case 'disconnected':
-            return 'Controller Disconnected'
+            return t('task.controllerDisconnected')
         case 'paused':
-            return 'Screenshot Paused'
+            return t('task.screenshotPaused')
         case 'failed':
-            return 'Screenshot Failed'
+            return t('task.screenshotFailed')
         default:
             return ''
     }

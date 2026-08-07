@@ -14,7 +14,7 @@
       <div class="flex flex-col gap-2">
         <div class="flex flex-row items-center justify-between gap-4">
           <div class="flex items-center gap-2">
-            <span class="font-bold">Resource</span>
+            <span class="font-bold">{{ t('resource.title') }}</span>
             <UBadge
               :color="statusColor"
               variant="subtle"
@@ -71,7 +71,7 @@
           class="flex flex-row items-center justify-center rounded-lg border border-dashed border-default p-2 text-dimmed gap-2"
         >
           <UIcon name="i-lucide-folder-open" class="size-5" />
-          <span class="text-sm">No resource paths added</span>
+          <span class="text-sm">{{ t('resource.noPaths') }}</span>
         </div>
 
         <div
@@ -100,7 +100,7 @@
             <UInput
               v-if="editingIndex === index"
               v-model="item.path"
-              placeholder="/path/to/resource"
+              :placeholder="t('resource.pathPlaceholder')"
               class="flex-1"
               size="md"
               autofocus
@@ -119,14 +119,14 @@
                   class="truncate text-md"
                   :class="item.path ? '' : 'text-dimmed italic'"
                 >
-                  {{ item.path || "Click to edit path..." }}
+                  {{ item.path || t('resource.clickToEditPath') }}
                 </span>
               </div>
             </UTooltip>
 
             <!-- Action Buttons -->
             <div class="flex flex-row gap-1 shrink-0">
-              <UTooltip text="Edit">
+              <UTooltip :text="t('common.edit')">
                 <UButton
                   color="neutral"
                   variant="ghost"
@@ -135,7 +135,7 @@
                   @click="onEdit(index)"
                 />
               </UTooltip>
-              <UTooltip text="Remove">
+              <UTooltip :text="t('common.remove')">
                 <UButton
                   color="error"
                   variant="ghost"
@@ -161,7 +161,7 @@
           color="neutral"
           variant="ghost"
           icon="i-lucide-plus"
-          label="Add path"
+          :label="t('resource.addPath')"
           block
           @click="onAddPath"
         />
@@ -172,7 +172,7 @@
         <UButton
           color="primary"
           icon="i-lucide-download"
-          label="Load Resource"
+          :label="t('resource.load')"
           block
           size="xl"
           :loading="isLoading"
@@ -186,13 +186,13 @@
   <!-- Rename Profile Modal -->
   <UModal
     v-model:open="renameModalOpen"
-    title="Rename Profile"
-    description="Enter a new name for this profile."
+    :title="t('resource.renameProfile')"
+    :description="t('resource.renameProfileDescription')"
   >
     <template #body>
       <UInput
         v-model="renameInput"
-        placeholder="Profile name..."
+        :placeholder="t('resource.profileNamePlaceholder')"
         size="xl"
         autofocus
         @keydown.enter="onConfirmRename"
@@ -203,12 +203,12 @@
         <UButton
           color="neutral"
           variant="ghost"
-          label="Cancel"
+          :label="t('common.cancel')"
           @click="() => { renameModalOpen = false }"
         />
         <UButton
           color="primary"
-          label="Rename"
+          :label="t('resource.rename')"
           :disabled="!renameInput.trim()"
           @click="onConfirmRename"
         />
@@ -225,6 +225,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { checkPathExists } from "@/api/http";
 import { useResourceStore } from "@/stores/resource";
 import { useStatusStore } from "@/stores/status";
@@ -233,6 +234,7 @@ import PipelineIssueModal from "@/components/Modals/PipelineIssue/PipelineIssueM
 import useResourceControl from "./useResourceControl";
 
 const toast = useToast();
+const { t } = useI18n();
 const resourceStore = useResourceStore();
 const statusStore = useStatusStore();
 const signalStore = useSignalStore();
@@ -266,14 +268,14 @@ const isCardDisabled = computed(
 const statusLabel = computed(() => {
   switch (statusStore.resourceStatus) {
     case "loaded":
-      return "Loaded";
+      return t('resource.loaded');
     case "loading":
-      return "Loading";
+      return t('resource.loading');
     case "failed":
-      return "Failed";
+      return t('resource.failed');
     case "unloaded":
     default:
-      return "Idle";
+      return t('resource.idle');
   }
 });
 
@@ -309,19 +311,19 @@ const dotClass = computed(() => {
 const profileMenuItems = computed(() => [
   [
     {
-      label: "New profile",
+      label: t('resource.newProfile'),
       icon: "i-lucide-plus",
       onSelect: () => resourceStore.addProfile(),
     },
     {
-      label: "Rename profile",
+      label: t('resource.renameProfileMenu'),
       icon: "i-lucide-pencil",
       onSelect: onRenameProfile,
     },
   ],
   [
     {
-      label: "Delete profile",
+      label: t('resource.deleteProfile'),
       icon: "i-lucide-trash-2",
       color: "error" as const,
       disabled: resourceStore.profiles.length <= 1,
@@ -376,7 +378,7 @@ async function validatePath(path: string, pathId: number): Promise<boolean> {
   if (!exists) {
     pathErrors.value = {
       ...pathErrors.value,
-      [pathId]: result.msg || "Path validation failed",
+      [pathId]: result.msg || t('resource.pathValidationFailed'),
     };
     return false;
   }
@@ -420,8 +422,8 @@ async function onLoadResource() {
   if (hasInvalidPath) {
     toast.add({
       id: "res-path-toast",
-      title: "Invalid Resource Path",
-      description: "Please fix invalid paths before loading resource!",
+      title: t('resource.invalidPath'),
+      description: t('resource.invalidPathDescription'),
       icon: "i-lucide-circle-x",
       color: "error",
     });

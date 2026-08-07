@@ -2,25 +2,26 @@
     <div class="flex flex-col gap-3 h-full">
         <!-- Action Buttons Row -->
         <div class="flex flex-row gap-2">
-            <UTooltip text="Connect">
+            <UTooltip :text="t('common.connect')">
                 <UButton color="primary" variant="outline" icon="i-lucide-link" size="xl" :loading="connecting"
                     :disabled="!socketPath.trim() || connecting" @click="onConnect" />
             </UTooltip>
 
-            <UTooltip text="Disconnect">
+            <UTooltip :text="t('common.disconnect')">
                 <UButton color="error" variant="outline" icon="i-lucide-unlink" size="xl" @click="onDisconnect" />
             </UTooltip>
         </div>
 
         <!-- WlRoot Configuration -->
-        <UFormField name="wlroot_socket_path" label="Socket Path">
-            <UInput v-model="socketPath" placeholder="/tmp/wlroot.sock" icon="i-lucide-server" class="w-full" />
+        <UFormField name="wlroot_socket_path" :label="t('wlroot.socketPath')">
+            <UInput v-model="socketPath" :placeholder="t('wlroot.socketPathPlaceholder')" icon="i-lucide-server" class="w-full" />
         </UFormField>
     </div>
 </template>
 
 <script lang="ts" setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { connectController, disconnectController } from '@/api/http'
 import type { ConnectControllerRequest } from '@/types/api'
 import { useControllerStore } from '@/stores/controller'
@@ -30,6 +31,7 @@ const emit = defineEmits<{
 }>()
 
 const toast = useToast()
+const { t } = useI18n()
 const controllerStore = useControllerStore()
 
 // connecting 使用 store 中的全局状态
@@ -52,8 +54,8 @@ async function onConnect() {
     if (!normalizedSocketPath) {
         toast.add({
             id: 'ctrl-toast',
-            title: 'Controller Connect Failed',
-            description: 'Socket Path is required',
+            title: t('common.controllerConnectFailed'),
+            description: t('common.socketPathRequired'),
             icon: 'i-lucide-circle-x',
             color: 'error',
         })
@@ -72,8 +74,8 @@ async function onConnect() {
             console.error('[WlRoot] Connect failed:', result.msg)
             toast.add({
                 id: 'ctrl-toast',
-                title: 'Controller Connect Failed',
-                description: result.msg || 'Unknown error',
+                title: t('common.controllerConnectFailed'),
+                description: result.msg || t('common.unknownErrorMsg'),
                 icon: 'i-lucide-circle-x',
                 color: 'error',
             })
@@ -82,7 +84,7 @@ async function onConnect() {
 
         toast.add({
             id: 'ctrl-toast',
-            title: 'Controller Connected',
+            title: t('common.controllerConnected'),
             icon: 'i-lucide-check-circle',
             color: 'success',
         })
@@ -97,8 +99,8 @@ async function onConnect() {
         console.error('[WlRoot] Connect failed:', err)
         toast.add({
             id: 'ctrl-toast',
-            title: 'Controller Connect Failed',
-            description: err instanceof Error ? err.message : 'Unknown error',
+            title: t('common.controllerConnectFailed'),
+            description: err instanceof Error ? err.message : t('common.unknownErrorMsg'),
             icon: 'i-lucide-circle-x',
             color: 'error',
         })
@@ -116,7 +118,7 @@ async function onDisconnect() {
         if (result && !result.succeed) {
             toast.add({
                 id: 'ctrl-toast',
-                title: 'Controller Disconnect Failed',
+                title: t('common.controllerDisconnectFailed'),
                 description: result.msg,
                 icon: 'i-lucide-circle-x',
                 color: 'error',
@@ -124,7 +126,7 @@ async function onDisconnect() {
         } else {
             toast.add({
                 id: 'ctrl-toast',
-                title: 'Controller Disconnected',
+                title: t('common.controllerDisconnected'),
                 icon: 'i-lucide-unlink',
                 color: 'warning',
             })
@@ -133,8 +135,8 @@ async function onDisconnect() {
         console.error('[WlRoot] Disconnect failed:', err)
         toast.add({
             id: 'ctrl-toast',
-            title: 'Controller Disconnect Failed',
-            description: err instanceof Error ? err.message : 'Unknown error',
+            title: t('common.controllerDisconnectFailed'),
+            description: err instanceof Error ? err.message : t('common.unknownErrorMsg'),
             icon: 'i-lucide-circle-x',
             color: 'error',
         })

@@ -76,6 +76,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.HandleFunc("GET /api/info/uac", r.handleSystemUAC)
 	mux.HandleFunc("GET /api/fw/version", r.handleMaaFrameworkVersion)
 	mux.HandleFunc("GET /api/channel", r.handleChannel)
+	mux.HandleFunc("GET /api/locale", r.handleLocale)
 	mux.HandleFunc("GET /api/config", r.handleConfigAll)
 	mux.HandleFunc("GET /api/config/{key}", r.handleConfigGet)
 	mux.HandleFunc("PUT /api/config/{key}", r.handleConfigSet)

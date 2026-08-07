@@ -1,4 +1,5 @@
 import { computed, onUnmounted, ref, watch } from "vue";
+import { i18n } from "@/i18n";
 import {
   getScreenshotStatus,
   pauseScreenshot,
@@ -40,7 +41,7 @@ export function useScreenshotStream() {
     } else {
       screenshotPaused.value = true;
       screenshotOverlayState.value = "paused";
-      screenshotOverlayMessage.value = "Screenshot paused";
+      screenshotOverlayMessage.value = i18n.global.t("task.screenshotPaused");
       await pauseScreenshot();
     }
   }

@@ -15,10 +15,10 @@
                 <div class="flex flex-row items-center gap-2 flex-wrap min-w-0">
                     <span class="text-sm text-highlighted font-semibold truncate">{{ detail.name }}</span>
                     <UBadge :color="detail.hit ? 'success' : 'error'" variant="subtle"
-                        :label="detail.hit ? 'Hit' : 'Miss'" />
+                        :label="detail.hit ? t('taskDetail.hit') : t('taskDetail.miss')" />
                     <UBadge color="info" variant="subtle" :label="detail.algorithm" />
-                    <UButton color="neutral" variant="ghost" size="xs" icon="i-lucide-file-json" label="NodeData"
-                        @click="() => { nodeDataOpen = true }" />
+                    <UButton color="neutral" variant="ghost" size="xs" icon="i-lucide-file-json"
+                        :label="t('taskDetail.nodeData')" @click="() => { nodeDataOpen = true }" />
                 </div>
             </div>
         </template>
@@ -30,12 +30,12 @@
             <div v-else-if="detail" class="flex flex-col gap-4">
                 <!-- Box -->
                 <div v-if="detail.box" class="text-xs text-dimmed">
-                    Box: [{{ detail.box.x }}, {{ detail.box.y }}, {{ detail.box.w }}, {{ detail.box.h }}]
+                    {{ t('taskDetail.box', { x: detail.box.x, y: detail.box.y, w: detail.box.w, h: detail.box.h }) }}
                 </div>
 
                 <!-- Combined Result (And/Or nesting) -->
                 <div v-if="detail.combined_result && detail.combined_result.length > 0" class="flex flex-col gap-2">
-                    <span class="text-sm font-medium text-dimmed">Combined ({{ detail.algorithm }}):</span>
+                    <span class="text-sm font-medium text-dimmed">{{ t('taskDetail.combined', { algorithm: detail.algorithm }) }}:</span>
                     <div class="pl-3 border-l-2 border-default flex flex-col gap-2">
                         <RecoDetailItem v-for="(sub, idx) in detail.combined_result" :key="idx" :detail="sub" :depth="1"
                             @request-detail="openSubRecoDetail" />
@@ -48,13 +48,13 @@
                 </div>
             </div>
             <div v-else class="text-sm text-dimmed p-4 text-center">
-                No detail available
+                {{ t('taskDetail.noDetailAvailable') }}
             </div>
         </template>
     </UModal>
 
     <!-- Fullscreen Canvas Draw Modal -->
-    <UModal v-model:open="isFullscreen" title="Recognition Draw" fullscreen>
+    <UModal v-model:open="isFullscreen" :title="t('taskDetail.recognitionDraw')" fullscreen>
         <template #body>
             <div v-if="detail?.raw_image && detail?.results"
                 class="w-full h-full flex flex-col overflow-hidden bg-muted p-4">
@@ -65,37 +65,37 @@
     </UModal>
 
     <!-- Fullscreen Image Preview (for original draw_images) -->
-    <UModal v-model:open="imagePreviewOpen" title="Image Preview" fullscreen>
+    <UModal v-model:open="imagePreviewOpen" :title="t('taskDetail.imagePreview')" fullscreen>
         <template #body>
             <div class="relative w-full h-full flex items-center justify-center overflow-hidden bg-muted"
                 @wheel.prevent="onPreviewWheel">
                 <div class="flex items-center justify-center cursor-grab select-none"
                     :class="{ 'cursor-grabbing': isPreviewDragging }" @mousedown="onPreviewDragStart"
                     @mousemove="onPreviewDragMove" @mouseup="onPreviewDragEnd" @mouseleave="onPreviewDragEnd">
-                    <img v-if="previewImageSrc" :src="previewImageSrc" alt="Preview" draggable="false"
+                    <img v-if="previewImageSrc" :src="previewImageSrc" :alt="t('taskDetail.preview')" draggable="false"
                         class="pointer-events-none max-w-none" :style="previewImageStyle" />
                 </div>
                 <!-- Fullscreen toolbar -->
                 <div
                     class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-elevated/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-default shadow-lg">
-                    <UTooltip text="Zoom out">
+                    <UTooltip :text="t('common.zoomOut')">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-out" size="sm"
                             :disabled="previewZoom <= MIN_ZOOM" @click="previewZoomOut" />
                     </UTooltip>
                     <span class="text-xs text-muted min-w-10 text-center tabular-nums">
                         {{ previewZoomPercentage }}%
                     </span>
-                    <UTooltip text="Zoom in">
+                    <UTooltip :text="t('common.zoomIn')">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-in" size="sm"
                             :disabled="previewZoom >= MAX_ZOOM" @click="previewZoomIn" />
                     </UTooltip>
                     <USeparator orientation="vertical" class="h-5" />
-                    <UTooltip text="Fit to view">
+                    <UTooltip :text="t('common.fitToView')">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-maximize" size="sm"
                             @click="resetPreviewZoom" />
                     </UTooltip>
                     <USeparator orientation="vertical" class="h-5" />
-                    <UTooltip text="Download">
+                    <UTooltip :text="t('common.download')">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-download" size="sm"
                             @click="downloadPreviewImage" />
                     </UTooltip>
@@ -109,6 +109,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { getNodeData, getRecoDetailById } from '@/api/http'
 import type { RecoDetailResponse, RectResponse } from '@/types/taskDetail'
 import RecoDetailItem from './RecoDetailItem.vue'
@@ -124,6 +125,8 @@ const props = defineProps<{
     recoId: number | null
     nodeName?: string | null
 }>()
+
+const { t } = useI18n()
 
 const open = defineModel<boolean>('open', { default: false })
 const loading = ref(false)
@@ -344,12 +347,12 @@ function openRecoFromBreadcrumb(index: number) {
 
 function resetBreadcrumbToRoot() {
     selectedRecoId.value = props.recoId
-    detailPath.value = props.recoId == null ? [] : [{ recoId: props.recoId, name: props.nodeName ?? 'Loading' }]
+    detailPath.value = props.recoId == null ? [] : [{ recoId: props.recoId, name: props.nodeName ?? t('common.loading') }]
 }
 
 watch(() => props.recoId, (id) => {
     selectedRecoId.value = id
-    detailPath.value = id == null ? [] : [{ recoId: id, name: props.nodeName ?? 'Loading' }]
+    detailPath.value = id == null ? [] : [{ recoId: id, name: props.nodeName ?? t('common.loading') }]
 }, { immediate: true })
 
 watch(open, (isOpen) => {

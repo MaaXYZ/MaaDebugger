@@ -5,6 +5,8 @@ import ui from "@nuxt/ui/vue-plugin";
 
 import App from "./App.vue";
 import { serverPersistPlugin } from "./stores/persist";
+import { useLocaleStore } from "./stores/locale";
+import { i18n, guessInitialLocale } from "./i18n";
 import "./style.css";
 import { AllIcons } from "virtual:load-iconify-icons";
 AllIcons();
@@ -56,10 +58,20 @@ const router = createRouter({
 const pinia = createPinia();
 pinia.use(serverPersistPlugin);
 
-const app = createApp(App);
+async function bootstrap() {
+  const app = createApp(App);
 
-app.use(ui);
-app.use(router);
-app.use(pinia);
+  app.use(ui);
+  app.use(router);
+  app.use(pinia);
+  app.use(i18n);
 
-app.mount("#app");
+  // 挂载前先解析界面语言：后端决定默认语言（用户持久化选择优先，
+  // 否则按 Accept-Language 检测，失败回退英语）。先设置乐观初始语言避免首屏闪烁。
+  i18n.global.locale.value = guessInitialLocale();
+  await useLocaleStore().apply();
+
+  app.mount("#app");
+}
+
+void bootstrap();

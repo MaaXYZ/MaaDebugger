@@ -11,12 +11,12 @@
                 <div class="min-w-0 flex items-start gap-2">
                     <span class="block min-w-0 flex-1 break-all text-sm font-medium" :title="node.msg.name">{{
                         node.msg.name }}</span>
-                    <UBadge v-if="isEntry" label="Entry" color="primary" variant="soft" size="xs" class="shrink-0" />
+                    <UBadge v-if="isEntry" :label="t('taskDetail.entry')" color="primary" variant="soft" size="xs" class="shrink-0" />
                 </div>
             </div>
             <StatusIcon :status="node.status" class="shrink-0" />
             <span v-if="!expanded && node.reco.length > 0" class="text-xs text-dimmed tabular-nums ml-auto shrink-0">
-                {{ node.reco.length }} round{{ node.reco.length > 1 ? 's' : '' }}
+                {{ formatRounds(node.reco.length) }}
             </span>
         </div>
 
@@ -27,7 +27,7 @@
                     <div v-if="node.reco.length > 0" class="flex flex-col gap-1.5">
                         <div class="flex flex-row items-center gap-1.5">
                             <UIcon name="i-lucide-scan-search" class="size-3.5 shrink-0 text-dimmed" />
-                            <span class="text-xs text-dimmed">Reco</span>
+                            <span class="text-xs text-dimmed">{{ t('taskDetail.reco') }}</span>
                             <span class="text-xs text-dimmed tabular-nums">({{ node.reco.length }})</span>
                         </div>
                         <div class="pl-5 flex flex-wrap items-start gap-1.5">
@@ -42,13 +42,13 @@
                     <div v-if="node.action" class="flex flex-col gap-1.5">
                         <div class="flex flex-row items-center gap-1.5">
                             <UIcon name="i-lucide-play" class="size-3.5 shrink-0 text-dimmed" />
-                            <span class="text-xs text-dimmed">Action</span>
+                            <span class="text-xs text-dimmed">{{ t('taskDetail.action') }}</span>
                         </div>
                         <div class="pl-5 flex flex-col gap-2">
-                            <NodeStatusButton :status="node.action.status" label="Action" :meta="['Custom']"
+                            <NodeStatusButton :status="node.action.status" :label="t('taskDetail.action')" :meta="[t('taskDetail.custom')]"
                                 :action-id="node.action.msg.action_id" size="sm"
                                 @click="$emit('requestActionDetail', node.action!.msg.action_id)" />
-                            <SubflowDisclosure v-if="node.action.childs.length > 0" label="Internal flow" kind="action"
+                            <SubflowDisclosure v-if="node.action.childs.length > 0" :label="t('taskDetail.internalFlow')" kind="action"
                                 :count="countActionSubflowNodes(node.action)">
                                 <SubflowTree :nodes="node.action.childs" kind="action"
                                     @request-detail="$emit('requestDetail', $event)"
@@ -64,6 +64,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { PipelineNodeScope } from '@/types/taskDetail'
 import StatusIcon from './StatusIcon.vue'
 import NextListItem from './NextListItem.vue'
@@ -83,6 +84,14 @@ defineEmits<{
     requestDetail: [recoId: number]
     requestActionDetail: [actionId: number]
 }>()
+
+const { t } = useI18n()
+
+function formatRounds(count: number): string {
+    return count > 1
+        ? t('taskDetail.roundss', { count })
+        : t('taskDetail.rounds', { count })
+}
 
 const expanded = ref(props.defaultExpanded ?? true)
 </script>

@@ -2,29 +2,31 @@
     <div class="flex flex-col gap-3 w-full min-w-0">
         <!-- Search Filters -->
         <div class="flex flex-row gap-2 min-w-0">
-            <UFormField name="class_name" label="Class Name" class="flex-1 min-w-0">
-                <UInput v-model="searchFilter.className" placeholder="Window class name"
+            <UFormField name="class_name" :label="t('windowSearch.className')" class="flex-1 min-w-0">
+                <UInput v-model="searchFilter.className" :placeholder="t('windowSearch.classNamePlaceholder')"
                         icon="i-lucide-text-cursor-input" class="w-full" :ui="{ base: 'truncate' }" />
             </UFormField>
 
-            <UFormField name="window_regex" label="Window Name Regex" class="flex-1 min-w-0">
-                <UInput v-model="searchFilter.windowRegex" placeholder=".*" icon="i-lucide-regex" class="w-full"
+            <UFormField name="window_regex" :label="t('windowSearch.windowNameRegex')" class="flex-1 min-w-0">
+                <UInput v-model="searchFilter.windowRegex" :placeholder="t('windowSearch.windowNameRegexPlaceholder')" icon="i-lucide-regex" class="w-full"
                         :ui="{ base: 'truncate' }" />
             </UFormField>
         </div>
 
         <!-- Window Select -->
-        <USelectMenu v-model="selectedHwnd" value-key="value" :items="windowItems" placeholder="Select a window..."
+        <USelectMenu v-model="selectedHwnd" value-key="value" :items="windowItems" :placeholder="t('windowSearch.selectWindow')"
                      icon="i-lucide-app-window" class="w-full min-w-0" size="xl" :loading="searching" />
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { detectDesktopWindows } from '@/api/http'
 import type { Win32WindowInfo } from '@/types/api'
 
 const toast = useToast()
+const { t } = useI18n()
 
 // --- Window Search Filter ---
 const searchFilter = reactive({
@@ -98,8 +100,8 @@ async function onSearch() {
         if (windowItems.value.length === 0) {
             toast.add({
                 id: 'ctrl-toast',
-                title: 'No windows found',
-                description: 'Try adjusting your class name or window regex filters.',
+                title: t('windowSearch.noWindowsFound'),
+                description: t('windowSearch.noWindowsDescription'),
                 icon: 'i-lucide-triangle-alert',
                 color: 'warning',
             })

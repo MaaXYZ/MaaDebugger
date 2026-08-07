@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, computed } from "vue";
+import { useI18n } from "vue-i18n";
 import type { NavigationMenuItem } from "@nuxt/ui";
 import { wsClient } from "@/api/ws";
 import {
@@ -22,6 +23,8 @@ import {
   screenshotOverlayMessage,
 } from "@/stores/screenshot";
 
+const { t } = useI18n();
+
 const BACKEND_DISCONNECT_TOAST_ID = "backend-disconnected";
 const WATCH_RESOURCE_TOAST_ID = "watch-resource";
 const PING_INTERVAL_MS = 5000;
@@ -33,22 +36,25 @@ const selectTheme = {
 
 const headerNavigationMenuItems = computed<NavigationMenuItem[]>(() => [
   {
-    label: "Debug",
+    label: t('app.debug'),
     icon: "i-lucide-bug",
     to: "/",
   },
   {
-    label: "Tools",
+    label: t('app.tools'),
     icon: "i-lucide-box",
     children: [
       {
-        label: "Screenshot",
+        label: t('app.screenshot'),
         icon: "i-lucide-camera",
-        description: "Placeholder",
+        description: t('app.toolsPlaceholder'),
       },
     ],
   },
 ]);
+
+
+
 
 const statusStore = useStatusStore();
 const debugWorkspaceSettingsStore = useDebugSettingsStore();
@@ -76,8 +82,8 @@ async function pingBackend() {
     backendConnected.value = false;
     toast.add({
       id: BACKEND_DISCONNECT_TOAST_ID,
-      title: "Disconnected",
-      description: "Please check the service status.",
+      title: t('app.disconnected'),
+      description: t('app.checkServiceStatus'),
       icon: "i-lucide-wifi-off",
       color: "error",
       duration: 0,
@@ -120,18 +126,18 @@ onMounted(async () => {
       if (result.success) {
         toast.add({
           id: "task-toast",
-          title: "Task Completed",
+          title: t('app.taskCompleted'),
           description: result.entry
-            ? `"${result.entry}" finished successfully`
-            : "Task finished successfully",
+            ? t('app.taskFinishedWithEntry', { entry: result.entry })
+            : t('app.taskFinished'),
           icon: "i-lucide-check-circle",
           color: "success",
         });
       } else {
         toast.add({
           id: "task-toast",
-          title: "Task Failed",
-          description: result.error || "Unknown error",
+          title: t('app.taskFailed'),
+          description: result.error || t('app.unknownError'),
           icon: "i-lucide-x-circle",
           color: "error",
         });
@@ -161,7 +167,7 @@ onMounted(async () => {
       latestFrame.value = null;
       toast.add({
         id: "screenshot-error",
-        title: "Screenshot Stopped",
+        title: t('app.screenshotStopped'),
         description: reason,
         icon: "i-lucide-x-circle",
         color: "error",
@@ -174,7 +180,7 @@ onMounted(async () => {
     onWatchResourceError(reason) {
       toast.add({
         id: WATCH_RESOURCE_TOAST_ID,
-        title: "Resource Error",
+        title: t('app.resourceError'),
         description: reason,
         icon: "i-lucide-circle-x",
         color: "error",
@@ -229,18 +235,19 @@ onUnmounted(() => {
         <template #right>
           <UColorModeButton />
 
-          <UTooltip text="Settings">
-            <UButton color="neutral" variant="ghost" to="/settings" icon="i-lucide-settings" aria-label="Settings" />
+          <UTooltip :text="t('app.settings')">
+            <UButton color="neutral" variant="ghost" to="/settings" icon="i-lucide-settings"
+              :aria-label="t('app.settings')" />
           </UTooltip>
 
-          <UTooltip text="Open on GitHub">
+          <UTooltip :text="t('app.openOnGitHub')">
             <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger" target="_blank"
-              icon="i-simple-icons:github" aria-label="GitHub" />
+              icon="i-simple-icons:github" :aria-label="t('app.openOnGitHub')" />
           </UTooltip>
         </template>
       </UHeader>
 
-      <UMain class="h-[calc(100vh_-_var(--ui-header-height))] overflow-y-auto">
+      <UMain class="h-[calc(100vh-var(--ui-header-height))] overflow-y-auto">
         <RouterView />
       </UMain>
     </UTheme>

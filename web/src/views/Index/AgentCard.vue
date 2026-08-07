@@ -6,7 +6,7 @@
             <div class="flex flex-col gap-2">
                 <div class="flex flex-row items-center justify-between gap-4">
                     <div class="flex items-center gap-2">
-                        <span class="font-bold">Agent</span>
+                        <span class="font-bold">{{ t('agent.title') }}</span>
                         <UBadge v-if="store.agents.length > 0" :color="headerBadgeColor" variant="subtle" size="sm"
                             class="gap-1.5">
                             <span class="relative flex size-2">
@@ -26,7 +26,7 @@
                 <div v-if="store.agents.length === 0"
                     class="flex flex-row items-center justify-center rounded-lg border border-dashed border-default p-2 text-dimmed gap-2">
                     <UIcon name="i-lucide-terminal" class="size-5" />
-                    <span class="text-sm">No agents added</span>
+                    <span class="text-sm">{{ t('agent.noAgents') }}</span>
                 </div>
 
                 <div v-for="(agent, index) in store.agents" :key="index"
@@ -34,7 +34,7 @@
                     :class="{ 'opacity-50': !agent.enabled }">
 
                     <div class="flex flex-row items-start gap-2">
-                        <UTooltip :text="agent.enabled ? 'Disable agent' : 'Enable agent'">
+                        <UTooltip :text="agent.enabled ? t('agent.disable') : t('agent.enable')">
                             <UCheckbox v-model="agent.enabled" class="pt-0.5" />
                         </UTooltip>
 
@@ -43,14 +43,14 @@
                                 <UIcon name="i-lucide-tag" class="size-4 shrink-0 text-dimmed" />
 
                                 <UInput v-if="editingNameIndex === index" v-model="agent.name"
-                                    placeholder="Agent name..." class="flex-1" size="md" autofocus
+                                    :placeholder="t('agent.namePlaceholder')" class="flex-1" size="md" autofocus
                                     @keydown.enter="editingNameIndex = -1" @blur="editingNameIndex = -1" />
 
                                 <div v-else class="flex min-w-0 flex-1 items-center cursor-pointer"
                                     :class="{ 'pointer-events-none': isAgentBusy(agent) }"
                                     @click="editingNameIndex = index">
                                     <span class="truncate text-md" :class="agent.name ? '' : 'text-dimmed italic'">
-                                        {{ agent.name || agent.identifier || 'Unnamed agent' }}
+                                        {{ agent.name || agent.identifier || t('agent.unnamed') }}
                                     </span>
                                 </div>
                             </div>
@@ -59,7 +59,7 @@
                                 <UIcon name="i-lucide-key" class="size-4 shrink-0 text-dimmed" />
 
                                 <UInput v-if="editingIdIndex === index" v-model="agent.identifier"
-                                    placeholder="Enter agent identifier..." class="flex-1" size="md" autofocus
+                                    :placeholder="t('agent.idPlaceholder')" class="flex-1" size="md" autofocus
                                     @keydown.enter="onFinishEditId(agent, index)"
                                     @blur="onFinishEditId(agent, index)" />
 
@@ -68,7 +68,7 @@
                                         :class="{ 'pointer-events-none': isAgentBusy(agent) }"
                                         @click="editingIdIndex = index">
                                         <span class="truncate text-xs font-mono text-dimmed">
-                                            {{ agent.identifier || 'Click to set identifier...' }}
+                                            {{ agent.identifier || t('agent.clickToSetId') }}
                                         </span>
                                     </div>
                                 </UTooltip>
@@ -79,14 +79,14 @@
                             <StatusBadge :status="agent.status" />
 
                             <div class="flex flex-row gap-1 shrink-0">
-                                <UTooltip :text="agent.status === 'connected' ? 'Disconnect' : 'Connect'">
+                                <UTooltip :text="agent.status === 'connected' ? t('common.disconnect') : t('common.connect')">
                                     <UButton :color="agent.status === 'connected' ? 'error' : 'success'" variant="soft"
                                         :icon="getAgentButtonIcon(agent)" :loading="agent.status === 'connecting'"
                                         :disabled="!agent.enabled || isAgentBusy(agent) || (!agent.identifier.trim() && agent.status !== 'connected')"
                                         size="xs" @click="onToggleConnection(agent)" />
                                 </UTooltip>
 
-                                <UTooltip text="Remove">
+                                <UTooltip :text="t('agent.remove')">
                                     <UButton color="error" variant="ghost" icon="i-lucide-trash-2" size="xs"
                                         :disabled="isAgentBusy(agent)" @click="onRemove(agent, index)" />
                                 </UTooltip>
@@ -101,7 +101,7 @@
             </div>
 
             <div class="p-2 sm:p-4">
-                <UButton color="neutral" variant="ghost" icon="i-lucide-plus" label="Add agent" block
+                <UButton color="neutral" variant="ghost" icon="i-lucide-plus" :label="t('agent.add')" block
                     @click="onAddAgent" />
             </div>
         </div>
@@ -110,6 +110,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import StatusBadge from './agent/StatusBadge.vue'
 import { disconnectAgent as apiDisconnect } from '@/api/http'
 import useAgentControl from './useAgentControl'
@@ -119,6 +120,7 @@ import { useStatusStore } from '@/stores/status'
 
 const store = useAgentStore()
 const statusStore = useStatusStore()
+const { t } = useI18n()
 const isTaskRunning = computed(() => statusStore.taskStatus === 'running')
 const { doConnect, doDisconnect } = useAgentControl()
 
@@ -142,12 +144,12 @@ const headerDotClass = computed(() => {
 })
 
 const headerBadgeLabel = computed(() => {
-    if (store.hasConnecting) return 'Connecting...'
+    if (store.hasConnecting) return t('agent.connecting')
     const total = store.agents.length
-    if (store.connectedCount === total && total > 0) return `${total} connected`
-    if (store.connectedCount > 0) return `${store.connectedCount}/${total} connected`
-    if (store.hasError) return 'Error'
-    return 'Idle'
+    if (store.connectedCount === total && total > 0) return t('agent.connectedCount', { count: total })
+    if (store.connectedCount > 0) return t('agent.connectedPartial', { connected: store.connectedCount, total })
+    if (store.hasError) return t('agent.error')
+    return t('agent.idle')
 })
 
 function isAgentBusy(agent: AgentItem): boolean {

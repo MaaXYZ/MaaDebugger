@@ -11,21 +11,24 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { ConnectionStatus } from './types'
 
 const props = defineProps<{
     status: ConnectionStatus
 }>()
 
+const { t } = useI18n()
+
 const isPulsing = computed(() => props.status === 'connecting')
 
 const statusLabel = computed(() => {
     switch (props.status) {
-    case 'idle': return 'Idle'
-    case 'connecting': return 'Connecting'
-    case 'connected': return 'Connected'
-    case 'failed': return 'Failed'
-    default: return 'Unknown'
+    case 'idle': return t('common.idle')
+    case 'connecting': return t('controller.connecting')
+    case 'connected': return t('controller.connected')
+    case 'failed': return t('common.failed')
+    default: return t('common.unknown')
     }
 })
 

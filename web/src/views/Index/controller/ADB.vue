@@ -2,17 +2,17 @@
     <div class="flex flex-col gap-3 h-full">
         <!-- Action Buttons Row -->
         <div class="flex flex-row gap-2">
-            <UTooltip text="Detect">
+            <UTooltip :text="t('common.detect')">
                 <UButton color="success" variant="outline" icon="i-lucide-search" size="xl" :loading="detecting"
                     @click="onDetect" />
             </UTooltip>
 
-            <UTooltip text="Connect">
+            <UTooltip :text="t('common.connect')">
                 <UButton color="primary" variant="outline" icon="i-lucide-link" size="xl" :loading="connecting"
                     :disabled="!selectedDevice || connecting" @click="onConnect" />
             </UTooltip>
 
-            <UTooltip text="Disconnect">
+            <UTooltip :text="t('common.disconnect')">
                 <UButton color="error" variant="outline" icon="i-lucide-unlink" size="xl" @click="onDisconnect" />
             </UTooltip>
         </div>
@@ -20,38 +20,39 @@
         <!-- Device Select -->
         <div class="flex flex-1 items-center gap-2">
             <USelectMenu v-model="selectedDevice" value-key="value" :items="deviceItems"
-                placeholder="Select a device..." class="w-full" size="xl" />
+                :placeholder="t('adb.selectDevice')" class="w-full" size="xl" />
         </div>
 
         <!-- ADB Configuration (inline, no modal) -->
-        <UFormField name="adb_path" label="ADB Path">
-            <UInput v-model="config.adb_path" placeholder="/path/to/adb" icon="i-lucide-folder" class="w-full" />
+        <UFormField name="adb_path" :label="t('adb.path')">
+            <UInput v-model="config.adb_path" :placeholder="t('adb.pathPlaceholder')" icon="i-lucide-folder" class="w-full" />
         </UFormField>
 
-        <UFormField name="adb_address" label="ADB Address">
-            <UInput v-model="config.adb_address" placeholder="127.0.0.1:5555" icon="i-lucide-network" class="w-full" />
+        <UFormField name="adb_address" :label="t('adb.address')">
+            <UInput v-model="config.adb_address" :placeholder="t('adb.addressPlaceholder')" icon="i-lucide-network" class="w-full" />
         </UFormField>
 
-        <UFormField name="screencap" label="Screencap Method">
+        <UFormField name="screencap" :label="t('adb.screencapMethod')">
             <USelect v-model="config.screencap_method" :items="screencapMethods" class="w-full" arrow />
         </UFormField>
 
-        <UFormField name="input" label="Input Method">
+        <UFormField name="input" :label="t('adb.inputMethod')">
             <USelect v-model="config.input_method" :items="inputMethods" class="w-full" arrow />
         </UFormField>
 
-        <UFormField name="extra" label="Extra Config">
-            <UButton color="neutral" variant="outline" icon="i-lucide-file-json" label="Edit JSON" class="w-full"
+        <UFormField name="extra" :label="t('adb.extraConfig')">
+            <UButton color="neutral" variant="outline" icon="i-lucide-file-json" :label="t('adb.editJson')" class="w-full"
                 @click="onEditExtra" />
         </UFormField>
 
         <component :is="jsonEditorModalComponent" v-if="jsonEditorModalComponent" v-model:open="extraEditorOpen"
-            v-model="controllerStore.adbConfig" title="Extra Config" description="ADB extra configuration (JSONC)" />
+            v-model="controllerStore.adbConfig" :title="t('adb.extraConfigTitle')" :description="t('adb.extraConfigDescription')" />
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, watch, computed, onMounted, type Component } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { detectAdbDevices, connectController, disconnectController, getControllerMethod } from '@/api/http'
 import type { AdbDeviceInfo, ConnectControllerRequest, MethodItems } from '@/types/api'
 import { useControllerStore, DEFAULT_ADB_SCREENCAP, DEFAULT_ADB_INPUT } from '@/stores/controller'
@@ -61,6 +62,7 @@ const emit = defineEmits<{
 }>()
 
 const toast = useToast()
+const { t } = useI18n()
 
 // --- Device Select ---
 interface DeviceItem {
@@ -119,8 +121,8 @@ async function onDetect() {
         if (deviceItems.value.length === 0) {
             toast.add({
                 id: 'ctrl-toast',
-                title: 'No ADB devices found',
-                description: 'Make sure your device is connected and ADB is running.',
+                title: t('adb.noDevicesFound'),
+                description: t('adb.noDevicesDescription'),
                 icon: 'i-lucide-triangle-alert',
                 color: 'warning',
             })
@@ -172,8 +174,8 @@ async function doConnect(params: ConnectControllerRequest): Promise<boolean> {
             console.error('[ADB] Connect failed:', result.msg)
             toast.add({
                 id: 'ctrl-toast',
-                title: 'Controller Connect Failed',
-                description: result.msg || 'Unknown error',
+                title: t('common.controllerConnectFailed'),
+                description: result.msg || t('common.unknownErrorMsg'),
                 icon: 'i-lucide-circle-x',
                 color: 'error',
             })
@@ -182,7 +184,7 @@ async function doConnect(params: ConnectControllerRequest): Promise<boolean> {
 
         toast.add({
             id: 'ctrl-toast',
-            title: 'Controller Connected',
+            title: t('common.controllerConnected'),
             icon: 'i-lucide-check-circle',
             color: 'success',
         })
@@ -235,7 +237,7 @@ async function onDisconnect() {
         if (result && !result.succeed) {
             toast.add({
                 id: 'ctrl-toast',
-                title: 'Controller Disconnect Failed',
+                title: t('common.controllerDisconnectFailed'),
                 description: result.msg,
                 icon: 'i-lucide-circle-x',
                 color: 'error',
@@ -243,7 +245,7 @@ async function onDisconnect() {
         } else {
             toast.add({
                 id: 'ctrl-toast',
-                title: 'Controller Disconnected',
+                title: t('common.controllerDisconnected'),
                 icon: 'i-lucide-unlink',
                 color: 'warning',
             })

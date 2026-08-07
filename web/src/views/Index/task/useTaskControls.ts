@@ -1,4 +1,5 @@
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { getTaskNodes, runTask, stopTask } from "@/api/http";
 import { useShortcutsStore, formatShortcut } from "@/stores/shortcuts";
 import { useStatusStore } from "@/stores/status";
@@ -35,6 +36,7 @@ function fuzzyMatch(text: string, query: string): boolean {
 }
 
 export default function useTaskControls(toast: ToastApi) {
+  const { t } = useI18n();
   const shortcutsStore = useShortcutsStore();
   const statusStore = useStatusStore();
   const taskStore = useTaskStore();
@@ -190,8 +192,8 @@ export default function useTaskControls(toast: ToastApi) {
     if (agentStore.hasConnecting) {
       toast.add({
         id: TASK_TOAST_ID,
-        title: "Agent Connecting",
-        description: "Please wait for agent connection to finish",
+        title: t("task.agentConnecting"),
+        description: t("task.agentConnectingDescription"),
         icon: "i-lucide-loader",
         color: "warning",
       });
@@ -200,8 +202,8 @@ export default function useTaskControls(toast: ToastApi) {
 
     const precheckBeforeLoad = await precheckPipelineIssuesBeforeAction({
       toastId: TASK_TOAST_ID,
-      blockedTitle: "Task Blocked",
-      notifyTitle: "Pipeline Issues Found",
+      blockedTitle: t("task.taskBlocked"),
+      notifyTitle: t("task.pipelineIssuesFound"),
       notify: false,
     });
     if (precheckBeforeLoad.blocked) {
@@ -214,7 +216,7 @@ export default function useTaskControls(toast: ToastApi) {
       statusStore.setResourceStatus("failed");
       toast.add({
         id: TASK_TOAST_ID,
-        title: "Resource Load Failed",
+        title: t("task.resourceLoadFailed"),
         description: loadResult.msg,
         icon: "i-lucide-circle-x",
         color: "error",
@@ -225,8 +227,8 @@ export default function useTaskControls(toast: ToastApi) {
 
     const precheckBeforeRun = await precheckPipelineIssuesBeforeAction({
       toastId: TASK_TOAST_ID,
-      blockedTitle: "Task Blocked",
-      notifyTitle: "Pipeline Issues Found",
+      blockedTitle: t("task.taskBlocked"),
+      notifyTitle: t("task.pipelineIssuesFound"),
       notify: true,
     });
     if (precheckBeforeRun.blocked) {
@@ -241,7 +243,7 @@ export default function useTaskControls(toast: ToastApi) {
     if (!result.succeed) {
       toast.add({
         id: TASK_TOAST_ID,
-        title: "Task Run Failed",
+        title: t("task.taskRunFailed"),
         description: result.msg,
         icon: "i-lucide-circle-x",
         color: "error",
@@ -257,7 +259,7 @@ export default function useTaskControls(toast: ToastApi) {
       if (!result.succeed) {
         toast.add({
           id: TASK_TOAST_ID,
-          title: "Task Stop Failed",
+          title: t("task.taskStopFailed"),
           description: result.msg,
           icon: "i-lucide-circle-x",
           color: "error",
@@ -265,7 +267,7 @@ export default function useTaskControls(toast: ToastApi) {
       } else {
         toast.add({
           id: TASK_TOAST_ID,
-          title: "Task Stop Requested",
+          title: t("task.taskStopRequested"),
           icon: "i-lucide-circle-stop",
           color: "warning",
         });

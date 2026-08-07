@@ -1,46 +1,46 @@
 <template>
     <UCard size="xl">
         <template #header>
-            <span class="font-bold">About MaaDebugger</span>
+            <span class="font-bold">{{ t('settings.about.title') }}</span>
         </template>
 
         <template #default>
             <div class="flex flex-col gap-4">
                 <div class="flex flex-wrap items-centers gap-x-4 gap-y-2">
                     <div class="flex min-w-0 flex-wrap items-center gap-1">
-                        <span>MaaDebugger Version: {{ maaDebuggerVersion }}</span>
-                        <UTooltip text="Open on GitHub">
+                        <span>{{ t('settings.about.version', { version: maaDebuggerVersion }) }}</span>
+                        <UTooltip :text="t('settings.about.openOnGitHub')">
                             <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
                                      target="_blank" icon="i-simple-icons:github" aria-label="open-in-GitHub" />
                         </UTooltip>
-                        <UTooltip text="Open on npm">
+                        <UTooltip :text="t('settings.about.openOnNpm')">
                             <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
                                      target="_blank" icon="i-simple-icons:npm" aria-label="open-in-npm" />
                         </UTooltip>
-                        <UTooltip text="Open on PyPI">
+                        <UTooltip :text="t('settings.about.openOnPypi')">
                             <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaDebugger"
                                      target="_blank" icon="i-simple-icons:pypi" aria-label="open-in-pypi" />
                         </UTooltip>
                     </div>
                     <div
                         class="flex min-w-0 flex-wrap items-center gap-2 rounded-md border border-muted bg-elevated px-3 py-1 text-sm text-toned">
-                        <span class="font-medium text-default">Build Info</span>
-                        <span class="truncate">Build Time: {{ buildTime }}</span>
+                        <span class="font-medium text-default">{{ t('settings.about.buildInfo') }}</span>
+                        <span class="truncate">{{ t('settings.about.buildTime', { time: buildTime }) }}</span>
                         <ULink v-if="commitSHA != 'dev'"
                                :to="`https://github.com/MaaXYZ/MaaDebugger/commit/${commitSHA}`" target="_blank">
-                            <span class="truncate">Commit SHA: {{ commitSHA }}</span>
+                            <span class="truncate">{{ t('settings.about.commitSha', { sha: commitSHA }) }}</span>
                         </ULink>
                     </div>
                 </div>
                 <div class="flex items-center gap-1">
-                    <span>MaaFramework Version: {{ maaVersion }}</span>
-                    <UTooltip text="Open on GitHub">
+                    <span>{{ t('settings.about.maaVersion', { version: maaVersion }) }}</span>
+                    <UTooltip :text="t('settings.about.openOnGitHub')">
                         <UButton color="neutral" variant="ghost" to="https://github.com/MaaXYZ/MaaFramework"
                                  target="_blank" icon="i-simple-icons:github" aria-label="open-in-GitHub" />
                     </UTooltip>
                 </div>
                 <div class="flex items-center gap-1">
-                    <span>Channel: {{ currentChannelLabel }}</span>
+                    <span>{{ t('settings.about.channel', { channel: currentChannelLabel }) }}</span>
                     <UButton v-if="currentChannel == GITHUB" color="neutral" variant="ghost"
                              to="https://github.com/MaaXYZ/MaaFramework/releases" target="_blank"
                              icon="i-simple-icons:github" aria-label="open-in-GitHub" />
@@ -56,22 +56,21 @@
                     <div
                         class="flex items-center justify-between gap-3 rounded-md border border-muted bg-elevated px-3 py-2">
                         <div class="flex flex-col gap-1">
-                            <span class="text-sm font-medium">Include pre-release updates</span>
-                            <span class="text-xs text-dimmed">When enabled, update checks may return newer pre-release
-                                versions.</span>
+                            <span class="text-sm font-medium">{{ t('settings.about.includePreRelease') }}</span>
+                            <span class="text-xs text-dimmed">{{ t('settings.about.includePreReleaseDescription') }}</span>
                         </div>
                         <USwitch :model-value="updateSettingsStore.showPreRelease"
                                  @update:model-value="updateSettingsStore.setShowPreRelease(Boolean($event))" />
                     </div>
 
-                    <UButton label="Check for Updates" :loading="checking" block @click="handleCheckUpdate" />
+                    <UButton :label="t('settings.about.checkForUpdates')" :loading="checking" block @click="handleCheckUpdate" />
 
                     <UAlert v-if="updateResult" :color="updateResult.has_update ? 'info' : 'success'"
                             :icon="updateResult.has_update ? 'i-lucide-download' : 'i-lucide-check-circle'"
-                            :title="updateResult.has_update ? 'Update Available' : 'Up to Date'"
+                            :title="updateResult.has_update ? t('settings.about.updateAvailable') : t('settings.about.upToDate')"
                             :description="updateDescription" variant="subtle" />
 
-                    <UAlert v-if="updateError" color="error" icon="i-lucide-alert-circle" title="Check Failed"
+                    <UAlert v-if="updateError" color="error" icon="i-lucide-alert-circle" :title="t('settings.about.checkFailed')"
                             :description="updateError" variant="subtle" />
                 </div>
             </div>
@@ -81,9 +80,12 @@
 
 <script lang="ts" setup>
 import { onMounted, ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { getMaaFrameworkVersion, getChannel, getMaaDebuggerInfos, checkForUpdates } from '@/api/http';
 import type { UpdateCheckResult } from '@/api/http';
 import { useUpdateSettingsStore } from '@/stores/updateSettings';
+
+const { t } = useI18n()
 
 const GITHUB = "github"
 const NPM = "npm"
@@ -105,13 +107,17 @@ const updateDescription = computed(() => {
     if (!updateResult.value) return ""
     if (updateResult.value.has_update) {
         const channel = updateResult.value.track || (updateResult.value.nightly ? "nightly" : "release")
-        let desc = `Current: ${updateResult.value.current_version} → Latest: ${updateResult.value.latest_version} (${channel})`
+        let desc = t('settings.about.updateDescription', {
+            current: updateResult.value.current_version,
+            latest: updateResult.value.latest_version,
+            channel,
+        })
         if (updateResult.value.note) {
             desc += `\n${updateResult.value.note}`
         }
         return desc
     }
-    return `You are running the latest version (${updateResult.value.current_version})`
+    return t('settings.about.latestVersion', { version: updateResult.value.current_version })
 })
 
 async function handleCheckUpdate() {
@@ -120,7 +126,7 @@ async function handleCheckUpdate() {
     updateResult.value = null
 
     if (maaDebuggerVersion.value === "dev") {
-        updateError.value = "You are running a development build. Update checking is not available."
+        updateError.value = t('settings.about.devBuild')
         checking.value = false
         return
     }
@@ -129,7 +135,7 @@ async function handleCheckUpdate() {
         const result = await checkForUpdates(updateSettingsStore.showPreRelease)
         updateResult.value = result
     } catch (e) {
-        updateError.value = e instanceof Error ? e.message : "Unknown error"
+        updateError.value = e instanceof Error ? e.message : t('common.unknownErrorMsg')
     } finally {
         checking.value = false
     }

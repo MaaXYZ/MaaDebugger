@@ -9,9 +9,9 @@
 
             <!-- Selectable modes: search + toggle all -->
             <div v-if="isSelectableMode" class="flex items-center gap-1.5 px-1">
-                <UInput v-model="selectionSearch" icon="i-lucide-search" size="xs" placeholder="Filter..."
+                <UInput v-model="selectionSearch" icon="i-lucide-search" size="xs" :placeholder="t('task.filter')"
                     class="flex-1" />
-                <UTooltip :text="allSelectedInCurrentMode ? 'Deselect all' : 'Select all'">
+                <UTooltip :text="allSelectedInCurrentMode ? t('taskDetail.deselectAll') : t('taskDetail.selectAll')">
                     <UButton size="xs" variant="ghost" color="neutral"
                         :icon="allSelectedInCurrentMode ? 'i-lucide-square' : 'i-lucide-check-check'"
                         @click="toggleAllCurrentMode" />
@@ -107,7 +107,7 @@
                 </UScrollArea>
                 <div v-else class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted">
                     <UIcon name="i-lucide-image-off" class="size-10" />
-                    <span class="text-xs">No raw draw available</span>
+                    <span class="text-xs">{{ t('common.noRawDraw') }}</span>
                 </div>
             </div>
             <div v-else ref="containerRef" class="reco-canvas-container" :style="containerStyle"
@@ -146,7 +146,7 @@
                                 </template>
                                 <div class="flex items-center gap-1 text-default/40 pt-0.5 border-t border-default/10">
                                     <UIcon name="i-lucide-copy" class="size-3" />
-                                    <span>Click to copy JSON</span>
+                                    <span>{{ t('common.clickToCopyJson') }}</span>
                                 </div>
                             </div>
                         </div>
@@ -157,43 +157,43 @@
             <!-- Toolbar -->
             <div v-if="rawImage" class="flex flex-row items-center gap-2 pt-1 flex-wrap">
                 <div class="flex items-center gap-1">
-                    <UTooltip text="Zoom out">
+                    <UTooltip :text="t('common.zoomOut')">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-out" size="xs"
                             :disabled="zoomLevel <= MIN_ZOOM" @click="zoomOut" />
                     </UTooltip>
                     <span class="text-xs text-muted min-w-10 text-center tabular-nums">
                         {{ zoomPercentage }}%
                     </span>
-                    <UTooltip text="Zoom in">
+                    <UTooltip :text="t('common.zoomIn')">
                         <UButton color="neutral" variant="ghost" icon="i-lucide-zoom-in" size="xs"
                             :disabled="zoomLevel >= MAX_ZOOM" @click="zoomIn" />
                     </UTooltip>
                 </div>
                 <USeparator orientation="vertical" class="h-4" />
-                <UTooltip :text="fullscreen ? 'Exit fullscreen' : 'Open fullscreen'">
+                <UTooltip :text="fullscreen ? t('taskDetail.exitFullscreen') : t('taskDetail.openFullscreen')">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-fullscreen" size="xs"
                         @click="toggleFullscreen" />
                 </UTooltip>
-                <UTooltip text="Fit to view">
+                <UTooltip :text="t('common.fitToView')">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-maximize" size="xs" @click="resetView" />
                 </UTooltip>
                 <USeparator orientation="vertical" class="h-4" />
-                <UTooltip :text="showRois ? 'Hide ROI overlay' : 'Show ROI overlay'">
+                <UTooltip :text="showRois ? t('taskDetail.hideRoiOverlay') : t('taskDetail.showRoiOverlay')">
                     <UButton color="neutral" variant="ghost" size="xs"
                         :icon="showRois ? 'i-lucide-eye-off' : 'i-lucide-eye'" @click="() => { showRois = !showRois }">
                         ROI
                     </UButton>
                 </UTooltip>
                 <USeparator orientation="vertical" class="h-4" />
-                <UTooltip text="Download drawn image">
+                <UTooltip :text="t('common.downloadDrawnImage')">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-download" size="xs"
                         @click="downloadCanvas" />
                 </UTooltip>
                 <template v-if="hasOriginalDrawImages">
                     <USeparator orientation="vertical" class="h-4" />
-                    <UTooltip :text="showOriginalDraw ? 'Hide raw draw' : 'Show raw draw'">
+                    <UTooltip :text="showOriginalDraw ? t('taskDetail.hideRawDraw') : t('taskDetail.showRawDraw')">
                         <UButton color="neutral" :variant="showOriginalDraw ? 'soft' : 'ghost'" size="xs"
-                            icon="i-lucide-images" label="Raw Draw" @click="() => { showOriginalDraw = !showOriginalDraw }" />
+                            icon="i-lucide-images" :label="t('taskDetail.rawDraw')" @click="() => { showOriginalDraw = !showOriginalDraw }" />
                     </UTooltip>
                 </template>
             </div>
@@ -203,9 +203,12 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { TabsItem } from '@nuxt/ui'
 import { getTaskImageUrl } from '@/api/http'
 import type { RecoDetailResponse, RecoResultItem, RectResponse } from '@/types/taskDetail'
+
+const { t } = useI18n()
 
 // --- Constants ---
 const MIN_ZOOM = 0.5
@@ -287,9 +290,9 @@ const selectionSearch = ref('')
 const focusedResultIndex = ref(-1)
 
 const drawModeOptions: TabsItem[] = [
-    { label: 'Best', value: 'best' },
-    { label: 'Filtered', value: 'filtered' },
-    { label: 'All', value: 'all' },
+    { label: t('taskDetail.best'), value: 'best' },
+    { label: t('taskDetail.filtered'), value: 'filtered' },
+    { label: t('taskDetail.all'), value: 'all' },
 ]
 
 const isSelectableMode = computed(() => drawMode.value === 'all' || drawMode.value === 'filtered')
@@ -328,9 +331,9 @@ const allSelectedInCurrentMode = computed(() => {
 const showResultList = computed(() => drawMode.value !== 'best')
 
 const activeModeLabel = computed(() => {
-    if (drawMode.value === 'best') return 'Best'
-    if (drawMode.value === 'filtered') return 'Filtered'
-    return 'All'
+    if (drawMode.value === 'best') return t('taskDetail.best')
+    if (drawMode.value === 'filtered') return t('taskDetail.filtered')
+    return t('taskDetail.all')
 })
 
 const focusedDetailItem = computed<RecoResultItem | null>(() => {
@@ -339,8 +342,8 @@ const focusedDetailItem = computed<RecoResultItem | null>(() => {
 })
 
 const emptyDetailText = computed(() => {
-    if (drawMode.value === 'best') return 'No best result'
-    return 'Select an item'
+    if (drawMode.value === 'best') return t('taskDetail.noBestResult')
+    return t('taskDetail.selectItem')
 })
 
 // --- Cropped image preview (cached) ---

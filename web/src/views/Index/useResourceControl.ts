@@ -1,4 +1,5 @@
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import type { Ref } from "vue";
 import { useResourceStore } from "@/stores/resource";
 import { useSignalStore } from "@/stores/signal";
@@ -32,6 +33,7 @@ interface PipelinePrecheckOptions {
 export default function useResourceControl() {
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
   const resourceStore = useResourceStore();
   const enabledPaths = computed(() => resourceStore.getEnabledPaths());
   const signalStore = useSignalStore();
@@ -60,7 +62,7 @@ export default function useResourceControl() {
     } else {
       toast.add({
         id: options.toastId,
-        title: "Pipeline Check Failed",
+        title: t("pipeline.checkFailed"),
         description: checkResponse.msg,
         icon: "i-lucide-circle-x",
         color: "error",
@@ -93,13 +95,13 @@ export default function useResourceControl() {
       toast.add({
         id: options.toastId,
         title: options.blockedTitle,
-        description: `Pipeline has ${errorCount} error(s) and ${warningCount} warning(s). Fix issues or disable Prevent Resource Loaded to continue.`,
+        description: t("pipeline.blockedDescription", { errors: errorCount, warnings: warningCount }),
         icon: "i-lucide-octagon-x",
         color: "error",
         actions: [
           {
             icon: "i-lucide-info",
-            label: "View Details",
+            label: t("pipeline.viewDetails"),
             color: "neutral",
             variant: "outline",
             onClick: () => {
@@ -108,7 +110,7 @@ export default function useResourceControl() {
           },
           {
             icon: "i-lucide-settings",
-            label: "Go to Settings",
+            label: t("pipeline.goToSettings"),
             color: "neutral",
             variant: "outline",
             onClick: () => {
@@ -132,14 +134,14 @@ export default function useResourceControl() {
       if (shouldNotify) {
         toast.add({
           id: options.toastId,
-          title: options.notifyTitle || "Pipeline Issues Found",
-          description: `Found ${errorCount} error(s) and ${warningCount} warning(s).`,
+          title: options.notifyTitle || t("task.pipelineIssuesFound"),
+          description: t("pipeline.foundDescription", { errors: errorCount, warnings: warningCount }),
           icon: "i-lucide-alert-triangle",
           color: errorCount > 0 ? "error" : "warning",
           actions: [
             {
               icon: "i-lucide-info",
-              label: "View Details",
+              label: t("pipeline.viewDetails"),
               color: "neutral",
               variant: "outline",
               onClick: () => {
@@ -159,7 +161,7 @@ export default function useResourceControl() {
     msg?: string;
   }> {
     const paths = enabledPaths.value;
-    if (paths.length === 0) return { success: false, msg: "No enabled paths" };
+    if (paths.length === 0) return { success: false, msg: t("resource.noEnabledPaths") };
 
     try {
       const result = await loadResource(paths);
@@ -181,9 +183,9 @@ export default function useResourceControl() {
     const precheck = await precheckPipelineIssuesBeforeAction({
       toastId: options.manual ? RESOURCE_TOAST_ID : WATCH_RESOURCE_TOAST_ID,
       blockedTitle: options.manual
-        ? "Resource Load Blocked"
-        : "Resource Reload Blocked",
-      notifyTitle: "Pipeline Issues Found",
+        ? t("resource.resourceLoadBlocked")
+        : t("resource.resourceReloadBlocked"),
+      notifyTitle: t("task.pipelineIssuesFound"),
     });
     if (precheck.blocked) {
       statusStore.setResourceStatus("failed");
@@ -204,15 +206,15 @@ export default function useResourceControl() {
         console.error("[Resource] Load failed:", msg);
         toast.add({
           id: RESOURCE_TOAST_ID,
-          title: "Resource Load Failed",
-          description: msg || "Unknown error",
+          title: t("resource.resourceLoadFailed"),
+          description: msg || t("common.unknownErrorMsg"),
           icon: "i-lucide-circle-x",
           color: "error",
         });
       } else {
         toast.add({
           id: RESOURCE_TOAST_ID,
-          title: "Resource Loaded",
+          title: t("resource.resourceLoaded"),
           icon: "i-lucide-check-circle",
           color: "success",
         });
@@ -221,8 +223,8 @@ export default function useResourceControl() {
       toast.remove(RESOURCE_TOAST_ID);
       toast.add({
         id: WATCH_RESOURCE_TOAST_ID,
-        title: "Resource Changed",
-        description: `The Resource will reload as ${options.changedPath} changed.`,
+        title: t("resource.resourceChanged"),
+        description: t("resource.resourceChangedDescription", { path: options.changedPath }),
         icon: "i-lucide-loader",
         color: "info",
       });

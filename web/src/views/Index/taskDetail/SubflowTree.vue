@@ -2,11 +2,11 @@
     <div v-if="nodes.length > 0" class="flex flex-col gap-2">
         <div class="flex items-center gap-2 text-xs text-dimmed flex-wrap">
             <UIcon name="i-lucide-workflow" class="size-3.5" />
-            <span class="font-medium text-default">Internal custom flow</span>
-            <UBadge size="xs" color="info" variant="subtle">Custom</UBadge>
+            <span class="font-medium text-default">{{ t('taskDetail.internalCustomFlow') }}</span>
+            <UBadge size="xs" color="info" variant="subtle">{{ t('taskDetail.custom') }}</UBadge>
             <UBadge v-if="contextLabel" size="xs" color="neutral" variant="subtle">{{ contextLabel }}</UBadge>
             <UBadge size="xs" variant="subtle" :color="summaryColor">
-                {{ nodes.length }} node{{ nodes.length > 1 ? 's' : '' }}
+                {{ formatNodeCount(nodes.length) }}
             </UBadge>
         </div>
 
@@ -22,6 +22,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { AnyNodeScope } from '@/types/taskDetail'
 import SubflowNode from './SubflowNode.vue'
 import { nodeStableKey, summarizeAnyNodesStatus } from './scopeTree'
@@ -33,6 +34,14 @@ const props = withDefaults(defineProps<{
     kind: undefined,
 })
 
+const { t } = useI18n()
+
+function formatNodeCount(count: number): string {
+    return count > 1
+        ? t('taskDetail.nodesLabels', { count })
+        : t('taskDetail.nodesLabel', { count })
+}
+
 defineEmits<{
     requestDetail: [recoId: number]
     requestActionDetail: [actionId: number]
@@ -41,9 +50,9 @@ defineEmits<{
 const contextLabel = computed(() => {
     switch (props.kind) {
         case 'reco':
-            return 'Inside Reco'
+            return t('taskDetail.insideReco')
         case 'action':
-            return 'Inside Action'
+            return t('taskDetail.insideAction')
         default:
             return ''
     }

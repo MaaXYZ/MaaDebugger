@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useTaskDetailSettingsStore } from '@/stores/taskDetailSettings'
 
+const { t } = useI18n()
 const taskDetailSettingsStore = useTaskDetailSettingsStore()
 
 const nodePageSizeInput = computed({
@@ -18,10 +20,10 @@ const nodePageSizeInput = computed({
         <template #header>
             <div id="task" class="flex flex-row items-center justify-between gap-3">
                 <div class="flex flex-col">
-                    <span class="font-bold">Task Detail</span>
-                    <span class="text-sm text-dimmed">Configure task detail display and node browsing behavior.</span>
+                    <span class="font-bold">{{ t('settings.taskDetail.title') }}</span>
+                    <span class="text-sm text-dimmed">{{ t('settings.taskDetail.description') }}</span>
                 </div>
-                <UButton color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" label="Reset" size="xs"
+                <UButton color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" :label="t('settings.taskDetail.reset')" size="xs"
                     @click="taskDetailSettingsStore.reset()" />
             </div>
         </template>
@@ -30,8 +32,8 @@ const nodePageSizeInput = computed({
             <div id="task-showRecoID"
                 class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
                 <div class="flex flex-col gap-1">
-                    <span class="text-sm font-medium">Show Recognition ID</span>
-                    <span class="text-sm text-dimmed">Display the ID beside recognition buttons like #400000001</span>
+                    <span class="text-sm font-medium">{{ t('settings.taskDetail.showRecoId') }}</span>
+                    <span class="text-sm text-dimmed">{{ t('settings.taskDetail.showRecoIdDescription') }}</span>
                 </div>
                 <USwitch :model-value="taskDetailSettingsStore.showRecoId"
                     @update:model-value="taskDetailSettingsStore.setShowRecoId(Boolean($event))" />
@@ -40,8 +42,8 @@ const nodePageSizeInput = computed({
             <div id="task-showActionID"
                 class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
                 <div class="flex flex-col gap-1">
-                    <span class="text-sm font-medium">Show Action ID</span>
-                    <span class="text-sm text-dimmed">Display the ID beside action buttons like #500000001</span>
+                    <span class="text-sm font-medium">{{ t('settings.taskDetail.showActionId') }}</span>
+                    <span class="text-sm text-dimmed">{{ t('settings.taskDetail.showActionIdDescription') }}</span>
                 </div>
                 <USwitch :model-value="taskDetailSettingsStore.showActionId"
                     @update:model-value="taskDetailSettingsStore.setShowActionId(Boolean($event))" />
@@ -50,8 +52,8 @@ const nodePageSizeInput = computed({
             <div id="task-reverseNodeOrder"
                 class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
                 <div class="flex flex-col gap-1">
-                    <span class="text-sm font-medium">Reverse Node Order</span>
-                    <span class="text-sm text-dimmed">Show newer pipeline nodes above older ones by default</span>
+                    <span class="text-sm font-medium">{{ t('settings.taskDetail.reverseNodeOrder') }}</span>
+                    <span class="text-sm text-dimmed">{{ t('settings.taskDetail.reverseNodeOrderDescription') }}</span>
                 </div>
                 <USwitch :model-value="taskDetailSettingsStore.reverseNodeOrder"
                     @update:model-value="taskDetailSettingsStore.setReverseNodeOrder(Boolean($event))" />
@@ -60,8 +62,8 @@ const nodePageSizeInput = computed({
             <div id="task-nodePageSize"
                 class="flex items-center justify-between gap-4 rounded-lg border border-default p-3">
                 <div class="flex flex-col gap-1">
-                    <span class="text-sm font-medium">Nodes Per Page</span>
-                    <span class="text-sm text-dimmed">Limit how many pipeline nodes are rendered per page</span>
+                    <span class="text-sm font-medium">{{ t('settings.taskDetail.nodesPerPage') }}</span>
+                    <span class="text-sm text-dimmed">{{ t('settings.taskDetail.nodesPerPageDescription') }}</span>
                 </div>
                 <UInput v-model="nodePageSizeInput" type="number" min="1" step="1" class="w-24" />
             </div>

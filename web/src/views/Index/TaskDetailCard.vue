@@ -3,7 +3,7 @@
         :ui="{ root: 'h-full flex flex-col', body: 'flex flex-1 min-h-0 flex-col overflow-hidden' }">
         <template #header>
             <div class="flex min-h-10 items-center gap-2">
-                <span class="font-bold">Task Detail</span>
+                <span class="font-bold">{{ t('taskDetail.title') }}</span>
                 <div class="min-w-0 flex-1" />
                 <div v-if="allTasks.length > 0" class="flex min-w-0 flex-wrap items-center justify-end gap-2">
                     <USelect :model-value="activeIndex" :items="taskSelectItems" value-key="value"
@@ -13,7 +13,7 @@
                         @update:model-value="onNodeSelect" />
                     <UButton v-if="isHistoryMode" size="xs" color="primary" variant="soft"
                         icon="i-lucide-arrow-down-to-line" @click="goToLatestPage">
-                        Latest
+                        {{ t('taskDetail.latest') }}
                     </UButton>
                     <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-trash-2" @click="resetGraph" />
                 </div>
@@ -23,7 +23,7 @@
         <template #default>
             <div class="flex h-full min-h-0 flex-col gap-3">
                 <div v-if="allTasks.length === 0" class="flex min-h-80 items-center justify-center xl:flex-1">
-                    <UEmpty icon="i-lucide-list-checks" title="No Task Details"
+                    <UEmpty icon="i-lucide-list-checks" :title="t('taskDetail.noTaskDetails')"
                         class="w-full rounded-xl border border-dashed border-default bg-default/25 py-10" />
                 </div>
 
@@ -47,6 +47,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { launchGraph, resetLaunchGraph } from '@/stores/launchGraph'
 import {
     activeTaskIndex,
@@ -66,6 +67,7 @@ import { clearCache } from '@/api/http'
 import { findRecoNameInTasks } from './taskDetail/scopeTree'
 
 const taskDetailSettingsStore = useTaskDetailSettingsStore()
+const { t } = useI18n()
 
 const allTasks = computed(() => launchGraph.value.childs)
 const activeIndex = activeTaskIndex

@@ -11,22 +11,25 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { TaskStatus } from './types'
 
 const props = defineProps<{
     status: TaskStatus
 }>()
 
+const { t } = useI18n()
+
 const isPulsing = computed(() => props.status === 'running')
 
 const statusLabel = computed(() => {
     switch (props.status) {
-    case 'idle': return 'Idle'
-    case 'running': return 'Running'
-    case 'success': return 'Success'
-    case 'failed': return 'Failed'
-    case 'stopped': return 'Stopped'
-    default: return 'Unknown'
+    case 'idle': return t('task.idle')
+    case 'running': return t('task.running')
+    case 'success': return t('task.success')
+    case 'failed': return t('task.failed')
+    case 'stopped': return t('task.stopped')
+    default: return t('task.unknown')
     }
 })
 

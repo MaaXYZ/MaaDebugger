@@ -4,10 +4,10 @@
             <div v-if="detail" class="flex flex-row items-center gap-2 flex-wrap">
                 <span class="text-sm text-highlighted font-semibold">{{ detail.name }}</span>
                 <UBadge :color="detail.success ? 'success' : 'error'" variant="subtle"
-                    :label="detail.success ? 'Success' : 'Failed'" />
+                    :label="detail.success ? t('taskDetail.success') : t('taskDetail.failed')" />
                 <UBadge color="info" variant="subtle" :label="detail.action" />
-                <UButton color="neutral" variant="ghost" size="xs" icon="i-lucide-file-json" label="NodeData"
-                    @click="() => { nodeDataOpen = true }" />
+                <UButton color="neutral" variant="ghost" size="xs" icon="i-lucide-file-json"
+                    :label="t('taskDetail.nodeData')" @click="() => { nodeDataOpen = true }" />
             </div>
         </template>
 
@@ -20,7 +20,7 @@
                 <ActionDetailItem v-else :detail="detail" />
             </div>
             <div v-else class="text-sm text-dimmed p-4 text-center">
-                No action detail available
+                {{ t('taskDetail.noActionDetailAvailable') }}
             </div>
         </template>
     </UModal>
@@ -29,6 +29,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { getActionDetailById, getTaskImageUrl } from '@/api/http'
 import type { ActionDetailResponse } from '@/types/taskDetail'
 import { actionHasCoords } from '@/types/taskDetail'
@@ -39,6 +40,8 @@ import NodeDataModal from './NodeDataModal.vue'
 const props = defineProps<{
     actionId: number | null
 }>()
+
+const { t } = useI18n()
 
 const open = defineModel<boolean>('open', { default: false })
 const loading = ref(false)
