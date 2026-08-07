@@ -2,6 +2,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import assert from "node:assert";
 
 function getRequiredEnv(name) {
   const value = process.env[name];
@@ -53,10 +54,11 @@ function main() {
   pkg.version = version;
   pkg.publishConfig = buildPublishConfig(channel);
 
-  // Keep @maaxyz/maa-node aligned with MaaFramework for the main package.
-  if (pkg.dependencies?.["@maaxyz/maa-node"]) {
-    pkg.dependencies["@maaxyz/maa-node"] = getRequiredEnv("MAAFW_VERSION");
-  }
+  assert(
+    pkg.dependencies?.["@maaxyz/maa-node"],
+    "dependencies.@maaxyz/maa-node is not found in publish/npm/package.json",
+  );
+  pkg.dependencies["@maaxyz/maa-node"] = getRequiredEnv("MAAFW_VERSION");
 
   if (targetOS) {
     pkg.os = [targetOS];

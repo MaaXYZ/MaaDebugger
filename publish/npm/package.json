@@ -13,7 +13,7 @@
   ],
   "scripts": {},
   "dependencies": {
-    "@maaxyz/maa-node": "v.5.12.1"
+    "@maaxyz/maa-node": "0.0.0"
   },
   "optionalDependencies": {
     "@weinibuliu/maa-debugger-darwin-arm64": "0.0.0",
