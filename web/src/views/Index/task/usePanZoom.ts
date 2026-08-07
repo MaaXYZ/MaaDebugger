@@ -24,7 +24,6 @@ export function usePanZoom() {
     const ratio = aspectMode.value === "landscape" ? "16/9" : "9/16";
     return {
       aspectRatio: ratio,
-      maxHeight: aspectMode.value === "portrait" ? "70vh" : undefined,
     };
   });
 

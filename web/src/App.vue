@@ -240,7 +240,7 @@ onUnmounted(() => {
         </template>
       </UHeader>
 
-      <UMain>
+      <UMain class="h-[calc(100vh_-_var(--ui-header-height))] overflow-y-auto">
         <RouterView />
       </UMain>
     </UTheme>

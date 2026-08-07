@@ -1,5 +1,5 @@
 <template>
-    <UCard class="w-full max-h-[calc(100vh-8rem)] xl:h-[calc(100vh-8rem)]" size="xl"
+    <UCard class="w-full" size="xl"
         :ui="{ root: 'h-full flex flex-col', body: 'flex flex-1 min-h-0 flex-col overflow-hidden' }">
         <template #header>
             <div class="flex min-h-10 items-center gap-2">
@@ -32,7 +32,8 @@
                         :displayed-nodes="displayedNodes" :selected-node-id="selectedNodeId"
                         :entry-node-id="entryNodeId" :current-page="currentPage" :total-pages="totalPages"
                         :total-node-count="totalNodeCount" :reverse-node-order="reverseNodeOrder"
-                        :is-history-mode="isHistoryMode" :scroll-request-key="scrollRequestKey" @go-page="goToPage"
+                        :is-history-mode="isHistoryMode" :scroll-request-key="scrollRequestKey"
+                        class="xl:flex-1 xl:min-h-0" @go-page="goToPage"
                         @go-latest="goToLatestPage" @request-detail="onRequestDetail"
                         @request-action-detail="onRequestActionDetail" />
                 </template>
