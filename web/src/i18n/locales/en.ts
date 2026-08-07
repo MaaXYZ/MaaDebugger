@@ -1,7 +1,9 @@
 /**
  * English locale messages.
- * This file is the source of truth for the message schema
- * (see `MessageSchema` in `../index.ts`).
+ * Aligned with zh-CN.ts (the reference copy).
+ *
+ * Project concepts (Controller / Interface / Agent / Pipeline) are kept
+ * verbatim in both languages and must never be translated.
  *
  * To add a new language:
  *   1. create `locales/<code>.ts` exporting an object with the same shape;
@@ -103,8 +105,7 @@ export default {
     extraConfigDescription: "ADB extra configuration (JSONC)",
     selectDevice: "Select a device...",
     noDevicesFound: "No ADB devices found",
-    noDevicesDescription:
-      "Make sure your device is connected and ADB is running.",
+    noDevicesDescription: "Make sure your device is connected and ADB is running.",
   },
   playcover: {
     address: "Address",
@@ -123,8 +124,7 @@ export default {
     windowNameRegexPlaceholder: ".*",
     selectWindow: "Select a window...",
     noWindowsFound: "No windows found",
-    noWindowsDescription:
-      "Try adjusting your class name or window regex filters.",
+    noWindowsDescription: "Try adjusting your class name or window regex filters.",
   },
   agent: {
     title: "Agent",
@@ -169,7 +169,7 @@ export default {
     failed: "Failed",
     idle: "Idle",
     resourceChanged: "Resource Changed",
-    resourceChangedDescription: "The Resource will reload as {path} changed.",
+    resourceChangedDescription: "Detected changes in {path}; the resource will reload.",
     resourceLoaded: "Resource Loaded",
     resourceLoadFailed: "Resource Load Failed",
     resourceLoadBlocked: "Resource Load Blocked",
@@ -342,31 +342,30 @@ export default {
   settings: {
     debug: {
       title: "Debug Workspace",
-      description: "Configure the Debug page layout and sidebar behavior.",
+      description: "Configure the Debug page layout",
       sidebarAutoCollapse: "Auto collapse sidebar",
-      sidebarAutoCollapseDescription:
-        "Choose when to auto-collapse the setup sidebar: never, when a task starts, or always.",
+      sidebarAutoCollapseDescription: "Choose when to auto-collapse the setup sidebar.",
       sidebarNever: "Never",
       sidebarTask: "Only while task running",
       sidebarAlways: "Always",
       showFps: "Show current FPS",
       showFpsDescription:
-        "Show the current (actual) frame rate in the Task panel header next to the target rate. The FPS adjustment popover stays available.",
+        "Show the current (actual) frame rate in the Task panel header next to the target rate.",
       watchResource: "Watch resource changes",
       watchResourceDescription:
-        "Whether to watch the resource changes to automatically reload the resource",
+        "Whether to watch resource changes to automatically reload the resource",
       checkInterval: "Resource change check interval",
       checkIntervalDescription:
         "The interval (in milliseconds) at which to check for resource changes.",
       checkPipeline: "Check Pipeline Issues",
       checkPipelineDescription:
-        "When resource loaded, check if the pipeline has any error or warning.",
+        "After the resource is loaded, check whether the Pipeline has any errors or warnings.",
       notifyLevel: "Pipeline Notify Level",
       notifyLevelDescription:
-        "If the pipeline has issues at or above the selected level, send notification.",
+        "Send a notification when Pipeline issues reach the selected level.",
       preventResourceLoaded: "Prevent Resource Loaded",
       preventResourceLoadedDescription:
-        "If the pipeline has errors, prevent the resource from being loaded.",
+        "If the Pipeline has errors, prevent the resource from being loaded.",
       reset: "Reset",
       error: "Error",
       warning: "Warning",
@@ -374,7 +373,7 @@ export default {
     },
     editor: {
       title: "Editor",
-      description: "Configure JSON editor size and readability.",
+      description: "Configure the JSON editor size and readability",
       fontSize: "Editor font size",
       minHeight: "Minimum editor height",
       maxHeight: "Maximum editor height",
@@ -382,7 +381,7 @@ export default {
     },
     taskDetail: {
       title: "Task Detail",
-      description: "Configure task detail display and node browsing behavior.",
+      description: "Configure task detail display and node browsing behavior",
       showRecoId: "Show Recognition ID",
       showRecoIdDescription:
         "Display the ID beside recognition buttons like #400000001",
@@ -391,10 +390,10 @@ export default {
         "Display the ID beside action buttons like #500000001",
       reverseNodeOrder: "Reverse Node Order",
       reverseNodeOrderDescription:
-        "Show newer pipeline nodes above older ones by default",
+        "Show newer Pipeline nodes above older ones by default",
       nodesPerPage: "Nodes Per Page",
       nodesPerPageDescription:
-        "Limit how many pipeline nodes are rendered per page",
+        "Limit how many Pipeline nodes are rendered per page",
       reset: "Reset",
     },
     shortcuts: {
@@ -431,8 +430,8 @@ export default {
     },
     language: {
       title: "Language",
-      description: "Choose the interface language.",
-      auto: "System",
+      description: "Choose the interface language",
+      auto: "Follow system",
       zhCN: "简体中文",
       en: "English",
     },
@@ -448,18 +447,18 @@ export default {
     issues: "Pipeline Issues",
     errorCount: "Error {count}",
     warningCount: "Warning {count}",
-    configHint: "You can config this feature in",
+    configHint: "You can configure this feature in:",
     debugSettings: "Debug Settings",
     noIssues: "No issues found",
     checkFailed: "Pipeline Check Failed",
     blockedDescription:
-      "Pipeline has {errors} error(s) and {warnings} warning(s). Fix issues or disable Prevent Resource Loaded to continue.",
+      "The Pipeline has {errors} error(s) and {warnings} warning(s). Fix the issues or disable Prevent Resource Loaded to continue.",
     viewDetails: "View Details",
     goToSettings: "Go to Settings",
     foundDescription: "Found {errors} error(s) and {warnings} warning(s).",
   },
   locale: {
-    language: "Display Language",
-    description: "Change this will reload the page.",
+    language: "Display language",
+    description: "Changing this will reload the page",
   },
 };
