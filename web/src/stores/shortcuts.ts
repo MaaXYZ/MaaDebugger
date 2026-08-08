@@ -12,23 +12,13 @@ export type ShortcutBinding = string | null;
 /** Known shortcut action identifiers */
 export type ShortcutAction = "task.startStop";
 
-interface ShortcutDef {
-  /** Display label for the action */
-  label: string;
-  /** Default binding */
-  defaultBinding: ShortcutBinding;
-  /** Current binding */
-  binding: ShortcutBinding;
-}
-
-const DEFAULT_SHORTCUTS: Record<
-  ShortcutAction,
-  Omit<ShortcutDef, "binding">
-> = {
-  "task.startStop": {
-    label: "Start / Stop Task",
-    defaultBinding: "P",
-  },
+/**
+ * Default bindings per action.
+ * Kept in code only — the persisted state is a plain `{ action: binding }` map,
+ * so defaults are never written into the user's config.
+ */
+const DEFAULT_BINDINGS: Record<ShortcutAction, ShortcutBinding> = {
+  "task.startStop": "P",
 };
 
 /**
@@ -111,73 +101,70 @@ export function eventToShortcut(event: KeyboardEvent): string | null {
 export const useShortcutsStore = defineStore(
   "shortcuts",
   () => {
-    // Initialize shortcuts from defaults
-    const shortcuts = ref<Record<ShortcutAction, ShortcutDef>>(
-      Object.fromEntries(
-        Object.entries(DEFAULT_SHORTCUTS).map(([action, def]) => [
-          action,
-          { ...def, binding: def.defaultBinding },
-        ]),
-      ) as Record<ShortcutAction, ShortcutDef>,
-    );
+    // Only the current bindings are persisted (plain map). Defaults live in code.
+    const shortcuts = ref<Record<ShortcutAction, ShortcutBinding>>({
+      ...DEFAULT_BINDINGS,
+    });
 
     /** Get the current binding for an action */
     function getBinding(action: ShortcutAction): ShortcutBinding {
-      return shortcuts.value[action]?.binding ?? null;
-    }
-
-    /** Get shortcut definition for an action */
-    function getShortcut(action: ShortcutAction): ShortcutDef | undefined {
-      return shortcuts.value[action];
+      return shortcuts.value[action] ?? null;
     }
 
     /** Set a new binding for an action. Pass `null` to unbind. */
     function setBinding(action: ShortcutAction, binding: ShortcutBinding) {
-      if (shortcuts.value[action]) {
-        shortcuts.value[action].binding = binding;
-      }
+      shortcuts.value[action] = binding;
     }
 
     /** Reset a single action to its default binding */
     function resetBinding(action: ShortcutAction) {
-      const def = DEFAULT_SHORTCUTS[action];
-      if (def && shortcuts.value[action]) {
-        shortcuts.value[action].binding = def.defaultBinding;
-      }
+      shortcuts.value[action] = DEFAULT_BINDINGS[action] ?? null;
     }
 
     /** Reset all shortcuts to defaults */
     function resetAll() {
-      for (const [action, def] of Object.entries(DEFAULT_SHORTCUTS)) {
-        if (shortcuts.value[action as ShortcutAction]) {
-          shortcuts.value[action as ShortcutAction].binding =
-            def.defaultBinding;
-        }
+      for (const action of Object.keys(DEFAULT_BINDINGS) as ShortcutAction[]) {
+        shortcuts.value[action] = DEFAULT_BINDINGS[action] ?? null;
       }
     }
 
-    /** All shortcut actions as a list */
-    const allShortcuts = computed(() => {
-      return Object.entries(shortcuts.value).map(([action, def]) => ({
-        action: action as ShortcutAction,
-        ...def,
-      }));
-    });
+    /** All shortcut actions as a list (for the settings UI) */
+    const allShortcuts = computed(() =>
+      (Object.keys(shortcuts.value) as ShortcutAction[]).map((action) => ({
+        action,
+        binding: shortcuts.value[action],
+      })),
+    );
 
     /** Check if an event matches a given action's binding */
     function matches(event: KeyboardEvent, action: ShortcutAction): boolean {
       return matchesShortcut(event, getBinding(action));
     }
 
+    /**
+     * 旧配置迁移：早期版本持久化的是 { binding, defaultBinding, label }
+     * 对象（label 从未被使用过），归一化为纯 binding 字符串/null。
+     */
+    function onRestore() {
+      for (const action of Object.keys(shortcuts.value) as ShortcutAction[]) {
+        const v: unknown = shortcuts.value[action];
+        if (typeof v !== "string" && v !== null) {
+          const old = v as { binding?: unknown };
+          shortcuts.value[action] =
+            typeof old.binding === "string" ? old.binding : null;
+        }
+      }
+    }
+
     return {
       shortcuts,
       getBinding,
-      getShortcut,
       setBinding,
       resetBinding,
       resetAll,
       allShortcuts,
       matches,
+      onRestore,
     };
   },
   { persist: true },
